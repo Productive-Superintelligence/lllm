@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from typing import Optional
 
-from lllm.core.agent import Agent, AgentBase, build_agent, register_agent_class
+from lllm.core.agent import Agent, Orchestrator, build_agent, register_agent_class
 from lllm.core.models import PROMPT_REGISTRY, Prompt, register_prompt
 from lllm.core.discovery import auto_discover_if_enabled
 
@@ -61,7 +61,7 @@ class Prompts:
 
 __all__ = [
     "Agent",
-    "AgentBase",
+    "Orchestrator",
     "Prompts",
     "Prompt",
     "build_agent",

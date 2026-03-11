@@ -5,6 +5,8 @@ import tiktoken
 from tiktoken.model import encoding_name_for_model
 from pydantic import BaseModel, Field, field_validator
 from pathlib import Path
+import logging
+logging.basicConfig(level=logging.INFO)
 try:
     import tomllib
 except ModuleNotFoundError:
@@ -52,7 +54,6 @@ class Features(str, Enum):
     FINETUNING = 'finetuning'
     DISTILLATION = 'distillation'
     PREDICTED_OUTPUT = 'predicted_output'
-    CLASSIFICATION = 'classification'
     COMPUTER_USE = 'computer_use'
     WEB_SEARCH = 'web_search'
 
@@ -127,37 +128,20 @@ class ModelCard(BaseModel):
             cost=prompt_cost + cached_cost + completion_cost,
         )
 
-    def make_classifier(self, classes: List[str], strength: int = 10) -> Dict[str, Any]:
-        if not classes:
-            raise ValueError("Classifier requires at least one class token")
-        encoding_name = None
-        try:
-            encoding_name = encoding_name_for_model(self.latest_snapshot.name)
-        except Exception:
-            pass
-        encoding = tiktoken.get_encoding(encoding_name or "cl100k_base")
-        bias: Dict[int, float] = {}
-        for label in classes:
-            tokens = encoding.encode(label)
-            if len(tokens) != 1:
-                raise ValueError(f"Label '{label}' does not map to a single token for classifier use")
-            bias[tokens[0]] = float(strength)
-        return {
-            "max_tokens": 1,
-            "temperature": 0,
-            "top_p": 0,
-            "logit_bias": bias,
-        }
 
 MODEL_CARDS: Dict[str, ModelCard] = {}
 
 def register_model_card(card: ModelCard):
+    if card.name in MODEL_CARDS:
+        logging.warning(f"Model card \"{card.name}\" already registered. Overwriting.")
     MODEL_CARDS[card.name] = card
 
-# Define standard models
-def load_model_cards():
-    models_file = Path(__file__).parent / "models.toml"
+
+# user can also provide a custom model cards file, same name model will be overwritten
+def load_model_cards_from_file(path: str):
+    models_file = Path(path)
     if not models_file.exists():
+        logging.warning(f"Model cards file \"{models_file}\" not found")
         return
 
     with open(models_file, "rb") as f:
@@ -181,7 +165,12 @@ def load_model_cards():
         card = ModelCard(**model_data)
         register_model_card(card)
 
-load_model_cards()
+# Define standard models
+def _load_builtin_model_cards_from_file():
+    models_file = Path(__file__).parent / "models.toml"
+    load_model_cards_from_file(models_file)
+
+_load_builtin_model_cards_from_file()
 
 
 LLM_SIDE_ROLES = [Roles.ASSISTANT, Roles.TOOL_CALL]

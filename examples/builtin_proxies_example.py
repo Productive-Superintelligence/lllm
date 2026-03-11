@@ -1,5 +1,5 @@
 import os
-from lllm import AgentBase, Prompt
+from lllm import Orchestrator, Prompt
 from lllm.proxies.base import PROXY_REGISTRY
 
 # Import the builtin proxy module. 

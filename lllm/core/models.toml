@@ -7,7 +7,7 @@ input_price = 2.0
 cached_input_price = 0.5
 output_price = 8.0
 knowledge_cutoff = "2024-06-01"
-features = ["function_call", "structured_output", "streaming", "finetuning", "distillation", "predicted_output", "classification"]
+features = ["function_call", "structured_output", "streaming", "finetuning", "distillation", "predicted_output"]
 input_modalities = ["text", "image"]
 [[models.snapshots]]
 name = "gpt-4.1-2025-04-14"
@@ -54,7 +54,7 @@ input_price = 0.4
 cached_input_price = 0.1
 output_price = 1.6
 knowledge_cutoff = "2024-06-01"
-features = ["function_call", "structured_output", "streaming", "finetuning", "classification"]
+features = ["function_call", "structured_output", "streaming", "finetuning"]
 input_modalities = ["text", "image"]
 [[models.snapshots]]
 name = "gpt-4.1-mini-2025-04-14"
@@ -69,7 +69,7 @@ input_price = 0.15
 cached_input_price = 0.075
 output_price = 0.6
 knowledge_cutoff = "2023-10-01"
-features = ["function_call", "structured_output", "streaming", "finetuning", "classification"]
+features = ["function_call", "structured_output", "streaming", "finetuning"]
 input_modalities = ["text", "image"]
 [[models.snapshots]]
 name = "gpt-4o-mini-2024-07-18"
@@ -84,7 +84,7 @@ input_price = 0.25
 cached_input_price = 0.025
 output_price = 2.0
 knowledge_cutoff = "2024-05-31"
-features = ["function_call", "structured_output", "streaming", "finetuning", "classification"]
+features = ["function_call", "structured_output", "streaming", "finetuning"]
 input_modalities = ["text", "image"]
 [[models.snapshots]]
 name = "gpt-5-mini-2025-08-07"
@@ -99,7 +99,7 @@ input_price = 1.25
 cached_input_price = 0.125
 output_price = 10.0
 knowledge_cutoff = "2024-09-30"
-features = ["function_call", "structured_output", "streaming", "finetuning", "classification"]
+features = ["function_call", "structured_output", "streaming", "finetuning"]
 input_modalities = ["text", "image"]
 [[models.snapshots]]
 name = "gpt-5.1-2025-11-13"

@@ -1,5 +1,5 @@
 import json
-from lllm import AgentBase, Prompt, Function, FunctionCall
+from lllm import Orchestrator, Prompt, Function, FunctionCall
 from lllm.core.models import register_prompt
 
 # Define a tool
@@ -41,7 +41,7 @@ def main():
         }
     }
 
-    class ToolAgent(AgentBase):
+    class ToolAgent(Orchestrator):
         agent_type = "tool_user"
         agent_group = ["assistant"]
         

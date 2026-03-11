@@ -35,3 +35,7 @@ Documentation = "https://lllm.one"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["lllm*"]
+
+[tool.setuptools.package-data]
+"lllm.core" = ["models.toml"]
+"lllm.proxies.builtin" = ["*.json", "*.md"]

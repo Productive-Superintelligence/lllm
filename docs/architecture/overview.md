@@ -36,7 +36,7 @@ Inside `lllm/` the high-level structure is:
 ## Component Relationships
 
 - Prompts depend on parsers, functions, and MCP servers defined in `lllm/models.py`.
-- Agents consume prompts and proxies; agents are registered automatically via `AgentBase.__init_subclass__`.
+- Agents consume prompts and proxies; agents are registered automatically via `Orchestrator.__init_subclass__`.
 - Proxies can be shared between systems, and their metadata powers auto-generated API catalogs that prompts can embed in instructions.
 - Templates wire all of the above into runnable systems and document expected configuration keys.
 

@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Any, Dict
 
-from lllm.llm import AgentBase, Prompts, build_agent
+from lllm.llm import Orchestrator, Prompts, build_agent
 
 PROMPT_ROOT = "{{project_name}}"
 
@@ -10,7 +10,7 @@ class AgentType(Enum):
     VANILLA = 'vanilla'
 
 
-class Vanilla(AgentBase):
+class Vanilla(Orchestrator):
     agent_type = AgentType.VANILLA.value
     agent_group = ['vanilla']
 

@@ -13,7 +13,7 @@ pip install lllm
 Here is a simple example of how to create a chat agent:
 
 ```python
-from lllm import AgentBase, Prompt, register_prompt
+from lllm import Orchestrator, Prompt, register_prompt
 
 # 1. Define a Prompt
 simple_prompt = Prompt(
@@ -23,7 +23,7 @@ simple_prompt = Prompt(
 register_prompt(simple_prompt)
 
 # 2. Define an Agent
-class SimpleAgent(AgentBase):
+class SimpleAgent(Orchestrator):
     agent_type = "simple"
     agent_group = ["assistant"]
     

@@ -13,7 +13,7 @@ Agent calls are the defining concept of LLLM. Instead of exposing raw LLM comple
 | Responsibility | Caller decides whether to retry, parse, or continue. | Agent handles retries, parsing, exception recovery, and interrupts until it reaches the desired state. |
 | Determinism | Best-effort. | Guaranteed next state or explicit exception. |
 
-The `Agent` dataclass in `lllm/llm.py` exposes `call(dialog, extra, args, parser_args)` to run the loop. `AgentBase` (and `AsyncAgentBase`) wrap this call with logging (`StreamWrapper`) and a user-friendly `.call(task)` signature for system builders. Under the hood each agent delegates to a provider implementation (`lllm.providers.BaseProvider`) so the same loop can target OpenAI’s Chat Completions API or the Responses API by toggling the `api_type` field on the agent configuration.
+The `Agent` dataclass in `lllm/llm.py` exposes `call(dialog, extra, args, parser_args)` to run the loop. `Orchestrator` (and `AsyncOrchestrator`) wrap this call with logging (`StreamWrapper`) and a user-friendly `.call(task)` signature for system builders. Under the hood each agent delegates to a provider implementation (`lllm.providers.BaseProvider`) so the same loop can target OpenAI’s Chat Completions API or the Responses API by toggling the `api_type` field on the agent configuration.
 
 ## State Machine Lifecycle
 
@@ -59,22 +59,12 @@ api_type = "response"  # or "completion"
 - `completion` (default) uses Chat Completions. If `Prompt.format` is set, the provider automatically switches to `beta.chat.completions.parse` so you can keep using Pydantic response formats.
 - `response` opts into the OpenAI Responses API. When the target model advertises `web_search` or `computer_use` features, `Prompt.allow_web_search` and `Prompt.computer_use_config` materialize as native OpenAI tools. Responses API tool outputs are surfaced back through `Prompt.interrupt_handler` as `Roles.USER` messages so the assistant can summarize the tool transcript.
 
-## Classification Helpers
-
-The same machinery powers lightweight classifiers (`Agent.classify`, `Agent.binary_classify`). These helpers:
-
-1. Re-seed the dialog with a classifier prompt.
-2. Ask the model to emit a single token drawn from the provided class list.
-3. Inspect logprobs to return calibrated probabilities.
-
-Because classification still runs through the agent-call loop, you retain exception handling, retries, and structured logging.
-
 ## Implementing Custom Agents
 
 To ship a new agent:
 
-1. Subclass `AgentBase`, set `agent_type` and `agent_group` (e.g., `['researcher', 'editor']`).
+1. Subclass `Orchestrator`, set `agent_type` and `agent_group` (e.g., `['researcher', 'editor']`).
 2. Within `__init__`, pick prompts via `Prompts('<root>')` and designate which sub-agent handles each task.
 3. Implement `call(self, task, **kwargs)` to orchestrate dialogs (see `template/example/system/agent/agent.py`).
 
-Agents register themselves automatically through `AgentBase.__init_subclass__`, so once your class is imported it becomes available to `build_agent` and the templates.
+Agents register themselves automatically through `Orchestrator.__init_subclass__`, so once your class is imported it becomes available to `build_agent` and the templates.

@@ -28,15 +28,15 @@ def main():
     register_prompt(simple_prompt)
 
     # Initialize Agent
-    # Note: AgentBase expects a class structure usually, but we can use the Agent class directly for simple cases
+    # Note: Orchestrator expects a class structure usually, but we can use the Agent class directly for simple cases
     # or use the build_agent factory if we had a proper Agent class defined.
     # Here we demonstrate direct usage of the internal Agent class for simplicity, 
-    # although the framework encourages using AgentBase subclasses.
+    # although the framework encourages using Orchestrator subclasses.
     
     # Let's define a minimal Agent class
-    from lllm import AgentBase
+    from lllm import Orchestrator
     
-    class SimpleAgent(AgentBase):
+    class SimpleAgent(Orchestrator):
         agent_type = "simple"
         agent_group = ["assistant"]
         

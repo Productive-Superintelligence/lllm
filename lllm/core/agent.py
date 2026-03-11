@@ -18,7 +18,7 @@ import lllm.utils as U
 from lllm.core.discovery import auto_discover_if_enabled
 from lllm.providers import build_provider
 
-AGENT_REGISTRY: Dict[str, Type['AgentBase']] = {}
+AGENT_REGISTRY: Dict[str, Type['Orchestrator']] = {}
 
 def _normalize_agent_type(agent_type):
     if isinstance(agent_type, Enum) or (isinstance(agent_type, type) and issubclass(agent_type, Enum)):
@@ -28,7 +28,7 @@ def _normalize_agent_type(agent_type):
     else:
         raise ValueError(f"Invalid agent type: {agent_type}")
 
-def register_agent_class(agent_cls: Type['AgentBase']) -> Type['AgentBase']:
+def register_agent_class(agent_cls: Type['Orchestrator']) -> Type['Orchestrator']:
     agent_type = _normalize_agent_type(getattr(agent_cls, 'agent_type', None))
     assert agent_type not in (None, ''), f"Agent class {agent_cls.__name__} must define `agent_type`"
     if agent_type in AGENT_REGISTRY and AGENT_REGISTRY[agent_type] is not agent_cls:
@@ -36,22 +36,17 @@ def register_agent_class(agent_cls: Type['AgentBase']) -> Type['AgentBase']:
     AGENT_REGISTRY[agent_type] = agent_cls
     return agent_cls
 
-def get_agent_class(agent_type: str) -> Type['AgentBase']:
+def get_agent_class(agent_type: str) -> Type['Orchestrator']:
     if agent_type not in AGENT_REGISTRY:
         raise KeyError(f"Agent type '{agent_type}' not found. Registered: {list(AGENT_REGISTRY.keys())}")
     return AGENT_REGISTRY[agent_type]
 
-def build_agent(config: Dict[str, Any], ckpt_dir: str, stream, agent_type: str = None, **kwargs) -> 'AgentBase':
+def build_agent(config: Dict[str, Any], ckpt_dir: str, stream, agent_type: str = None, **kwargs) -> 'Orchestrator':
     if agent_type is None:
         agent_type = config.get('agent_type')
     agent_type = _normalize_agent_type(agent_type)
     agent_cls = get_agent_class(agent_type)
     return agent_cls(config, ckpt_dir, stream, **kwargs)
-
-class ClassificationError(Exception):
-    def __init__(self, message: str, top_probs: Dict[str, float]):
-        self.message = message
-        self.top_probs = top_probs
 
 @dataclass
 class Agent:
@@ -235,60 +230,15 @@ class Agent:
                 return response, dialog, interrupts
         raise ValueError('Failed to call the agent')
 
-    # a special agent call for classification
-    def _classify(self, dialog: Dialog, classes: List[str], classifier_args: Dict[str, Any]):
-        _, dialog, _ = self.call(dialog, args=classifier_args)
-        response = dialog.tail.raw_response
-        choice = response.choices[0]
-        logprobs = choice.logprobs.content
-        if not len(logprobs) == 1:
-            raise ClassificationError(f'Failed to classify the proposition, not only one token ({len(logprobs)})', {})
-        chosen_token_data = choice.logprobs.content[0]
-        top_probs = {}
-        for top_logprob_entry in chosen_token_data.top_logprobs:
-            token = top_logprob_entry.token
-            prob = np.exp(top_logprob_entry.logprob)
-            top_probs[token] = prob
-        U.cprint(top_probs, 'y')
-        errors = []
-        for token in classes:
-            if token not in top_probs:
-                errors.append(f"Token {token} not found in the top logprobs")
-        if errors != []:
-            raise ClassificationError(f'Failed to classify the proposition:\n{"\n".join(errors)}', {})
-        return top_probs, dialog
 
-    def classify(self, dialog: Dialog, classes: List[str], classifier_prompt: str = None, strength: int = 10):
-        # binary classification by default
-        _classifier_args = self.model_card.make_classifier(classes, strength)
-        if classifier_prompt is None:
-            _classes = ' or '.join([f'"{t}"' for t in classes])
-            classifier_prompt = f"Please respond with one and only one word from {_classes}."
-        dialog.send_message(classifier_prompt)
-        _dialog = dialog.fork()
-        llm_recall = self.max_llm_recall 
-        exception_retry = self.max_exception_retry 
-        while True:
-            try:
-                top_probs, _dialog = self._classify(_dialog, classes, _classifier_args)
-                dialog.append(_dialog.tail) # truncate the error handlings
-                return top_probs, dialog
-            except ClassificationError as e:
-                if exception_retry > 0:
-                    _dialog.send_message(f'Please respond with one and only one word from {classes}')
-                    exception_retry -= 1
-                    print(f'{e}\nRetrying... times: {self.max_exception_retry-exception_retry}/{self.max_exception_retry}')
-                else:
-                    raise e
-            except Exception as e:
-                if llm_recall > 0:
-                    llm_recall -= 1
-                    time.sleep(1)
-                    continue
-                else:
-                    raise e
 
-class AgentBase:
+
+class Orchestrator:
+    """
+    Orchestrator is the **Core** base class for LLLM.
+    It is used to create custom agents. It is responsible for:
+    - Initializing the agents by reading the agent configs, you should designate which configs to read by setting the `agent_group` attribute.
+    """
     agent_type: str | Enum = None
     agent_group: List[str] = None
     is_async: bool = False

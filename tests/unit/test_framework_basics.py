@@ -5,7 +5,7 @@ import pytest
 
 from lllm.core.models import PROMPT_REGISTRY, Prompt, Message, FunctionCall, MCP
 from lllm.core.const import APITypes, Roles, find_model_card, Providers
-from lllm.llm import Prompts, register_prompt, AgentBase
+from lllm.llm import Prompts, register_prompt, Orchestrator
 from lllm.proxies import (
     BaseProxy,
     Proxy,
@@ -58,13 +58,6 @@ def test_message_cost_uses_model_card():
         api_type=APITypes.COMPLETION,
     )
     assert msg.cost.cost > 0
-
-
-def test_model_card_classifier_bias():
-    card = find_model_card("gpt-4o-mini")
-    args = card.make_classifier(["YES", "NO"], strength=15)
-    assert args["max_tokens"] == 1
-    assert len(args["logit_bias"]) == 2
 
 
 def test_proxy_registration_and_dispatch(proxy_registry_cleanup):
@@ -176,7 +169,7 @@ def test_agent_base_triggers_auto_discover(monkeypatch, tmp_path, prompt_registr
     prompt = Prompt(path="mini/system", prompt="System prompt")
     register_prompt(prompt)
 
-    class MiniAgent(AgentBase, register=False):
+    class MiniAgent(Orchestrator, register=False):
         agent_type = "mini-agent"
         agent_group = ["mini"]
 
@@ -213,7 +206,7 @@ def test_agent_base_respects_auto_discover_flag(monkeypatch, tmp_path, prompt_re
     prompt = Prompt(path="mini/system", prompt="System prompt")
     register_prompt(prompt)
 
-    class MiniAgent(AgentBase, register=False):
+    class MiniAgent(Orchestrator, register=False):
         agent_type = "mini-agent"
         agent_group = ["mini"]
 

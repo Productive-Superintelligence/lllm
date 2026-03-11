@@ -1,6 +1,6 @@
 from lllm.llm import (
     Agent,
-    AgentBase,
+    Orchestrator,
     Prompts,
     Prompt,
     build_agent,

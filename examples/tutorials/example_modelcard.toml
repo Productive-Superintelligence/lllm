@@ -1,0 +1,14 @@
+[[models]]
+name = "claude-sonnet-4-6"
+provider = "anthropic"
+max_tokens = 200000
+max_output_tokens = 64000
+input_price = 3.0
+cached_input_price = 0.3
+output_price = 15.0
+knowledge_cutoff = "2025-09-01"
+features = ["function_call", "structured_output", "streaming", "finetuning", "distillation", "predicted_output"]
+input_modalities = ["text", "image"]
+[[models.snapshots]]
+name = "claude-sonnet-4-6"
+date = "2026-03-01"
