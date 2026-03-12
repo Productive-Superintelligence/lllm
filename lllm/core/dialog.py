@@ -10,6 +10,9 @@ from lllm.core.context import Context, get_default_context
 import logging
 logger = logging.getLogger(__name__)
 
+
+
+
 @dataclass
 class Dialog:
     """
@@ -31,7 +34,7 @@ class Dialog:
             self.sess = None
 
     def append(self, message: Message): # ensure this is the only way to write the messages to make sure the trackability
-        message.extra['dialog_id'] = self.dialog_id
+        message.metadata['dialog_id'] = self.dialog_id
         self._messages.append(message)
         if self.sess is not None:
             try:
@@ -78,10 +81,10 @@ class Dialog:
         image_base64: str,
         caption: str = None,
         name: str = 'user',
-        extra: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
-        payload = dict(extra) if extra else {}
+        payload = dict(metadata) if metadata else {}
         if caption is not None:
             payload['caption'] = caption
         message = Message(
@@ -89,7 +92,7 @@ class Dialog:
             content=image_base64,
             name=name,
             modality=Modalities.IMAGE,
-            extra=payload,
+            metadata=payload,
         )
         self.append(message)
         return message
@@ -99,11 +102,11 @@ class Dialog:
         prompt: Prompt | str,
         prompt_args: Optional[Dict[str, Any]] = None,
         name: str = 'user',  # or 'user', etc.
-        extra: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
         prompt_args = dict(prompt_args) if prompt_args else {}
-        metadata = dict(extra) if extra else {}
+        metadata = dict(metadata) if metadata else {}
         if isinstance(prompt, str):
             assert not prompt_args, "Prompt args are not allowed for string prompt"
             # Create a temporary prompt object
@@ -118,7 +121,7 @@ class Dialog:
             content=content,
             name=name,
             modality=Modalities.TEXT,
-            extra=metadata
+            metadata=metadata
         )
         self.append(message)
         self.top_prompt = prompt

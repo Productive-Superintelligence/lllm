@@ -124,7 +124,7 @@ def test_agent_surfaces_duplicate_tool_call_warning(log_config):
     task_prompt = Prompt(
         path="complex/tool/query",
         prompt="Run the echo tool for {value}.",
-        functions_list=[tool],
+        function_list=[tool],
         interrupt_prompt="Result: {call_results}",
         interrupt_final_prompt="All tools done. Summarize.",
     )
@@ -185,7 +185,7 @@ def test_response_api_tool_results_emit_user_role(log_config):
     task_prompt = Prompt(
         path="complex/response/query",
         prompt="Get info on {symbol}",
-        functions_list=[tool],
+        function_list=[tool],
         interrupt_prompt="Tool output: {call_results}",
         interrupt_final_prompt="Finish up.",
     )

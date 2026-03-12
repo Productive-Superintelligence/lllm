@@ -40,7 +40,7 @@ class ScriptedInvoker(BaseInvoker):
 
         if prompt.parser is not None and "parsed" not in script:
             try:
-                parsed = prompt.parser(content, **(parser_args or {}))
+                parsed = prompt.parse(content, **(parser_args or {}))
             except Exception as exc:
                 errors.append(exc)
                 parsed = {"raw": content}

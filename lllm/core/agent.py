@@ -9,7 +9,7 @@ from typing import List, Dict, Any, Tuple, Type, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-from lllm.core.models import Message, Prompt, FunctionCall, AgentException, Function
+from lllm.core.models import Message, Prompt, FunctionCall, AgentException, AgentCallState
 from lllm.core.const import Roles, APITypes
 from lllm.core.dialog import Dialog
 from lllm.core.log import ReplayableLogBase, build_log_base
@@ -50,6 +50,7 @@ def build_agent(config: Dict[str, Any], ckpt_dir: str, stream, agent_type: str =
     agent_cls = get_agent_class(agent_type, context)
     return agent_cls(config, ckpt_dir, stream, **kwargs)
 
+
 @dataclass
 class Agent:
     name: str # the role of the agent, or a name of the agent
@@ -61,7 +62,7 @@ class Agent:
     api_type: APITypes = APITypes.COMPLETION
     model_args: Dict[str, Any] = field(default_factory=dict) # additional args, like temperature, seed, etc.
     max_exception_retry: int = 3
-    max_interrupt_times: int = 5
+    max_interrupt_steps: int = 5
     max_llm_recall: int = 0
 
     """
@@ -75,7 +76,7 @@ class Agent:
         log_base (ReplayableLogBase): Logger for recording interactions.
         model_args (Dict[str, Any]): Additional model arguments (temp, top_p, etc.).
         max_exception_retry (int): Max retries for agent exceptions.
-        max_interrupt_times (int): Max consecutive tool call interrupts.
+        max_interrupt_steps (int): Max consecutive tool call interrupts.
         max_llm_recall (int): Max retries for LLM API errors.
     """
 
@@ -106,18 +107,18 @@ class Agent:
         prompt: Prompt,
         prompt_args: Optional[Dict[str, Any]] = None,
         sender_name: str = 'internal',
-        extra: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ):
         prompt_payload = dict(prompt_args) if prompt_args else None
-        extra_payload = dict(extra) if extra else None
-        return dialog.send_message(prompt, prompt_payload, name=sender_name, extra=extra_payload, role=role)
+        metadata_payload = dict(metadata) if metadata else None
+        return dialog.send_message(prompt, prompt_payload, name=sender_name, metadata=metadata_payload, role=role)
 
     # it performs the "Agent Call"
     def call(
         self,
         dialog: Dialog,  # it assumes the prompt is already loaded into the dialog as the top prompt by send_message
-        extra: Optional[Dict[str, Any]] = None,  # for tracking additional information, such as frontend replay info
+        metadata: Optional[Dict[str, Any]] = None,  # for tracking additional information, such as frontend replay info
         args: Optional[Dict[str, Any]] = None,  # for tracking additional information, such as frontend replay info
         parser_args: Optional[Dict[str, Any]] = None,
     ) -> Tuple[Message, Dialog, List[FunctionCall]]:
@@ -126,7 +127,7 @@ class Agent:
 
         Args:
             dialog (Dialog): The current dialog state.
-            extra (Dict[str, Any], optional): Extra metadata for the call.
+            metadata (Dict[str, Any], optional): Extra metadata for the call.
             args (Dict[str, Any], optional): Additional arguments for the prompt.
             parser_args (Dict[str, Any], optional): Arguments for the output parser.
 
@@ -136,18 +137,23 @@ class Agent:
         Raises:
             ValueError: If the agent fails to produce a valid response after retries.
         """
-        extra = dict(extra) if extra else {}
+        call_state = AgentCallState(
+            agent_name=self.name,
+            max_exception_retry=self.max_exception_retry,
+            max_interrupt_steps=self.max_interrupt_steps,
+            max_llm_recall=self.max_llm_recall,
+        )
+        metadata = dict(metadata) if metadata else {}
         args = dict(args) if args else {}
         parser_args = dict(parser_args) if parser_args else {}
         # Prompt: a function maps prompt args and dialog into the expected output 
         if dialog.top_prompt is None:
             dialog.top_prompt = self.system_prompt
         interrupts = []
-        for i in range(10000 if self.max_interrupt_times == 0 else self.max_interrupt_times+1): # +1 for the final response
-            llm_recall = self.max_llm_recall 
-            exception_retry = self.max_exception_retry 
+        for i in range(10000 if self.max_interrupt_steps == 0 else self.max_interrupt_steps+1): # +1 for the final response
             working_dialog = dialog.fork() # make a copy of the dialog, truncate all excception handling dialogs
             while True: # ensure the response is no exception
+                call_state.state = "initial"
                 execution_attempts = []
                 try:
                     _model_args = self.model_args.copy()
@@ -159,7 +165,7 @@ class Agent:
                         _model_args,
                         parser_args=parser_args,
                         responder=self.name,
-                        extra=extra,
+                        metadata=metadata,
                         api_type=self.api_type,
                         stream_handler=self.stream_handler,
                     )
@@ -170,10 +176,9 @@ class Agent:
                     else: 
                         break
                 except AgentException as e: # handle the exception from the agent
-                    if exception_retry > 0:
-                        exception_retry -= 1
-                        U.cprint(f'{self.name} is handling an exception {e}, retry times: {self.max_exception_retry-exception_retry}/{self.max_exception_retry}','r')
-                        working_dialog.send_message(dialog.top_prompt.exception_handler, {'error_message': str(e)}, name='exception')
+                    if not call_state.reach_max_exception_retry:
+                        call_state.exception(e, i)
+                        working_dialog.send_message(dialog.top_prompt.on_exception(call_state), {'error_message': str(e)}, name='exception')
                         continue
                     else:
                         raise e
@@ -183,8 +188,8 @@ class Agent:
                     if U.is_openai_rate_limit_error(e): # for safe
                         time.sleep(wait_time)
                     else:
-                        if llm_recall > 0:
-                            llm_recall -= 1
+                        if not call_state.reach_max_llm_recall:
+                            call_state.llm_recall(e, i)
                             time.sleep(1) # wait for a while before retrying
                             continue
                         else:
@@ -195,33 +200,34 @@ class Agent:
             # now handle the interruption
             if response.is_function_call:
                 _func_names = [func_call.name for func_call in response.function_calls]
-                U.cprint(f'{self.name} is calling function {_func_names}, interrupt times: {i+1}/{self.max_interrupt_times}','y')
                 # handle the function call
+                step_interrupts = []
                 for function_call in response.function_calls:
                     if function_call.is_repeated(interrupts):
                         result_str = f'The function {function_call.name} with identical arguments {function_call.arguments} has been called earlier, please check the previous results and do not call it again. If you do not need to call more functions, just stop calling and provide the final response.'
                     else:
-                        print(f'{self.name} is calling function {function_call.name} with arguments {function_call.arguments}')
                         if function_call.name not in dialog.top_prompt.functions:
                             raise KeyError(f"Function '{function_call.name}' not registered on prompt '{dialog.top_prompt.path}'")
                         function = dialog.top_prompt.functions[function_call.name]
                         function_call = function(function_call)
                         result_str = function_call.result_str
                         interrupts.append(function_call)
+                    step_interrupts.append(function_call)
                     dialog.send_message(
-                        dialog.top_prompt.interrupt_handler,
+                        dialog.top_prompt.on_interrupt(call_state),
                         {'call_results': result_str},
                         role=Roles.TOOL,
                         name=function_call.name,
-                        extra={'tool_call_id': function_call.id},
+                        metadata={'tool_call_id': function_call.id},
                     )
-                if i == self.max_interrupt_times-1:
-                    dialog.send_message(dialog.top_prompt.interrupt_handler_final, role=Roles.USER, name=function_call.name)
+                call_state.interrupt(step_interrupts, i)
+                if call_state.reach_max_interrupt:
+                    dialog.send_message(dialog.top_prompt.on_interrupt_final(call_state), role=Roles.USER, name=function_call.name)
             else: # the response is not a function call, it is the final response
-                if i > 0:   
-                    U.cprint(f'{self.name} stopped calling functions, total interrupt times: {i}/{self.max_interrupt_times}','y')
-                return response, dialog, interrupts
-        raise ValueError('Failed to call the agent')
+                call_state.state = "success"
+                return response, dialog, call_state
+        call_state.failure(self.log_base)
+        raise ValueError(f'Failed to call the agent: {call_state}')
 
 
 
@@ -283,7 +289,7 @@ class Orchestrator:
                 model_args=model_config,
                 log_base=self._log_base,
                 max_exception_retry=self.config.get('max_exception_retry', 3),
-                max_interrupt_times=self.config.get('max_interrupt_times', 5),
+                max_interrupt_steps=self.config.get('max_interrupt_steps', 5),
                 max_llm_recall=self.config.get('max_llm_recall', 0),
             )
 

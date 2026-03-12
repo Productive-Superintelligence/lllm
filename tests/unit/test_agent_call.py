@@ -75,7 +75,7 @@ def test_agent_call_executes_registered_function(log_config):
     tool.link_function(_echo)
 
     system_prompt = Prompt(path="tests/tool/system", prompt="Use tools when needed.")
-    task_prompt = Prompt(path="tests/tool/query", prompt="Task: {task}", functions_list=[tool])
+    task_prompt = Prompt(path="tests/tool/query", prompt="Task: {task}", function_list=[tool])
 
     tool_call_message = Message(
         role=Roles.TOOL_CALL,
@@ -123,7 +123,7 @@ def test_agent_call_uses_tool_role_for_response_api(log_config):
     task_prompt = Prompt(
         path="tests/response/query",
         prompt="Task: {task}",
-        functions_list=[tool],
+        function_list=[tool],
     )
 
     tool_call_message = Message(

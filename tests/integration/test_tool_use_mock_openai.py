@@ -30,7 +30,7 @@ def test_tool_use_flow_with_mock_litellm(monkeypatch, log_config):
     task_prompt = Prompt(
         path="mock/task",
         prompt="Please check the weather in {city}.",
-        functions_list=[tool],
+        function_list=[tool],
     )
 
     # Script OpenAI responses: first trigger tool call, then final response

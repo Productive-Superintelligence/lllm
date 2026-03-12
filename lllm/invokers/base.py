@@ -14,7 +14,7 @@ class BaseInvoker(ABC):
         model_args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
         responder: str = 'assistant',
-        extra: Optional[Dict[str, Any]] = None, # only for tracking additional information, such as frontend replay info
+        metadata: Optional[Dict[str, Any]] = None, # only for tracking additional information, such as frontend replay info
         api_type: APITypes = APITypes.COMPLETION,
         stream_handler: BaseStreamHandler = None,
     ) -> Union[Message, Generator[Any, None, Message]]:

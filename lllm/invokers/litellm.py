@@ -98,10 +98,10 @@ class LiteLLMInvoker(BaseInvoker):
                 continue
 
             if message.role == Roles.TOOL:
-                tool_call_id = message.extra.get("tool_call_id")
+                tool_call_id = message.metadata.get("tool_call_id")
                 if not tool_call_id:
                     raise ValueError(
-                        "Tool call id is not found in the message extra for tool message: "
+                        "Tool call id is not found in the message metadata for tool message: "
                         f"{message}"
                     )
                 tool_entry = {
@@ -116,8 +116,8 @@ class LiteLLMInvoker(BaseInvoker):
 
             if message.modality == Modalities.IMAGE:
                 content_parts = []
-                if "caption" in message.extra:
-                    content_parts.append({"type": "text", "text": message.extra["caption"]})
+                if "caption" in message.metadata:
+                    content_parts.append({"type": "text", "text": message.metadata["caption"]})
                 content_parts.append(
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{message.content}"}}
                 )
@@ -186,7 +186,7 @@ class LiteLLMInvoker(BaseInvoker):
         payload_args: Dict[str, Any],
         parser_args: Dict[str, Any],
         responder: str,
-        extra: Dict[str, Any],
+        metadata: Dict[str, Any],
         stream_handler: BaseStreamHandler = None, 
     ) -> Message:
         prompt = dialog.top_prompt
@@ -220,10 +220,10 @@ class LiteLLMInvoker(BaseInvoker):
                     if hasattr(delta, 'content') and delta.content:
                         stream_handler.handle_chunk(delta.content, chunk)
             completion = stream_chunk_builder(chunks, messages=self._convert_dialog(dialog))
-        return self._parse_chat_response(completion, prompt, model, call_args, parser_args, responder, extra)
+        return self._parse_chat_response(completion, prompt, model, call_args, parser_args, responder, metadata)
 
     def _parse_chat_response(
-        self, completion, prompt, model, call_args, parser_args, responder, extra
+        self, completion, prompt, model, call_args, parser_args, responder, metadata
     ) -> Message:
 
         choice = completion.choices[0]
@@ -268,7 +268,7 @@ class LiteLLMInvoker(BaseInvoker):
                 else:
                     logprobs = None
                 try:
-                    parsed = prompt.parser(content, **parser_args) if prompt.parser is not None else None
+                    parsed = prompt.parse(content, **parser_args) if prompt.parser is not None else None
                 except Exception as exc:
                     errors.append(exc)
                     parsed = {'raw': content}
@@ -294,7 +294,7 @@ class LiteLLMInvoker(BaseInvoker):
             model_args=call_args,
             usage=usage,
             parsed=parsed or {},
-            extra=extra,
+            metadata=metadata,
             execution_errors=errors,
             api_type=APITypes.COMPLETION,
         )
@@ -306,7 +306,7 @@ class LiteLLMInvoker(BaseInvoker):
         payload_args: Dict[str, Any],
         parser_args: Dict[str, Any],
         responder: str,
-        extra: Dict[str, Any],
+        metadata: Dict[str, Any],
         stream_handler: BaseStreamHandler = None,
     ) -> Message:
         prompt = dialog.top_prompt
@@ -358,10 +358,10 @@ class LiteLLMInvoker(BaseInvoker):
                  raise ValueError("Streaming finished but no 'response.completed' payload was captured.")
             response = full_response
 
-        return self._parse_responses_api_response(response, prompt, model, call_args, parser_args, responder, extra)
+        return self._parse_responses_api_response(response, prompt, model, call_args, parser_args, responder, metadata)
 
     def _parse_responses_api_response(
-        self, response, prompt, model, call_args, parser_args, responder, extra
+        self, response, prompt, model, call_args, parser_args, responder, metadata
     ) -> Message:
 
         usage = {}
@@ -406,19 +406,19 @@ class LiteLLMInvoker(BaseInvoker):
                             text_chunks.append(chunk)
                 content = '\n'.join(text_chunks).strip()
             try:
-                parsed = prompt.parser(content, **parser_args) if prompt.parser is not None else None
+                parsed = prompt.parse(content, **parser_args) if prompt.parser is not None else None
             except Exception as exc:
                 errors.append(exc)
                 parsed = {'raw': content}
 
-        extra_payload = dict(extra)
+        metadata_payload = dict(metadata)
         reasoning = getattr(response, "reasoning", None)
         if reasoning is not None:
             try:
-                extra_payload['reasoning'] = reasoning.model_dump_json()
+                metadata_payload['reasoning'] = reasoning.model_dump_json()
             except Exception:
-                extra_payload['reasoning'] = str(reasoning)
-        extra_payload.setdefault('api_type', APITypes.RESPONSE.value)
+                metadata_payload['reasoning'] = str(reasoning)
+        metadata_payload.setdefault('api_type', APITypes.RESPONSE.value)
 
         message = Message(
             role=role,
@@ -431,7 +431,7 @@ class LiteLLMInvoker(BaseInvoker):
             model_args=call_args,
             usage=usage,
             parsed=parsed or {},
-            extra=extra_payload,
+            metadata=metadata_payload,
             execution_errors=errors,
             api_type=APITypes.RESPONSE,
         )
@@ -444,7 +444,7 @@ class LiteLLMInvoker(BaseInvoker):
         model_args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
         responder: str = 'assistant',
-        extra: Optional[Dict[str, Any]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
         api_type: APITypes = APITypes.COMPLETION,
         stream_handler: BaseStreamHandler = None,
     ) -> Message:
@@ -468,7 +468,7 @@ class LiteLLMInvoker(BaseInvoker):
         """
         payload_args = dict(model_args) if model_args else {}
         parser_args = dict(parser_args) if parser_args else {}
-        extra_payload = dict(extra) if extra else {}
+        metadata_payload = dict(metadata) if metadata else {}
 
         payload_args["drop_params"] = True
         payload_args["stream"] = stream_handler is not None
@@ -485,6 +485,6 @@ class LiteLLMInvoker(BaseInvoker):
             payload_args=payload_args,
             parser_args=parser_args,
             responder=responder,
-            extra=extra_payload,
+            metadata=metadata_payload,
             stream_handler=stream_handler,
         )

@@ -57,9 +57,15 @@ class LogBase:
 
     def del_session(self, collection: str, session_name: str):
         raise NotImplementedError("del_session not implemented")
+        
+    def log_error(self, error: str):
+        raise NotImplementedError("log_error not implemented")
 
 
 class ReplayableLogBase(LogBase):
+
+    def log_error(self, error: str):
+        self.write(RCollections.ERRORS, error, {}, RCollections.ERRORS.value, self.session_name)
 
     def get_collection(self, collection: RCollections):
         assert collection in RCollections, f"collection must be one of RCollections: {RCollections}"

@@ -33,7 +33,7 @@ def test_tool_use_with_recorded_payload_with_litellm(monkeypatch, log_config):
     task_prompt = Prompt(
         path="recorded/task",
         prompt="Check weather in {city}.",
-        functions_list=[tool],
+        function_list=[tool],
     )
 
     scripts = load_recorded_completions(RECORDING_PATH)

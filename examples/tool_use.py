@@ -22,7 +22,7 @@ weather_tool.link_function(get_weather)
 tool_prompt = Prompt(
     path="tool_chat",
     prompt="You are a helpful assistant. User says: {user_input}",
-    functions_list=[weather_tool]
+    function_list=[weather_tool]
 )
 
 def main():

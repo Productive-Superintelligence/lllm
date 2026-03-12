@@ -7,6 +7,6 @@ def test_prompt_initialization():
 
 def test_prompt_with_functions():
     f = Function(name="test_func", description="desc", properties={})
-    p = Prompt(path="test_func", prompt="Hi", functions_list=[f])
+    p = Prompt(path="test_func", prompt="Hi", function_list=[f])
     assert "test_func" in p.functions
     assert p.functions["test_func"] == f

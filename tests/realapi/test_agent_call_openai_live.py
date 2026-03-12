@@ -77,7 +77,7 @@ def test_agent_call_openai_tool_flow_live(log_config):
     task_prompt = Prompt(
         path="live/tool/query",
         prompt="City to inspect: {city}",
-        functions_list=[tool],
+        function_list=[tool],
         interrupt_prompt="Tool output: {call_results}. Provide the final answer immediately.",
         interrupt_final_prompt="All tool calls handled. Respond now.",
     )
@@ -142,12 +142,12 @@ def test_agent_call_openai_response_tool_flow_live(log_config):
     system_prompt = Prompt(
         path="live/response/tool/system",
         prompt="Always invoke the tool before final reply, requesting data in fahrenheit, and then echo the tool output afterwards.",
-        functions_list=[tool],
+        function_list=[tool],
     )
     task_prompt = Prompt(
         path="live/response/tool/query",
         prompt="Fetch data for {city}",
-        functions_list=[tool],
+        function_list=[tool],
         interrupt_prompt="Tool output: {call_results}. Provide the final response immediately.",
         interrupt_final_prompt="All tool calls complete. Reply now.",
     )
