@@ -91,17 +91,17 @@ class AgentCallState(BaseModel):
         return self.llm_recalls_count >= self.max_llm_recall
 
     @property
-    def reach_max_interrupt(self) -> bool:
+    def reach_max_interrupt_steps(self) -> bool:
         return len(self.interrupts) >= self.max_interrupt_steps
 
-    def exception(self, exception: Exception, interrupt_step: str) -> None:
+    def exception(self, exception: Exception, interrupt_step: int) -> None:
         U.cprint(f'{self.agent_name} is handling an exception {exception}, retry times: {self.exception_retries_count}/{self.max_exception_retry}','r')
         if interrupt_step not in self.exception_retries:
             self.exception_retries[interrupt_step] = []
         self.exception_retries[interrupt_step].append(exception)
         self.state = "exception"
     
-    def interrupt(self, function_calls: List[FunctionCall], interrupt_step: str) -> None:
+    def interrupt(self, function_calls: List[FunctionCall], interrupt_step: int) -> None:
         fc_names = [fc.name for fc in function_calls]
         U.cprint(f'{self.agent_name} is calling functions {fc_names}, interrupt times: {interrupt_step+1}/{self.max_interrupt_steps}','y')
         for fc in function_calls:
@@ -112,7 +112,7 @@ class AgentCallState(BaseModel):
         self.interrupts[interrupt_step].append(function_calls)
         self.state = "interrupt"
     
-    def llm_recall(self, exception: Exception, interrupt_step: str) -> None:
+    def llm_recall(self, exception: Exception, interrupt_step: int) -> None:
         if interrupt_step not in self.llm_recalls:
             self.llm_recalls[interrupt_step] = []
         self.llm_recalls[interrupt_step].append(exception)
@@ -645,19 +645,35 @@ class BaseHandler(ABC):
     def on_exception(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
         pass
 
+    @abstractmethod
     def on_interrupt(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
         pass
 
+    @abstractmethod
     def on_interrupt_final(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
         pass
 
 
-class DefaultHandler(BaseHandler):
+
+_DEFAULT_EXCEPTION_MSG = "Error: {error_message}. Please fix."
+_DEFAULT_INTERRUPT_MSG = "{call_results}"
+_DEFAULT_INTERRUPT_FINAL_MSG = "You are reaching the limit of tool calls. Provide the final response."
+
+class DefaultSimpleHandler(BaseHandler, BaseModel):
+    """
+    A simple handler for the prompt.
+
+    User may override the exception message, interrupt message, and interrupt final message to build a more complex handler.
+    """
+    exception_msg: str = _DEFAULT_EXCEPTION_MSG
+    interrupt_msg: str = _DEFAULT_INTERRUPT_MSG
+    interrupt_final_msg: str = _DEFAULT_INTERRUPT_FINAL_MSG
+
     
     def on_exception(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
         return self._resolve_handler(
             prompt, 
-            "Error: {error_message}. Please fix.",
+            self.exception_msg,
             suffix="exception",
             inherit_tools=True,
         )
@@ -665,7 +681,7 @@ class DefaultHandler(BaseHandler):
     def on_interrupt(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
         return self._resolve_handler(
             prompt, 
-            "{call_results}",
+            self.interrupt_msg,
             suffix="interrupt",
             inherit_tools=True,
         )
@@ -673,7 +689,7 @@ class DefaultHandler(BaseHandler):
     def on_interrupt_final(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
         return self._resolve_handler(
             prompt, 
-            "You are reaching the limit of tool calls. Provide the final response.",
+            self.interrupt_final_msg,
             suffix="interrupt_final",
             inherit_tools=False,
         )
@@ -737,10 +753,10 @@ class Prompt(BaseModel):
     addon_args: Dict[str, Any] = Field(default_factory=dict)
 
     # -- Handlers ---------------------------------------------------------
-    handler: BaseHandler = DefaultHandler()
+    handler: BaseHandler = Field(default_factory=DefaultSimpleHandler)
 
     # -- Rendering --------------------------------------------------------
-    renderer: BaseRenderer = StringFormatterRenderer()
+    renderer: BaseRenderer = Field(default_factory=StringFormatterRenderer)
 
     # -- Internal (populated in model_post_init) --------------------------
     _functions: Dict[str, Function] = Field(default_factory=dict, init=False)

@@ -201,7 +201,7 @@ class Agent:
             if response.is_function_call:
                 _func_names = [func_call.name for func_call in response.function_calls]
                 # handle the function call
-                step_interrupts = []
+                call_state.interrupt(response.function_calls, i)
                 for function_call in response.function_calls:
                     if function_call.is_repeated(interrupts):
                         result_str = f'The function {function_call.name} with identical arguments {function_call.arguments} has been called earlier, please check the previous results and do not call it again. If you do not need to call more functions, just stop calling and provide the final response.'
@@ -212,7 +212,6 @@ class Agent:
                         function_call = function(function_call)
                         result_str = function_call.result_str
                         interrupts.append(function_call)
-                    step_interrupts.append(function_call)
                     dialog.send_message(
                         dialog.top_prompt.on_interrupt(call_state),
                         {'call_results': result_str},
@@ -220,8 +219,8 @@ class Agent:
                         name=function_call.name,
                         metadata={'tool_call_id': function_call.id},
                     )
-                call_state.interrupt(step_interrupts, i)
-                if call_state.reach_max_interrupt:
+                
+                if call_state.reach_max_interrupt_steps:
                     dialog.send_message(dialog.top_prompt.on_interrupt_final(call_state), role=Roles.USER, name=function_call.name)
             else: # the response is not a function call, it is the final response
                 call_state.state = "success"

@@ -165,7 +165,7 @@ pytest tests/
   - [x] More graceful tool, i.e., now it relies on `link_function`, which separates declaration and definition of a tool, if it is good?
   - [x] Clearing up ad-hoc designs, like now cua args, etc. are nakedly attatched as properties, whenever there is a new feature, it is added as a property, which is not good.
   - [x] Better parsing system, more intuitive and better argument passing, now its through a dict, which is primitive and not type safe.
-  - [ ] Better handling system for error, exception, interrupt, etc. (need to be co-designed with the agent parts)
+  - [x] Better handling system for error, exception, interrupt, etc. (need to be co-designed with the agent parts)
   --- 
   - [-] Provide a version control solution, either allow using git or something else, to assist tuning, A/B testing, prompt optimization, etc.
     - [-] Assisting tracking system to help experiment (may also need to be co-designed with the agentic system parts)
