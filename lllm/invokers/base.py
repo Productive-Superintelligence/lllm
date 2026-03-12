@@ -2,8 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Generator, Optional, Union
 
 from lllm.core.const import APITypes
-from lllm.core.models import Message
-from lllm.core.dialog import Dialog
+from lllm.core.dialog import Dialog, Message
 
 class BaseInvoker(ABC):
     @abstractmethod

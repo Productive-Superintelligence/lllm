@@ -19,7 +19,7 @@ from lllm.core.config import auto_discovery_disabled, load_config
 from lllm.core.context import Context, get_default_context
 
 if TYPE_CHECKING:
-    from lllm.core.models import Prompt
+    from lllm.core.prompt import Prompt
     from lllm.proxies.base import BaseProxy
 
 logger = logging.getLogger(__name__)
@@ -186,7 +186,7 @@ def _register_prompts_from_module(
     module: types.ModuleType, namespace: str, ctx: Context
 ) -> None:
     # Import Prompt here to avoid circular imports at module level
-    from lllm.core.models import Prompt
+    from lllm.core.prompt import Prompt
 
     for attr_name, attr in vars(module).items():
         if not isinstance(attr, Prompt):

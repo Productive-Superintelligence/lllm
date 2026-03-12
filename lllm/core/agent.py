@@ -9,9 +9,9 @@ from typing import List, Dict, Any, Tuple, Type, Optional
 from dataclasses import dataclass, field
 from enum import Enum
 
-from lllm.core.models import Message, Prompt, FunctionCall, AgentException, AgentCallState
+from lllm.core.prompt import Prompt, FunctionCall, AgentException, AgentCallState
 from lllm.core.const import Roles, APITypes
-from lllm.core.dialog import Dialog
+from lllm.core.dialog import Dialog, Message
 from lllm.core.log import ReplayableLogBase, build_log_base
 from lllm.invokers.base import BaseInvoker, BaseStreamHandler
 import lllm.utils as U

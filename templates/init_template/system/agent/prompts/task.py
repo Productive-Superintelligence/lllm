@@ -1,4 +1,4 @@
-from lllm.core.models import Prompt
+from lllm.core.prompt import Prompt
 
 """Initial prompts for the scaffolded agent."""
 

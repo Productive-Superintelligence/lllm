@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Dict, Any, Type, Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from lllm.core.models import Prompt
+    from lllm.core.prompt import Prompt
     from lllm.proxies.base import BaseProxy
 
 

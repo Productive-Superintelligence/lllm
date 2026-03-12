@@ -4,7 +4,8 @@ from lllm.core.agent import (
     build_agent,
     register_agent_class,
 )
-from lllm.core.models import Message, Function, FunctionCall, MCP, Prompt   
+from lllm.core.prompt import Function, FunctionCall, MCP, Prompt 
+from lllm.core.dialog import Message, Dialog
 from lllm.core.const import Roles, Modalities, Invokers, APITypes
 from lllm.proxies import BaseProxy, Proxy, register_proxy, ProxyRegistrator
 from lllm.sandbox.jupyter import JupyterSandbox, JupyterSession
