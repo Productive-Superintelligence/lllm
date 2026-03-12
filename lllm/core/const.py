@@ -22,7 +22,7 @@ class Roles(str, Enum):
     TOOL_CALL = 'tool_call'
 
     @property
-    def value(self):
+    def msg_value(self):
         if self == Roles.SYSTEM:
             return 'developer'
         return self.value

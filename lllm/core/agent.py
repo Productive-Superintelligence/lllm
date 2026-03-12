@@ -243,7 +243,7 @@ class Orchestrator:
 
     def __init__(self, config: Dict[str, Any], ckpt_dir: str, stream = None, context: Optional[Context] = None):
         self._context = context or get_default_context()
-        auto_discover_if_enabled(config.get("auto_discover"))
+        auto_discover_if_enabled(config.get("auto_discover"), context=self._context)
         if stream is None:
             stream = U.PrintSystem()
         self.config = config

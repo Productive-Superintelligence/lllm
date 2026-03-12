@@ -29,6 +29,12 @@ LLLM bridges this gap by offering necessary abstractions that balance high-level
 It also tries to make the code plain, compact, easy-to-understand, with less unnecessary indirection, thus easy for customization for different projects' needs, to allow researchers to focus on the core research questions. See https://lllm.one for detailed documentation.
 
 
+
+- Parsing as core, agent as a function
+- Dialog as the only state, top prompt as the parser
+- Declaration first, use a `lllm.toml` declaration to declare the organization of the system and configurations (which are reconfigurable).
+
+
 ## Installation
 
 ```bash

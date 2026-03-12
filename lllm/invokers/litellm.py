@@ -121,11 +121,11 @@ class LiteLLMInvoker(BaseInvoker):
                 content_parts.append(
                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{message.content}"}}
                 )
-                messages.append({"role": message.role.value, "content": content_parts, "name": message.sanitized_name})
+                messages.append({"role": message.role.msg_value, "content": content_parts, "name": message.sanitized_name})
                 continue
 
             if message.modality == Modalities.TEXT:
-                messages.append({"role": message.role.value, "content": message.content, "name": message.sanitized_name})
+                messages.append({"role": message.role.msg_value, "content": message.content, "name": message.sanitized_name})
                 continue
 
             raise ValueError(f"Unsupported modality: {message.modality}")

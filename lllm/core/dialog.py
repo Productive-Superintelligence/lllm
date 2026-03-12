@@ -21,19 +21,23 @@ class Dialog:
 
     def __post_init__(self):
         self.dialog_id = uuid.uuid4().hex
-        dialogs_sess = self.log_base.get_collection(RCollections.DIALOGS).create_session(self.session_name) # track the dialogs created in this session
-        dialogs_sess.log(self.dialog_id, metadata={'parent_dialog': self.parent_dialog})
-        self.sess = self.log_base.get_collection(RCollections.MESSAGES).create_session(f'{self.session_name}/{self.dialog_id}') # track the dialogs created in this session
+        if self.log_base is not None:
+            dialogs_sess = self.log_base.get_collection(RCollections.DIALOGS).create_session(self.session_name) # track the dialogs created in this session
+            dialogs_sess.log(self.dialog_id, metadata={'parent_dialog': self.parent_dialog})
+            self.sess = self.log_base.get_collection(RCollections.MESSAGES).create_session(f'{self.session_name}/{self.dialog_id}') # track the dialogs created in this session
+        else:
+            self.sess = None
 
     def append(self, message: Message): # ensure this is the only way to write the messages to make sure the trackability
         message.extra['dialog_id'] = self.dialog_id
         self._messages.append(message)
-        try:
-            self.sess.log(message.content, metadata=message.to_dict()) # Use to_dict for logging
-        except Exception as e:
-            print(f'WARNING: Failed to log message: {e}, log the message without metadata')
-            self.sess.log(message.content)
-                
+        if self.sess is not None:
+            try:
+                self.sess.log(message.content, metadata=message.to_dict()) # Use to_dict for logging
+            except Exception as e:
+                print(f'WARNING: Failed to log message: {e}, log the message without metadata')
+                self.sess.log(message.content)
+                    
 
     def to_dict(self):
         return {
@@ -139,7 +143,7 @@ class Dialog:
             # Let's assume Message has it or I implement it here.
             # Implementing here for safety if I missed it in Pydantic model.
             content_preview = str(message.content)[:max_length] + '...' if len(str(message.content)) > max_length else str(message.content)
-            _overview += f'[{idx}. {message.name} ({message.role.value})]: {content_preview}\n\n'
+            _overview += f'[{idx}. {message.name} ({message.role.msg_value})]: {content_preview}\n\n'
         
         _overview = _overview.strip()
         cost = self.tail.cost if self.messages else InvokeCost()

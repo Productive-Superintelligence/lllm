@@ -19,28 +19,11 @@ class BaseProxy:
         auto_discover: Optional[bool] = None,
         **kwargs,
     ):
-        """
-        Support both legacy signatures (cutoff_date, use_cache) and the newer keyword-driven one.
-        """
         self.activate_proxies = activate_proxies[:] if activate_proxies else []
         self.cutoff_date = cutoff_date
         self.deploy_mode = deploy_mode
         self.use_cache = use_cache
         self.auto_discover = auto_discover
-
-        legacy_args = list(args)
-        if legacy_args:
-            first = legacy_args.pop(0)
-            if isinstance(first, list):  # legacy Proxy runtime order
-                self.activate_proxies = first
-                if legacy_args:
-                    self.cutoff_date = legacy_args.pop(0)
-                if legacy_args:
-                    self.deploy_mode = legacy_args.pop(0)
-            else:
-                self.cutoff_date = first
-                if legacy_args:
-                    self.use_cache = legacy_args.pop(0)
 
         if isinstance(self.cutoff_date, str):
             try:
@@ -144,6 +127,7 @@ class Proxy:
         activate_proxies: Optional[List[str]] = None,
         cutoff_date: dt.datetime = None,
         deploy_mode: bool = False,
+        context: Context = None,
         *,
         auto_discover: Optional[bool] = None,
     ):
@@ -152,7 +136,7 @@ class Proxy:
         self.activate_proxies = activate_proxies or []
         self.cutoff_date = cutoff_date
         self.deploy_mode = deploy_mode
-        self.proxies: Dict[str, BaseProxy] = {}
+        self._context = context or get_default_context()
         self._auto_discover_flag = auto_discover
         self._load_registered_proxies()
 
@@ -160,16 +144,12 @@ class Proxy:
         for name, proxy_cls in self._context.proxies.items():
             if self.activate_proxies and name not in self.activate_proxies:
                 continue
-            try:
-                instance = proxy_cls(
-                    cutoff_date=self.cutoff_date,
-                    activate_proxies=self.activate_proxies,
-                    deploy_mode=self.deploy_mode,
-                    auto_discover=self._auto_discover_flag,
-                )
-            except TypeError:
-                # Fallback to legacy positional order if subclass has not been updated yet
-                instance = proxy_cls(self.activate_proxies, self.cutoff_date, self.deploy_mode)
+            instance = proxy_cls(
+                cutoff_date=self.cutoff_date,
+                activate_proxies=self.activate_proxies,
+                deploy_mode=self.deploy_mode,
+                auto_discover=self._auto_discover_flag,
+            )
             self.proxies[name] = instance
 
     def register(self, name: str, proxy_cls: Any):
@@ -275,3 +255,6 @@ def ProxyRegistrator(path: str, name: str, description: str, context: Context = 
         ctx.register_proxy(path, cls, overwrite=True)
         return cls
     return decorator
+
+def register_proxy(name: str, proxy_cls, overwrite: bool = False):
+    get_default_context().register_proxy(name, proxy_cls, overwrite)
