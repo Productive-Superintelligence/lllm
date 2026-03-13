@@ -1,4 +1,4 @@
-# Context & Registries
+# Runtime Context & Registries
 
 Every LLLM runtime needs a place to look up prompts, proxies, and agent types by name. `Context` is that place — a lightweight container that holds the three registries and the discovery flag. It replaces the scattered module-level dicts that previously served this role.
 

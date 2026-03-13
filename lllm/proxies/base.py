@@ -3,7 +3,7 @@ import functools as ft
 import datetime as dt
 from typing import Dict, Any, List, Optional, Callable
 import lllm.utils as U
-from lllm.core.context import Context, get_default_context
+from lllm.core.runtime import Context, get_default_context
 from lllm.core.discovery import auto_discover_if_enabled
 
 

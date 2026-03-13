@@ -171,8 +171,9 @@ pytest tests/
     - [-] Assisting tracking system to help experiment (may also need to be co-designed with the agentic system parts)
     - [-] we do not need to build those wheels in lllm, but should be friendly to integrate with other version control or management systems. May need to refer to these solutions, so knowing how to be friendly to them. Or directly provide an interface to a popular solution (which one is the most popular?). Like having an abstract base class for all such version control, management, analysis, etc.
     - Just do not do it, any design now will be an overly pre design
-- [ ] -> Refactor message and dialog model/state management, better arg passing (dialog.py)
-- [ ] Refactor agent model, orchestrator, agent call (agent.py)
+- [x] Refactor message and dialog model/state management, better arg passing (dialog.py)
+  - Dialog provides low-level operations, and advanced arg passings are provided by Agent etc. below
+- [ ] -> Refactor agent model, orchestrator, agent call (agent.py)
 - [ ] Refactor config system (config.py, lllm.toml)
 - [ ] Proxy-based tool-calling, mini in-dialog interpreter (proxies/, sandbox/)
 - [ ] Logger (cli logging), replayable logging system (log.py)

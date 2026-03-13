@@ -1,7 +1,10 @@
 import uuid
+import base64
+from PIL import Image
+from pathlib import Path
 import copy
 import re
-
+from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Union
 from dataclasses import dataclass
 from pydantic import BaseModel, Field, ConfigDict, field_validator
@@ -10,7 +13,7 @@ from lllm.core.prompt import Prompt, InvokeCost, FunctionCall
 from lllm.core.const import Roles, Modalities, RCollections, APITypes
 from lllm.core.log import ReplayableLogBase
 import lllm.utils as U
-from lllm.core.context import Context, get_default_context
+from lllm.core.runtime import Context, get_default_context
 import logging
 logger = logging.getLogger(__name__)
 
@@ -51,6 +54,7 @@ class Message(BaseModel):
     execution_attempts: List['Message'] = Field(default_factory=list)
     api_type: APITypes = APITypes.COMPLETION
 
+    vector: List[float] = Field(default_factory=list)
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
@@ -124,19 +128,25 @@ class Message(BaseModel):
 Message.model_rebuild()
 
 
+
+
 @dataclass
 class Dialog:
     """
-    Whenever a dialog is created/forked, it should be associated with a session name
+    Whenever a dialog is created/forked, it should be associated with a session name.
+
+    It should be a shared state object that gets updated by any participants.
     """
-    _messages: List[Message]
     session_name: str
+    _messages: List[Message] = Field(default_factory=list)
     log_base: Optional[ReplayableLogBase] = None
     parent_dialog: Optional[str] = None
     top_prompt: Optional[Prompt] = None
+    context: Optional[Context] = None
 
     def __post_init__(self):
         self.dialog_id = uuid.uuid4().hex
+        self.context = self.context or get_default_context()
         if self.log_base is not None:
             dialogs_sess = self.log_base.get_collection(RCollections.DIALOGS).create_session(self.session_name) # track the dialogs created in this session
             dialogs_sess.log(self.dialog_id, metadata={'parent_dialog': self.parent_dialog})
@@ -153,7 +163,6 @@ class Dialog:
             except Exception as e:
                 print(f'WARNING: Failed to log message: {e}, log the message without metadata')
                 self.sess.log(message.content)
-                    
 
     def to_dict(self):
         return {
@@ -181,20 +190,47 @@ class Dialog:
             session_name=d['session_name'],
             parent_dialog=d['parent_dialog'],
             top_prompt=top_prompt,
+            context=context,
         )
     
     @property
     def messages(self):
         return self._messages
     
-    def send_base64_image(
+    # -----------------------------------------------------------------------
+    # Message Operations, you can only put or fork, dialog is immutable and monotonic.
+    # If you want to modify the dialog, you can use ContextManager to dynamically edit it on the fly.
+    # -----------------------------------------------------------------------
+
+    # Static/stateless puts
+
+    def put_image(
         self,
-        image_base64: str,
+        image: Union[str, Path, Image.Image],
         caption: str = None,
         name: str = 'user',
         metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
+        """
+        Expects:
+        - image: a base64 encoded string, a Path object or string path, or a PIL Image object
+        """
+        if Path(image).exists():
+            # interpret the string as a file path
+            image = Path(image)
+        if isinstance(image, Path):
+            with image.open('rb') as f:
+                image_base64 = base64.b64encode(f.read()).decode('utf-8')
+        elif isinstance(image, Image.Image):
+            image_base64 = base64.b64encode(image.tobytes()).decode('utf-8')
+        elif isinstance(image, str):
+            # check if the string is a valid base64 encoded string
+            if not base64.b64decode(image).startswith(b'\x89PNG'):
+                raise ValueError(f'Invalid base64 encoded string: {image}')
+            image_base64 = image
+        else:
+            raise ValueError(f'Invalid image type: {type(image)}')
         payload = dict(metadata) if metadata else {}
         if caption is not None:
             payload['caption'] = caption
@@ -208,7 +244,30 @@ class Dialog:
         self.append(message)
         return message
 
-    def send_message(
+    def put_text(
+        self,
+        text: str,
+        name: str = 'user',
+        metadata: Optional[Dict[str, Any]] = None,
+        role: Roles = Roles.USER,
+    ) -> Message:
+        metadata = dict(metadata) if metadata else {}
+        # create a temporary prompt for the text to reset parsers and other state
+        prompt = Prompt(path='__temp_prompt_'+str(uuid.uuid4())[:6], prompt=text)
+        message = Message(
+            role=role,
+            content=text,
+            name=name,
+            modality=Modalities.TEXT,
+            metadata=metadata
+        )
+        self.append(message)
+        self.top_prompt = prompt
+        return message
+
+    # Stateful put, only prompt can be stateful, other messages are stateless
+
+    def put_prompt(
         self,
         prompt: Prompt | str,
         prompt_args: Optional[Dict[str, Any]] = None,
@@ -216,14 +275,11 @@ class Dialog:
         metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
+        if isinstance(prompt, str):
+            prompt = self.context.get_prompt(prompt)
         prompt_args = dict(prompt_args) if prompt_args else {}
         metadata = dict(metadata) if metadata else {}
-        if isinstance(prompt, str):
-            assert not prompt_args, "Prompt args are not allowed for string prompt"
-            # Create a temporary prompt object
-            prompt = Prompt(path='__temp_prompt_'+str(uuid.uuid4())[:6], prompt=prompt)
-            content = prompt.prompt
-        elif not prompt_args:
+        if not prompt_args:
             content = prompt.prompt
         else:
             content = prompt(**prompt_args)
@@ -238,10 +294,10 @@ class Dialog:
         self.top_prompt = prompt
         return message
     
-    def fork(self) -> 'Dialog':
-        _messages = [copy.deepcopy(message) for message in self._messages]
+    def fork(self, n_messages: int = 0) -> 'Dialog': # 0 means no truncation, otherwise truncate the last n messages
+        _messages = self._messages[:-n_messages] if n_messages > 0 else self._messages
         _dialog = Dialog(
-            _messages=_messages,
+            _messages=[copy.deepcopy(m) for m in _messages],
             session_name=self.session_name,
             log_base=self.log_base,
             parent_dialog=self.dialog_id,
@@ -255,11 +311,6 @@ class Dialog:
         for idx, message in enumerate(self.messages):
             if remove_tail and idx == len(self.messages)-1:
                 break
-            # message.overview() logic needs to be in Message class or here
-            # Message class has overview method in original code, I should add it back to Message model if I missed it
-            # I missed it in Message model. I'll implement a simple one here or add it to Message.
-            # Let's assume Message has it or I implement it here.
-            # Implementing here for safety if I missed it in Pydantic model.
             content_preview = str(message.content)[:max_length] + '...' if len(str(message.content)) > max_length else str(message.content)
             _overview += f'[{idx}. {message.name} ({message.role.msg_value})]: {content_preview}\n\n'
         
@@ -279,12 +330,6 @@ class Dialog:
     @property
     def system(self):
         return self._messages[0] if self._messages else None
-
-    def context_copy(self, n: int = 1) -> 'Dialog':
-        _dialog = self.fork()
-        if n > 0:
-            _dialog._messages = _dialog._messages[:-n]
-        return _dialog
 
     @property
     def cost(self) -> InvokeCost:
@@ -308,3 +353,44 @@ class Dialog:
             completion_cost=sum(c.completion_cost for c in costs),
             cost=sum(c.cost for c in costs)
         )
+
+
+
+# ---------------------------------------------------------------------------
+# Context Manager
+# ---------------------------------------------------------------------------
+
+
+class ContextManager(ABC):
+    """
+    Context manager for the dialog, it can be truncator, compressor, memory manager, editor, etc.
+
+    __call__:
+        Expects: a raw dialog as input
+        Returns: the new dialog that fit the agent context limit or whatever policy is desired
+    The policy should be setup by __init__ method through the user.
+
+    For example:
+    - A truncator may just need to be aware of context limit and truncate the dialog accordingly.
+    - A compressor is similar but work in a more sophisticated way that use like agentic compression techniques when hit the context limit.
+    - A memory manager may need to store the memory for each dialog in a dict then update it on the fly by detecting the changes.
+    - An editor may edit the dialog in a more sophisticated way that use like agentic editing techniques.
+    """
+    @abstractmethod
+    def __call__(self, dialog: Dialog) -> Dialog:
+        pass
+
+
+class DefaultLiteLLMTruncator(ContextManager):
+    """
+    Default context manager that truncate the dialog to the last n messages.
+
+    It assumes the LiteLLM invoker is used where we can get the context limit and the tokenizer. 
+    """
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        raise NotImplementedError("This method is not implemented yet")
+
+    def __call__(self, dialog: Dialog) -> Dialog:
+        raise NotImplementedError("This method is not implemented yet")
+

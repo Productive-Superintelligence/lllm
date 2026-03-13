@@ -26,7 +26,7 @@ from lllm.core.const import (
     ParseError,
     Roles,
 )
-from lllm.core.context import get_default_context
+from lllm.core.runtime import get_default_context
 from lllm.core.log import LogBase
 import lllm.utils as U
 

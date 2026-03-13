@@ -17,7 +17,7 @@ from lllm.invokers.base import BaseInvoker, BaseStreamHandler
 import lllm.utils as U
 from lllm.core.discovery import auto_discover_if_enabled
 from lllm.invokers import build_invoker
-from lllm.core.context import Context, get_default_context
+from lllm.core.runtime import Context, get_default_context
 
 
 def _normalize_agent_type(agent_type):
@@ -79,40 +79,15 @@ class Agent:
         max_interrupt_steps (int): Max consecutive tool call interrupts.
         max_llm_recall (int): Max retries for LLM API errors.
     """
-
-    def reload_system(self, system_prompt: Prompt):
-        self.system_prompt = system_prompt
         
-    # initialize the dialog
-    def init_dialog(self, prompt_args: Optional[Dict[str, Any]] = None, session_name: str = None) -> Dialog:
+    # initialize the dialog with a system message
+    def start_dialog(self, prompt_args: Optional[Dict[str, Any]] = None, session_name: str = None) -> Dialog:
         prompt_args = dict(prompt_args) if prompt_args else {}
         if session_name is None:
             session_name = dt.datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+str(uuid.uuid4())[:6]
-        system_message = Message(
-            role=Roles.SYSTEM,
-            content=self.system_prompt(**prompt_args),
-            name='system',
-        )
-        return Dialog(
-            _messages=[system_message],
-            session_name=session_name,
-            log_base=self.log_base,
-            top_prompt=self.system_prompt,
-        )
-
-    # send a message to the dialog manually
-    def send_message(
-        self,
-        dialog: Dialog,
-        prompt: Prompt,
-        prompt_args: Optional[Dict[str, Any]] = None,
-        sender_name: str = 'internal',
-        metadata: Optional[Dict[str, Any]] = None,
-        role: Roles = Roles.USER,
-    ):
-        prompt_payload = dict(prompt_args) if prompt_args else None
-        metadata_payload = dict(metadata) if metadata else None
-        return dialog.send_message(prompt, prompt_payload, name=sender_name, metadata=metadata_payload, role=role)
+        dialog = Dialog(session_name=session_name, log_base=self.log_base)
+        dialog.put_prompt(self.system_prompt, prompt_args, name='system', role=Roles.SYSTEM)
+        return dialog
 
     # it performs the "Agent Call"
     def call(
@@ -153,7 +128,6 @@ class Agent:
         for i in range(10000 if self.max_interrupt_steps == 0 else self.max_interrupt_steps+1): # +1 for the final response
             working_dialog = dialog.fork() # make a copy of the dialog, truncate all excception handling dialogs
             while True: # ensure the response is no exception
-                call_state.state = "initial"
                 execution_attempts = []
                 try:
                     _model_args = self.model_args.copy()
@@ -178,7 +152,11 @@ class Agent:
                 except AgentException as e: # handle the exception from the agent
                     if not call_state.reach_max_exception_retry:
                         call_state.exception(e, i)
-                        working_dialog.send_message(dialog.top_prompt.on_exception(call_state), {'error_message': str(e)}, name='exception')
+                        working_dialog.put_prompt(
+                            dialog.top_prompt.on_exception(call_state), 
+                            {'error_message': str(e)}, 
+                            name='exception'
+                        )
                         continue
                     else:
                         raise e
@@ -212,7 +190,7 @@ class Agent:
                         function_call = function(function_call)
                         result_str = function_call.result_str
                         interrupts.append(function_call)
-                    dialog.send_message(
+                    dialog.put_prompt(
                         dialog.top_prompt.on_interrupt(call_state),
                         {'call_results': result_str},
                         role=Roles.TOOL,
@@ -221,7 +199,11 @@ class Agent:
                     )
                 
                 if call_state.reach_max_interrupt_steps:
-                    dialog.send_message(dialog.top_prompt.on_interrupt_final(call_state), role=Roles.USER, name=function_call.name)
+                    dialog.put_prompt(
+                        dialog.top_prompt.on_interrupt_final(call_state), 
+                        role=Roles.USER, 
+                        name=function_call.name
+                    )
             else: # the response is not a function call, it is the final response
                 call_state.state = "success"
                 return response, dialog, call_state

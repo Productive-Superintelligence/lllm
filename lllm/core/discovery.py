@@ -2,7 +2,7 @@
 Auto-discovery of prompts and proxies from folders declared in ``lllm.toml``.
 
 Every public function accepts an optional *context* parameter.  When omitted
-the module falls back to :func:`~lllm.core.context.get_default_context`, so
+the module falls back to :func:`~lllm.core.runtime.get_default_context`, so
 callers that don't care about isolation never have to think about it.
 """
 from __future__ import annotations
@@ -16,7 +16,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Iterable, Optional
 
 from lllm.core.config import auto_discovery_disabled, load_config
-from lllm.core.context import Context, get_default_context
+from lllm.core.runtime import Context, get_default_context
 
 if TYPE_CHECKING:
     from lllm.core.prompt import Prompt
