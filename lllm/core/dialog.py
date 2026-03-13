@@ -54,7 +54,7 @@ class Message(BaseModel):
     execution_attempts: List['Message'] = Field(default_factory=list)
     api_type: APITypes = APITypes.COMPLETION
 
-    vector: List[float] = Field(default_factory=list)
+    vectors: List[float] = Field(default_factory=list) # place holder for embedding vectors of the message, can be used for training, similarity search, etc. Need special invoker to support this.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
