@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional, Union
 from dataclasses import dataclass
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
-from lllm.core.prompt import Prompt, InvokeCost, TokenLogprob, FunctionCall
+from lllm.core.prompt import Prompt, InvokeCost, FunctionCall
 from lllm.core.const import Roles, Modalities, RCollections, APITypes
 from lllm.core.log import ReplayableLogBase
 import lllm.utils as U
@@ -16,6 +16,15 @@ logger = logging.getLogger(__name__)
 
 
 
+class TokenLogprob(BaseModel):
+    token: Optional[str] = None
+    logprob: Optional[float] = None
+    bytes: Optional[List[int]] = None
+    top_logprobs: List['TokenLogprob'] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="allow")
+
+TokenLogprob.model_rebuild()
 
 # ---------------------------------------------------------------------------
 # Message

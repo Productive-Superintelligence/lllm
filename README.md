@@ -160,7 +160,7 @@ pytest tests/
 ## v0.1.0 Refactoring 
 - [x] Refactor providers system: LiteLLM invoker (invokers/)
 - [x] Refactor registry to context (context.py), and discovery system (discovery.py)
-- [x] Refactor message and prompt model, prompt management (models.py)
+- [x] Refactor prompt model and prompt management (prompt.py)
   - [x] Prompt composition and inheritance (compose templates, config tools, etc.), using jinja or something else like dspy solutions
   - [x] More graceful tool, i.e., now it relies on `link_function`, which separates declaration and definition of a tool, if it is good?
   - [x] Clearing up ad-hoc designs, like now cua args, etc. are nakedly attatched as properties, whenever there is a new feature, it is added as a property, which is not good.
@@ -171,7 +171,7 @@ pytest tests/
     - [-] Assisting tracking system to help experiment (may also need to be co-designed with the agentic system parts)
     - [-] we do not need to build those wheels in lllm, but should be friendly to integrate with other version control or management systems. May need to refer to these solutions, so knowing how to be friendly to them. Or directly provide an interface to a popular solution (which one is the most popular?). Like having an abstract base class for all such version control, management, analysis, etc.
     - Just do not do it, any design now will be an overly pre design
-- [ ] -> Refactor dialog model/state management, better arg passing (dialog.py)
+- [ ] -> Refactor message and dialog model/state management, better arg passing (dialog.py)
 - [ ] Refactor agent model, orchestrator, agent call (agent.py)
 - [ ] Refactor config system (config.py, lllm.toml)
 - [ ] Proxy-based tool-calling, mini in-dialog interpreter (proxies/, sandbox/)

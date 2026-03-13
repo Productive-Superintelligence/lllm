@@ -1,18 +1,3 @@
-"""
-Core data models for LLLM.
-
-Classes are ordered bottom-up by dependency:
-
-    AgentException
-    FunctionCall
-    Function / tool decorator
-    MCP
-    TokenLogprob
-    OutputSpec
-    Message
-    Prompt
-    register_prompt (convenience)
-"""
 from __future__ import annotations
 
 import hashlib
@@ -388,16 +373,6 @@ class MCP(BaseModel):
                 tool["allowed_tools"] = self.allowed_tools
             return tool
         return None
-
-class TokenLogprob(BaseModel):
-    token: Optional[str] = None
-    logprob: Optional[float] = None
-    bytes: Optional[List[int]] = None
-    top_logprobs: List['TokenLogprob'] = Field(default_factory=list)
-
-    model_config = ConfigDict(extra="allow")
-
-TokenLogprob.model_rebuild()
 
 
 
