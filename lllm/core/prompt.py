@@ -26,12 +26,14 @@ from lllm.core.const import (
     ParseError,
     Roles,
 )
+from lllm.invokers.base import InvokeResult
+from lllm.core.dialog import Message
 from lllm.core.runtime import Runtime, get_default_runtime
 from lllm.core.log import LogBase
 import lllm.utils as U
 
-
 from abc import ABC, abstractmethod
+
 
 
 class AgentException(Exception):
@@ -43,7 +45,7 @@ class AgentException(Exception):
         super().__init__(self.message)
 
 
-class AgentCallState(BaseModel):
+class AgentCallSession(BaseModel):
     """
     Tracking the state of the agent call, including the exceptions, interrupts, and LLM recalls.
 
@@ -53,12 +55,17 @@ class AgentCallState(BaseModel):
     max_exception_retry: int
     max_interrupt_steps: int
     max_llm_recall: int
+
     exception_retries: Dict[str, List[Exception]] = Field(default_factory=dict) # records the exceptions during the agent call at each interrupt step
     interrupts: Dict[str, List[FunctionCall]] = Field(default_factory=dict) # records the function calls during the agent call at each interrupt step
     llm_recalls: Dict[str, List[Exception]] = Field(default_factory=dict) # records the LLM recalls during the agent call at each interrupt step
+    invoke_traces: Dict[str, List[InvokeResult]] = Field(default_factory=dict) # all InvokeResult traces at each interrupt step (including failed retries and the final successful one)
 
+    delivery: Optional[Message] = None # the delivered message to the user after *successful* call
     state: Literal["initial", "exception", "interrupt", "llm_recall", "success", "failure"] = "initial"
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    
     @property
     def exception_retries_count(self) -> int:
         return sum(len(exceptions) for exceptions in self.exception_retries.values())
@@ -78,6 +85,11 @@ class AgentCallState(BaseModel):
     @property
     def reach_max_interrupt_steps(self) -> bool:
         return len(self.interrupts) >= self.max_interrupt_steps
+
+    def new_invoke_trace(self, invoke_result: InvokeResult, interrupt_step: int) -> None:
+        if interrupt_step not in self.invoke_traces:
+            self.invoke_traces[interrupt_step] = []
+        self.invoke_traces[interrupt_step].append(invoke_result)
 
     def exception(self, exception: Exception, interrupt_step: int) -> None:
         U.cprint(f'{self.agent_name} is handling an exception {exception}, retry times: {self.exception_retries_count}/{self.max_exception_retry}','r')
@@ -103,9 +115,10 @@ class AgentCallState(BaseModel):
         self.llm_recalls[interrupt_step].append(exception)
         self.state = "llm_recall"
 
-    def success(self) -> None:
+    def success(self, message: Message) -> None:
         U.cprint(f'{self.agent_name} stopped calling functions, total interrupt times: {self.max_interrupt_steps}','y')
         self.state = "success"
+        self.delivery = message
 
     def failure(self, log_base: Optional[LogBase] = None) -> None:
         U.cprint(f'{self.agent_name} failed to complete the agent call','r')
@@ -519,16 +532,16 @@ class BaseHandler(ABC):
     event-driven, or even an agentic handler like bug fixing agent.
     """
     @abstractmethod
-    def on_exception(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
+    def on_exception(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         pass
 
     @abstractmethod
-    def on_interrupt(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
+    def on_interrupt(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         pass
 
     @abstractmethod
-    def on_interrupt_final(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
-        pass
+    def on_interrupt_final(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
+        pass    
 
 
 
@@ -547,7 +560,7 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
     interrupt_final_msg: str = _DEFAULT_INTERRUPT_FINAL_MSG
 
     
-    def on_exception(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
+    def on_exception(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
             prompt, 
             self.exception_msg,
@@ -555,7 +568,7 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
             inherit_tools=True,
         )
 
-    def on_interrupt(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
+    def on_interrupt(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
             prompt, 
             self.interrupt_msg,
@@ -563,7 +576,7 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
             inherit_tools=True,
         )
 
-    def on_interrupt_final(self, prompt: Prompt, call_state: AgentCallState) -> Prompt:
+    def on_interrupt_final(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
             prompt, 
             self.interrupt_final_msg,
@@ -696,14 +709,14 @@ class Prompt(BaseModel):
 
     # -- Handler management -----------------------------------------------
 
-    def on_exception(self, call_state: AgentCallState) -> Prompt:
-        return self.handler.on_exception(self, call_state)
+    def on_exception(self, session: AgentCallSession) -> Prompt:
+        return self.handler.on_exception(self, session)
 
-    def on_interrupt(self, call_state: AgentCallState) -> Prompt:
-        return self.handler.on_interrupt(self, call_state)
+    def on_interrupt(self, session: AgentCallSession) -> Prompt:
+        return self.handler.on_interrupt(self, session)
 
-    def on_interrupt_final(self, call_state: AgentCallState) -> Prompt:
-        return self.handler.on_interrupt_final(self, call_state)
+    def on_interrupt_final(self, session: AgentCallSession) -> Prompt:
+        return self.handler.on_interrupt_final(self, session)
 
     # -- Capability accessors (convenience, read-only) --------------------
 

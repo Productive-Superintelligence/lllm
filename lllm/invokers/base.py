@@ -1,8 +1,35 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Generator, Optional, Union
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Tuple
 
 from lllm.core.const import APITypes
 from lllm.core.dialog import Dialog, Message
+
+
+@dataclass
+class InvokeResult:
+    """
+    Per-invocation diagnostics and the message returned by an invoker.
+
+    Attributes:
+        raw_response:    The raw API response object (completion, response, etc.).
+        model_args:      The actual model args sent to the API (after merging).
+        execution_errors: Parse/validation errors encountered during this invocation.
+        message: The message object returned by the invoker.
+    """
+    raw_response: Any = None
+    model_args: Dict[str, Any] = field(default_factory=dict)
+    execution_errors: List[Exception] = field(default_factory=list)
+    message: Optional[Message] = None  # always set by invoker, None is just the dataclass default
+
+    @property
+    def has_errors(self) -> bool:
+        return len(self.execution_errors) > 0
+
+    @property
+    def error_message(self) -> str:
+        return '\n'.join(str(e) for e in self.execution_errors)
+
 
 class BaseInvoker(ABC):
     @abstractmethod
@@ -16,7 +43,10 @@ class BaseInvoker(ABC):
         metadata: Optional[Dict[str, Any]] = None, # only for tracking additional information, such as frontend replay info
         api_type: APITypes = APITypes.COMPLETION,
         stream_handler: BaseStreamHandler = None,
-    ) -> Union[Message, Generator[Any, None, Message]]:
+    ) -> InvokeResult:
+        """
+        Call the LLM and return the invocation result.
+        """
         pass
 
 

@@ -7,7 +7,7 @@ import copy
 import re
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
 from lllm.core.prompt import Prompt, InvokeCost, FunctionCall
@@ -42,17 +42,13 @@ class Message(BaseModel):
     role: Roles
     content: Union[str, List[Dict[str, Any]]] # Content can be string or list of content parts (for images)
     name: str # name of the sender
-    raw_response: Any = None
     function_calls: List[FunctionCall] = Field(default_factory=list)
     modality: Modalities = Modalities.TEXT
     logprobs: List[TokenLogprob] = Field(default_factory=list)
     parsed: Dict[str, Any] = Field(default_factory=dict)
     model: Optional[str] = None
     usage: Dict[str, Any] = Field(default_factory=dict) # 
-    model_args: Dict[str, Any] = Field(default_factory=dict)
     metadata: Dict[str, Any] = Field(default_factory=dict) 
-    execution_errors: List[Exception] = Field(default_factory=list)
-    execution_attempts: List['Message'] = Field(default_factory=list)
     api_type: APITypes = APITypes.COMPLETION
 
     vectors: List[float] = Field(default_factory=list) # place holder for embedding vectors of the message, can be used for training, similarity search, etc. Need special invoker to support this.
@@ -80,10 +76,6 @@ class Message(BaseModel):
                 continue
             normalized.append(TokenLogprob(token=str(entry)))
         return normalized
-
-    @property
-    def error_message(self):
-        return '\n'.join([str(e) for e in self.execution_errors])
 
     @property
     def cost(self) -> InvokeCost:
@@ -118,9 +110,7 @@ class Message(BaseModel):
         return len(self.function_calls) > 0
 
     def to_dict(self):
-        return self.model_dump(
-            exclude={'raw_response', 'execution_errors', 'execution_attempts'},
-        )
+        return self.model_dump()
 
     @classmethod
     def from_dict(cls, d: dict):
@@ -129,33 +119,177 @@ class Message(BaseModel):
 Message.model_rebuild()
 
 
+# ---------------------------------------------------------------------------
+# DialogTree and Dialog
+# ---------------------------------------------------------------------------
+
+
+
+@dataclass
+class DialogTreeNode:
+    """
+    Lightweight record of a dialog's position within a dialog tree.
+
+    Every Dialog owns exactly one DialogTreeNode.  The node carries only ids
+    and structural metadata — no message payloads — so the full tree topology
+    can be reconstructed from a flat collection (e.g. a log store keyed by
+    ``dialog_id``) without loading message content.
+
+    Attributes:
+        dialog_id:    Globally unique id for this dialog.
+        owner:        Name of the agent that created this dialog.
+        parent_id:    dialog_id of the parent (None for root dialogs).
+        split_point:  Message index *in the parent* at which this dialog
+                      branched.  ``parent.messages[:split_point]`` is the
+                      shared prefix that was deep-copied into this child.
+        last_n:   The number of the last n messages that are copied from the parent dialog.
+        first_k:   The number of the first k messages that are copied from the parent dialog.
+        children_ids: dialog_ids of all direct child dialogs.
+    """
+    dialog_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    owner: Optional[str] = None
+    parent_id: Optional[str] = None
+    split_point: Optional[int] = None
+    children_ids: List[str] = field(default_factory=list)
+    last_n: Optional[int] = None
+    first_k: Optional[int] = None
+
+    # Live in-process references (not serialized)
+    _parent: Optional['DialogTreeNode'] = field(default=None, repr=False)
+    _children: List['DialogTreeNode'] = field(default_factory=list, repr=False)
+
+    # -- Lineage helpers --------------------------------------------------
+
+    @property
+    def is_root(self) -> bool:
+        return self.parent_id is None
+
+    @property
+    def depth(self) -> int:
+        """Number of forks from the root."""
+        d, cur = 0, self
+        while cur._parent is not None:
+            d += 1
+            cur = cur._parent
+        return d
+
+    def add_child(self, child: 'DialogTreeNode') -> None:
+        """Wire a child node into this node (both live refs and id lists)."""
+        child._parent = self
+        child.parent_id = self.dialog_id
+        self._children.append(child)
+        self.children_ids.append(child.dialog_id)
+
+    def subtree_ids(self) -> List[str]:
+        """BFS over live children, returning all reachable dialog_ids including self."""
+        visited = []
+        queue = [self]
+        while queue:
+            node = queue.pop(0)
+            visited.append(node.dialog_id)
+            queue.extend(node._children)
+        return visited
+
+    # -- Serialization ----------------------------------------------------
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'dialog_id': self.dialog_id,
+            'owner': self.owner,
+            'parent_id': self.parent_id,
+            'split_point': self.split_point,
+            'children_ids': list(self.children_ids),
+            'last_n': self.last_n,
+            'first_k': self.first_k,
+        }
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> 'DialogTreeNode':
+        return cls(
+            dialog_id=d['dialog_id'],
+            owner=d.get('owner'),
+            parent_id=d.get('parent_id'),
+            split_point=d.get('split_point'),
+            last_n=d.get('last_n'),
+            first_k=d.get('first_k'),
+            children_ids=d.get('children_ids', []),
+        )
+
+
 
 
 @dataclass
 class Dialog:
     """
-    Whenever a dialog is created/forked, it should be associated with a session name.
+    An append-only message sequence owned by a single agent. 
 
-    It should be a shared state object that gets updated by any participants.
+    The agent that creates a dialog seeds it with its system prompt, and that
+    ownership is recorded on the ``tree_node``.  Other participants (user,
+    tools, forwarded messages from other agents) append via ``put_*`` helpers,
+    but the system-level identity of the dialog never changes.
+
+    **Tree structure** is maintained by a :class:`DialogTreeNode` owned by
+    each Dialog.  ``fork()`` creates a child Dialog whose tree_node is
+    automatically linked to the parent's tree_node — callers (including
+    Agent) never need to wire lineage manually.
     """
     session_name: str = None
-    _messages: List[Message] = Field(default_factory=list)
     log_base: Optional[ReplayableLogBase] = None
-    parent_dialog: Optional[str] = None
     top_prompt: Optional[Prompt] = None
     runtime: Optional[Runtime] = None
+    owner: Optional[str] = None
+
+    # Message storage (append-only)
+    _messages: List[Message] = field(default_factory=list)
+
+    # Tree structure — each Dialog has exactly one node
+    tree_node: DialogTreeNode = field(default=None)
+
+    # Live Dialog-level parent/children refs (parallel to tree_node's node-level refs)
+    _parent_dialog: Optional['Dialog'] = field(default=None, repr=False)
+    _children_dialogs: List['Dialog'] = field(default_factory=list, repr=False)
+
 
     def __post_init__(self):
-        self.dialog_id = uuid.uuid4().hex
+        if self.tree_node is None:
+            self.tree_node = DialogTreeNode(owner=self.owner)
         if self.session_name is None:
-            self.session_name = dt.datetime.now().strftime('%Y%m%d_%H%M%S')+'_'+str(uuid.uuid4())[:6]
+            self.session_name = dt.datetime.now().strftime('%Y%m%d_%H%M%S') + '_' + str(uuid.uuid4())[:6]
         self.runtime = self.runtime or get_default_runtime()
         if self.log_base is not None:
-            dialogs_sess = self.log_base.get_collection(RCollections.DIALOGS).create_session(self.session_name) # track the dialogs created in this session
-            dialogs_sess.log(self.dialog_id, metadata={'parent_dialog': self.parent_dialog})
-            self.sess = self.log_base.get_collection(RCollections.MESSAGES).create_session(f'{self.session_name}/{self.dialog_id}') # track the dialogs created in this session
+            dialogs_sess = self.log_base.get_collection(RCollections.DIALOGS).create_session(self.session_name)
+            dialogs_sess.log(self.dialog_id, metadata=self.tree_node.to_dict())
+            self.sess = self.log_base.get_collection(RCollections.MESSAGES).create_session(
+                f'{self.session_name}/{self.dialog_id}'
+            )
         else:
             self.sess = None
+
+    # -- Convenience proxies to tree_node ---------------------------------
+
+    @property
+    def dialog_id(self) -> str:
+        return self.tree_node.dialog_id
+
+    @property
+    def parent(self) -> Optional['Dialog']:
+        """Live reference to parent Dialog (None for root dialogs)."""
+        return self._parent_dialog
+
+    @property
+    def children(self) -> List['Dialog']:
+        """Live references to child Dialogs forked from this one."""
+        return list(self._children_dialogs)
+
+    @property
+    def is_root(self) -> bool:
+        return self.tree_node.is_root
+
+    @property
+    def depth(self) -> int:
+        return self.tree_node.depth
+
+    # -- Message access ---------------------------------------------------
 
     def append(self, message: Message): # ensure this is the only way to write the messages to make sure the trackability
         message.metadata['dialog_id'] = self.dialog_id
@@ -171,29 +305,31 @@ class Dialog:
         return {
             'messages': [message.to_dict() for message in self._messages],
             'session_name': self.session_name,
-            'parent_dialog': self.parent_dialog,
+            'owner': self.owner,
+            'tree_node': self.tree_node.to_dict(),
             'top_prompt_path': self.top_prompt.path if self.top_prompt is not None else None,
         }
 
     @classmethod
-    def from_dict(cls, d: dict, log_base: ReplayableLogBase, runtime: Runtime = None):
-        top_prompt_path = d['top_prompt_path']
+    def from_dict(cls, d: dict, log_base: ReplayableLogBase = None, runtime: Runtime = None):
+        top_prompt_path = d.get('top_prompt_path')
         runtime = runtime or get_default_runtime()
+        top_prompt = None
         if top_prompt_path is not None:
             try:
                 top_prompt = runtime.get_prompt(top_prompt_path)
             except KeyError:
                 logger.warning("Prompt '%s' not found in runtime during Dialog.from_dict", top_prompt_path)
-                top_prompt = None
-        else:
-            top_prompt = None
+        tree_node_data = d.get('tree_node')
+        tree_node = DialogTreeNode.from_dict(tree_node_data) if tree_node_data else None
         return cls(
             _messages=[Message.from_dict(message) for message in d['messages']],
             log_base=log_base,
             session_name=d['session_name'],
-            parent_dialog=d['parent_dialog'],
+            owner=d.get('owner'),
             top_prompt=top_prompt,
             runtime=runtime,
+            tree_node=tree_node,
         )
     
     @property
@@ -297,18 +433,74 @@ class Dialog:
         self.top_prompt = prompt
         return message
     
-    def fork(self, n_messages: int = 0) -> 'Dialog': # 0 means no truncation, otherwise truncate the last n messages
-        _messages = self._messages[:-n_messages] if n_messages > 0 else self._messages
-        _dialog = Dialog(
+    # -----------------------------------------------------------------------
+    # Forking — the only way to branch a dialog
+    # -----------------------------------------------------------------------
+    
+    def fork(self, last_n: int = 0, first_k: int = 1) -> 'Dialog':
+        """
+        Create a child dialog branching from this one.
+
+        Args:
+            last_n: if >0, only preserve the last n messages from the parent dialog
+                        (useful for retrying from an earlier point).
+                        The first system message is always preserved.
+            first_k: if >0, ensure the first k messages from the parent dialog
+                        (useful for preserving the system prompt message). 
+                        Should always be >=1 to at least preserve the system prompt message.
+
+        The fork automatically:
+        - Deep-copies the message prefix into the child.
+        - Creates a child DialogTreeNode linked to this dialog's tree_node.
+        - Records split_point on the child's tree_node.
+        - Wires live Dialog-level parent/children refs.
+        - Inherits session_name, log_base, top_prompt, runtime, owner.
+
+        Returns:
+            The new child Dialog.
+        """
+        if last_n >= len(self._messages):
+            last_n = 0
+        if last_n > 0:
+            tail_start = len(self._messages) - last_n
+            # Clamp first_k so it doesn't overlap with the tail slice
+            first_k = min(first_k, tail_start) if first_k > 0 else 0
+            _messages = self._messages[:first_k] + self._messages[tail_start:]
+        else:
+            _messages = self._messages
+        split_point = len(_messages)
+
+        # Build the child's tree node (not yet linked)
+        child_tree_node = DialogTreeNode(
+            owner=self.owner,
+            split_point=split_point,
+            last_n=last_n,
+            first_k=first_k,
+        )
+
+        child = Dialog(
             _messages=[copy.deepcopy(m) for m in _messages],
             session_name=self.session_name,
             log_base=self.log_base,
-            parent_dialog=self.dialog_id,
             top_prompt=self.top_prompt,
             runtime=self.runtime,
+            owner=self.owner,
+            tree_node=child_tree_node,
         )
-        return _dialog
-    
+
+        # Wire tree_node parent ↔ child (sets parent_id, live refs, children_ids)
+        self.tree_node.add_child(child.tree_node)
+
+        # Wire Dialog-level live refs
+        child._parent_dialog = self
+        self._children_dialogs.append(child)
+
+        return child
+
+    # -----------------------------------------------------------------------
+    # Display
+    # -----------------------------------------------------------------------
+
     def overview(self, remove_tail: bool = False, max_length: int = 100, 
                  stream = None, divider: bool = False):
         _overview = ''
@@ -327,12 +519,31 @@ class Dialog:
             stream.write(str(cost))
         return _overview
 
+    def tree_overview(self, indent: int = 0) -> str:
+        """
+        Recursively print the dialog tree structure from this node.
+        Useful for debugging multi-fork scenarios.
+        """
+        prefix = '  ' * indent
+        branch = '└─ ' if indent > 0 else ''
+        line = (
+            f"{prefix}{branch}[{self.dialog_id[:8]}] "
+            f"owner={self.owner} msgs={len(self._messages)} "
+            f"split@{self.tree_node.split_point}"
+        )
+        if self.tree_node.last_n is not None and self.tree_node.last_n > 0:
+            line += f" (last_n={self.tree_node.last_n}, first_k={self.tree_node.first_k})"
+        lines = [line]
+        for child in self._children_dialogs:
+            lines.append(child.tree_overview(indent + 1))
+        return '\n'.join(lines)
+
     @property
     def tail(self): # last message in the dialog, use it to get last response from the LLM
         return self._messages[-1] if self._messages else None
     
     @property
-    def system(self):
+    def head(self): # usually the system prompt message
         return self._messages[0] if self._messages else None
 
     @property

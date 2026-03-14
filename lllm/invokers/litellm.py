@@ -2,11 +2,11 @@ import os
 import json
 import re
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from lllm.core.prompt import Prompt, FunctionCall
 from lllm.core.const import Roles, Modalities, APITypes, Invokers
-from lllm.invokers.base import BaseInvoker, BaseStreamHandler
+from lllm.invokers.base import BaseInvoker, BaseStreamHandler, InvokeResult
 from lllm.core.dialog import Dialog, Message, TokenLogprob
 
 from litellm import stream_chunk_builder
@@ -188,7 +188,7 @@ class LiteLLMInvoker(BaseInvoker):
         responder: str,
         metadata: Dict[str, Any],
         stream_handler: BaseStreamHandler = None, 
-    ) -> Message:
+    ) -> InvokeResult:
         prompt = dialog.top_prompt
         tools = self._build_tools(prompt)
         call_args = dict(payload_args)
@@ -224,7 +224,7 @@ class LiteLLMInvoker(BaseInvoker):
 
     def _parse_chat_response(
         self, completion, prompt, model, call_args, parser_args, responder, metadata
-    ) -> Message:
+    ) -> InvokeResult:
 
         choice = completion.choices[0]
         usage = {}
@@ -283,21 +283,27 @@ class LiteLLMInvoker(BaseInvoker):
             if 'response_format' in call_args and prompt.format is not None:
                 call_args['response_format'] = prompt.format.model_json_schema()
 
-        return Message(
+        message = Message(
             role=role,
-            raw_response=completion,
             name=responder,
             function_calls=function_calls,
             content=content,
             logprobs=logprobs or [],
             model=model,
-            model_args=call_args,
             usage=usage,
             parsed=parsed or {},
             metadata=metadata,
-            execution_errors=errors,
             api_type=APITypes.COMPLETION,
         )
+
+        invoke_result = InvokeResult(
+            raw_response=completion,
+            model_args=call_args,
+            execution_errors=errors,
+            message=message,
+        )
+
+        return invoke_result
 
     def _call_response_api(
         self,
@@ -308,7 +314,7 @@ class LiteLLMInvoker(BaseInvoker):
         responder: str,
         metadata: Dict[str, Any],
         stream_handler: BaseStreamHandler = None,
-    ) -> Message:
+    ) -> InvokeResult:
         prompt = dialog.top_prompt
         streaming = stream_handler is not None
         if prompt.format is not None:
@@ -362,7 +368,7 @@ class LiteLLMInvoker(BaseInvoker):
 
     def _parse_responses_api_response(
         self, response, prompt, model, call_args, parser_args, responder, metadata
-    ) -> Message:
+    ) -> InvokeResult:
 
         usage = {}
         if getattr(response, "usage", None):
@@ -422,20 +428,25 @@ class LiteLLMInvoker(BaseInvoker):
 
         message = Message(
             role=role,
-            raw_response=response,
             name=responder,
             function_calls=function_calls,
             content=content,
             logprobs=logprobs or [],
             model=model,
-            model_args=call_args,
             usage=usage,
             parsed=parsed or {},
             metadata=metadata_payload,
-            execution_errors=errors,
             api_type=APITypes.RESPONSE,
         )
-        return message
+
+        invoke_result = InvokeResult(
+            raw_response=response,
+            model_args=call_args,
+            execution_errors=errors,
+            message=message,
+        )
+
+        return invoke_result
 
     def call(
         self,
@@ -447,7 +458,7 @@ class LiteLLMInvoker(BaseInvoker):
         metadata: Optional[Dict[str, Any]] = None,
         api_type: APITypes = APITypes.COMPLETION,
         stream_handler: BaseStreamHandler = None,
-    ) -> Message:
+    ) -> InvokeResult:
         """
         Call the API and return the message from the LLM after parsing.
 
@@ -455,7 +466,7 @@ class LiteLLMInvoker(BaseInvoker):
 
         - Non-streaming:
         ```python
-        message = agent.call(dialog)
+        invoke_result = invoker.call(dialog)
         ```
 
         - Streaming:
@@ -463,7 +474,7 @@ class LiteLLMInvoker(BaseInvoker):
         class MyStreamHandler(BaseStreamHandler):
             def handle_chunk(self, chunk_content: str, chunk_response: Any):
                 print(chunk_content)
-        message = agent.call(dialog, stream_handler=MyStreamHandler()) 
+        invoke_result = invoker.call(dialog, stream_handler=MyStreamHandler()) 
         ```
         """
         payload_args = dict(model_args) if model_args else {}

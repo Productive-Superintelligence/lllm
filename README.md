@@ -173,8 +173,8 @@ pytest tests/
     - Just do not do it, any design now will be an overly pre design
 - [x] Refactor message and dialog model/state management, better arg passing (dialog.py)
   - Dialog provides low-level operations, and advanced arg passings are provided by Agent etc. below
-- [ ] -> Refactor agent model, orchestrator, agent call (agent.py)
-- [ ] Refactor config system (config.py, lllm.toml)
+- [ ] -> Refactor agent model, agent call (agent.py)
+- [ ] Refactor orchestrator and config system (agent.py, config.py, lllm.toml)
 - [ ] Proxy-based tool-calling, mini in-dialog interpreter (proxies/, sandbox/)
 - [ ] Logger (cli logging), replayable logging system (log.py)
 

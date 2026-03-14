@@ -1,70 +1,90 @@
-# Invokers and Base Models
+# Invokers
 
 Invokers are the execution engines of the LLLM framework. They abstract the underlying LLM APIs, taking the state of a `Dialog` and executing the API call to generate the next response.
 
-The default invoker in LLLM is built on top of the powerful [LiteLLM](https://github.com/BerriAI/litellm) library, giving you immediate access to over 100+ LLMs (OpenAI, Anthropic, Gemini, Vertex, local models via Ollama/vLLM, and more) using a single, unified interface.
+The default invoker is built on [LiteLLM](https://github.com/BerriAI/litellm), giving you access to 100+ LLMs (OpenAI, Anthropic, Gemini, Vertex, local models via Ollama/vLLM, and more) through a single unified interface.
 
 ---
 
 ## The `BaseInvoker` Interface
 
-All invokers inherit from `BaseInvoker`. If you ever need to build a custom invoker, you only need to implement a single method: `call`.
-
-Notice that the `call` method strictly reads the rules and parsing configurations from the `Dialog`'s `top_prompt`, ensuring the dialog acts as the single source of truth for execution state.
+All invokers inherit from `BaseInvoker` and implement a single method: `call`.
 
 ```python
 class BaseInvoker(ABC):
     @abstractmethod
     def call(
         self,
-        dialog: 'Dialog',
+        dialog: Dialog,
         model: str,
         model_args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
         responder: str = 'assistant',
-        extra: Optional[Dict[str, Any]] = None, 
+        metadata: Optional[Dict[str, Any]] = None,
         api_type: APITypes = APITypes.COMPLETION,
         stream_handler: BaseStreamHandler = None,
-    ) -> Message:
+    ) -> InvokeResult:
         pass
 ```
 
-### Arguments:
+The invoker returns an `InvokeResult` — a single object that bundles the clean `Message` (ready for dialog) with per-invocation diagnostics. This separation means the `Message` that goes into the dialog is free of debug data, while the agent loop has everything it needs for retry logic and analysis.
 
-* `dialog`: The current `Dialog` object representing the conversation history. The invoker will automatically read `dialog.top_prompt` to apply system instructions, tool schemas, and structured output formats.
-* `model`: The model identifier string (e.g., `'gpt-4o'`, `'anthropic/claude-3-5-sonnet'`). 
-* `model_args`: A dictionary of provider-specific arguments (e.g., `temperature`, `max_tokens`, `api_base`).
-* `parser_args`: Arguments passed directly to the prompt's output parser.
-* `responder`: The name of the agent generating the response (useful for logging and multi-agent routing).
-* `extra`: Metadata purely for tracking additional information (such as frontend replay data). This is attached to the final `Message` object but *not* sent to the LLM.
-* `api_type`: `APITypes.COMPLETION` (standard chat completions) or `APITypes.RESPONSE` (OpenAI's newer Responses API, which supports advanced native tools like web search and computer use).
-* `stream_handler`: An optional instance of `BaseStreamHandler`. If provided, the invoker will stream text chunks to this handler in real-time while still returning the fully constructed `Message` object at the end.
+### Arguments
+
+| Argument | Description |
+|---|---|
+| `dialog` | Current `Dialog`. The invoker reads `dialog.top_prompt` for tools, parser, and output format. |
+| `model` | Model identifier (e.g. `'gpt-4o'`, `'anthropic/claude-3-5-sonnet'`). |
+| `model_args` | Provider-specific arguments (`temperature`, `max_tokens`, `api_base`, etc.). |
+| `parser_args` | Arguments passed to the prompt's output parser. |
+| `responder` | Name of the agent generating the response (for logging and multi-agent routing). |
+| `metadata` | Tracking metadata (e.g. frontend replay data). Attached to the `Message` but not sent to the LLM. |
+| `api_type` | `COMPLETION` (Chat Completions) or `RESPONSE` (OpenAI Responses API). |
+| `stream_handler` | Optional `BaseStreamHandler` for real-time streaming. |
+
+### Return: `InvokeResult`
+
+```python
+@dataclass
+class InvokeResult:
+    raw_response: Any = None              # raw API response object
+    model_args: Dict[str, Any] = ...      # actual args sent to the API
+    execution_errors: List[Exception] = [] # parse/validation errors
+    message: Optional[Message] = None     # the clean conversational message
+```
+
+The agent loop uses `invoke_result.has_errors` to decide whether to retry, and `invoke_result.message` for the dialog:
+
+```python
+invoke_result = invoker.call(dialog, model, ...)
+if invoke_result.has_errors:
+    # retry with exception handler
+    raise AgentException(invoke_result.error_message)
+dialog.append(invoke_result.message)
+```
 
 ---
 
 ## Streaming with `BaseStreamHandler`
 
-LLLM uses a callback pattern for streaming to keep your dialog state clean and synchronous. To stream outputs (e.g., to a terminal or a UI), subclass `BaseStreamHandler`:
+LLLM uses a callback pattern for streaming to keep dialog state clean and synchronous. Subclass `BaseStreamHandler`:
 
 ```python
 class MyConsoleStreamer(BaseStreamHandler):
     def handle_chunk(self, chunk_content: str, chunk_response: Any):
-        # chunk_content is the text delta
-        # chunk_response is the raw chunk object from LiteLLM
         print(chunk_content, end="", flush=True)
 
-# Pass it to the invoker (or your Agent)
-message = invoker.call(dialog, model="gpt-4o", stream_handler=MyConsoleStreamer())
-
+# Pass it to the agent or invoker
+invoke_result = invoker.call(dialog, model="gpt-4o", stream_handler=MyConsoleStreamer())
 ```
+
+The invoker streams chunks to the handler in real-time while still returning the fully constructed `InvokeResult` at the end.
 
 ---
 
 ## Using the `LiteLLMInvoker`
 
-We use the `LiteLLMInvoker` as the default invoker for LLLM. It completely standardizes input and output schemas across all providers. It is a popular choice for many users. See section 1 below for more details.
-
-Note that if you choose certain providers, you may need to set additional arguments in your agent config (See [Agent Configuration](./agent.md)). For example, ollama requires you to set the `api_base` argument to the base URL of your ollama server. And different provider may have different support for arguments. See section 3 below for more details.
+The `LiteLLMInvoker` is the default invoker. It standardizes input and output schemas across all providers.
 
 ```python
 from lllm.invokers.litellm import LiteLLMInvoker
@@ -74,19 +94,19 @@ invoker = LiteLLMInvoker()
 
 ### 1. Model Naming Convention
 
-LiteLLM routes requests automatically based on the model string prefix. You can specify the provider directly in the model string:
+LiteLLM routes requests based on the model string prefix:
 
-* **OpenAI:** `openai/gpt-4o` (or simply `gpt-4o`)
-* **Anthropic:** `anthropic/claude-3-5-sonnet-20241022`
-* **Google:** `gemini/gemini-1.5-pro`
-* **Ollama (Local):** `ollama/llama3`
-* **Azure:** `azure/my-gpt4-deployment`
+- **OpenAI:** `openai/gpt-4o` (or simply `gpt-4o`)
+- **Anthropic:** `anthropic/claude-3-5-sonnet-20241022`
+- **Google:** `gemini/gemini-1.5-pro`
+- **Ollama (Local):** `ollama/llama3`
+- **Azure:** `azure/my-gpt4-deployment`
 
-You can find all supported models in the [LiteLLM model list](https://models.litellm.ai/) and [LiteLLM providers](https://docs.litellm.ai/docs/providers) for more details.
+See the [LiteLLM model list](https://models.litellm.ai/) and [LiteLLM providers](https://docs.litellm.ai/docs/providers) for all supported models.
 
 ### 2. Setting API Keys
 
-You do not need to pass API keys into the invoker itself. LiteLLM automatically detects standard environment variables. Ensure these are set in your environment or `.env` file before execution:
+LiteLLM automatically detects standard environment variables:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -94,56 +114,38 @@ export ANTHROPIC_API_KEY="sk-ant-..."
 export GEMINI_API_KEY="AIza..."
 ```
 
-Please refer to [LiteLLM Python SDK](https://docs.litellm.ai/docs/#litellm-python-sdk) to see the environment variables for each provider. For certain providers (such as Azure), you may need to initialize the litellm authentication manually.
+See [LiteLLM Python SDK](https://docs.litellm.ai/docs/#litellm-python-sdk) for environment variables per provider. Some providers (like Azure) require manual authentication setup — see [LiteLLM Proxy Authentication](https://docs.litellm.ai/docs/proxy_auth).
 
-Basically, you may do this at the beginning of your script or at the start of your program. Taking Azure as an example, you may do this:
+### 3. Provider-Specific Arguments (`model_args`)
 
-```python
-import litellm
-from litellm.proxy_auth import AzureADCredential, ProxyAuthHandler
-
-# One-time setup
-litellm.proxy_auth = ProxyAuthHandler(
-    credential=AzureADCredential(),  # uses DefaultAzureCredential
-    scope="api://my-litellm-proxy/.default"
-)
-litellm.api_base = "https://my-proxy.example.com"
-```
-
-So that it provides context to the LiteLLM library to authenticate with the Azure API automatically later. Please see [LiteLLM Proxy Authentication](https://docs.litellm.ai/docs/proxy_auth) for more details.
-
-
-### 3. Passing Provider-Specific Arguments (`model_args`)
-
-Because LiteLLM provides a unified interface, you can pass provider-specific or standard arguments via the `model_args` dictionary.
-
-**LLLM automatically drops unsupported parameters** safely. For example, if you pass `presence_penalty` in a dictionary sent to Anthropic (which doesn't support it), LLLM tells LiteLLM to quietly drop it rather than throwing an error.
+Pass provider-specific or standard arguments via `model_args`. LLLM automatically drops unsupported parameters safely — if you pass `presence_penalty` to Anthropic (which doesn't support it), it's quietly dropped rather than throwing an error.
 
 ```python
 model_args = {
     "temperature": 0.2,
     "max_tokens": 4096,
-    
-    # Custom API endpoints (e.g., for local Ollama or vLLM deployments)
-    "api_base": "http://localhost:11434", 
-    
-    # Azure specific configurations
-    "api_version": "2024-02-15-preview",
+    "api_base": "http://localhost:11434",  # for local deployments
 }
-
 ```
 
-Please refer to [LiteLLM Completion API](https://docs.litellm.ai/docs/completion/input) and [LiteLLM Response API](https://docs.litellm.ai/docs/response_api/input) for more details.
+See [LiteLLM Completion API](https://docs.litellm.ai/docs/completion/input) and [LiteLLM Response API](https://docs.litellm.ai/docs/response_api/input) for all available arguments.
 
 ### 4. Exception Handling
 
-LiteLLM standardizes all provider errors into the OpenAI exception format. This means you only ever have to write one set of error-handling logic, regardless of which model you are using.
+LiteLLM standardizes all provider errors into the OpenAI exception format. Common exceptions:
 
-Common exceptions (accessible via `from litellm.exceptions import ...` or standard `openai` exception types):
+- `RateLimitError` (HTTP 429)
+- `ContextWindowExceededError` (HTTP 400)
+- `AuthenticationError` (HTTP 401)
+- `APIConnectionError` (HTTP 500)
 
-* `RateLimitError` (HTTP 429)
-* `ContextWindowExceededError` (HTTP 400)
-* `AuthenticationError` (HTTP 401)
-* `APIConnectionError` (HTTP 500)
+The `Agent` class handles `max_llm_recall` retries and rate-limit backoffs automatically. Parse/validation errors are captured in `InvokeResult.execution_errors` and handled by the agent loop's exception handler.
 
-*(Note: In the LLLM framework, the `Agent` class handles `max_llm_recall` and rate-limit backoffs automatically for you).*
+### 5. Chat Completions vs. Responses API
+
+The invoker supports two API modes via `api_type`:
+
+- **`APITypes.COMPLETION`** (default): Uses Chat Completions. If `Prompt.format` is set (Pydantic model or JSON schema), structured output is enabled automatically.
+- **`APITypes.RESPONSE`**: Uses OpenAI's Responses API. When the prompt enables `allow_web_search` or `computer_use_config`, these materialize as native OpenAI tools. Tool outputs are surfaced back through the interrupt handler.
+
+Both modes go through the same agent call loop — the difference is only in how the invoker talks to the API.
