@@ -4,30 +4,5 @@
   <img src="assets/LLLM-logo.png" alt="LLLM Logo" width="200"/>
 </p>
 
-**LLLM** is a lightweight framework designed for researchers to fast-prototype advanced agentic systems. It emphasizes minimalism, modularity, and type safety, with first-class support for program synthesis and neuro-symbolic capabilities.
+**LLLM** is a lightweight framework designed for developers and researchers to fast-prototype advanced agentic systems. 
 
-## Key Features
-
-- **Modular Architecture**: Core abstractions, providers, tools, and memory are decoupled.
-- **Type Safety**: Built on Pydantic for robust data validation and strict typing.
-- **Provider Interface**: First-class OpenAI support with an extensible interface for adding more providers.
-- **Neuro-Symbolic Design**: Advanced prompt management with structured output, exception handling, and interrupt logic.
-- **API Proxies**: Secure code execution of external APIs for program synthesis.
-
-## Quick Start
-
-```bash
-pip install lllm
-```
-
-See [Getting Started](getting-started.md) for more details.
-
-## Experimental Features
-
-- `lllm.tools.cua` (Computer Use Agent) integrates with Playwright and the OpenAI Computer Use API. Expect rapid iteration and breaking changes.
-- Responses API routing is available per agent via `api_type = "response"`; today it only targets OpenAI models that advertise the requisite features.
-
-## Work in Progress
-
-- Additional providers (Anthropic, Gemini, local runtimes) are on the roadmap but not yet available in the `lllm.providers` registry.
-- Provider-agnostic streaming and richer auto-discovery ergonomics (hot-reloading prompts/proxies) are actively being designed.
