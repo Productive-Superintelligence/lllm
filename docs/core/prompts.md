@@ -699,17 +699,17 @@ summarise = task.extend(
 )
 ```
 
-And how an `Orchestrator` uses these prompts:
+And how an `Orchestra` uses these prompts:
 
 ```python
 # agents/researcher.py
 
-from lllm.core.agent import Orchestrator
+from lllm.core.agent import Orchestra
 from lllm.core.runtime import get_default_runtime
 import datetime
 
 
-class ResearchAgent(Orchestrator):
+class ResearchAgent(Orchestra):
     agent_type = "researcher"
     agent_group = ["researcher"]
 

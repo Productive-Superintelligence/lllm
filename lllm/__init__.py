@@ -1,6 +1,6 @@
 from lllm.core.agent import (
     Agent,
-    Orchestrator,
+    Orchestra,
     build_agent,
     register_agent_class,
 )

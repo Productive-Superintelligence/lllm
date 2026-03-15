@@ -7,9 +7,9 @@
       show_root_heading: true
       show_source: true
 
-## Orchestrator
+## Orchestra
 
-::: lllm.core.agent.Orchestrator
+::: lllm.core.agent.Orchestra
     options:
       show_root_heading: true
       show_source: true

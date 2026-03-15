@@ -13,18 +13,18 @@ The `Agent` class represents a single LLM entity with a specific role, system pr
 - `model`: The LLM model to use (e.g., "gpt-4o").
 - `llm_provider`: The provider instance (e.g., `OpenAIProvider`).
 
-## The `Orchestrator` Class
+## The `Orchestra` Class
 
-`Orchestrator` is the base class for building complex agentic systems. It allows you to compose multiple `Agent` instances and define custom orchestration logic.
+`Orchestra` is the base class for building complex agentic systems. It allows you to compose multiple `Agent` instances and define custom orchestration logic.
 
 ### Creating a Custom Agent
 
-To create a custom agent, subclass `Orchestrator` and implement the `call` method:
+To create a custom agent, subclass `Orchestra` and implement the `call` method:
 
 ```python
-from lllm import Orchestrator
+from lllm import Orchestra
 
-class MyAgent(Orchestrator):
+class MyAgent(Orchestra):
     agent_type = "my_agent"
     agent_group = ["worker", "reviewer"] # Define sub-agents
 

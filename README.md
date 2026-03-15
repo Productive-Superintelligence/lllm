@@ -61,7 +61,7 @@ pip install lllm-core
 ### Basic Chat
 
 ```python
-from lllm import Orchestrator, Prompt, register_prompt
+from lllm import Orchestra, Prompt, register_prompt
 
 # Define a prompt
 simple_prompt = Prompt(
@@ -71,7 +71,7 @@ simple_prompt = Prompt(
 register_prompt(simple_prompt)
 
 # Define an Agent
-class SimpleAgent(Orchestrator):
+class SimpleAgent(Orchestra):
     agent_type = "simple"
     agent_group = ["assistant"]
     

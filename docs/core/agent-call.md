@@ -15,7 +15,7 @@ A core philosophy of LLLM is to treat the agent as a "function", and the goal of
 | Responsibility | Caller decides whether to retry, parse, or continue. | Agent handles retries, parsing, exception recovery, and interrupts until it reaches the desired state. |
 | Determinism | Best-effort. | Guaranteed next state or explicit exception. |
 
-The `Agent` dataclass in `lllm/core/agent.py` manages dialogs via aliases and exposes `respond(alias)` for the common case and `_call(dialog)` for the full loop. `Orchestrator` wraps these calls with logging and a user-friendly `.call(task)` signature. Under the hood each agent delegates to an invoker implementation (`lllm.invokers.BaseInvoker`) so the same loop can target OpenAI's Chat Completions API or the Responses API by toggling the `api_type` field.
+The `Agent` dataclass in `lllm/core/agent.py` manages dialogs via aliases and exposes `respond(alias)` for the common case and `_call(dialog)` for the full loop. `Orchestra` wraps these calls with logging and a user-friendly `.call(task)` signature. Under the hood each agent delegates to an invoker implementation (`lllm.invokers.BaseInvoker`) so the same loop can target OpenAI's Chat Completions API or the Responses API by toggling the `api_type` field.
 
 ## Key Types
 
@@ -157,11 +157,11 @@ revision = coder.respond()
 
 To ship a new agent:
 
-1. Subclass `Orchestrator`, set `agent_type` and `agent_group`.
+1. Subclass `Orchestra`, set `agent_type` and `agent_group`.
 2. Implement `call(self, task, **kwargs)` to orchestrate dialogs.
 
 ```python
-class SimpleAgent(Orchestrator):
+class SimpleAgent(Orchestra):
     agent_type = "simple"
     agent_group = ["assistant"]
     
@@ -171,12 +171,12 @@ class SimpleAgent(Orchestrator):
         return agent.respond().content
 ```
 
-Agents register themselves automatically through `Orchestrator.__init_subclass__`, so once your class is imported it becomes available to `build_agent`.
+Agents register themselves automatically through `Orchestra.__init_subclass__`, so once your class is imported it becomes available to `build_agent`.
 
 ## Full Example with Diagnostics
 
 ```python
-class ResearchAgent(Orchestrator):
+class ResearchAgent(Orchestra):
     agent_type = "researcher"
     agent_group = ["researcher"]
     

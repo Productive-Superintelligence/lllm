@@ -45,12 +45,12 @@ class WebProxy(BaseProxy):
 
 ### Agent Types
 
-Agent type registration is automatic. Subclassing `Orchestrator` triggers `__init_subclass__`, which calls `register_agent_class`:
+Agent type registration is automatic. Subclassing `Orchestra` triggers `__init_subclass__`, which calls `register_agent_class`:
 
 ```python
-from lllm import Orchestrator
+from lllm import Orchestra
 
-class MyAgent(Orchestrator):
+class MyAgent(Orchestra):
     agent_type = "my_agent"
     agent_group = ["assistant"]
     
@@ -59,13 +59,13 @@ class MyAgent(Orchestrator):
 # MyAgent is now registered as "my_agent" in the default runtime
 ```
 
-Because `__init_subclass__` fires at class definition time (before any instance exists), agent types always register into the default runtime. Agent *instances*, however, use whatever runtime is passed to `Orchestrator.__init__`.
+Because `__init_subclass__` fires at class definition time (before any instance exists), agent types always register into the default runtime. Agent *instances*, however, use whatever runtime is passed to `Orchestra.__init__`.
 
 ## How Context Flows Through the System
 
 The runtime is threaded as an optional parameter that defaults to the global instance. This means existing code never has to change, but advanced users can inject their own.
 
-**Orchestrator** receives and stores it:
+**Orchestra** receives and stores it:
 
 ```python
 agent = MyAgent(config, ckpt_dir="./ckpt", runtime=my_runtime)
@@ -153,7 +153,7 @@ Each agent sees only the prompts and proxies registered in its own runtime. Disc
 | `register_prompt(prompt, overwrite=True)` | Add a `Prompt` keyed by `prompt.path`. Raises `ValueError` on duplicate if `overwrite=False`. |
 | `get_prompt(path)` | Retrieve a prompt by path. Raises `KeyError` if not found. |
 | `register_proxy(name, proxy_cls, overwrite=False)` | Add a `BaseProxy` subclass keyed by name. |
-| `register_agent(agent_type, agent_cls, overwrite=False)` | Add an `Orchestrator` subclass keyed by agent type string. |
+| `register_agent(agent_type, agent_cls, overwrite=False)` | Add an `Orchestra` subclass keyed by agent type string. |
 | `reset()` | Clear all registries and reset the discovery flag. |
 
 ### Module-Level Helpers

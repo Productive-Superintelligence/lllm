@@ -4,7 +4,7 @@ import datetime as dt
 from typing import Dict, Any, List, Optional, Callable
 import lllm.utils as U
 from lllm.core.runtime import Runtime, get_default_runtime
-from lllm.core.discovery import auto_discover_if_enabled
+from lllm.core.config import auto_discover_if_enabled
 
 
 class BaseProxy:

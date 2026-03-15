@@ -20,7 +20,7 @@ class Runtime:
     def __init__(self):
         self.prompts: Dict[str, Prompt] = {}
         self.proxies: Dict[str, Type[BaseProxy]] = {}
-        self.agents: Dict[str, Type] = {}  # Orchestrator subclasses
+        self.agents: Dict[str, Type] = {}  # Orchestra subclasses
         self._discovery_done: bool = False
 
     # -- Prompts --

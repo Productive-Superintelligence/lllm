@@ -202,7 +202,7 @@ See [Agent Call](./agent_call.md) for the full agent API.
 ## Example: Complete Single-Agent Turn
 
 ```python
-class SummarizeAgent(Orchestrator):
+class SummarizeAgent(Orchestra):
     agent_type = "summarizer"
     agent_group = ["assistant"]
     
