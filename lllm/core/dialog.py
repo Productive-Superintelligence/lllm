@@ -307,7 +307,9 @@ class Dialog:
             'session_name': self.session_name,
             'owner': self.owner,
             'tree_node': self.tree_node.to_dict(),
-            'top_prompt_path': self.top_prompt.path if self.top_prompt is not None else None,
+            'top_prompt_path': (
+                getattr(self.top_prompt, '_qualified_key', None) or self.top_prompt.path
+            ) if self.top_prompt is not None else None,
         }
 
     @classmethod

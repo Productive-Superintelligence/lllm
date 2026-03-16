@@ -43,150 +43,13 @@ from lllm.core.prompt import Prompt, InvokeCost
 from lllm.core.dialog import Message
 from lllm.core.runtime import Runtime, get_default_runtime
 from lllm.core.const import APITypes
+from lllm.core.config import AgentSpec, parse_agent_configs
 from lllm.core.log import build_log_base
 from lllm.invokers import build_invoker
 import lllm.utils as U
 
 logger = logging.getLogger(__name__)
 
-
-# ---------------------------------------------------------------------------
-# AgentSpec — config → agent intermediate representation
-# ---------------------------------------------------------------------------
-
-# Keys extracted from the per-agent dict into dedicated AgentSpec fields.
-# Everything else in the dict goes into model_args.
-_KNOWN_AGENT_KEYS = frozenset({
-    "name", "model_name", "system_prompt", "system_prompt_path",
-    "api_type", "model_args",
-    "max_exception_retry", "max_interrupt_steps", "max_llm_recall",
-    "extra_settings",
-})
-
-
-@dataclass
-class AgentSpec:
-    """
-    Parsed, validated description of one agent from config.
-
-    Intermediate representation between raw YAML and live Agent instances.
-    Config parsing fails here with clear errors; Agent construction is trivial.
-
-    Config format (per-agent, after global merge)::
-
-        name: analyzer
-        model_name: gpt-4o
-        system_prompt_path: analytica/analyzer_system   # OR
-        system_prompt: "You are an analyst. ..."          # inline
-        api_type: completion
-        model_args:
-            temperature: 0.1
-            max_completion_tokens: 20000
-        max_exception_retry: 3
-        max_interrupt_steps: 5
-        max_llm_recall: 0
-        extra_settings: {}
-    """
-
-    name: str
-    model: str
-    system_prompt_path: Optional[str] = None
-    system_prompt: Optional[Prompt] = None
-    api_type: APITypes = APITypes.COMPLETION
-    model_args: Dict[str, Any] = field(default_factory=dict)
-    max_exception_retry: int = 3
-    max_interrupt_steps: int = 5
-    max_llm_recall: int = 0
-    extra_settings: Dict[str, Any] = field(default_factory=dict)
-
-    @classmethod
-    def from_config(cls, name: str, raw: Dict[str, Any]) -> AgentSpec:
-        """Parse a single agent config dict into an AgentSpec.
-
-        *raw* is the per-agent dict **after** global defaults have been
-        merged in.  Known keys are extracted; unknown keys are treated
-        as additional model_args.
-        """
-        raw = raw.copy()
-
-        # -- required fields -----------------------------------------------
-        model = raw.pop("model_name", None)
-        if model is None:
-            raise ValueError(f"Agent '{name}' missing required 'model_name'")
-
-        # System prompt: either inline string or a registry path (at least one)
-        inline_prompt_str = raw.pop("system_prompt", None)
-        system_prompt_path = raw.pop("system_prompt_path", None)
-        if inline_prompt_str is None and system_prompt_path is None:
-            raise ValueError(
-                f"Agent '{name}' needs either 'system_prompt' or "
-                f"'system_prompt_path'"
-            )
-
-        # Build a Prompt object from inline string if provided
-        system_prompt = None
-        if inline_prompt_str is not None:
-            system_prompt = Prompt(
-                path=f"_inline/{name}/system",
-                prompt=inline_prompt_str,
-            )
-
-        # -- optional typed fields -----------------------------------------
-        api_type_raw = raw.pop("api_type", APITypes.COMPLETION.value)
-        api_type = (
-            api_type_raw
-            if isinstance(api_type_raw, APITypes)
-            else APITypes(api_type_raw)
-        )
-
-        max_exception_retry = raw.pop("max_exception_retry", 3)
-        max_interrupt_steps = raw.pop("max_interrupt_steps", 5)
-        max_llm_recall = raw.pop("max_llm_recall", 0)
-        extra_settings = raw.pop("extra_settings", {})
-
-        # -- model_args: explicit dict + any remaining unknown keys --------
-        model_args = raw.pop("model_args", {})
-        # Pop the name key (already used as the function argument)
-        raw.pop("name", None)
-        # Anything left in raw is treated as additional model_args
-        model_args.update(raw)
-
-        return cls(
-            name=name,
-            model=model,
-            system_prompt_path=system_prompt_path,
-            system_prompt=system_prompt,
-            api_type=api_type,
-            model_args=model_args,
-            max_exception_retry=max_exception_retry,
-            max_interrupt_steps=max_interrupt_steps,
-            max_llm_recall=max_llm_recall,
-            extra_settings=extra_settings,
-        )
-
-    def build(self, runtime: Runtime, invoker, log_base=None) -> Agent:
-        """Construct a live Agent from this spec.
-
-        If the spec has an inline ``system_prompt``, uses it directly.
-        Otherwise resolves ``system_prompt_path`` from the runtime registry.
-        """
-        if self.system_prompt is not None:
-            prompt = self.system_prompt
-        else:
-            prompt = runtime.get_prompt(self.system_prompt_path)
-
-        return Agent(
-            name=self.name,
-            system_prompt=prompt,
-            model=self.model,
-            llm_invoker=invoker,
-            api_type=self.api_type,
-            model_args=self.model_args,
-            log_base=log_base,
-            max_exception_retry=self.max_exception_retry,
-            max_interrupt_steps=self.max_interrupt_steps,
-            max_llm_recall=self.max_llm_recall,
-        )
 
 
 # ---------------------------------------------------------------------------
@@ -409,10 +272,7 @@ def _normalize_name(name: Any) -> str:
         raise ValueError(f"Invalid tactic name: {name}")
 
 
-def register_tactic_class(
-    tactic_cls: Type["Tactic"],
-    runtime: Runtime = None,
-) -> Type["Tactic"]:
+def register_tactic_class(tactic_cls, runtime=None):
     runtime = runtime or get_default_runtime()
     name = _normalize_name(getattr(tactic_cls, "name", None))
     assert name not in (None, ""), (
@@ -421,8 +281,7 @@ def register_tactic_class(
     runtime.register_tactic(name, tactic_cls, overwrite=True)
     return tactic_cls
 
-
-def get_tactic_class(name: str, runtime: Runtime = None) -> Type["Tactic"]:
+def get_tactic_class(name, runtime=None):
     runtime = runtime or get_default_runtime()
     return runtime.get_tactic(name)
 
@@ -519,8 +378,8 @@ class Tactic(ABC):
 
         self._max_workers: int = config.get("max_workers", 4)
 
-        # Per-call state — set by _execute on the copy
-        self.agents: Dict[str, Union[Agent, _TrackedAgent]] = {}
+        # Per-call state — set by _execute on the copy, created here for convenience and checking
+        self.agents: Dict[str, Union[Agent, _TrackedAgent]] = self._create_fresh_agents()
         self._session: Optional[TacticCallSession] = None
 
     # -- Sub-tactic composition -------------------------------------------

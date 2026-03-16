@@ -4,7 +4,6 @@ import datetime as dt
 from typing import Dict, Any, List, Optional, Callable
 import lllm.utils as U
 from lllm.core.runtime import Runtime, get_default_runtime
-from lllm.core.config import auto_discover_if_enabled
 
 
 class BaseProxy:
@@ -17,14 +16,12 @@ class BaseProxy:
         cutoff_date: Optional[dt.datetime] = None,
         deploy_mode: bool = False,
         use_cache: bool = True,
-        auto_discover: Optional[bool] = None,
         **kwargs,
     ):
         self.activate_proxies = activate_proxies[:] if activate_proxies else []
         self.cutoff_date = cutoff_date
         self.deploy_mode = deploy_mode
         self.use_cache = use_cache
-        self.auto_discover = auto_discover
 
         if isinstance(self.cutoff_date, str):
             try:
@@ -129,29 +126,40 @@ class Proxy:
         cutoff_date: dt.datetime = None,
         deploy_mode: bool = False,
         runtime: Runtime = None,
-        *,
-        auto_discover: Optional[bool] = None,
     ):
-        self._auto_discover_flag = auto_discover
         self._runtime = runtime or get_default_runtime()
-        auto_discover_if_enabled(auto_discover, runtime=self._runtime)
 
         self.activate_proxies = activate_proxies or []
         self.cutoff_date = cutoff_date
         self.deploy_mode = deploy_mode
+        self.proxies = {}
         self._load_registered_proxies()
 
+
     def _load_registered_proxies(self):
-        for name, proxy_cls in self._runtime.proxies.items():
-            if self.activate_proxies and name not in self.activate_proxies:
+        for qk, node in self._runtime._resources.items():
+            if node.resource_type != "proxy":
                 continue
-            instance = proxy_cls(
-                cutoff_date=self.cutoff_date,
-                activate_proxies=self.activate_proxies,
-                deploy_mode=self.deploy_mode,
-                auto_discover=self._auto_discover_flag,
-            )
-            self.proxies[name] = instance
+            proxy_cls = node.value
+            if self.activate_proxies:
+                # Match against qualified key, bare key, or _proxy_path
+                matched = any(
+                    act == qk or act == node.key
+                    or act == getattr(proxy_cls, '_proxy_path', None)
+                    for act in self.activate_proxies
+                )
+                if not matched:
+                    continue
+            try:
+                instance = proxy_cls(
+                    cutoff_date=self.cutoff_date,
+                    activate_proxies=self.activate_proxies,
+                    deploy_mode=self.deploy_mode,
+                )
+            except TypeError:
+                instance = proxy_cls()
+            # Store under the bare key (what existing code expects for dispatch)
+            self.proxies[node.key] = instance
 
     def register(self, name: str, proxy_cls: Any):
         """Register (or override) a proxy implementation at runtime."""
@@ -162,7 +170,6 @@ class Proxy:
                 cutoff_date=self.cutoff_date,
                 activate_proxies=self.activate_proxies,
                 deploy_mode=self.deploy_mode,
-                auto_discover=self._auto_discover_flag,
             )
         except TypeError:
             instance = proxy_cls(self.activate_proxies, self.cutoff_date, self.deploy_mode)
