@@ -1,0 +1,7 @@
+[
+  {"id": "s001", "text": "The quick brown fox jumps over the lazy dog.", "label": "positive", "score": 0.92},
+  {"id": "s002", "text": "This product is absolutely terrible.", "label": "negative", "score": 0.05},
+  {"id": "s003", "text": "The weather today is neither good nor bad.", "label": "neutral", "score": 0.50},
+  {"id": "s004", "text": "I love how intuitive this interface is!", "label": "positive", "score": 0.98},
+  {"id": "s005", "text": "The results were disappointing and below expectations.", "label": "negative", "score": 0.12}
+]

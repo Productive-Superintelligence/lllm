@@ -1,0 +1,6 @@
+[package]
+name = "pkg_prefixed"
+description = "Package demonstrating the 'under' prefix feature"
+
+[prompts]
+paths = ["vendor_prompts under tools"]

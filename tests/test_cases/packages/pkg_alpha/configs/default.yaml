@@ -1,0 +1,11 @@
+global:
+  model_name: gpt-4o-mini
+  model_args:
+    temperature: 0.7
+    max_tokens: 1000
+  max_exception_retry: 3
+  max_interrupt_steps: 5
+
+agent_configs:
+  - name: assistant
+    system_prompt: "You are a helpful assistant."

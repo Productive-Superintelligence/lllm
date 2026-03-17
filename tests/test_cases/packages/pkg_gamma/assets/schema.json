@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "AnalysisResult",
+  "type": "object",
+  "properties": {
+    "id": {"type": "string", "description": "Unique result identifier"},
+    "score": {"type": "number", "minimum": 0, "maximum": 1},
+    "label": {"type": "string", "enum": ["positive", "negative", "neutral"]},
+    "confidence": {"type": "number"},
+    "metadata": {"type": "object"}
+  },
+  "required": ["id", "score", "label"]
+}

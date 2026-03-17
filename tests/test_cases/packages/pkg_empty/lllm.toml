@@ -1,0 +1,3 @@
+[package]
+name = "pkg_empty"
+description = "Empty package with no resources"

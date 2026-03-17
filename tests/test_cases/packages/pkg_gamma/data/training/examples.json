@@ -1,0 +1,22 @@
+{
+  "version": "1.0",
+  "split": "train",
+  "examples": [
+    {
+      "input": "What is the capital of France?",
+      "output": "Paris",
+      "difficulty": "easy"
+    },
+    {
+      "input": "Solve: 2x + 5 = 13",
+      "output": "x = 4",
+      "difficulty": "medium"
+    },
+    {
+      "input": "Explain the implications of Gödel's incompleteness theorems.",
+      "output": "Gödel's theorems show that any consistent formal system...",
+      "difficulty": "hard"
+    }
+  ],
+  "total": 3
+}

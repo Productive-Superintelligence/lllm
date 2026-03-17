@@ -1,0 +1,11 @@
+base: default
+
+global:
+  model_args:
+    temperature: 0.95
+    max_tokens: 500
+  max_exception_retry: 1
+
+agent_configs:
+  - name: assistant
+    system_prompt: "You are a creative development assistant. Be experimental."

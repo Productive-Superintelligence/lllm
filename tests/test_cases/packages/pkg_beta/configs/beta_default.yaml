@@ -1,0 +1,15 @@
+global:
+  model_name: gpt-4o
+  model_args:
+    temperature: 0.3
+    max_tokens: 2000
+  max_exception_retry: 3
+  max_interrupt_steps: 8
+
+agent_configs:
+  - name: reasoner
+    system_prompt: "You are a logical reasoning assistant. Think carefully before answering."
+  - name: critic
+    system_prompt: "You are a critical thinking assistant. Challenge assumptions."
+    model_args:
+      temperature: 0.5

@@ -1,0 +1,6 @@
+[package]
+name = "pkg_cycle_b"
+description = "Part B of a dependency cycle (A -> B -> A)"
+
+[dependencies]
+packages = ["../pkg_cycle_a"]

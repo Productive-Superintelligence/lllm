@@ -1,0 +1,4 @@
+[package]
+name = "pkg_alpha"
+version = "1.0.0"
+description = "Alpha test package with prompts, configs, and template vars"

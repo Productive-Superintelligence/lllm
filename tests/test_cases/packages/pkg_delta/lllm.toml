@@ -1,0 +1,3 @@
+[package]
+name = "pkg_delta"
+description = "Delta package with proxy classes"

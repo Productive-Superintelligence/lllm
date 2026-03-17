@@ -1,0 +1,9 @@
+[package]
+name = "pkg_gamma"
+description = "Gamma package with custom asset and data sections"
+
+[assets]
+paths = ["assets"]
+
+[data]
+paths = ["data"]
