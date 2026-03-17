@@ -39,10 +39,10 @@ A typical project layout:
 
 ```
 project_name/
-├── lllm.toml           # root package — LLLM finds this automatically
-├── lllm_packages/
-│   ├── my_package1/
-│   └── my_package2/
+├── lllm.toml               # root package — LLLM finds this automatically
+├── lllm_packages/          # drop third-party packages here (auto-discovered)
+│   ├── finance-toolkit/
+│   └── data-utils/
 └── ... (application code, data, etc.)
 ```
 
@@ -55,11 +55,199 @@ Everything is automatic. When `lllm` is imported, it searches upward from `cwd` 
 
 If no `lllm.toml` is found, LLLM falls back to scanning the current directory for any of the four standard folders (`prompts/`, `configs/`, `tactics/`, `proxies/`). If found, those are loaded and a `RuntimeWarning` recommends adding an `lllm.toml`. If neither exists, the runtime starts empty (fast mode).
 
+After loading the main package, LLLM also scans for **shared packages** in standard directories (see [Sharing Packages](#sharing-packages) below).
+
 ```python
 from lllm import load_prompt  # runtime already populated at import time
 ```
 
 For advanced use (testing with isolated registries, parallel experiments), you can load additional named runtimes explicitly — see [Runtime](../core/runtime.md).
+
+
+## Sharing Packages
+
+A package is just a folder with an `lllm.toml`. Sharing one is as simple as sharing that folder — on GitHub, as a zip, or any other mechanism. The consumer drops it into a standard location and it is auto-discovered with no config changes required.
+
+### Package management CLI
+
+LLLM ships a `lllm pkg` command group for installing, listing, removing, and exporting packages without writing any Python:
+
+```bash
+# Install a package from a zip file (defaults to user scope)
+lllm pkg install finance-toolkit-v1.2.zip
+
+# Install with an alias (renames the package namespace)
+lllm pkg install finance-toolkit-v1.2.zip --alias ft
+
+# Install into the project (lllm_packages/ committed to repo)
+lllm pkg install finance-toolkit-v1.2.zip --scope project
+
+# List all installed packages
+lllm pkg list
+
+# List only user-level packages
+lllm pkg list --scope user
+
+# Remove a package
+lllm pkg remove finance-toolkit
+
+# Remove from a specific scope
+lllm pkg remove finance-toolkit --scope project
+
+# Export a loaded package to a zip file
+lllm pkg export finance-toolkit ~/releases/finance-toolkit-v1.2.zip
+
+# Export and bundle all transitive dependencies inside the zip
+lllm pkg export finance-toolkit ~/releases/finance-toolkit-v1.2.zip --bundle-deps
+```
+
+**Scope** controls where the package is installed:
+
+| Scope | Location | Visibility |
+|-------|----------|------------|
+| `user` (default) | `~/.lllm/packages/<name>/` | All your projects |
+| `project` | `<project_root>/lllm_packages/<name>/` | This repo (commit it) |
+
+**`--bundle-deps`** packs all transitive dependencies from `[dependencies]` into a `lllm_packages/` sub-directory inside the zip. Recipients can `lllm pkg install` the zip and get everything in one shot without needing to install each dependency separately.
+
+You can also use the Python API directly:
+
+```python
+from lllm import install_package, export_package, list_packages, remove_package
+
+# Install
+install_package("finance-toolkit-v1.2.zip")
+install_package("finance-toolkit-v1.2.zip", alias="ft", scope="project")
+
+# List
+for pkg in list_packages():
+    print(pkg["name"], pkg["version"], pkg["scope"], pkg["path"])
+
+# Export (with bundled deps)
+export_package("finance-toolkit", "~/releases/finance-toolkit-v1.2.zip", bundle_deps=True)
+
+# Remove
+remove_package("finance-toolkit")
+remove_package("finance-toolkit", scope="project")
+```
+
+---
+
+### Drop-in directory (zero config)
+
+LLLM auto-discovers packages placed in these directories at startup:
+
+| Directory | Scope |
+|-----------|-------|
+| `<project_root>/lllm_packages/<pkg>/` | Project-level — shared with everyone using this repo |
+| `~/.lllm/packages/<pkg>/` | User-level — available across all your projects |
+
+Each sub-folder must contain an `lllm.toml`. When LLLM finds one it loads the package exactly like an explicit dependency — resources enter the registry under the package's own namespace.
+
+**Example**: to use a published `finance-toolkit` package:
+
+```bash
+# From GitHub
+git clone https://github.com/acme/finance-toolkit lllm_packages/finance-toolkit
+
+# Or unzip a downloaded release
+unzip finance-toolkit-v1.2.zip -d lllm_packages/
+```
+
+That's it. On the next import the package is live:
+
+```python
+from lllm import load_prompt, resolve_config
+
+prompt = load_prompt("finance-toolkit:analysis/system")
+config = resolve_config("finance-toolkit:research")
+```
+
+No `lllm.toml` edits required. Project-level packages (`lllm_packages/`) are typically committed to the repo so the whole team gets them automatically. User-level packages (`~/.lllm/packages/`) are personal and not committed.
+
+### Explicit dependency (for pinned versions)
+
+For tighter control — pinning a specific path, aliasing the namespace, or re-exporting resources into your own namespace — declare the package as an explicit dependency in your `lllm.toml`:
+
+```toml
+[dependencies]
+packages = [
+    "./lllm_packages/finance-toolkit",
+    "./lllm_packages/finance-toolkit as ft",   # alias
+]
+```
+
+Explicit and drop-in discovery are not mutually exclusive. If a package appears in both `lllm_packages/` and `[dependencies]`, it is loaded once (the first registration wins; a debug-level log notes the skip).
+
+### Comparison: packages vs. skills
+
+Both packages and [agent skills](https://agentskills.io) are shareable, drop-in, version-controlled folders. Choose based on what you are sharing:
+
+| | Agent skills | LLLM packages |
+|---|---|---|
+| **Contains** | `SKILL.md` instructions, scripts, reference files | `Prompt` classes, `Tactic` classes, proxy tools, agent configs |
+| **Drop-in path** | `.agents/skills/<name>/` | `lllm_packages/<name>/` |
+| **Consumed by** | Any agentskills-compatible agent | LLLM specifically |
+| **Use when** | Sharing reusable task instructions and workflows | Sharing complete agent infrastructure (prompts + tactics + tools + configs) |
+| **Activated** | On-demand by the model via `activate_skill` | At import time, resources available globally |
+
+Skills and packages are complementary: a package might ship both `Prompt`/`Tactic` Python code **and** a `skills/` directory so consumers can use either integration style.
+
+---
+
+### Writing a package for sharing
+
+A package intended for sharing needs a few conventions beyond what a private package requires.
+
+**Use a unique, stable package name.**
+The `name` in `lllm.toml` becomes the namespace prefix for every resource in your package. Pick something specific enough to avoid collision with other packages (e.g. `acme-finance`, not `finance`). Never rename it after publishing — that is a breaking change for every consumer.
+
+```toml
+[package]
+name = "acme-finance"
+version = "1.2.0"
+description = "Financial data prompts and analysis tactics for LLLM"
+```
+
+**Namespace all internal references.**
+Inside your package, reference your own resources with bare keys (LLLM resolves them against the default namespace while your package is loading). In documentation and examples, always show the fully qualified form so consumers know what to type:
+
+```python
+# In your package code — bare key, fine
+prompt = load_prompt("analysis/system")
+
+# In your README / docs — always show fully qualified
+prompt = load_prompt("acme-finance:analysis/system")
+```
+
+**Make configs self-contained.**
+Configs that reference `system_prompt_path` must work when your package is a dependency, not the root package. Use package-qualified paths:
+
+```yaml
+# Good — works from any root
+agent_configs:
+  - name: analyst
+    system_prompt_path: acme-finance:analysis/system
+
+# Fragile — breaks if acme-finance isn't the default namespace
+  - name: analyst
+    system_prompt_path: analysis/system
+```
+
+**Declare runtime requirements explicitly.**
+If your tactics or proxies require environment variables (API keys, endpoints), document them clearly in your `README` and raise a `ValueError` with a clear message at import time if they are missing — don't let the error surface later during a call.
+
+**Pin your own dependencies.**
+If your package depends on other LLLM packages, declare them in `[dependencies]`. Consumers who drop your package into `lllm_packages/` will need those dependencies too — document this prominently, or bundle them as sub-folders if they are small enough.
+
+**Version the folder, not just the `lllm.toml`.**
+Consumers typically pin a specific git commit or release zip, not a semver range. Tag releases in your repo (`v1.2.0`), write a changelog, and treat breaking changes (renamed resources, removed tactics) with the same care you would for a Python library.
+
+**Keep prompts and tactics independent.**
+The most reusable packages expose `Prompt` and `Tactic` classes that work with any model and any agent config — no hardcoded model names, no assumptions about the consumer's proxy setup. Provide example configs (in `configs/examples/`) that consumers can copy and adapt rather than use directly.
+
+**Provide a minimal example.**
+Include a `configs/example.yaml` (or similar) and a short `README` showing the three lines of Python needed to use your package. If a consumer can't get a result in five minutes, they will move on.
 
 
 ## Resources

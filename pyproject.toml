@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lllm-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Low-Level Language Model framework for building LLM agentic systems."
 readme = "README.md"
 license = { file = "LICENSE" }

@@ -2,6 +2,7 @@
 from lllm.core.runtime import (
     Runtime, get_default_runtime, set_default_runtime,
     get_runtime, load_runtime,
+    install_package, export_package, list_packages, remove_package,
 )
 from lllm.core.resource import (
     ResourceNode, PackageInfo,
@@ -18,7 +19,7 @@ from lllm.core.tactic import Tactic, build_tactic, register_tactic_class
 from lllm.proxies import BaseProxy, ProxyManager, register_proxy, ProxyRegistrator
 from lllm.logging import LogStore, LocalFileBackend, SQLiteBackend, NoOpBackend, setup_logging
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
 
 
 def _auto_init():

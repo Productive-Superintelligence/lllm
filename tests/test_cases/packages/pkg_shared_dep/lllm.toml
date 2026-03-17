@@ -1,0 +1,7 @@
+[package]
+name = "pkg_shared_dep"
+version = "0.1.0"
+description = "A dependency package used by pkg_shareable in tests"
+
+[prompts]
+paths = ["prompts"]

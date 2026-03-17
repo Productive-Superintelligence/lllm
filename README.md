@@ -175,7 +175,7 @@ pytest tests/
 
 - **Computer Use Agent (CUA)** – `lllm.tools.cua` offers browser automation via Playwright and the OpenAI Computer Use API. It is still evolving and may change without notice.
 - **Responses API Routing** – opt into OpenAI’s Responses API by setting `api_type = "response"` per agent. This enables native web search/computer-use tools but currently targets OpenAI only.
-- **Skills (WIP)** – For defining more complex base agents.
+- **Skills** – For defining more complex base agents.
 
 
 # Roadmap
@@ -212,23 +212,22 @@ pytest tests/
 - [x] Fast mode, 5-line code to build a simple system with no configuration.
 
 
-## WIP V0.1.1
+## V0.1.1
 
 - [x] Proxy-based tool-calling, mini in-dialog interpreter (proxies/)
 - [x] Default Context Manager for prune over-size dialogs
 - [x] Support skills in agent config, see https://agentskills.io
+- [x] Tactics, Prompts, Proxies, Configs, etc., i.e., package sharing and management system. 
 
 ## TODOs
 
-- [ ] Tactics, Prompts, Proxies, Configs, etc. sharing system.
-
-## Optional
 - [ ] Add-on: Analysis tools based on the logging system, e.g., cost analysis, dialog analysis, etc. Basically, a GUI for the logging DB, and exporting an app with default dashboards using like Streamlit, Dash, Panel, etc.
-- [ ] Add-on: Advanced sandbox, e.g., browser sandbox, code sandbox, etc. maybe use sandbox wheels like OpenSandbox (sandbox/) Or maybe do not include it in the core package, as it can work externally.
-- [ ] Maybe use Mintlify for documentation
+
 
 ## Future Roadmap
 
+- [ ] Add-on: Advanced sandbox, e.g., browser sandbox, code sandbox, etc. maybe use sandbox wheels like OpenSandbox (sandbox/) Or maybe do not include it in the core package, as it can work externally.
+- [ ] Maybe use Mintlify for documentation
 - [ ] Gradient mode for tuning/training
 
 
