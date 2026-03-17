@@ -79,17 +79,17 @@ class LogStore:
 
     Args:
         backend:   A LogBackend instance (LocalFileBackend, SQLiteBackend, etc.).
-        namespace: Logical prefix for all keys.  Defaults to ``"default"``.
-                   Typically set to the package/runtime name.
+        partition: Logical key prefix used to share one backend among multiple stores.
+                   Defaults to ``"default"``.
         runtime:   Optional Runtime instance.  When supplied, ``list_sessions``
                    and ``export_cost_summary`` accept any alias or short path
                    (e.g. ``"my_pkg:folder/researcher"``) and resolve it to the
-                   canonical absolute key (e.g. ``"my_pkg.tactics:folder/researcher"``).
+                   canonical stable key (e.g. ``"my_pkg::researcher"``).
     """
 
-    def __init__(self, backend: LogBackend, namespace: str = "default", runtime=None):
+    def __init__(self, backend: LogBackend, partition: str = "default", runtime=None):
         self._backend = backend
-        self._ns = namespace.strip("/")
+        self._ns = partition.strip("/")
         self._runtime = runtime  # optional Runtime for alias resolution
 
     # ------------------------------------------------------------------
@@ -249,7 +249,7 @@ class LogStore:
         """Deserialise and return the full TacticCallSession object."""
         data = self._backend.get(self._session_key(session_id))
         if data is None:
-            raise KeyError(f"Session '{session_id}' not found in LogStore (namespace={self._ns!r})")
+            raise KeyError(f"Session '{session_id}' not found in LogStore (partition={self._ns!r})")
         return _deserialize_session(data)
 
     def load_session_record(self, session_id: str) -> SessionRecord:

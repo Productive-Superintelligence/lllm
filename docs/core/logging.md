@@ -85,12 +85,12 @@ You can also construct them explicitly:
 ```python
 from lllm.logging import LogStore, LocalFileBackend, SQLiteBackend
 
-# Multiple namespaces in one directory — each project stays isolated
-store_a = LogStore(LocalFileBackend("~/.lllm/logs"), namespace="project-a", runtime=rt)
-store_b = LogStore(LocalFileBackend("~/.lllm/logs"), namespace="project-b", runtime=rt)
+# Multiple partitions in one directory — each project stays isolated
+store_a = LogStore(LocalFileBackend("~/.lllm/logs"), partition="project-a", runtime=rt)
+store_b = LogStore(LocalFileBackend("~/.lllm/logs"), partition="project-b", runtime=rt)
 
-# Multiple namespaces in one SQLite file
-store = LogStore(SQLiteBackend("~/.lllm/all.db"), namespace="prod", runtime=rt)
+# Multiple partitions in one SQLite file
+store = LogStore(SQLiteBackend("~/.lllm/all.db"), partition="prod", runtime=rt)
 ```
 
 #### Backend comparison
@@ -112,7 +112,7 @@ from lllm.core.tactic import build_tactic
 from lllm.core.config import resolve_config
 
 rt = get_default_runtime()
-store = sqlite_store("~/.lllm/logs.db", namespace="my-project", runtime=rt)
+store = sqlite_store("~/.lllm/logs.db", partition="my-project", runtime=rt)
 
 # build_tactic resolves pkg::name from the runtime and embeds it in every session
 config = resolve_config("default")
@@ -357,12 +357,12 @@ store.list_sessions(tags={"project": "doc-qa", "experiment": "baseline"})
 store.list_sessions(tags={"project": "doc-qa", "doc_id": "doc-00127"})
 ```
 
-### Namespaces for project isolation
+### Partitions for project isolation
 
 ```python
-store_a = local_store("~/.lllm/logs", namespace="project-a", runtime=rt)
-store_b = local_store("~/.lllm/logs", namespace="project-b", runtime=rt)
-# Sessions in each namespace are invisible to the other
+store_a = local_store("~/.lllm/logs", partition="project-a", runtime=rt)
+store_b = local_store("~/.lllm/logs", partition="project-b", runtime=rt)
+# Sessions in each partition are invisible to the other
 ```
 
 ### Tags vs metadata
@@ -522,7 +522,7 @@ class RedisBackend(LogBackend):
         self._r.delete(self._k(key))
 
 
-store = LogStore(RedisBackend(redis.Redis()), namespace="prod", runtime=rt)
+store = LogStore(RedisBackend(redis.Redis()), partition="prod", runtime=rt)
 ```
 
 ### Firebase / Firestore example
@@ -556,7 +556,7 @@ class FirestoreBackend(LogBackend):
         self._col.document(self._doc_id(key)).delete()
 
 
-store = LogStore(FirestoreBackend("my_project_logs"), namespace="prod", runtime=rt)
+store = LogStore(FirestoreBackend("my_project_logs"), partition="prod", runtime=rt)
 ```
 
 ### Design notes for custom backends
@@ -586,7 +586,7 @@ setup_logging("INFO")
 # 3. Create a persistent store bound to the runtime.
 #    Sessions are stored under the stable key "my_pkg::researcher",
 #    regardless of file layout or aliases in lllm.toml.
-store = sqlite_store("~/.lllm/my-project.db", namespace="experiment-001", runtime=rt)
+store = sqlite_store("~/.lllm/my-project.db", partition="experiment-001", runtime=rt)
 
 # 4. Build tactic — pkg::name is resolved and embedded in every session
 config = resolve_config("default")

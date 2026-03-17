@@ -13,9 +13,9 @@ Public API:
     setup_logging       — convenience function to configure the lllm logger
 
 Convenience factories:
-    local_store(path, namespace)   — LocalFileBackend-backed LogStore
-    sqlite_store(path, namespace)  — SQLiteBackend-backed LogStore
-    noop_store(namespace)          — NoOpBackend-backed LogStore (dry run)
+    local_store(path, partition)   — LocalFileBackend-backed LogStore
+    sqlite_store(path, partition)  — SQLiteBackend-backed LogStore
+    noop_store(partition)          — NoOpBackend-backed LogStore (dry run)
 """
 
 from lllm.logging.backend import (
@@ -31,7 +31,7 @@ from lllm.logging.formatter import ColoredFormatter, setup_logging
 
 def local_store(
     path: str,
-    namespace: str = "default",
+    partition: str = "default",
     runtime=None,
 ) -> LogStore:
     """Create a LogStore backed by the local filesystem.
@@ -39,27 +39,28 @@ def local_store(
     Args:
         path:      Directory where session files will be written.
                    Created automatically if it does not exist.
-        namespace: Logical prefix for all keys.  Separate stores can share
-                   the same directory by using different namespaces.
+        partition: Key prefix for partitioning a shared backend among multiple
+                   stores.  Two stores with different partitions in the same
+                   directory are fully isolated.
         runtime:   Optional Runtime instance.  Enables alias resolution in
                    ``list_sessions(tactic_path=...)``.
 
     Example::
 
         store = local_store("~/.lllm/logs")
-        store = local_store("/data/runs", namespace="exp-42", runtime=rt)
+        store = local_store("/data/runs", partition="exp-42", runtime=rt)
     """
     import os
     return LogStore(
         LocalFileBackend(os.path.expanduser(path)),
-        namespace=namespace,
+        partition=partition,
         runtime=runtime,
     )
 
 
 def sqlite_store(
     path: str,
-    namespace: str = "default",
+    partition: str = "default",
     runtime=None,
 ) -> LogStore:
     """Create a LogStore backed by a single SQLite file.
@@ -70,23 +71,23 @@ def sqlite_store(
     Args:
         path:      Path to the ``.db`` file.  Parent directory is created
                    automatically.  Use ``:memory:`` for in-process testing.
-        namespace: Logical prefix for all keys.
+        partition: Key prefix for partitioning a shared backend.
         runtime:   Optional Runtime instance for alias resolution.
 
     Example::
 
         store = sqlite_store("~/.lllm/logs.db")
-        store = sqlite_store(":memory:", namespace="test")
+        store = sqlite_store(":memory:", partition="test")
     """
     import os
     return LogStore(
         SQLiteBackend(os.path.expanduser(path)),
-        namespace=namespace,
+        partition=partition,
         runtime=runtime,
     )
 
 
-def noop_store(namespace: str = "default", runtime=None) -> LogStore:
+def noop_store(partition: str = "default", runtime=None) -> LogStore:
     """Create a LogStore that silently discards everything.
 
     Useful for disabling persistence in tests or dry-run scripts without
@@ -97,7 +98,7 @@ def noop_store(namespace: str = "default", runtime=None) -> LogStore:
         store = noop_store()
         tactic = build_tactic(config, ckpt_dir, log_store=store)
     """
-    return LogStore(NoOpBackend(), namespace=namespace, runtime=runtime)
+    return LogStore(NoOpBackend(), partition=partition, runtime=runtime)
 
 
 __all__ = [
