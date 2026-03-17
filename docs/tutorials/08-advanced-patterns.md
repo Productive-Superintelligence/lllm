@@ -312,5 +312,5 @@ results = tactic.bcall(
 
 - **Computer Use Agent** — `lllm.tools.cua` for browser automation via Playwright.
 - **Responses API** — set `api_type = "response"` per agent to enable native OpenAI web search.
-- **Skills (WIP)** — higher-level reusable agent behaviours, see the [roadmap](../../README.md#roadmap).
+- **Skills (WIP)** — higher-level reusable agent behaviours (see the project roadmap on GitHub).
 - **Analysis GUI** — the roadmap includes a Streamlit/Dash dashboard for the `LogStore` database.
