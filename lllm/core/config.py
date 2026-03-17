@@ -17,7 +17,7 @@ import types
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Optional, List, Dict, Tuple
+from typing import Any, Iterable, Optional, List, Dict, Tuple, Union
 import tomllib
 
 from lllm.core.runtime import Runtime, get_default_runtime
@@ -851,11 +851,368 @@ class ContextManagerConfig:
         return cm_cls(model_name=model_name, max_tokens=self.max_tokens)
 
 
+def _parse_frontmatter(text: str) -> Tuple[Dict[str, Any], str]:
+    """Split *text* into ``(frontmatter_dict, body)``."""
+    import re
+    import yaml as _yaml
+
+    fm_match = re.match(r"^---\s*\n(.*?)\n---\s*\n", text, re.DOTALL)
+    if not fm_match:
+        return {}, text
+    try:
+        frontmatter = _yaml.safe_load(fm_match.group(1)) or {}
+    except Exception:
+        frontmatter = {}
+    body = text[fm_match.end():]
+    return frontmatter, body
+
+
+def _parse_skill_md(path: Path) -> Dict[str, Any]:
+    """Parse a ``SKILL.md`` file.
+
+    Returns a dict with keys:
+      ``name``          — from frontmatter, falls back to directory name
+      ``description``   — from frontmatter (empty string if missing)
+      ``allowed_tools`` — list parsed from the ``allowed-tools`` space-delimited field
+      ``body``          — Markdown body with frontmatter stripped
+      ``skill_dir``     — ``Path`` of the skill's root directory
+    """
+    text = path.read_text(encoding="utf-8")
+    frontmatter, body = _parse_frontmatter(text)
+
+    raw_tools = frontmatter.get("allowed-tools", "") or ""
+    allowed_tools = raw_tools.split() if isinstance(raw_tools, str) else list(raw_tools)
+
+    return {
+        "name": frontmatter.get("name") or path.parent.name,
+        "description": frontmatter.get("description", ""),
+        "allowed_tools": allowed_tools,
+        "body": body.strip(),
+        "skill_dir": path.parent,
+    }
+
+
+def _discover_skills(project_dir: Optional[Path] = None) -> Dict[str, Dict]:
+    """Scan standard skill directories and return ``{name: skill_dict}``."""
+    if project_dir is None:
+        project_dir = Path.cwd()
+    home = Path.home()
+
+    search_dirs = [
+        project_dir / ".agents" / "skills",
+        project_dir / ".claude" / "skills",
+        home / ".agents" / "skills",
+        home / ".claude" / "skills",
+    ]
+
+    skills: Dict[str, Dict] = {}
+    for search_dir in search_dirs:
+        if not search_dir.is_dir():
+            continue
+        for skill_dir in sorted(search_dir.iterdir()):
+            if not skill_dir.is_dir():
+                continue
+            skill_md = skill_dir / "SKILL.md"
+            if not skill_md.exists():
+                continue
+            try:
+                skill = _parse_skill_md(skill_md)
+                name = skill["name"]
+                if name not in skills:  # project-level takes precedence
+                    skills[name] = skill
+            except Exception as exc:
+                logger.warning("Failed to parse skill at %s: %s", skill_md, exc)
+    return skills
+
+
+def _is_skill_id(s: str) -> bool:
+    """Return True if *s* looks like an Anthropic-hosted skill ID (``skill_…``)."""
+    return s.startswith("skill_")
+
+
+def _is_url(s: str) -> bool:
+    return s.startswith("http://") or s.startswith("https://")
+
+
+def _fetch_skill_from_url(url: str) -> Optional[Dict[str, Any]]:
+    """Download a ``SKILL.md`` from *url* and parse it.  Returns None on failure."""
+    try:
+        import urllib.request
+        with urllib.request.urlopen(url, timeout=10) as resp:  # noqa: S310
+            text = resp.read().decode("utf-8")
+        stem = Path(url.rstrip("/").rsplit("/", 1)[-1]).stem
+        frontmatter, body = _parse_frontmatter(text)
+        raw_tools = frontmatter.get("allowed-tools", "") or ""
+        allowed_tools = raw_tools.split() if isinstance(raw_tools, str) else list(raw_tools)
+        return {
+            "name": frontmatter.get("name") or stem,
+            "description": frontmatter.get("description", ""),
+            "allowed_tools": allowed_tools,
+            "body": body.strip(),
+            "skill_dir": None,   # no local directory for URL skills
+        }
+    except Exception as exc:
+        logger.warning("Failed to fetch skill from %s: %s", url, exc)
+        return None
+
+
+def _list_skill_resources(skill_dir: Optional[Path]) -> List[str]:
+    """Return relative paths of bundled resource files under *skill_dir*."""
+    if skill_dir is None or not skill_dir.is_dir():
+        return []
+    resources = []
+    for p in sorted(skill_dir.rglob("*")):
+        if p.name == "SKILL.md" or not p.is_file():
+            continue
+        rel = p.relative_to(skill_dir)
+        # Skip hidden files and __pycache__
+        if any(part.startswith(".") or part == "__pycache__" for part in rel.parts):
+            continue
+        resources.append(str(rel))
+    return resources
+
+
+def make_activate_skill_tool(skills: Dict[str, Dict]) -> "Function":
+    """Return an ``activate_skill`` :class:`~lllm.core.prompt.Function` tool.
+
+    When the model calls ``activate_skill(name="pdf")``, it receives the full
+    ``SKILL.md`` body plus a listing of any bundled resource files.  The model
+    can then load those files using its standard file-reading capability.
+
+    *skills* is the ``{name: skill_dict}`` map built by
+    :meth:`SkillsConfig._resolve_text_skills`.
+    """
+    from lllm.core.prompt import Function
+
+    skill_names = sorted(skills.keys())
+
+    def activate_skill(name: str) -> str:
+        """Load the full instructions for a skill by name."""
+        if name not in skills:
+            return (
+                f"Skill '{name}' not found. "
+                f"Available skills: {skill_names}"
+            )
+        skill = skills[name]
+        parts = [f'<skill_content name="{name}">']
+        parts.append(skill["body"])
+
+        if skill["skill_dir"] is not None:
+            parts.append(f"\nSkill directory: {skill['skill_dir']}")
+            parts.append(
+                "Relative paths in this skill resolve against the skill directory."
+            )
+
+        resources = _list_skill_resources(skill["skill_dir"])
+        if resources:
+            parts.append("\n<skill_resources>")
+            for r in resources:
+                parts.append(f"  <file>{r}</file>")
+            parts.append("</skill_resources>")
+
+        if skill["allowed_tools"]:
+            parts.append(
+                f"\nNote: This skill declares tool requirements: "
+                f"{' '.join(skill['allowed_tools'])}. "
+                "Ensure the agent has access to these tools."
+            )
+
+        parts.append("</skill_content>")
+        return "\n".join(parts)
+
+    description = (
+        "Load the full instructions for an available skill. "
+        "Call this when a task matches a skill's description — before attempting "
+        "to perform the task — to get detailed step-by-step guidance. "
+        f"Available skills: {skill_names}."
+    )
+
+    return Function.from_callable(
+        activate_skill,
+        description=description,
+        prop_desc={"name": f"Skill name to load. One of: {skill_names}."},
+    )
+
+
+@dataclass
+class SkillsConfig:
+    """
+    Configuration for agent skills following the `agentskills.io <https://agentskills.io>`_ standard.
+
+    Settable globally (under the ``global`` key in tactic config) and
+    overridable per-agent.  When both are present the per-agent list
+    replaces the global one (skills lists are not merged).
+
+    Config format (YAML)::
+
+        skills: [pdf, commit, review-pr]   # local names, auto-discovered
+        # OR
+        skills: "*"                         # all locally discovered skills
+        # OR — mixed, each entry is auto-classified:
+        skills:
+          - local-skill            # local name → scan .agents/skills/ etc.
+          - skill_01abc123         # Anthropic-hosted ID (starts with "skill_")
+          - https://example.com/SKILL.md   # remote URL → fetched at build time
+
+    **Entry types (auto-detected):**
+
+    ``skill_<id>`` (starts with ``skill_``)
+        Anthropic-hosted skill.  Passed directly to the API as
+        ``skills=[{"id": "skill_01abc"}]`` with the required
+        ``anthropic-beta: skills-2025-10-02`` header.  Anthropic injects
+        the skill content server-side, including ``allowed-tools`` grants.
+        Only works with Anthropic models.
+
+    ``https://`` / ``http://``
+        Remote SKILL.md URL.  Fetched once at build time.  Only the **catalog
+        entry** (name + description) is injected into the system prompt; the
+        full body is served on demand via the ``activate_skill`` tool.
+
+    Anything else
+        Local skill name.  Discovered from standard directories (project paths
+        take precedence over user-level paths):
+
+        * ``<project>/.agents/skills/<name>/SKILL.md``
+        * ``<project>/.claude/skills/<name>/SKILL.md``
+        * ``~/.agents/skills/<name>/SKILL.md``
+        * ``~/.claude/skills/<name>/SKILL.md``
+
+    **How local and URL skills are surfaced to the model:**
+
+    At agent build time, only a compact **skill catalog** (name + description,
+    ~50–100 tokens per skill) is appended to the system prompt.  An
+    ``activate_skill`` tool is also injected.  When the model decides a skill
+    is relevant it calls ``activate_skill(name="…")`` to load the full
+    ``SKILL.md`` body into context on demand — following the progressive
+    disclosure pattern from the agentskills.io specification.
+    """
+
+    names: Union[List[str], str]   # list of entries or "*" for all local
+
+    @classmethod
+    def from_config(cls, value) -> "SkillsConfig":
+        """Parse from a YAML value (list of entries or the string ``"*"``)."""
+        if value == "*":
+            return cls(names="*")
+        if isinstance(value, list):
+            return cls(names=[str(n) for n in value])
+        if isinstance(value, str):
+            return cls(names=[value])
+        raise ValueError(f"'skills' must be a list of skill entries or '*', got: {value!r}")
+
+    # ------------------------------------------------------------------
+    # Partition entries into local/url/id buckets
+    # ------------------------------------------------------------------
+
+    def _partition(self) -> Tuple[List[str], List[str], List[str]]:
+        """Return ``(local_names, urls, skill_ids)`` for the configured entries."""
+        if self.names == "*":
+            return [], [], []   # handled separately in callers
+        local, urls, ids = [], [], []
+        for entry in self.names:
+            if _is_skill_id(entry):
+                ids.append(entry)
+            elif _is_url(entry):
+                urls.append(entry)
+            else:
+                local.append(entry)
+        return local, urls, ids
+
+    # ------------------------------------------------------------------
+    # Resolve text skills (local + URL) → skill dicts
+    # ------------------------------------------------------------------
+
+    def resolve_text_skills(self, project_dir: Optional[Path] = None) -> Dict[str, Dict]:
+        """Discover and return ``{name: skill_dict}`` for all local and URL skills.
+
+        Anthropic-hosted skill IDs are excluded; they are handled separately
+        via :meth:`build_model_args_patch`.
+        """
+        if self.names == "*":
+            return _discover_skills(project_dir)
+
+        local_names, urls, _ids = self._partition()
+        result: Dict[str, Dict] = {}
+
+        all_local = _discover_skills(project_dir)
+        for name in local_names:
+            if name in all_local:
+                result[name] = all_local[name]
+            else:
+                logger.warning(
+                    "Skill '%s' not found in any search path "
+                    "(.agents/skills/, .claude/skills/, ~/.agents/skills/, ~/.claude/skills/)",
+                    name,
+                )
+
+        for url in urls:
+            skill = _fetch_skill_from_url(url)
+            if skill:
+                result[skill["name"]] = skill
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Catalog block (tier-1 disclosure: name + description only)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def build_catalog_block(skills: Dict[str, Dict]) -> str:
+        """Return the system-prompt block that discloses available skills.
+
+        Injects only ``name`` and ``description`` per skill (~50–100 tokens
+        each) plus a one-line instruction on how to activate them.
+        Returns an empty string when *skills* is empty.
+        """
+        if not skills:
+            return ""
+
+        lines = [
+            "",
+            "When a task matches a skill's description, call the "
+            "`activate_skill` tool with that skill's name to load its full "
+            "instructions before proceeding.",
+            "",
+            "<available_skills>",
+        ]
+        for skill in skills.values():
+            lines.append(f'  <skill name="{skill["name"]}">')
+            lines.append(f'    <description>{skill["description"]}</description>')
+            lines.append("  </skill>")
+        lines.append("</available_skills>")
+        return "\n" + "\n".join(lines)
+
+    # ------------------------------------------------------------------
+    # API-level injection (Anthropic-hosted skill IDs)
+    # ------------------------------------------------------------------
+
+    def build_model_args_patch(self) -> Dict[str, Any]:
+        """Return a dict to deep-merge into ``model_args`` for Anthropic skill IDs.
+
+        If no skill IDs are configured returns an empty dict.
+        Example result::
+
+            {
+                "skills": [{"id": "skill_01abc"}, {"id": "skill_02xyz"}],
+                "extra_headers": {"anthropic-beta": "skills-2025-10-02"},
+            }
+        """
+        if self.names == "*":
+            return {}
+        _, _, ids = self._partition()
+        if not ids:
+            return {}
+        return {
+            "skills": [{"id": sid} for sid in ids],
+            "extra_headers": {"anthropic-beta": "skills-2025-10-02"},
+        }
+
+
 _KNOWN_AGENT_KEYS = frozenset({
     "name", "model_name", "system_prompt", "system_prompt_path",
     "api_type", "model_args",
     "max_exception_retry", "max_interrupt_steps", "max_llm_recall",
-    "extra_settings", "proxy", "context_manager",
+    "extra_settings", "proxy", "context_manager", "skills",
 })
 
 
@@ -895,6 +1252,7 @@ class AgentSpec:
     extra_settings: Dict[str, Any] = field(default_factory=dict)
     proxy: Optional[ProxyConfig] = None
     context_manager: Optional[ContextManagerConfig] = None
+    skills: Optional[SkillsConfig] = None
 
     @classmethod
     def from_config(cls, name: str, raw: Dict[str, Any]) -> "AgentSpec":
@@ -945,6 +1303,10 @@ class AgentSpec:
         else:
             context_manager_cfg = None
 
+        # -- skills config -------------------------------------------------
+        skills_raw = raw.pop("skills", None)
+        skills_cfg = SkillsConfig.from_config(skills_raw) if skills_raw is not None else None
+
         # -- model_args: explicit dict + leftover unknown keys -------------
         model_args = raw.pop("model_args", {})
         raw.pop("name", None)
@@ -971,6 +1333,7 @@ class AgentSpec:
             extra_settings=extra_settings,
             proxy=proxy,
             context_manager=context_manager_cfg,
+            skills=skills_cfg,
         )
 
     def build(self, runtime: Runtime, invoker):
@@ -1034,6 +1397,23 @@ class AgentSpec:
                 "function_list": list(prompt.function_list) + extra_tools,
             })
 
+        # -- Skills injection ----------------------------------------------
+        model_args = dict(self.model_args)
+        if self.skills is not None:
+            # Tier-1: inject catalog (name + description) + activate_skill tool
+            text_skills = self.skills.resolve_text_skills()
+            if text_skills:
+                catalog_block = SkillsConfig.build_catalog_block(text_skills)
+                activate_tool = make_activate_skill_tool(text_skills)
+                prompt = prompt.model_copy(update={
+                    "prompt": prompt.prompt + catalog_block,
+                    "function_list": list(prompt.function_list) + [activate_tool],
+                })
+            # Anthropic-hosted skill IDs → merge into model_args for the API call
+            patch = self.skills.build_model_args_patch()
+            if patch:
+                model_args = _deep_merge(model_args, patch)
+
         # -- Context manager -----------------------------------------------
         context_manager = (
             self.context_manager.build(self.model, runtime)
@@ -1047,7 +1427,7 @@ class AgentSpec:
             model=self.model,
             llm_invoker=invoker,
             api_type=api_type,
-            model_args=self.model_args,
+            model_args=model_args,
             max_exception_retry=self.max_exception_retry,
             max_interrupt_steps=self.max_interrupt_steps,
             max_llm_recall=self.max_llm_recall,
