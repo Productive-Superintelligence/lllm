@@ -173,6 +173,99 @@ tactic.sub_tactics          # dict of name → child Tactic
 
 ---
 
+## Tactic Inheritance
+
+Concrete tactics can be subclassed just like any Python class, letting you build reusable pipeline bases and extend them with additional stages.
+
+### Extending a concrete tactic
+
+```python
+class WritingPipeline(Tactic):
+    """Reusable base: outline → draft."""
+    name = "writing_pipeline"
+    agent_group = ["outliner", "writer"]
+
+    def call(self, task: str) -> str:
+        outliner = self.agents["outliner"]
+        writer   = self.agents["writer"]
+
+        outliner.open("outline")
+        outliner.receive(f"Create a concise outline about: {task}")
+        outline = outliner.respond().content
+
+        writer.open("write")
+        writer.receive(f"Expand this outline:\n\n{outline}")
+        return writer.respond().content
+
+
+class EditedWritingPipeline(WritingPipeline):
+    """Adds an editing stage on top of the base pipeline."""
+    name = "edited_writing_pipeline"
+    agent_group = ["outliner", "writer", "editor"]
+
+    def call(self, task: str) -> str:
+        draft = super().call(task)          # reuse parent's outline→draft logic
+
+        editor = self.agents["editor"]
+        editor.open("edit")
+        editor.receive(f"Polish this draft:\n\n{draft}")
+        return editor.respond().content
+```
+
+`super().call(task)` works because LLLM builds agents for **all** names in the subclass's `agent_group` before calling `call()`. The parent's `call()` finds `outliner` and `writer` in `self.agents`; the child adds `editor` on top.
+
+### Abstract base tactics with `register=False`
+
+Use `register=False` to create base classes with shared helpers that should not appear in the registry:
+
+```python
+class BasePipelineTactic(Tactic, register=False):
+    """Common helpers — not registerable."""
+
+    def _run_stage(self, agent_name: str, dialog: str, message: str) -> str:
+        agent = self.agents[agent_name]
+        agent.open(dialog)
+        agent.receive(message)
+        return agent.respond().content
+
+
+class SummaryPipeline(BasePipelineTactic):
+    name = "summary_pipeline"
+    agent_group = ["extractor", "writer"]
+
+    def call(self, text: str) -> str:
+        facts   = self._run_stage("extractor", "extract", f"Extract key facts:\n{text}")
+        summary = self._run_stage("writer",    "write",   f"Summarise:\n{facts}")
+        return summary
+```
+
+### Typed I/O inheritance
+
+Subclasses can also tighten or widen the I/O types:
+
+```python
+class BaseAnalysisTactic(Tactic, register=False):
+    agent_group = ["analyzer"]
+
+    def call(self, task: str) -> str:
+        agent = self.agents["analyzer"]
+        agent.open("analyze")
+        agent.receive(task)
+        return agent.respond().content
+
+
+class StructuredAnalysisTactic(BaseAnalysisTactic):
+    name = "structured_analysis"
+
+    def call(self, task: str) -> AnalysisOutput:
+        raw = super().call(task)
+        return AnalysisOutput.model_validate_json(raw)
+```
+
+See the working examples at [examples/advanced/multi_agent_tactic.py](../../examples/advanced/multi_agent_tactic.py) and [examples/code_review_service/tactics/code_review.py](../../examples/code_review_service/tactics/code_review.py).
+
+---
+
 ## Batch & Concurrent Execution
 
 Tactics provide built-in concurrent execution via thread pools. LLM API calls are I/O-bound, so threads are ideal (the GIL is released during network waits). Each task gets its own isolated agents — no lock contention.

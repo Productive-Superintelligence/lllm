@@ -43,7 +43,7 @@ nav:
   - Advanced:
     - Invokers: core/invokers.md
     - Logging: core/logging.md
-    - Proxy & Tools: core/proxy-and-sandbox.md
+    - Proxy & Sandbox: core/proxy-and-sandbox.md
     - Runtime: core/runtime.md
   - Project Reference: 
     - Building a Full Package: guides/building-agents.md
@@ -53,8 +53,8 @@ nav:
     - "1. Quick Start": tutorials/01-quick-start.md
     - "2. Agents and Dialogs": tutorials/02-agents-and-dialogs.md
     - "3. Prompts and Structured Output": tutorials/03-prompts.md
-    - "4. Tools": tutorials/04-tools.md
-    - "5. Tactics": tutorials/05-tactics.md
+    - "4. Tools, Proxies, and Sandbox": tutorials/04-tools.md
+    - "5. Tactics and Packages": tutorials/05-tactics.md
     - "6. Config and Discovery": tutorials/06-config-and-discovery.md
     - "7. Logging and Cost Tracking": tutorials/07-logging.md
     - "8. Advanced Patterns": tutorials/08-advanced-patterns.md

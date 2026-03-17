@@ -412,6 +412,218 @@ See [Proxies & Sandbox reference](../core/proxy-and-sandbox.md) for a complete J
 
 ---
 
+## Jupyter Notebook Sandbox — Step by Step
+
+`JupyterSession` is LLLM's **built-in sandbox**, optimised for the proxy system. Code executes in a real kernel, plots are saved, variables persist across turns, and the session produces a `.ipynb` file as an output artifact.
+
+Unlike interpreter mode (where LLLM runs code in-process), in Jupyter mode the split of responsibility is explicit: the **agent** writes `<python_cell>` / `<markdown_cell>` XML tags; your **tactic** extracts those cells and runs them in a `JupyterSession`; execution results are fed back so the agent can continue. This lets you intercept every cell, handle errors, and checkpoint state.
+
+### Step 1: Write the system prompt and parser
+
+The system prompt explains the notebook interface. A parser enforces the tag format:
+
+```python
+from lllm import Prompt
+from lllm.utils import find_all_xml_tags_sorted
+from lllm.core.const import ParseError
+
+NOTEBOOK_SYSTEM = """
+You are a data analyst working in a Jupyter Notebook.
+
+## Interface
+- Write Python in `<python_cell>...</python_cell>` tags.
+- Write notes and summaries in `<markdown_cell>...</markdown_cell>` tags.
+- When your analysis is complete, respond with `<TERMINATE_NOTEBOOK>` alone (no cells in that response).
+
+Rules:
+- Cells execute sequentially; variables persist across turns.
+- If a cell fails you will see the traceback and must fix that cell only.
+- Use `CALL_API(path, params)` to call data APIs — always call `query_api_doc` first.
+"""
+
+def notebook_parser(message: str, **kwargs):
+    matches = find_all_xml_tags_sorted(message)
+    terminate = "<TERMINATE_NOTEBOOK>" in message
+    cells = [
+        (m["tag"], m["content"])
+        for m in matches
+        if m["tag"] in ("python_cell", "markdown_cell")
+    ]
+    if not cells and not terminate:
+        raise ParseError(
+            "No cells found. Wrap code in <python_cell>...</python_cell> "
+            "or markdown in <markdown_cell>...</markdown_cell>, "
+            "or respond with <TERMINATE_NOTEBOOK>."
+        )
+    # If TERMINATE_NOTEBOOK is mixed with python cells, ignore the termination signal
+    if terminate and any(tag == "python_cell" for tag, _ in cells):
+        terminate = False
+    return {"raw": message, "cells": cells, "terminate": terminate}
+
+analyst_system = Prompt(
+    path="analyst/system",
+    prompt=NOTEBOOK_SYSTEM,
+    xml_tags=["python_cell", "markdown_cell"],
+    signal_tags=["TERMINATE_NOTEBOOK"],
+    parser=notebook_parser,
+)
+```
+
+### Step 2: Configure the agent
+
+Set `exec_env: jupyter` so LLLM injects only `query_api_doc` (not `run_python` — the tactic drives execution):
+
+```yaml
+# config.yaml
+global:
+  model_name: gpt-4o
+  model_args:
+    temperature: 0.1
+
+agent_configs:
+  - name: analyst
+    system_prompt_path: analyst/system
+    proxy:
+      activate_proxies: [weather]
+      exec_env: jupyter
+```
+
+### Step 3: Write the tactic
+
+The tactic drives the loop: send task → get cells → run cells → feed output back → repeat:
+
+```python
+from lllm import Tactic
+from lllm.sandbox.jupyter import JupyterSession
+
+class NotebookAnalysisTactic(Tactic):
+    name = "notebook_analysis"
+    agent_group = ["analyst"]
+
+    def call(self, task: str, **kwargs) -> str:
+        agent = self.agents["analyst"]
+
+        # Initialise a JupyterSession — CALL_API is wired into the kernel automatically
+        session = JupyterSession(
+            name="analysis",
+            dir="/tmp/notebooks",
+            metadata={
+                "proxy": {
+                    "activate_proxies": ["weather"],
+                    "deploy_mode": False,
+                }
+            },
+        )
+        session.init_session()   # injects CALL_API into the kernel namespace
+
+        agent.open("main")
+        agent.receive(task)
+
+        for _ in range(10):          # max steps
+            msg = agent.respond()
+            parsed = msg.parsed
+
+            if parsed["terminate"]:
+                break
+
+            # Execute each cell and collect output
+            outputs = []
+            for tag, code in parsed["cells"]:
+                if tag == "python_cell":
+                    output = session.run_cell(code)
+                    outputs.append(f"[output]\n{output}")
+                else:
+                    session.add_markdown_cell(code)
+
+            # Feed results back so the agent can continue
+            if outputs:
+                agent.receive("\n\n".join(outputs))
+
+        return session.notebook_path   # path to the saved .ipynb file
+```
+
+The agent typically:
+1. Calls `query_api_doc("weather")` via the injected tool to see endpoint specs.
+2. Writes a `<python_cell>` that calls `CALL_API(...)` — the tactic runs it and returns stdout.
+3. Receives the output, writes more cells to analyse and visualise the data.
+4. Responds with `<TERMINATE_NOTEBOOK>` when done.
+
+### Step 4: Handle cell errors
+
+If a cell fails, feed the traceback back so the agent can fix just that cell:
+
+```python
+for tag, code in parsed["cells"]:
+    if tag == "python_cell":
+        output = session.run_cell(code)
+        if session.last_cell_failed:
+            # Agent sees the error and provides a replacement cell
+            agent.receive(
+                f"Cell failed with the following error:\n\n{output}\n\n"
+                "Please fix the error. Provide one <python_cell> with the corrected code only."
+            )
+            fix_msg = agent.respond()
+            _, fixed_code = fix_msg.parsed["cells"][0]
+            output = session.run_cell(fixed_code)
+        outputs.append(f"[output]\n{output}")
+```
+
+### Bringing your own execution environment
+
+`JupyterSession` is the built-in sandbox, but the pattern — agent writes tags, tactic runs code — works with any executor. The prompt and parser stay unchanged; only the sandbox object changes:
+
+```python
+class DockerSandbox:
+    """Minimal example: run cells in an isolated container."""
+
+    def run_cell(self, code: str) -> str:
+        import subprocess
+        result = subprocess.run(
+            ["docker", "exec", "my_sandbox", "python3", "-c", code],
+            capture_output=True, text=True, timeout=30,
+        )
+        return result.stdout or result.stderr
+
+    def add_markdown_cell(self, text: str) -> None:
+        pass   # no-op for non-notebook environments
+
+    last_cell_failed: bool = False   # set after run_cell if needed
+
+
+class DockerAnalysisTactic(Tactic):
+    name = "docker_analysis"
+    agent_group = ["analyst"]
+
+    def call(self, task: str, **kwargs) -> str:
+        agent = self.agents["analyst"]
+        sandbox = DockerSandbox()
+
+        agent.open("main")
+        agent.receive(task)
+
+        for _ in range(10):
+            msg = agent.respond()
+            parsed = msg.parsed
+            if parsed["terminate"]:
+                break
+            outputs = []
+            for tag, code in parsed["cells"]:
+                if tag == "python_cell":
+                    outputs.append(sandbox.run_cell(code))
+                else:
+                    sandbox.add_markdown_cell(code)
+            if outputs:
+                agent.receive("\n\n".join(outputs))
+
+        return agent.current_dialog.tail.content
+```
+
+You could replace `DockerSandbox` with a remote code execution service, a WebAssembly sandbox, a database query runner — anything that accepts code strings and returns output strings.
+
+See [Proxies & Sandbox reference](../core/proxy-and-sandbox.md) for the full `JupyterSession` API, `init_session` wiring details, and a complete Jupyter mode example.
+
+---
+
 ## Summary
 
 | Concept | API |
@@ -426,5 +638,7 @@ See [Proxies & Sandbox reference](../core/proxy-and-sandbox.md) for a complete J
 | Wire proxy to agent | `proxy: {activate_proxies: [...], exec_env: interpreter}` |
 | Lazy API docs | `query_api_doc(proxy_name)` (auto-injected) |
 | Execute code | `run_python(code)` with `CALL_API` (auto-injected) |
+| Jupyter sandbox | `exec_env: jupyter` + `JupyterSession` in tactic |
+| Custom sandbox | Replace `JupyterSession` with any object that has `run_cell()` |
 
 **Next:** [Lesson 5 — Tactics: Coordinating Multiple Agents](05-tactics.md)

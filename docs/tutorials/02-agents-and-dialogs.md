@@ -45,6 +45,8 @@ Or use `Tactic.quick()` which does all of this for you:
 agent = Tactic.quick(system_prompt="You are a helpful assistant.", model="gpt-4o")
 ```
 
+In real projects you'll define agents in YAML config files instead of inline Python dicts, and attach skills via the `skills:` config key. See [Lesson 6 — Configuration and Auto-Discovery](06-config-and-discovery.md) for the full config format and [Agent Skills](../core/agent.md#skills) for the skills reference.
+
 ---
 
 ## Multi-Turn Conversations

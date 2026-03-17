@@ -1,6 +1,13 @@
 # Proxies & Sandbox
 
-LLLM treats external API access as a first-class capability. Proxies standardize how agents reach external APIs. The sandbox system enables agents to execute Python code — either in a lightweight in-process interpreter or a full Jupyter notebook session.
+LLLM treats external API access as a first-class capability. Proxies standardize how agents reach external APIs. The sandbox system enables agents to execute Python code.
+
+LLLM ships two built-in execution environments:
+
+- **Interpreter** — lightweight in-process `exec()`, zero overhead, parallel-safe. Best for fast data retrieval and computation.
+- **Jupyter** — full notebook kernel via `JupyterSession`, supports visualisations and produces `.ipynb` artefacts. Optimised for the proxy system but usable for any code-execution workflow a tactic needs to drive.
+
+Both are optional. You can also bring your own execution environment — any object with a `run_cell(code) -> str` method drops straight into the tactic pattern Jupyter uses. See [Custom Execution Environments](#custom-execution-environments) below.
 
 ---
 
@@ -287,6 +294,101 @@ CALL_API = proxy.__call__
 ```
 
 After this, any `CALL_API(...)` call in a notebook cell is dispatched through the `ProxyManager`.
+
+---
+
+## Custom Execution Environments
+
+`JupyterSession` is the built-in sandbox, but nothing forces you to use it. The tactic-drives-execution pattern works with any code runner because the execution boundary is just a Python object in your tactic's `call()` method.
+
+### The pattern
+
+The agent side (prompt + parser) is the same regardless of where code runs:
+
+1. Agent writes `<python_cell>` / `<markdown_cell>` tags.
+2. Tactic extracts cells from `msg.parsed["cells"]`.
+3. Tactic calls `sandbox.run_cell(code)` and feeds stdout back.
+4. Repeat until `parsed["terminate"]` is `True`.
+
+Only step 3 changes when you swap sandboxes.
+
+### Example: remote execution service
+
+```python
+import httpx
+from lllm import Tactic
+
+class RemoteSandbox:
+    """Execute cells on a remote code runner."""
+
+    def __init__(self, base_url: str, session_id: str):
+        self.base_url = base_url
+        self.session_id = session_id
+        self.last_cell_failed = False
+
+    def run_cell(self, code: str) -> str:
+        resp = httpx.post(
+            f"{self.base_url}/execute",
+            json={"session_id": self.session_id, "code": code},
+            timeout=60,
+        )
+        result = resp.json()
+        self.last_cell_failed = result.get("error", False)
+        return result.get("output", "")
+
+    def add_markdown_cell(self, text: str) -> None:
+        pass   # or post to notebook service
+
+
+class RemoteAnalysisTactic(Tactic):
+    name = "remote_analysis"
+    agent_group = ["analyst"]
+
+    def call(self, task: str, **kwargs) -> str:
+        agent = self.agents["analyst"]
+        sandbox = RemoteSandbox("https://runner.example.com", session_id="abc123")
+
+        agent.open("main")
+        agent.receive(task)
+
+        for _ in range(10):
+            msg = agent.respond()
+            parsed = msg.parsed
+            if parsed["terminate"]:
+                break
+            outputs = []
+            for tag, code in parsed["cells"]:
+                if tag == "python_cell":
+                    output = sandbox.run_cell(code)
+                    if sandbox.last_cell_failed:
+                        agent.receive(
+                            f"Cell failed:\n\n{output}\n\n"
+                            "Fix the error. Provide one <python_cell> only."
+                        )
+                        fix = agent.respond()
+                        _, fixed_code = fix.parsed["cells"][0]
+                        output = sandbox.run_cell(fixed_code)
+                    outputs.append(f"[output]\n{output}")
+                else:
+                    sandbox.add_markdown_cell(code)
+            if outputs:
+                agent.receive("\n\n".join(outputs))
+
+        return agent.current_dialog.tail.content
+```
+
+Any executor that accepts a code string and returns output string works: Docker containers, WebAssembly runtimes, database query runners, or even a mock sandbox for tests. The agent prompt and parser remain identical — only `sandbox` changes.
+
+### When to use each option
+
+| | Interpreter | Jupyter (built-in) | Custom sandbox |
+|--|-------------|-------------------|----------------|
+| Setup | Zero | ~2–3 s kernel boot | You provide it |
+| Proxy integration | Automatic (`CALL_API` injected) | Automatic | Manual (inject yourself) |
+| Parallel agents | Safe | Heavy | Depends on your impl |
+| Visualisations | No | Yes (matplotlib/plotly) | Depends |
+| Output artefact | None | `.ipynb` notebook | Whatever you return |
+| Best for | Fast API orchestration | Exploratory analysis, charts | Isolated envs, testing, non-Python runtimes |
 
 ---
 

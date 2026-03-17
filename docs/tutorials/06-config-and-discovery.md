@@ -177,6 +177,87 @@ p = load_prompt("shared:common/system")
 
 ---
 
+## Skills
+
+> **Experimental.** Skills support follows the [agentskills.io](https://agentskills.io) open standard, which is actively evolving. Both the spec and this implementation may change in future releases.
+
+**Skills** are reusable capability packages you attach to agents via config. They let you add specialised knowledge or workflows to any agent without bloating its system prompt — instructions are only loaded when the model actually needs them.
+
+### Declaring skills in YAML
+
+```yaml
+# configs/default.yaml
+global:
+  model_name: claude-sonnet-4-6
+  skills: [pdf, commit]          # all agents get these by default
+
+agent_configs:
+  - name: coder
+    system_prompt_path: system/coder
+    skills: [commit, code-review]  # replaces (not merges) the global list
+
+  - name: writer
+    system_prompt_path: system/writer
+    # inherits global: skills: [pdf, commit]
+```
+
+Entry formats accepted in the `skills` list:
+
+| Format | Example | How it works |
+|---|---|---|
+| Local name | `pdf` | Scanned from `.agents/skills/` or `~/.agents/skills/`; content injected into system prompt |
+| Anthropic skill ID | `skill_01abc123` | Passed to the Anthropic API; content injected server-side |
+| URL | `https://example.com/skills/review/SKILL.md` | Downloaded at agent build time |
+| `"*"` | `skills: "*"` | Load all locally discovered skills |
+
+### Creating a local skill
+
+A skill is a directory under `.agents/skills/` with a `SKILL.md` file:
+
+```
+my_project/
+└── .agents/
+    └── skills/
+        └── data-analysis/
+            ├── SKILL.md            # required
+            └── references/
+                └── schema.md       # optional — loaded on demand
+```
+
+Minimal `SKILL.md`:
+
+```markdown
+---
+name: data-analysis
+description: Analyse tabular data, compute statistics, identify trends. Use when working with CSV or numerical datasets.
+---
+
+# Data Analysis
+
+Follow these steps when analysing data:
+1. ...
+```
+
+The `description` is the only thing the model sees before deciding to activate — write it as a trigger, not a title.
+
+### How progressive disclosure works
+
+LLLM injects only skill names and descriptions into the system prompt at startup (~50–100 tokens per skill). A built-in `activate_skill` tool lets the model pull the full instructions on demand:
+
+```
+<available_skills>
+  <skill name="data-analysis">
+    <description>Analyse tabular data... Use when working with CSV...</description>
+  </skill>
+</available_skills>
+```
+
+When the model calls `activate_skill("data-analysis")`, it receives the full `SKILL.md` body and a listing of any resource files. This keeps context lean for agents that have many installed skills.
+
+For full details — Anthropic-hosted skill IDs, `allowed-tools`, best practices — see [Agent Skills reference](../core/agent.md#skills).
+
+---
+
 ## Named Runtimes
 
 For running parallel experiments without cross-contamination:
@@ -248,5 +329,7 @@ A file at `prompts/v2/greeter.py` with `path="greeter/system"` will be registere
 | Load a prompt | `load_prompt("path")` |
 | Package dependencies | `[dependencies] packages = [...]` in `lllm.toml` |
 | Named runtimes | `load_runtime("name", ...)` |
+| Attach skills to agents | `skills: [pdf, commit]` in YAML (global or per-agent) |
+| Create a local skill | `.agents/skills/<name>/SKILL.md` with frontmatter |
 
 **Next:** [Lesson 7 — Logging and Cost Tracking](07-logging.md)
