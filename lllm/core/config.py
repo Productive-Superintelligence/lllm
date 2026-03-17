@@ -797,11 +797,65 @@ class ProxyConfig:
         )
 
 
+@dataclass
+class ContextManagerConfig:
+    """
+    Configuration for context-window management on an agent.
+
+    Settable globally (under the ``global`` key in tactic config) and
+    overridable per-agent.  When both are present the per-agent dict is
+    deep-merged on top of the global one.
+
+    Config format (YAML)::
+
+        context_manager:
+          type: default       # "default" → DefaultContextManager; null → disabled
+          max_tokens: 128000  # optional hard cap; omit to auto-detect from litellm
+
+    **type values**
+
+    ``"default"`` (built-in)
+        Uses :class:`~lllm.core.dialog.DefaultContextManager`: drops/truncates
+        old messages so total tokens stay within the model's context window.
+
+    Custom string (e.g. ``"summary"``)
+        Looked up in the runtime via
+        :meth:`~lllm.core.runtime.Runtime.get_context_manager`.  Register your
+        class first::
+
+            runtime.register_context_manager("summary", SummaryCompressor)
+
+    ``null`` / omitted
+        Context management disabled for this agent.
+    """
+
+    type: str = "default"
+    max_tokens: Optional[int] = None
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "ContextManagerConfig":
+        return cls(
+            type=d.get("type", "default"),
+            max_tokens=d.get("max_tokens", None),
+        )
+
+    def build(self, model_name: str, runtime: Runtime):
+        """Instantiate and return the configured :class:`~lllm.core.dialog.ContextManager`."""
+        from lllm.core.dialog import DefaultContextManager
+        if self.type in (None, "null", "none"):
+            return None
+        if self.type == "default":
+            return DefaultContextManager(model_name=model_name, max_tokens=self.max_tokens)
+        # Custom type registered in the runtime
+        cm_cls = runtime.get_context_manager(self.type)
+        return cm_cls(model_name=model_name, max_tokens=self.max_tokens)
+
+
 _KNOWN_AGENT_KEYS = frozenset({
     "name", "model_name", "system_prompt", "system_prompt_path",
     "api_type", "model_args",
     "max_exception_retry", "max_interrupt_steps", "max_llm_recall",
-    "extra_settings", "proxy",
+    "extra_settings", "proxy", "context_manager",
 })
 
 
@@ -840,6 +894,7 @@ class AgentSpec:
     max_llm_recall: int = 0
     extra_settings: Dict[str, Any] = field(default_factory=dict)
     proxy: Optional[ProxyConfig] = None
+    context_manager: Optional[ContextManagerConfig] = None
 
     @classmethod
     def from_config(cls, name: str, raw: Dict[str, Any]) -> "AgentSpec":
@@ -881,6 +936,15 @@ class AgentSpec:
         proxy_raw = raw.pop("proxy", None)
         proxy = ProxyConfig.from_dict(proxy_raw) if proxy_raw else None
 
+        # -- context manager config ----------------------------------------
+        cm_raw = raw.pop("context_manager", None)
+        if isinstance(cm_raw, dict):
+            # type: null in YAML arrives as None value inside the dict
+            cm_type = cm_raw.get("type")
+            context_manager_cfg = None if cm_type is None else ContextManagerConfig.from_dict(cm_raw)
+        else:
+            context_manager_cfg = None
+
         # -- model_args: explicit dict + leftover unknown keys -------------
         model_args = raw.pop("model_args", {})
         raw.pop("name", None)
@@ -906,6 +970,7 @@ class AgentSpec:
             max_llm_recall=max_llm_recall,
             extra_settings=extra_settings,
             proxy=proxy,
+            context_manager=context_manager_cfg,
         )
 
     def build(self, runtime: Runtime, invoker):
@@ -969,6 +1034,13 @@ class AgentSpec:
                 "function_list": list(prompt.function_list) + extra_tools,
             })
 
+        # -- Context manager -----------------------------------------------
+        context_manager = (
+            self.context_manager.build(self.model, runtime)
+            if self.context_manager is not None
+            else None
+        )
+
         return Agent(
             name=self.name,
             system_prompt=prompt,
@@ -979,6 +1051,7 @@ class AgentSpec:
             max_exception_retry=self.max_exception_retry,
             max_interrupt_steps=self.max_interrupt_steps,
             max_llm_recall=self.max_llm_recall,
+            context_manager=context_manager,
         )
 
 

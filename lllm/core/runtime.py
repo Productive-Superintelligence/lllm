@@ -202,6 +202,44 @@ class Runtime:
         return self.get(path, resource_type="config")
 
     # ==================================================================
+    # Typed convenience — Context Managers
+    # ==================================================================
+
+    def register_context_manager(self, cm_cls: Type,
+                                  overwrite: bool = True, namespace: str = "") -> None:
+        """Register a :class:`~lllm.core.dialog.ContextManager` subclass.
+
+        The registry key is taken from ``cm_cls.name``, which every concrete
+        subclass must define.  The built-in ``"default"`` type
+        (:class:`~lllm.core.dialog.DefaultContextManager`) is resolved
+        automatically by the config layer and does **not** need to be registered.
+        Use this method to register *custom* implementations::
+
+            class SummaryCompressor(ContextManager):
+                name = "summary"
+                ...
+
+            runtime.register_context_manager(SummaryCompressor)
+
+        Then in config::
+
+            context_manager:
+              type: summary
+        """
+        cm_name = getattr(cm_cls, "name", None)
+        if not cm_name:
+            raise ValueError(
+                f"Cannot register {cm_cls.__name__}: it must define a 'name' class attribute."
+            )
+        node = ResourceNode.eager(cm_name, cm_cls,
+                                  namespace=namespace, resource_type="context_manager")
+        self.register(node, overwrite=overwrite)
+
+    def get_context_manager(self, name: str) -> Type:
+        """Return a registered context-manager class by *name*."""
+        return self.get(name, resource_type="context_manager")
+
+    # ==================================================================
     # Lifecycle
     # ==================================================================
 

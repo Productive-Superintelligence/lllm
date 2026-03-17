@@ -230,13 +230,113 @@ class SummarizeAgent(Tactic):
 
 ## Context Manager
 
-`ContextManager` is an abstract base class for dialog transformations — truncation, compression, memory management, or any policy that transforms a dialog before it's sent to the LLM.
+`ContextManager` is an abstract hook that the agent applies to the working dialog **before each LLM call**. It can truncate, compress, rewrite, or otherwise transform the dialog without touching the canonical history.
+
+```
+[canonical dialog] ──fork──▶ [working dialog] ──context_manager──▶ [pruned dialog] ──▶ LLM
+```
+
+The canonical dialog always grows monotonically. The pruned copy is ephemeral — it is never written back.
+
+### ContextManager contract
 
 ```python
 class ContextManager(ABC):
+    name: ClassVar[str]   # registry key — must be set on every concrete subclass
+
     @abstractmethod
     def __call__(self, dialog: Dialog) -> Dialog:
-        pass
+        """Return a dialog that is safe to send to the LLM."""
 ```
 
-Implementations might truncate to fit a context window, compress old messages using a summarization agent, or manage a memory store that gets injected into the dialog on the fly. This is currently a placeholder for future development.
+`__call__` may return the same `dialog` object unchanged (when no pruning is needed) or a new child dialog.
+
+---
+
+### DefaultContextManager
+
+The built-in truncator. Uses `litellm.token_counter` to measure the dialog's token footprint and drops/truncates old messages until it fits within the model's context window.
+
+**Truncation strategy:**
+
+1. The first message (system / developer prompt) is always preserved.
+2. Messages are retained from the **tail** (most recent) inward.
+3. The *border* message — the oldest one that partially fits — is character-truncated with a `[...earlier content truncated...]` prefix.
+4. A `SAFETY_BUFFER` of 5 000 tokens is subtracted from the context limit so invocations never land right at the model edge.
+
+**Programmatic usage:**
+
+```python
+from lllm.core.dialog import DefaultContextManager
+from lllm.core.agent import Agent
+
+cm = DefaultContextManager("gpt-4o")               # context window auto-detected from litellm
+cm = DefaultContextManager("gpt-4o", max_tokens=32000)  # manual cap
+
+agent = Agent(..., context_manager=cm)
+```
+
+**Config (YAML):**
+
+```yaml
+# applies to every agent in the tactic
+global:
+  context_manager:
+    type: default        # built-in — no registration needed
+    max_tokens: 128000   # optional; auto-detected from litellm if omitted
+
+agent_configs:
+  - name: cheap_agent
+    model_name: gpt-4o-mini
+    context_manager:     # per-agent override (deep-merged with global)
+      type: default
+      max_tokens: 16000
+
+  - name: no_prune_agent
+    model_name: gpt-4o
+    context_manager:     # explicitly disable for this agent
+      type: null
+```
+
+`type: null` (or omitting `context_manager` entirely) disables pruning for that agent.
+
+---
+
+### Writing a custom ContextManager
+
+1. Subclass `ContextManager` and set the `name` class attribute.
+2. Register the class with the runtime.
+3. Reference it by name in config.
+
+```python
+from lllm.core.dialog import ContextManager, Dialog
+
+class SummaryCompressor(ContextManager):
+    name = "summary"   # config type key
+
+    def __init__(self, model_name: str, max_tokens: int = None):
+        self.model_name = model_name
+        self._max_tokens = max_tokens
+
+    def __call__(self, dialog: Dialog) -> Dialog:
+        # ... compress older messages into a rolling summary, return new dialog ...
+        return compressed_dialog
+```
+
+Register it so the config layer can find it:
+
+```python
+runtime.register_context_manager(SummaryCompressor)
+# reads SummaryCompressor.name ("summary") as the registry key
+```
+
+Config:
+
+```yaml
+global:
+  context_manager:
+    type: summary
+    max_tokens: 64000
+```
+
+`register_context_manager` raises `ValueError` if the class does not define a `name` attribute.

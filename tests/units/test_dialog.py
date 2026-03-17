@@ -569,7 +569,7 @@ class TestDialog(unittest.TestCase):
 
 
 # ===========================================================================
-# ContextManager
+# ContextManager (abstract base)
 # ===========================================================================
 
 
@@ -578,24 +578,278 @@ class TestContextManager(unittest.TestCase):
     def test_abstract_cannot_instantiate(self):
         from lllm.core.dialog import ContextManager
         with self.assertRaises(TypeError):
-            ContextManager()
+            ContextManager()  # type: ignore
 
-    def test_concrete_subclass_must_implement_call(self):
+    def test_concrete_subclass_passthrough(self):
         from lllm.core.dialog import ContextManager, Dialog
 
-        class ConcreteManager(ContextManager):
+        class PassthroughManager(ContextManager):
+            name = "passthrough"
+
             def __call__(self, dialog: Dialog) -> Dialog:
                 return dialog
 
         d = _make_dialog()
-        mgr = ConcreteManager()
+        mgr = PassthroughManager()
         result = mgr(d)
         self.assertIs(result, d)
 
-    def test_default_truncator_raises_not_implemented(self):
-        from lllm.core.dialog import DefaultLiteLLMTruncator
-        with self.assertRaises(NotImplementedError):
-            DefaultLiteLLMTruncator("gpt-4o")
+    def test_name_attribute_on_default(self):
+        from lllm.core.dialog import DefaultContextManager
+        self.assertEqual(DefaultContextManager.name, "default")
+
+    def test_runtime_register_uses_class_name(self):
+        from lllm.core.dialog import ContextManager, Dialog
+        from lllm.core.runtime import Runtime
+
+        class MyManager(ContextManager):
+            name = "my_manager"
+
+            def __call__(self, dialog: Dialog) -> Dialog:
+                return dialog
+
+        rt = Runtime()
+        rt.register_context_manager(MyManager)
+        retrieved = rt.get_context_manager("my_manager")
+        self.assertIs(retrieved, MyManager)
+
+    def test_runtime_register_requires_name(self):
+        from lllm.core.dialog import ContextManager, Dialog
+        from lllm.core.runtime import Runtime
+
+        class Unnamed(ContextManager):
+            # no name class attribute
+            def __call__(self, dialog: Dialog) -> Dialog:
+                return dialog
+
+        rt = Runtime()
+        with self.assertRaises(ValueError):
+            rt.register_context_manager(Unnamed)
+
+    def test_subclass_without_call_raises_on_instantiate(self):
+        from lllm.core.dialog import ContextManager
+
+        class Incomplete(ContextManager):
+            name = "incomplete"
+            # missing __call__
+
+        with self.assertRaises(TypeError):
+            Incomplete()  # type: ignore
+
+
+# ===========================================================================
+# DefaultContextManager
+# ===========================================================================
+
+
+def _make_filled_dialog(n_messages: int, content_per_msg: str = "hello world") -> 'Dialog':
+    """Helper: dialog with a system prompt + n_messages user messages."""
+    from lllm.core.dialog import Dialog
+    from lllm.core.const import Roles
+    from lllm.core.runtime import Runtime
+
+    d = Dialog(owner="agent", runtime=Runtime())
+    d.put_text("You are a helpful assistant.", role=Roles.SYSTEM, name="system")
+    for i in range(n_messages):
+        d.put_text(f"{content_per_msg} {i}", name="user")
+    return d
+
+
+class TestDefaultContextManager(unittest.TestCase):
+
+    # ------------------------------------------------------------------
+    # Construction
+    # ------------------------------------------------------------------
+
+    def test_name_is_default(self):
+        from lllm.core.dialog import DefaultContextManager
+        self.assertEqual(DefaultContextManager.name, "default")
+
+    def test_init_stores_model_and_max_tokens(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o", max_tokens=8192)
+        self.assertEqual(cm.model_name, "gpt-4o")
+        self.assertEqual(cm.max_tokens, 8192)
+
+    def test_max_tokens_from_litellm_when_not_set(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o")
+        # Should return a positive integer (auto-detected or 4096 fallback)
+        self.assertIsInstance(cm.max_tokens, int)
+        self.assertGreater(cm.max_tokens, 0)
+
+    def test_max_tokens_fallback_on_unknown_model(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("totally-unknown-model-xyz")
+        # Should not raise; returns a sensible fallback
+        self.assertIsInstance(cm.max_tokens, int)
+        self.assertGreater(cm.max_tokens, 0)
+
+    # ------------------------------------------------------------------
+    # No-op when within limit
+    # ------------------------------------------------------------------
+
+    def test_returns_same_dialog_when_within_limit(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o", max_tokens=128000)
+        d = _make_filled_dialog(5)
+        result = cm(d)
+        # Small dialog fits easily — same object returned
+        self.assertIs(result, d)
+
+    def test_empty_dialog_returned_unchanged(self):
+        from lllm.core.dialog import DefaultContextManager, Dialog
+        from lllm.core.runtime import Runtime
+        cm = DefaultContextManager("gpt-4o", max_tokens=1000)
+        d = Dialog(owner="agent", runtime=Runtime())
+        result = cm(d)
+        self.assertIs(result, d)
+
+    # ------------------------------------------------------------------
+    # Truncation behaviour
+    # ------------------------------------------------------------------
+
+    def test_truncation_preserves_first_message(self):
+        from lllm.core.dialog import DefaultContextManager
+        # Very tight limit forces truncation
+        cm = DefaultContextManager("gpt-4o-mini", max_tokens=200)
+        d = _make_filled_dialog(20, content_per_msg="word " * 30)
+        result = cm(d)
+        # First message (system prompt) must always survive
+        self.assertEqual(result.messages[0].content, d.messages[0].content)
+
+    def test_truncation_keeps_most_recent_messages(self):
+        from lllm.core.dialog import DefaultContextManager
+        # Use a limit generous enough to fit a few messages but not all 20
+        cm = DefaultContextManager("gpt-4o-mini", max_tokens=600)
+        d = _make_filled_dialog(20, content_per_msg="filler " * 10)
+        result = cm(d)
+        if len(result.messages) < len(d.messages) and len(result.messages) > 1:
+            # Most-recent messages should be retained; the very last one must survive
+            self.assertEqual(result.messages[-1].content, d.messages[-1].content)
+
+    def test_truncation_returns_child_dialog(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o-mini", max_tokens=200)
+        d = _make_filled_dialog(30, content_per_msg="x " * 20)
+        result = cm(d)
+        if result is not d:
+            # Must be wired into the tree as a child
+            self.assertFalse(result.is_root)
+            self.assertIs(result.parent, d)
+            self.assertIn(result, d.children)
+
+    def test_truncated_dialog_has_fewer_messages(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o-mini", max_tokens=200)
+        d = _make_filled_dialog(50, content_per_msg="token " * 20)
+        result = cm(d)
+        self.assertLessEqual(len(result.messages), len(d.messages))
+
+    def test_border_message_gets_truncation_prefix(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o-mini", max_tokens=200)
+        d = _make_filled_dialog(50, content_per_msg="token " * 20)
+        result = cm(d)
+        # If truncation happened and there are non-system messages,
+        # the oldest non-system kept message may carry the truncation prefix.
+        if len(result.messages) < len(d.messages) and len(result.messages) > 1:
+            # At least one message should either be intact or carry the prefix
+            non_system = [m for m in result.messages if m.name != "system"]
+            if non_system:
+                first_kept = non_system[0]
+                # Either full content or truncated with prefix
+                is_truncated = "[...earlier content truncated...]" in str(first_kept.content)
+                is_full = first_kept.content in [m.content for m in d.messages]
+                self.assertTrue(is_truncated or is_full)
+
+    def test_to_raw_produces_correct_format(self):
+        from lllm.core.dialog import DefaultContextManager
+        from lllm.core.const import Roles
+        cm = DefaultContextManager("gpt-4o")
+        from lllm.core.dialog import Message
+        msg = Message(role=Roles.USER, content="hello", name="user")
+        raw = cm._to_raw(msg)
+        self.assertIn("role", raw)
+        self.assertIn("content", raw)
+        self.assertEqual(raw["role"], "user")
+        self.assertEqual(raw["content"], "hello")
+
+    def test_count_returns_positive_int(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o")
+        count = cm._count([{"role": "user", "content": "hello world"}])
+        self.assertIsInstance(count, int)
+        self.assertGreater(count, 0)
+
+    # ------------------------------------------------------------------
+    # Safety buffer
+    # ------------------------------------------------------------------
+
+    def test_safety_buffer_default_is_5000(self):
+        from lllm.core.dialog import DefaultContextManager
+        self.assertEqual(DefaultContextManager.SAFETY_BUFFER, 5000)
+
+    def test_effective_limit_respects_safety_buffer(self):
+        from lllm.core.dialog import DefaultContextManager
+        cm = DefaultContextManager("gpt-4o", max_tokens=10000)
+        effective = cm.max_tokens - cm.SAFETY_BUFFER
+        self.assertEqual(effective, 5000)
+
+    # ------------------------------------------------------------------
+    # ContextManagerConfig integration
+    # ------------------------------------------------------------------
+
+    def test_config_build_default_type(self):
+        from lllm.core.config import ContextManagerConfig
+        from lllm.core.dialog import DefaultContextManager
+        from lllm.core.runtime import Runtime
+        cfg = ContextManagerConfig(type="default", max_tokens=16000)
+        cm = cfg.build("gpt-4o", Runtime())
+        self.assertIsInstance(cm, DefaultContextManager)
+        self.assertEqual(cm.model_name, "gpt-4o")
+        self.assertEqual(cm.max_tokens, 16000)
+
+    def test_config_build_null_type_returns_none(self):
+        from lllm.core.config import ContextManagerConfig
+        from lllm.core.runtime import Runtime
+        for null_val in ("null", "none", None):
+            cfg = ContextManagerConfig(type=null_val)
+            cm = cfg.build("gpt-4o", Runtime())
+            self.assertIsNone(cm, f"Expected None for type={null_val!r}")
+
+    def test_config_build_custom_type_from_runtime(self):
+        from lllm.core.config import ContextManagerConfig
+        from lllm.core.dialog import ContextManager, Dialog
+        from lllm.core.runtime import Runtime
+
+        class CustomManager(ContextManager):
+            name = "custom"
+
+            def __init__(self, model_name: str, max_tokens=None):
+                self.model_name = model_name
+
+            def __call__(self, dialog: Dialog) -> Dialog:
+                return dialog
+
+        rt = Runtime()
+        rt.register_context_manager(CustomManager)
+        cfg = ContextManagerConfig(type="custom")
+        cm = cfg.build("gpt-4o", rt)
+        self.assertIsInstance(cm, CustomManager)
+        self.assertEqual(cm.model_name, "gpt-4o")
+
+    def test_config_from_dict(self):
+        from lllm.core.config import ContextManagerConfig
+        cfg = ContextManagerConfig.from_dict({"type": "default", "max_tokens": 32000})
+        self.assertEqual(cfg.type, "default")
+        self.assertEqual(cfg.max_tokens, 32000)
+
+    def test_config_from_dict_defaults(self):
+        from lllm.core.config import ContextManagerConfig
+        cfg = ContextManagerConfig.from_dict({})
+        self.assertEqual(cfg.type, "default")
+        self.assertIsNone(cfg.max_tokens)
 
 
 if __name__ == "__main__":

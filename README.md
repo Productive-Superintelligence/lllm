@@ -215,7 +215,7 @@ pytest tests/
 ## WIP V0.1.1
 
 - [x] Proxy-based tool-calling, mini in-dialog interpreter (proxies/)
-- [ ] Default Context Manager for prune over-size dialogs
+- [x] Default Context Manager for prune over-size dialogs
 - [ ] Support skills in agent config, see https://agentskills.io
 
 

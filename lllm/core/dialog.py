@@ -8,7 +8,7 @@ from pathlib import Path
 import copy
 import re
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, List, Dict, Any, Optional, Union
+from typing import TYPE_CHECKING, ClassVar, List, Dict, Any, Optional, Union
 from dataclasses import dataclass, field
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 
@@ -594,34 +594,231 @@ class Dialog:
 
 class ContextManager(ABC):
     """
-    Context manager for the dialog, it can be truncator, compressor, memory manager, editor, etc.
+    Pre-processing hook applied to a Dialog before it is sent to the LLM.
 
-    __call__:
-        Expects: a raw dialog as input
-        Returns: the new dialog that fit the agent context limit or whatever policy is desired
-    The policy should be setup by __init__ method through the user.
+    The Agent calls ``context_manager(working_dialog)`` once per LLM turn,
+    right after forking the canonical dialog, and uses the returned dialog for
+    the actual invoke.  The original canonical dialog is never mutated.
 
-    For example:
-    - A truncator may just need to be aware of context limit and truncate the dialog accordingly.
-    - A compressor is similar but work in a more sophisticated way that use like agentic compression techniques when hit the context limit.
-    - A memory manager may need to store the memory for each dialog in a dict then update it on the fly by detecting the changes.
-    - An editor may edit the dialog in a more sophisticated way that use like agentic editing techniques.
+    **Contract**
+
+    ``__call__(dialog)`` receives the (already-forked) working dialog and must
+    return a Dialog that is safe to pass to the invoker.  It may return the
+    same object unchanged, or a new child dialog produced via ``dialog.fork()``
+    or a fresh ``Dialog`` instance.
+
+    **Built-in implementation**
+
+    :class:`DefaultContextManager` — drops / truncates old messages so the
+    total token count stays within the model's context window.
+
+    **Extending**
+
+    Subclass ``ContextManager``, set the ``name`` class attribute, and
+    implement ``__call__``::
+
+        class SummaryCompressor(ContextManager):
+            name = "summary"   # <-- required; used as the config type key
+
+            def __init__(self, model_name: str, max_tokens: int = None):
+                self.model_name = model_name
+                self._max_tokens = max_tokens
+
+            def __call__(self, dialog: Dialog) -> Dialog:
+                # ... compress middle messages into a rolling summary ...
+                return compressed_dialog
+
+    Register the class with the runtime so config can reference it by name.
+    ``register_context_manager`` reads ``cls.name`` automatically::
+
+        runtime.register_context_manager(SummaryCompressor)
+        # equivalent to registering under the key "summary"
+
+    Then in your tactic YAML config::
+
+        global:
+          context_manager:
+            type: summary   # resolved via runtime registry
+            max_tokens: 128000
+
+        agent_configs:
+          - name: my_agent
+            model_name: gpt-4o
+            context_manager:          # per-agent override (deep-merged with global)
+              type: default
+              max_tokens: 32000
+
+    Set ``type: null`` (or omit the key entirely) to disable context management
+    for a specific agent even when a global default is configured.
+
+    **Programmatic usage** (without config)::
+
+        from lllm.core.dialog import DefaultContextManager
+
+        cm = DefaultContextManager("gpt-4o")
+        agent = Agent(..., context_manager=cm)
     """
+
+    #: Registry key used by :meth:`~lllm.core.runtime.Runtime.register_context_manager`
+    #: and the ``type`` field in YAML config.  Must be set on every concrete subclass.
+    name: ClassVar[str]
+
     @abstractmethod
     def __call__(self, dialog: Dialog) -> Dialog:
         pass
 
 
-class DefaultLiteLLMTruncator(ContextManager):
+class DefaultContextManager(ContextManager):
     """
-    Default context manager that truncate the dialog to the last n messages.
+    Token-aware dialog truncator — the built-in :class:`ContextManager`.
 
-    It assumes the LiteLLM invoker is used where we can get the context limit and the tokenizer. 
+    Uses ``litellm.token_counter`` for accurate, model-specific token counting
+    and drops or truncates the oldest non-system messages when the dialog
+    exceeds the model's context window.
+
+    **Truncation strategy**
+
+    1. The first message (system / developer prompt) is always preserved.
+    2. Messages are retained from the **tail** (most recent) inward until the
+       token budget is exhausted.
+    3. The *border* message — the oldest message that partially fits — is
+       character-truncated with a ``[...earlier content truncated...]`` prefix.
+    4. A ``SAFETY_BUFFER`` (default 5 000 tokens) is subtracted from the
+       model's context limit so the invoker never lands right at the edge.
+
+    **Quickstart**::
+
+        from lllm.core.dialog import DefaultContextManager
+        from lllm.core.agent import Agent
+
+        cm = DefaultContextManager("gpt-4o")          # auto-detects window size
+        cm = DefaultContextManager("gpt-4o", max_tokens=32000)  # manual cap
+
+        agent = Agent(..., context_manager=cm)
+
+    **Config (YAML)** — ``type: default`` resolves to this class without any
+    runtime registration (it is the built-in)::
+
+        # global default — applies to every agent in the tactic
+        global:
+          context_manager:
+            type: default       # built-in; no registration needed
+            max_tokens: 128000  # optional; omit to auto-detect from litellm
+
+        agent_configs:
+          - name: cheap_agent
+            model_name: gpt-4o-mini
+            context_manager:    # per-agent override (deep-merged with global)
+              type: default
+              max_tokens: 16000
+
+          - name: no_cm_agent
+            model_name: gpt-4o
+            context_manager:    # explicitly disable for this agent
+              type: null
     """
-    def __init__(self, model_name: str):
+
+    name: ClassVar[str] = "default"
+    SAFETY_BUFFER: int = 5000
+
+    def __init__(self, model_name: str, max_tokens: Optional[int] = None):
+        """
+        Args:
+            model_name: litellm-compatible model name (e.g. "gpt-4o").
+            max_tokens:  Hard override for the context window size.  When
+                         omitted the limit is looked up from litellm.
+        """
         self.model_name = model_name
-        raise NotImplementedError("This method is not implemented yet")
+        self._max_tokens = max_tokens
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    @property
+    def max_tokens(self) -> int:
+        if self._max_tokens is not None:
+            return self._max_tokens
+        try:
+            from litellm import get_max_tokens
+            val = get_max_tokens(self.model_name)
+            return int(val) if val else 4096
+        except Exception:
+            return 4096
+
+    def _to_raw(self, m: Message) -> dict:
+        """Convert a Message to the dict format litellm token_counter expects."""
+        return {
+            "role": m.role.value,
+            "content": m.content if isinstance(m.content, str) else str(m.content),
+        }
+
+    def _count(self, raw_msgs: list) -> int:
+        from litellm import token_counter
+        return token_counter(model=self.model_name, messages=raw_msgs)
+
+    # ------------------------------------------------------------------
+    # Core truncation
+    # ------------------------------------------------------------------
 
     def __call__(self, dialog: Dialog) -> Dialog:
-        raise NotImplementedError("This method is not implemented yet")
+        messages = dialog.messages
+        if not messages:
+            return dialog
+
+        limit = self.max_tokens - self.SAFETY_BUFFER
+        raw_all = [self._to_raw(m) for m in messages]
+
+        if self._count(raw_all) <= limit:
+            return dialog
+
+        logger.debug(
+            "DefaultContextManager: dialog %s exceeds token limit, truncating",
+            dialog.dialog_id,
+        )
+
+        # Always keep the first (system) message
+        head_tokens = self._count([raw_all[0]])
+        budget = limit - head_tokens
+
+        # Walk from the tail inward; collect messages that fit within budget
+        kept: List[Message] = []
+        for orig, raw in zip(reversed(messages[1:]), reversed(raw_all[1:])):
+            t = self._count([raw])
+            if t <= budget:
+                kept.insert(0, orig)
+                budget -= t
+            else:
+                # Truncate this border message to fill whatever budget remains
+                if budget > 50:
+                    content = raw["content"]
+                    # Approximate character count via token ratio (0.85 headroom)
+                    ratio = budget / t
+                    truncated_content = content[:max(1, int(len(content) * ratio * 0.85))]
+                    border = copy.deepcopy(orig)
+                    border.content = "[...earlier content truncated...]\n" + truncated_content
+                    kept.insert(0, border)
+                break
+
+        new_messages = [copy.deepcopy(messages[0])] + kept
+
+        # Build child dialog wired into the dialog tree
+        child_node = DialogTreeNode(
+            owner=dialog.owner,
+            split_point=len(new_messages),
+        )
+        child = Dialog(
+            _messages=new_messages,
+            session_name=dialog.session_name,
+            top_prompt=dialog.top_prompt,
+            runtime=dialog.runtime,
+            owner=dialog.owner,
+            tree_node=child_node,
+        )
+        dialog.tree_node.add_child(child.tree_node)
+        child._parent_dialog = dialog
+        dialog._children_dialogs.append(child)
+        return child
+
+
 

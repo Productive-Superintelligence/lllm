@@ -157,6 +157,85 @@ msg.parsed          # structured output from a parser (Lesson 3)
 
 ---
 
+## Context Window Management
+
+Long conversations can exceed a model's context limit. A `ContextManager` solves this by pruning the dialog **before each LLM call** without touching the canonical history.
+
+### Using the built-in truncator
+
+```python
+from lllm.core.dialog import DefaultContextManager
+
+cm = DefaultContextManager("gpt-4o")          # context window auto-detected
+cm = DefaultContextManager("gpt-4o", max_tokens=32000)  # or set manually
+
+agent = Agent(
+    name="assistant",
+    system_prompt=prompt,
+    model="gpt-4o",
+    llm_invoker=invoker,
+    context_manager=cm,   # <-- attach here
+)
+```
+
+The agent will now silently prune old messages on every turn, always keeping the system prompt and the most recent exchanges.
+
+### What gets preserved
+
+- **First message** (system prompt) — always kept.
+- **Recent messages** — kept from the tail inward until the token budget is exhausted.
+- **Border message** — the oldest kept message is character-truncated with `[...earlier content truncated...]` if it only partially fits.
+- **Safety buffer** — 5 000 tokens are reserved below the context limit so you never land right at the edge.
+
+### Writing a custom policy
+
+Subclass `ContextManager`, set `name`, and implement `__call__`:
+
+```python
+from lllm.core.dialog import ContextManager, Dialog
+
+class RollingWindowManager(ContextManager):
+    name = "rolling_window"
+
+    def __init__(self, model_name: str, max_tokens: int = None, keep_last: int = 10):
+        self.model_name = model_name
+        self.keep_last = keep_last
+
+    def __call__(self, dialog: Dialog) -> Dialog:
+        if len(dialog.messages) <= self.keep_last + 1:
+            return dialog  # within limit — no-op
+        return dialog.fork(last_n=self.keep_last, first_k=1)
+```
+
+Register it so config can find it by name:
+
+```python
+runtime.register_context_manager(RollingWindowManager)
+```
+
+### Config (YAML)
+
+```yaml
+global:
+  context_manager:
+    type: default        # or "rolling_window" after registering above
+    max_tokens: 128000
+
+agent_configs:
+  - name: small_agent
+    model_name: gpt-4o-mini
+    context_manager:
+      type: default
+      max_tokens: 16000   # tighter cap for the cheaper model
+
+  - name: stateless_agent
+    model_name: gpt-4o
+    context_manager:
+      type: null          # disable — always sends the full dialog
+```
+
+---
+
 ## Architecture Note: Dialog as Mental State
 
 LLLM treats a dialog as an agent's **internal mental state**. It is:
@@ -181,5 +260,6 @@ This design makes dialogs easy to reason about, log, and replay.
 | `agent.switch(alias)` | Change the active dialog |
 | `agent.fork(src, dest)` | Branch a dialog |
 | `dialog.messages` | Full message list |
+| `DefaultContextManager` | Truncates dialog to fit context window |
 
 **Next:** [Lesson 3 — Prompts and Structured Output](03-prompts.md)

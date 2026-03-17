@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 from lllm.core.prompt import Prompt, AgentException, AgentCallSession
 from lllm.core.const import Roles, APITypes
-from lllm.core.dialog import Dialog, Message
+from lllm.core.dialog import Dialog, Message, ContextManager
 from lllm.invokers.base import BaseInvoker, BaseStreamHandler
 import lllm.utils as U
 
@@ -55,6 +55,7 @@ class Agent:
     max_exception_retry: int = 3
     max_interrupt_steps: int = 5
     max_llm_recall: int = 0
+    context_manager: Optional[ContextManager] = None  # applied before each LLM call; None = disabled
 
     # Dialog management
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)
@@ -293,7 +294,9 @@ class Agent:
                 self.name,
             )
         for i in range(_max_steps):
-            working_dialog = dialog.fork() # make a copy of the dialog, truncate all excception handling dialogs
+            working_dialog = dialog.fork() # make a copy of the dialog, truncate all exception handling dialogs
+            if self.context_manager is not None:
+                working_dialog = self.context_manager(working_dialog)
             while True: # ensure the response is no exception
                 try:
                     _model_args = self.model_args.copy()
