@@ -132,7 +132,7 @@ pytest tests/
   - [x] Stable `pkg::name` tactic identity independent of file layout and aliases
   - [x] `ColoredFormatter` and `setup_logging` for terminal output
   - [x] Convenience factories: `local_store`, `sqlite_store`, `noop_store`
-- [ ] Fast mode, 5-line code to build a simple system.
+- [ ] Fast mode, 5-line code to build a simple system with no configuration.
 
 
 ## TODOs
