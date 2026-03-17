@@ -1,0 +1,26 @@
+# Code review service — production configuration (higher-quality model).
+#
+# Inherits everything from default.yaml via `base`, then overrides
+# model_args for tighter, more accurate output.
+#
+# Usage:
+#   LLLM_CONFIG_PROFILE=pro python service.py
+base: default
+
+global:
+  model_args:
+    temperature: 0.1
+    max_tokens: 4096
+
+agent_configs:
+  - name: analyzer
+    system_prompt_path: system/analyzer
+    model_args:
+      temperature: 0.2
+      max_tokens: 2048
+
+  - name: synthesizer
+    system_prompt_path: system/synthesizer
+    model_args:
+      temperature: 0.0
+      max_tokens: 1024

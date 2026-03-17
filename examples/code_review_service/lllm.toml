@@ -1,0 +1,14 @@
+[package]
+name = "code_review"
+version = "0.1.0"
+description = "Code review agentic service — two-agent pipeline (analyzer + synthesizer)"
+
+# Resource folders — discovered automatically (no paths = use the default subfolder name)
+[prompts]
+paths = ["prompts"]
+
+[tactics]
+paths = ["tactics"]
+
+[configs]
+paths = ["configs"]

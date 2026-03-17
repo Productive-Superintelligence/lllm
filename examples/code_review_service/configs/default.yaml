@@ -1,0 +1,24 @@
+# Code review service — default configuration (fast/cheap model).
+#
+# model_name is intentionally omitted here so that service.py can inject
+# the auto-detected provider model at startup.  Set it here to pin a model:
+#   global:
+#     model_name: gpt-4o-mini
+#
+# tactic_type tells build_tactic() which Tactic subclass to instantiate.
+tactic_type: code_review
+
+global:
+  model_args:
+    temperature: 0.2
+
+agent_configs:
+  - name: analyzer
+    system_prompt_path: system/analyzer
+    model_args:
+      temperature: 0.3        # slightly higher for thorough exploration
+
+  - name: synthesizer
+    system_prompt_path: system/synthesizer
+    model_args:
+      temperature: 0.1        # low: structured JSON output needs determinism

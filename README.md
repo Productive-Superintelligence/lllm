@@ -96,10 +96,36 @@ See `examples/` for concrete patterns at each stage.
 
 ## Examples
 
-Check `examples/` for more usage scenarios:
+See [`examples/README.md`](examples/README.md) for the full index. A quick map:
 
-- [`basic_chat.py`](examples/basic_chat.py) — minimal single-agent chat (no config)
-- [`examples/autodiscovery/`](examples/autodiscovery/) — prompts and proxies auto-discovered via `lllm.toml`
+**Standalone scripts** — one API key, no extra setup:
+
+| Script | What it shows |
+|--------|--------------|
+| [`basic_chat.py`](examples/basic_chat.py) | `Tactic.quick()` — zero-config single-agent chat |
+| [`multi_turn_chat.py`](examples/multi_turn_chat.py) | Multi-turn history, dialog `fork()` |
+| [`tool_use.py`](examples/tool_use.py) | `@tool` decorator, function calling, diagnostics |
+| [`structured_output.py`](examples/structured_output.py) | `Prompt(format=MyModel)` — Pydantic structured output |
+
+**Advanced scripts** (in [`examples/advanced/`](examples/advanced/)) — auto-detect provider from env:
+
+| Script | What it shows |
+|--------|--------------|
+| [`multi_agent_tactic.py`](examples/advanced/multi_agent_tactic.py) | Custom `Tactic` subclass, two-agent pipeline |
+| [`session_logging.py`](examples/advanced/session_logging.py) | SQLite `LogStore`, session querying |
+| [`batch_processing.py`](examples/advanced/batch_processing.py) | `bcall()`, `ccall()` concurrent execution |
+
+**Full package example** — [`examples/code_review_service/`](examples/code_review_service/):
+
+A self-contained LLLM package with `lllm.toml`, prompt files, tactic files, and YAML configs with inheritance — wrapped as a FastAPI HTTP service. See [`code_review_service/README.md`](examples/code_review_service/README.md) for full documentation.
+
+```bash
+cd examples/code_review_service
+export OPENAI_API_KEY=sk-...
+python service.py --demo            # CLI demo, no web server
+python service.py                   # FastAPI on :8080  (pip install fastapi uvicorn)
+LLLM_CONFIG_PROFILE=pro python service.py --demo  # production config
+```
 
 ### Proxies & Tools
 
