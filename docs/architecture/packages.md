@@ -1,27 +1,49 @@
-# Packages
+# Package System
 
-LLLM is Pythonic, while LLLM itself is self-contained, and you can just use it as a library and organize your own code as you want. However, it is recommended to separate the LLLM resources (prompts, proxies, configs, and tactics) from the upper-level system by encapsulating them into a package for better organization and reusability.
+After the quick start, you have one script and one agent. That works fine for experiments. But as your system grows — multiple prompts, multiple agents, tactics you want to reuse across projects — you need a way to organise and discover resources without hardcoding paths everywhere.
 
-An LLLM package is structured as follows:
+The LLLM **package system** is that organisational layer. A package is a folder with an `lllm.toml` manifest that declares where your prompts, configs, tactics, and proxies live. LLLM handles discovery, namespacing, and lazy loading from there.
+
+This is what the jump looks like:
+
+```python
+# Stage 1: everything inline, paths hardcoded
+agent = Tactic.quick("You are a research assistant.", model="gpt-4o")
+
+# Stage 3: resources discovered from a package — no paths in Python code
+config = resolve_config("research_writer")   # reads configs/research_writer.yaml
+tactic = build_tactic(config, ckpt_dir="./runs")
+result = tactic("Analyze transformer architectures")
+```
+
+The package system makes this possible without changing how your `Tactic` or `Prompt` code is written. You add `lllm.toml` and the folder structure; LLLM wires everything together.
+
+For a step-by-step walkthrough of building a complete package from scratch, see [Tutorial: Build a Full Package](../guides/building-agents.md).
+
+---
+
+LLLM is Pythonic: you can use it purely as a library and organise your own code however you want. But separating LLLM resources (prompts, proxies, configs, tactics) into a package is the recommended approach for anything beyond a single script.
+
+A package is structured as:
 
 ```
 package_name/
-  ├── prompts/        # the prompts, for the agents to call
-  ├── proxies/        # the proxies, for proxy-based tool-calling
-  ├── configs/        # the configs for the agents (YAML files)
-  ├── tactics/        # the tactics, programs that wire agents and prompts together
-  ├── lllm.toml       # package metadata and dependency declarations
+  ├── prompts/        # Prompt objects for agents to call
+  ├── proxies/        # Proxy-based tool implementations
+  ├── configs/        # Agent configuration YAML files
+  ├── tactics/        # Tactic subclasses
+  └── lllm.toml       # Package metadata and resource declarations
 ```
 
-An example structure of an LLLM agentic system:
+A typical project layout:
 
 ```
 project_name/
-├── lllm.toml         # root package — LLLM finds this automatically
+├── lllm.toml           # root package — LLLM finds this automatically
 ├── lllm_packages/
-  ├── my_package1/
-  ├── my_package2/
-├── ... (application code, data, etc.)
+│   ├── my_package1/
+│   └── my_package2/
+└── ... (application code, data, etc.)
 ```
 
 Conceptually, LLLM maintains a registry of prompts, proxies, configs, and tactics, loaded on demand through the `lllm.toml` file. All resources are indexed by URLs of the form `<package>.<section>:<resource_path>`. Tactics are the top-level building blocks — they find agent configs by key, prompts from the prompt registry, and proxy-based tools from the proxy registry.
@@ -29,23 +51,15 @@ Conceptually, LLLM maintains a registry of prompts, proxies, configs, and tactic
 
 ## Runtime Initialization
 
-By default, when LLLM is imported, it looks for `lllm.toml` starting from the current working directory and searching upward. If found, it loads the package tree into the default runtime. If no `lllm.toml` is found, the default runtime is initialized empty (useful for fast mode and testing).
+Everything is automatic. When `lllm` is imported, it searches upward from `cwd` for `lllm.toml` and loads the full package tree into the default runtime. `load_prompt("my_prompt")` works immediately with no setup code.
+
+If no `lllm.toml` is found, LLLM falls back to scanning the current directory for any of the four standard folders (`prompts/`, `configs/`, `tactics/`, `proxies/`). If found, those are loaded and a `RuntimeWarning` recommends adding an `lllm.toml`. If neither exists, the runtime starts empty (fast mode).
 
 ```python
-from lllm import load_prompt  # default runtime already populated from project root
-
-# Explicit load / replace default runtime
-from lllm import load_runtime
-load_runtime("path/to/custom.toml")
-
-# Named runtimes for parallel experiments
-load_runtime("experiment_a/lllm.toml", name="exp_a")
-load_runtime("experiment_b/lllm.toml", name="exp_b")
-
-from lllm import get_runtime
-rt_a = get_runtime("exp_a")
-rt_b = get_runtime("exp_b")
+from lllm import load_prompt  # runtime already populated at import time
 ```
+
+For advanced use (testing with isolated registries, parallel experiments), you can load additional named runtimes explicitly — see [Runtime](../core/runtime.md).
 
 
 ## Resources
@@ -325,56 +339,6 @@ load_resource("assets:ui/check.svg")
 load_resource("assets:content/hero.jpg")
 ```
 
-### Example: ML Pipeline Package
-
-```toml
-[package]
-name = "sentiment_analyzer"
-
-[prompts]
-paths = ["prompts"]
-
-[configs]
-paths = ["configs"]
-
-[models]
-paths = ["models"]
-
-[assets]
-paths = ["assets"]
-```
-
-```
-sentiment_analyzer/
-├── lllm.toml
-├── prompts/
-│   └── classify.py           # Prompt objects
-├── configs/
-│   └── default.yaml          # agent config
-├── models/
-│   ├── tokenizer.json        # parsed as dict automatically
-│   └── weights.bin           # loaded as bytes
-└── assets/
-    └── label_map.json        # parsed as dict automatically
-```
-
-```python
-from lllm import load_prompt, load_config, load_resource, resolve_config, get_default_runtime
-
-# Typed loaders for built-in sections
-prompt = load_prompt("sentiment_analyzer:classify/system")
-config = resolve_config("default")
-
-# Custom sections via load_resource
-label_map = load_resource("models:label_map.json")   # → {"0": "negative", "1": "positive"}
-tokenizer = load_resource("models:tokenizer.json")   # → dict
-
-# Large binary — get path, load with custom code
-node = get_default_runtime().get_node("sentiment_analyzer.models:weights.bin")
-weights_path = node.metadata["file_path"]
-# model = my_framework.load(weights_path)
-```
-
 
 ## Resource Access Reference
 
@@ -424,10 +388,6 @@ prompt = load_prompt("my_pkg:research/system")
 
 # Full URL
 prompt = load_prompt("my_pkg.prompts:research/system")
-
-# From runtime directly
-from lllm import get_default_runtime
-prompt = get_default_runtime().get_prompt("research/system")
 ```
 
 **In agent configs** — reference by path:
@@ -446,11 +406,11 @@ Proxies are `BaseProxy` subclasses decorated with `@ProxyRegistrator`. They have
 
 **Registration paths:**
 
-1. **`@ProxyRegistrator` decorator** (primary) — registers the class into the default runtime at import time. This is how all existing proxies (including builtins) work. The decorator sets `_proxy_path` on the class, which becomes the resource key.
+1. **`@ProxyRegistrator` decorator** (primary) — registers the class into the default runtime at import time. The decorator sets `_proxy_path` on the class, which becomes the resource key.
 
-2. **Discovery** — list folders in `[proxies]` section of `lllm.toml`. Discovery imports the `.py` files, which triggers `@ProxyRegistrator` decorators. Discovery also scans for `BaseProxy` subclasses directly, using `_proxy_path` as the key if present.
+2. **Discovery** — list folders in `[proxies]` section of `lllm.toml`. Discovery imports the `.py` files, which triggers `@ProxyRegistrator` decorators.
 
-3. **`load_builtin_proxies()`** — manually imports LLLM's bundled proxy modules (Wolfram Alpha, financial data, search, etc.) to trigger their `@ProxyRegistrator` decorators. Use this in notebooks or scripts where you don't have an `lllm.toml`.
+3. **`load_builtin_proxies()`** — manually imports LLLM's bundled proxy modules to trigger their decorators. Use this in notebooks or scripts without an `lllm.toml`.
 
 **Defining a proxy:**
 
@@ -467,7 +427,6 @@ class OpenWeatherProxy(BaseProxy):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.api_key = os.getenv("OPENWEATHER_API_KEY")
-        self.base_url = "https://api.openweathermap.org/data/2.5"
 
     @BaseProxy.endpoint(
         category="current",
@@ -480,44 +439,17 @@ class OpenWeatherProxy(BaseProxy):
         return params
 ```
 
-The `@ProxyRegistrator(path="weather/openweather")` registers this class under the key `"weather/openweather"`. If this file is also discovered via `[proxies]` section under package `my_pkg`, it's additionally available as `"my_pkg.proxies:weather/openweather"`.
-
 **Loading and using proxies:**
 
 ```python
-# Option 1: Via the Proxy runtime dispatcher (recommended for agent use)
+# Via the Proxy runtime dispatcher (recommended for agent use)
 from lllm.proxies import Proxy
 
 proxy = Proxy(activate_proxies=["weather/openweather"])
 result = proxy("weather/openweather/current/weather", {"q": "London"})
-
-# Option 2: Via the resource registry (get the class, not an instance)
-from lllm import load_proxy
-cls = load_proxy("weather/openweather")
-instance = cls(cutoff_date="2024-01-01")
-
-# Option 3: Load builtins for notebook use
-from lllm.proxies import load_builtin_proxies, Proxy
-load_builtin_proxies()
-proxy = Proxy(activate_proxies=["wa", "finance/fmp"])
-result = proxy("wa/Query/llm-api", {"input": "population of France"})
 ```
 
-**Proxy activation matching** — `Proxy(activate_proxies=[...])` matches against any of:
-- The qualified key (`"my_pkg.proxies:weather/openweather"`)
-- The bare key (`"weather/openweather"`)
-- The `_proxy_path` attribute (`"weather/openweather"`)
-
-So you can always use the short path from `@ProxyRegistrator`.
-
-**Inspecting available proxies:**
-
-```python
-proxy = Proxy()                    # loads all registered proxies
-print(proxy.available())           # sorted list of proxy keys
-print(proxy.api_catalog())         # full endpoint directory
-print(proxy.retrieve_api_docs())   # human-readable docs for prompts
-```
+See [Proxy & Tools](../core/proxy-and-sandbox.md) for full proxy documentation.
 
 
 ### Tactics
@@ -526,9 +458,9 @@ Tactics are `Tactic` subclasses that register automatically when defined (via `_
 
 **Registration paths:**
 
-1. **Auto-registration** (primary) — defining a `Tactic` subclass with a `name` attribute triggers `__init_subclass__`, which calls `register_tactic_class`. This happens at class definition time (import time).
+1. **Auto-registration** (primary) — defining a `Tactic` subclass with a `name` attribute registers it at class definition time (import time).
 
-2. **Discovery** — list folders in `[tactics]` section of `lllm.toml`. Discovery imports `.py` files, triggering the auto-registration above.
+2. **Discovery** — list folders in `[tactics]` section of `lllm.toml`. Discovery imports `.py` files, triggering auto-registration.
 
 3. **Manual** — `register_tactic_class(MyTactic, runtime=my_runtime)`.
 
@@ -545,20 +477,14 @@ class ResearchTactic(Tactic):
     def call(self, task: str, **kwargs) -> str:
         analyst = self.agents["analyst"]
         analyst.open("work", prompt_args={"topic": task})
-        analysis = analyst.respond()
-        return analysis.content
+        return analyst.respond().content
 ```
 
 **Loading and using:**
 
 ```python
-from lllm import load_tactic, build_tactic, resolve_config
+from lllm import build_tactic, resolve_config
 
-# Get the class
-tactic_cls = load_tactic("researcher")
-tactic_cls = load_tactic("my_pkg:researcher")
-
-# Build from config (the typical way)
 config = resolve_config("default")
 tactic = build_tactic(config, ckpt_dir="./runs", name="researcher")
 result = tactic("Analyze transformer architectures")
@@ -569,12 +495,6 @@ result = tactic("Analyze transformer architectures")
 
 Configs are YAML files discovered from `[configs]` folders. They are loaded **lazily** — the file is only read on first access.
 
-**Registration paths:**
-
-1. **Discovery** (primary) — YAML files in `[configs]` paths are registered as lazy `ResourceNode`s. The key is the relative path without extension (e.g., `configs/experiments/fast.yaml` → `"experiments/fast"`).
-
-2. **Manual** — `runtime.register_config("name", data_dict, namespace="pkg.configs")` or with a lazy loader: `runtime.register_config("name", loader=lambda: yaml.safe_load(open("f.yaml")), namespace="pkg.configs")`.
-
 **Accessing:**
 
 ```python
@@ -582,17 +502,16 @@ from lllm import load_config, resolve_config
 
 # Direct load (no inheritance resolution)
 cfg = load_config("default")
-cfg = load_config("my_pkg:experiments/fast")
 
 # With base inheritance resolution (recommended)
 cfg = resolve_config("experiments/fast")
 ```
 
-See the [Configuration doc](config.md) for details on `global` merge, `base` inheritance, and `vendor_config`.
+See [Configuration](../core/config.md) for full details on `global` merge, `base` inheritance, and `vendor_config`.
 
 
 ### Custom Sections
 
 Any TOML section besides the six official ones is treated as a custom resource section. All non-Python files are registered lazily; Python files are also scanned for typed resources.
 
-See the [Custom Sections](#custom-sections) section above for full details on file loading behavior, access patterns, and examples.
+See the [Custom Sections](#custom-sections) section above for full details.

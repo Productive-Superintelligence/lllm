@@ -28,59 +28,23 @@ No `lllm.toml`, no folder structure, no subclassing. [Full quick start →](gett
 
 ---
 
-## Explore the Docs
+## Learning Path
 
-<div class="grid cards" markdown>
+LLLM is designed to grow with you. Here's the recommended reading order:
 
--   :material-play-circle:{ .lg .middle } **Getting Started**
+**1. [Getting Started](getting-started.md)** — Install and run your first agent in 5 lines.
 
-    ---
+**2. [Architecture Overview](architecture/overview.md)** — How the four abstractions (Agent, Prompt, Dialog, Tactic) fit together, and where the package system fits in.
 
-    Install LLLM and build your first agent in 5 lines. Covers single-agent, multi-turn, and the path to a full project.
+**3. [Package System](architecture/packages.md)** — The organisational layer that makes projects beyond a single script work cleanly. This is the central concept for any real lllm project.
 
-    [:octicons-arrow-right-24: Quick Start](getting-started.md)
+**4. [Tutorial: Build a Full Package](guides/building-agents.md)** — Walk through from a single agent to a complete multi-agent package with logging. Each step builds on the last.
 
--   :material-map:{ .lg .middle } **Architecture Overview**
+**5. Advanced Customization** — Plug in your own components once you need them:
 
-    ---
-
-    How the four abstractions — Agent, Prompt, Dialog, Tactic — fit together. Design principles and data flow.
-
-    [:octicons-arrow-right-24: Overview](architecture/overview.md)
-
--   :material-book-open-variant:{ .lg .middle } **Core Concepts**
-
-    ---
-
-    Deep dives into each abstraction: agent call loop, prompt templates & parsers, dialog state, tactic orchestration, config & packages.
-
-    [:octicons-arrow-right-24: Agent Call](core/agent-call.md)
-
--   :material-hammer-wrench:{ .lg .middle } **Guides**
-
-    ---
-
-    Step-by-step tutorials: building agents from scratch, structuring a multi-agent project, and growing from prototype to production.
-
-    [:octicons-arrow-right-24: Building Agents](guides/building-agents.md)
-
--   :material-code-tags:{ .lg .middle } **API Reference**
-
-    ---
-
-    Auto-generated docs for Agent, Tactic, Prompt, Dialog, LogStore, and all public classes.
-
-    [:octicons-arrow-right-24: Core API](reference/core.md)
-
--   :material-package-variant:{ .lg .middle } **Package System**
-
-    ---
-
-    How `lllm.toml` wires resources together. Namespacing, dependencies, aliasing, and sharing tactics across projects.
-
-    [:octicons-arrow-right-24: Packages](core/packages.md)
-
-</div>
+- [Invokers](core/invokers.md) — swap or extend the LLM backend (`BaseInvoker`)
+- [Logging & Backends](core/logging.md) — session tracking, custom storage backends
+- [Proxy & Tools](core/proxy-and-sandbox.md) — build custom tools with the proxy system
 
 ---
 

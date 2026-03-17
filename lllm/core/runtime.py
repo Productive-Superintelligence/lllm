@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import difflib
 import logging
+import warnings
 from typing import Any, Dict, List, Optional, Set, Type, TYPE_CHECKING
 
 from lllm.core.resource import ResourceNode, PackageInfo
@@ -260,9 +261,17 @@ def load_runtime(
         if found:
             load_package(str(found), runtime=rt)
         else:
-            logger.info(
-                "No lllm.toml found. Running with empty runtime (fast mode)."
-            )
+            from lllm.core.config import load_cwd_fallback
+            if load_cwd_fallback(rt):
+                warnings.warn(
+                    "No lllm.toml found — auto-discovered resource folders in the current "
+                    "directory. Add an lllm.toml to remove this warning and enable "
+                    "namespacing, dependencies, and full package features.",
+                    RuntimeWarning,
+                    stacklevel=3,
+                )
+            else:
+                logger.debug("No lllm.toml found. Running with empty runtime (fast mode).")
 
     rt._discovery_done = True
 

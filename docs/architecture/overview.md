@@ -101,27 +101,20 @@ tactic(task)
 
 ---
 
-## Configuration & Discovery
+## Package System
 
-For projects beyond a single script, LLLM uses a `lllm.toml` manifest to declare resources:
+The four abstractions describe *what* is inside an agentic system. The **package system** describes *how* it is organised and made available across files and projects.
+
+A package is a folder with an `lllm.toml` manifest. It declares where your prompts, configs, tactics, and proxies live, and LLLM handles discovery, namespacing, and lazy loading from there. All resources are addressable by a namespaced URL:
 
 ```
-project/
-├── lllm.toml           ← declares prompt/proxy/config folders
-├── prompts/            ← .md files auto-register as Prompt resources
-├── configs/            ← .yaml files auto-register as agent configs
-├── tactics/            ← .py files with Tactic subclasses auto-register
-└── proxies/            ← .py files with BaseProxy subclasses auto-register
+my_pkg.prompts:research/system
+my_pkg.tactics:research_writer
 ```
 
-Resources are loaded lazily into a **Runtime** registry and accessed by name:
+Multiple packages can declare dependencies on each other, enabling shared tactics and prompts to be imported like Python modules. This is what makes the transition from a single script to a production system clean — you never rewrite your agents or tactics, you just add structure around them.
 
-```python
-prompt = runtime.get_prompt("my_prompt")
-config = runtime.get_config("my_tactic")
-```
-
-Multiple named runtimes can coexist for parallel experiments or isolated tests.
+See [Package System](packages.md) for the full reference.
 
 ---
 
@@ -141,7 +134,7 @@ LLLM is designed for developers and researchers — in the spirit of PyTorch and
 
 ### Advanced Capabilities
 
-**Tool calling as programming.** Beyond regular LLM tool calling, the proxy system wraps tools with rich metadata, documentation, and activation filtering — making tools composable and testable rather than just ad-hoc function schemas. A mini-interpreter mode that executes tools as a mini Python script is on the roadmap.
+**Tool calling as programming.** Beyond regular LLM tool calling, the proxy system wraps tools with rich metadata, documentation, and activation filtering — making tools composable and testable rather than just ad-hoc function schemas.
 
 **Tactics as a shared library.** Tactics are reusable modules. Like a Python package, you can import a tactic from a shared library and drop it into your own system. Every prompt, proxy, config, and tactic is an independent, loadable resource — declared in `lllm.toml` and namespaced to avoid collisions.
 
@@ -151,9 +144,10 @@ LLLM is designed for developers and researchers — in the spirit of PyTorch and
 
 ## Where to Go Next
 
-- [Agent Call](../core/agent-call.md) — the call loop in detail
+- [Package System](packages.md) — the organisational layer in full detail
+- [Tutorial: Build a Full Package](../guides/building-agents.md) — step-by-step from single agent to production system
+- [Agent](../core/agent.md) — the call loop in detail
 - [Prompts](../core/prompts.md) — templates, parsers, tools, handlers
 - [Dialogs](../core/dialog.md) — message state and forking
 - [Tactics](../core/tactic.md) — orchestration patterns
-- [Config & Discovery](../core/config.md) — `lllm.toml` and YAML configs
-- [Packages](../core/packages.md) — namespacing and dependency management
+- [Configuration](../core/config.md) — `lllm.toml` and YAML agent configs

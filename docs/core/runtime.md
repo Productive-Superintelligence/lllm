@@ -1,11 +1,25 @@
 # Runtime & Registries
 
-Every LLLM runtime needs a place to look up prompts, proxies, tactics, configs, and custom resources by name. `Runtime` is that place — a unified `ResourceNode`-based store with namespace-aware resolution.
+!!! note "Most users never touch this"
+    The runtime initialises automatically when you `import lllm`. You only need this page if you are writing tests with isolated registries, running parallel experiments with separate runtimes, or integrating LLLM into a larger system that manages its own package loading.
+
+Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced URLs. It's where prompts, configs, tactics, and proxies are looked up by name.
+
+
+## Automatic Initialization
+
+`import lllm` triggers `_auto_init()`, which:
+
+1. Searches upward from `cwd` for `lllm.toml` (or uses `$LLLM_CONFIG`).
+2. If found — loads the full package tree (dependencies, all resource sections).
+3. If not found — scans `cwd` for any of the standard folders (`prompts/`, `configs/`, `tactics/`, `proxies/`). If any exist, loads them and emits a `RuntimeWarning` suggesting you add an `lllm.toml`. If none exist, starts empty (fast mode, no output).
+
+This means **you never call `load_runtime()` in normal usage** — it has already run by the time your first line of application code executes.
 
 
 ## The Default Runtime
 
-A default instance is created when `lllm.core.runtime` is imported — empty, no side effects. When the `lllm` package is imported, `_auto_init()` searches for `lllm.toml` from the working directory upward and populates the default runtime. If no TOML is found, the runtime stays empty (fast mode).
+A default instance is created when `lllm.core.runtime` is imported — empty, no side effects. `_auto_init()` populates it on first import.
 
 ```python
 from lllm.core.runtime import get_default_runtime

@@ -33,22 +33,21 @@ nav:
   - Getting Started: getting-started.md
   - Architecture:
     - Overview: architecture/overview.md
-  - Core Concepts:
-    - Fundamentals:
-      - Agent Call: core/agent-call.md
-      - Prompts: core/prompts.md
-      - Dialogs: core/dialog.md
-      - Tactics: core/tactic.md
-    - Infrastructure:
-      - Config & Discovery: core/config.md
-      - Packages: core/packages.md
-      - Runtime: core/runtime.md
-      - Invokers: core/invokers.md
-      - Logging: core/logging.md
-      - Proxy & Tools: core/proxy-and-sandbox.md
-  - Guides:
-    - Building Agents: guides/building-agents.md
-    - Project Structure: guides/project-template.md
+    - Package System: architecture/packages.md
+  - Tutorial:
+    - Build a Full Package: guides/building-agents.md
+  - Core Reference:
+    - Agent: core/agent.md
+    - Prompts: core/prompts.md
+    - Dialogs: core/dialog.md
+    - Tactics: core/tactic.md
+    - Configs: core/config.md
+  - Advanced:
+    - Invokers: core/invokers.md
+    - Logging: core/logging.md
+    - Proxy & Tools: core/proxy-and-sandbox.md
+    - Runtime: core/runtime.md
+  - Project Reference: guides/project-template.md
   - API Reference:
     - Core API: reference/core.md
     - Logging API: reference/logging.md

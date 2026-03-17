@@ -162,6 +162,39 @@ def load_toml(path: Optional[str | os.PathLike[str]] = None) -> Optional[Dict[st
 # Package loading
 # ---------------------------------------------------------------------------
 
+def load_cwd_fallback(runtime: Optional[Runtime] = None) -> bool:
+    """Auto-discover standard resource folders in the current working directory.
+
+    Called when no ``lllm.toml`` is found.  Registers the cwd as an anonymous
+    package named after the directory, then discovers any of the four built-in
+    sections whose default sub-folder exists.
+
+    Returns ``True`` if at least one folder was found and registered.
+    """
+    runtime = runtime or get_default_runtime()
+    cwd = Path.cwd()
+
+    if not any((cwd / s).is_dir() for s in BUILTIN_RESOURCE_SECTIONS):
+        return False
+
+    pkg_name = cwd.name
+    pkg_info = PackageInfo(
+        name=pkg_name, version="", description="",
+        base_dir=str(cwd.resolve()),
+    )
+    runtime.register_package(pkg_info)
+    if runtime._default_namespace is None:
+        runtime._default_namespace = pkg_name
+
+    for section_name in BUILTIN_RESOURCE_SECTIONS:
+        _discover_section(
+            {}, cwd, runtime,
+            package_name=pkg_name, section_name=section_name,
+        )
+
+    return True
+
+
 def load_package(
     config_path: Optional[str | Path] = None,
     *,

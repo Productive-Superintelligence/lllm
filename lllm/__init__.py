@@ -8,7 +8,7 @@ from lllm.core.resource import (
     load_prompt, load_tactic, load_proxy, load_config, load_resource,
 )
 from lllm.core.config import (
-    load_package, find_config_file,
+    load_package, find_config_file, load_cwd_fallback,
     resolve_config, AgentSpec, parse_agent_configs,
 )
 from lllm.core.prompt import Function, FunctionCall, MCP, Prompt
