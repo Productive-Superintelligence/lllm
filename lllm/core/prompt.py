@@ -196,8 +196,10 @@ class Function(BaseModel):
 
     # -- Linking ----------------------------------------------------------
 
-    def link_function(self, fn: Callable) -> None:
+    def link_function(self, fn: Any) -> None:
         """Attach the Python callable that backs this tool."""
+        if not callable(fn):
+            raise TypeError(f"Expected a callable for function '{self.name}', got {type(fn)!r}")
         self.function = fn
 
     @property

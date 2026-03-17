@@ -474,14 +474,22 @@ class Tactic(ABC):
             lambda: self._execute(task, tags=tags, metadata=metadata, return_session=return_session, **kwargs),
         )
 
-    def bcall(self, tasks, max_workers=None, tags=None, metadata=None, return_sessions=False, **kwargs):
+    def bcall(self, tasks, max_workers=None, fail_fast=True, tags=None, metadata=None, return_sessions=False, **kwargs):
         workers = max_workers or self._max_workers
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [
                 pool.submit(self._execute, t, None, tags, metadata, return_session=return_sessions, **kwargs)
                 for t in tasks
             ]
-            return [f.result() for f in futures]
+            if fail_fast:
+                return [f.result() for f in futures]
+            results = []
+            for f in futures:
+                try:
+                    results.append(f.result())
+                except Exception as e:
+                    results.append(e)
+            return results
 
     async def ccall(self, tasks, max_workers=None, tags=None, metadata=None, return_sessions=False, **kwargs):
         workers = max_workers or self._max_workers

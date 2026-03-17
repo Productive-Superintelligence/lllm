@@ -237,14 +237,23 @@ class LiteLLMInvoker(BaseInvoker):
             logprobs = None
             parsed = None
             errors: List[Exception] = []
-            function_calls = [
-                FunctionCall(
+            function_calls = []
+            for tool_call in choice.message.tool_calls:
+                try:
+                    arguments = json.loads(tool_call.function.arguments)
+                except (json.JSONDecodeError, TypeError) as exc:
+                    errors.append(
+                        ValueError(
+                            f"Malformed JSON in tool call arguments for '{tool_call.function.name}': "
+                            f"{tool_call.function.arguments!r}"
+                        )
+                    )
+                    arguments = {}
+                function_calls.append(FunctionCall(
                     id=tool_call.id,
                     name=tool_call.function.name,
-                    arguments=json.loads(tool_call.function.arguments),
-                )
-                for tool_call in choice.message.tool_calls
-            ]
+                    arguments=arguments,
+                ))
             content = 'Tool calls:\n\n' + '\n'.join(
                 [
                     f'{idx}. {tool_call.function.name}: {tool_call.function.arguments}'
@@ -279,9 +288,6 @@ class LiteLLMInvoker(BaseInvoker):
                     errors.append(exc)
                     parsed = {'raw': content}
                 logprobs = None
-
-            if 'response_format' in call_args and prompt.format is not None:
-                call_args['response_format'] = prompt.format.model_json_schema()
 
         message = Message(
             role=role,

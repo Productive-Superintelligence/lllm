@@ -1,7 +1,10 @@
+import logging
 import random
 import time
 from typing import Dict, Any, Tuple, Optional, Union
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 from lllm.core.prompt import Prompt, AgentException, AgentCallSession
 from lllm.core.const import Roles, APITypes
@@ -283,7 +286,14 @@ class Agent:
         if dialog.top_prompt is None:
             dialog.top_prompt = self.system_prompt
         interrupts = []
-        for i in range(10000 if self.max_interrupt_steps == 0 else self.max_interrupt_steps+1): # +1 for the final response
+        _max_steps = 100 if self.max_interrupt_steps == 0 else self.max_interrupt_steps + 1  # +1 for the final response
+        if self.max_interrupt_steps == 0:
+            logger.warning(
+                "Agent '%s': max_interrupt_steps=0 means unlimited (up to 100 iterations). "
+                "Set an explicit value to cap the loop.",
+                self.name,
+            )
+        for i in range(_max_steps):
             working_dialog = dialog.fork() # make a copy of the dialog, truncate all excception handling dialogs
             while True: # ensure the response is no exception
                 try:

@@ -777,6 +777,14 @@ class AgentSpec:
         # -- model_args: explicit dict + leftover unknown keys -------------
         model_args = raw.pop("model_args", {})
         raw.pop("name", None)
+        if raw:
+            logger.warning(
+                "Agent '%s': unrecognised config keys %s will be passed as model_args. "
+                "Known keys are: %s. Check for typos.",
+                name,
+                sorted(raw.keys()),
+                sorted(_KNOWN_AGENT_KEYS),
+            )
         model_args.update(raw)  # anything left is additional model_args
 
         return cls(

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import uuid
 import base64
+import io
 from PIL import Image
 import datetime as dt
 from pathlib import Path
@@ -344,18 +345,39 @@ class Dialog:
         Expects:
         - image: a base64 encoded string, a Path object or string path, or a PIL Image object
         """
-        if Path(image).exists():
-            # interpret the string as a file path
-            image = Path(image)
+        # Resolve string to Path if it looks like a file path
+        if isinstance(image, str):
+            try:
+                p = Path(image)
+                if p.exists():
+                    image = p
+            except (OSError, ValueError):
+                pass  # not a path; treat as base64 below
         if isinstance(image, Path):
             with image.open('rb') as f:
                 image_base64 = base64.b64encode(f.read()).decode('utf-8')
         elif isinstance(image, Image.Image):
-            image_base64 = base64.b64encode(image.tobytes()).decode('utf-8')
+            buf = io.BytesIO()
+            fmt = image.format or 'PNG'
+            image.save(buf, format=fmt)
+            image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
         elif isinstance(image, str):
-            # check if the string is a valid base64 encoded string
-            if not base64.b64decode(image).startswith(b'\x89PNG'):
-                raise ValueError(f'Invalid base64 encoded string: {image}')
+            # Validate that the base64 string decodes to a known image format
+            _IMAGE_MAGIC = (
+                b'\x89PNG',       # PNG
+                b'\xff\xd8\xff',  # JPEG
+                b'RIFF',          # WebP (RIFF....WEBP)
+                b'GIF8',          # GIF
+            )
+            try:
+                raw = base64.b64decode(image)
+            except Exception:
+                raise ValueError(f'Invalid base64 encoded image string')
+            if not any(raw.startswith(m) for m in _IMAGE_MAGIC):
+                raise ValueError(
+                    f'Base64 string does not appear to be a supported image '
+                    f'(PNG/JPEG/WebP/GIF); got header {raw[:8]!r}'
+                )
             image_base64 = image
         else:
             raise ValueError(f'Invalid image type: {type(image)}')

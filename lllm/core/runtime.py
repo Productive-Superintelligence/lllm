@@ -10,6 +10,7 @@ Named runtimes are supported for parallel experiments.
 """
 from __future__ import annotations
 
+import difflib
 import logging
 from typing import Any, Dict, List, Optional, Set, Type, TYPE_CHECKING
 
@@ -108,11 +109,10 @@ class Runtime:
                 if full_key in self._resources:
                     return self._resources[full_key]
 
-        raise KeyError(
-            f"Resource '{key}' not found. "
-            f"Registered ({len(self._resources)}): "
-            f"{sorted(self._resources.keys())[:20]}"
-        )
+        all_keys = sorted(self._resources.keys())
+        close = difflib.get_close_matches(key, all_keys, n=5, cutoff=0.4)
+        hint = f" Did you mean: {close}?" if close else f" Registered ({len(all_keys)}): {all_keys[:20]}"
+        raise KeyError(f"Resource '{key}' not found.{hint}")
 
     def has(self, key: str) -> bool:
         try:
