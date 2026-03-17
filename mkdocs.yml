@@ -34,23 +34,27 @@ nav:
   - Architecture:
     - Overview: architecture/overview.md
   - Core Concepts:
-    - Agent Call: core/agent-call.md
-    - Prompts: core/prompts.md
-    - Dialogs: core/dialog.md
-    - Tactics: core/tactic.md
-    - Config & Discovery: core/config.md
-    - Packages: core/packages.md
-    - Runtime: core/runtime.md
-    - Invokers: core/invokers.md
-    - Logging: core/logging.md
-    - Proxy & Tools: core/proxy-and-sandbox.md
+    - Fundamentals:
+      - Agent Call: core/agent-call.md
+      - Prompts: core/prompts.md
+      - Dialogs: core/dialog.md
+      - Tactics: core/tactic.md
+    - Infrastructure:
+      - Config & Discovery: core/config.md
+      - Packages: core/packages.md
+      - Runtime: core/runtime.md
+      - Invokers: core/invokers.md
+      - Logging: core/logging.md
+      - Proxy & Tools: core/proxy-and-sandbox.md
   - Guides:
     - Building Agents: guides/building-agents.md
     - Project Structure: guides/project-template.md
   - API Reference:
     - Core API: reference/core.md
-    - Module Index: reference/modules.md
+    - Logging API: reference/logging.md
+    - Invokers API: reference/invokers.md
     - lllm.proxies: reference/proxies.md
+    - Module Index: reference/modules.md
 
 plugins:
   - search
@@ -61,9 +65,14 @@ plugins:
 
 markdown_extensions:
   - admonition
+  - attr_list
+  - md_in_html
   - pymdownx.details
   - pymdownx.superfences
   - pymdownx.highlight:
       anchor_linenums: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg

@@ -34,3 +34,17 @@
     options:
       show_root_heading: true
       show_source: true
+
+## Function
+
+::: lllm.core.prompt.Function
+    options:
+      show_root_heading: true
+      show_source: true
+
+## FunctionCall
+
+::: lllm.core.const.FunctionCall
+    options:
+      show_root_heading: true
+      show_source: true
