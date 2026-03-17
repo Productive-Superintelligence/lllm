@@ -507,7 +507,7 @@ class Tactic(ABC):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.", 
         model: str = "gpt-4o", 
         return_agent: bool = False,
-        **model_args
+        **model_args: Any
     ) -> Union[Message, Agent, Tuple[Message, Agent]]:
         """
         Quick constructor for a single-agent chat.

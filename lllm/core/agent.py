@@ -60,7 +60,7 @@ class Agent:
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)
     _active_alias: Optional[str] = field(default=None, repr=False)
 
-    def open(self, alias: str, prompt_args=None, session_name=None, switch: bool = True):
+    def open(self, alias: str, prompt_args: Optional[Dict[str, Any]] = None, session_name: Optional[str] = None, switch: bool = True):
         """
         Create a new dialog owned by this agent, keyed by alias.
 
@@ -235,8 +235,7 @@ class Agent:
             metadata: additional metadata for the call.
             args: additional arguments for the prompt.
             parser_args: arguments for the output parser.
-            return_session: if True, return the entire call session instead of just the message, 
-            which includes the retry info, model args, etc. You can use session.delivery to get the final message.
+            return_session: if True, return the entire AgentCallSession instead of just the message (use session.delivery to get the final message).
         """
         dialog = self._get_dialog(alias)
         session = self._call(dialog, metadata=metadata, args=args, parser_args=parser_args)

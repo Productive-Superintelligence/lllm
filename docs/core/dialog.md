@@ -195,7 +195,7 @@ agent.dialogs                     # dict of alias → Dialog
 agent.active_alias                # current alias string
 ```
 
-See [Agent Call](./agent_call.md) for the full agent API.
+See [Agent Call](./agent-call.md) for the full agent API.
 
 ---
 

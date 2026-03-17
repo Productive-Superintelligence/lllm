@@ -21,14 +21,16 @@
       show_root_heading: true
       show_source: true
 
-## Models
+## Message
 
-::: lllm.core.models.Message
+::: lllm.core.dialog.Message
     options:
       show_root_heading: true
       show_source: true
 
-::: lllm.core.models.Prompt
+## Prompt
+
+::: lllm.core.prompt.Prompt
     options:
       show_root_heading: true
       show_source: true
