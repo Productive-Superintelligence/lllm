@@ -201,13 +201,17 @@ pytest tests/
 - [x] Fast mode, 5-line code to build a simple system with no configuration.
 
 
-## TODOs
+## WIP V0.1.1
 
 - [ ] Proxy-based tool-calling, mini in-dialog interpreter (proxies/)
+
+
+## TODOs
+
 - [ ] Analysis tools based on the logging system, e.g., cost analysis, dialog analysis, etc. Basically, a GUI for the logging DB, and exporting an app with default dashboards using like Streamlit, Dash, Panel, etc.
 - [ ] Support skills in agent config, see https://agentskills.io
 - [ ] Default Context Manager for prune over-size dialogs
-- [ ] Better sandbox, e.g., browser sandbox, code sandbox, etc. maybe use sandbox wheels (sandbox/)
+- [ ] Better sandbox, e.g., browser sandbox, code sandbox, etc. maybe use sandbox wheels like OpenSandbox (sandbox/)
 - [ ] Tactics, Prompts, Proxies, Configs, etc. sharing system.
 
 
@@ -226,7 +230,7 @@ python -m build     # creates dist/lllm-<version>.tar.gz and .whl
 # test locally
 python -m venv /tmp/lllm-release
 source /tmp/lllm-release/bin/activate
-pip install dist/lllm-<version>-py3-none-any.whl
+pip install dist/lllm_core-<version>-py3-none-any.whl
 python -c "import lllm; print(lllm.__version__)"
 deactivate
 

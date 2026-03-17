@@ -8,6 +8,7 @@ recursively loads the dependency tree into a :class:`Runtime`.
 """
 from __future__ import annotations
 
+import datetime as dt
 import os
 import importlib.util
 import inspect
@@ -728,11 +729,79 @@ def vendor_config(
 # AgentSpec — config → agent intermediate representation
 # ---------------------------------------------------------------------------
 
+
+@dataclass
+class ProxyConfig:
+    """
+    Configuration for proxy-based tool calling on an agent.
+
+    Settable globally (under the ``global`` key in tactic config) and
+    overridable per-agent.  When both are present, the per-agent dict is
+    deep-merged on top of the global one, so agents can override individual
+    fields (e.g. swap ``exec_env``) without repeating everything.
+
+    Config format (YAML)::
+
+        proxy:
+          activate_proxies: [fmp, fred]   # which proxies to load; empty = all
+          deploy_mode: false               # passed through to proxy instances
+          cutoff_date: "2024-01-01"        # ISO date; restricts data range
+          exec_env: interpreter      # "interpreter" | "jupyter" | null
+          max_output_chars: 5000           # truncate run_python output (interpreter only)
+          truncation_indicator: "... (truncated)"
+          timeout: 60.0                    # seconds before TimeoutError (interpreter only)
+          prompt_template: null            # override auto-selected system-prompt block
+
+    **exec_env values**
+
+    ``"interpreter"`` (default)
+        Agent calls ``run_python`` tool.  LLLM runs code in a lightweight
+        in-process :class:`~lllm.proxies.interpreter.AgentInterpreter` with a
+        persistent namespace.  Parallel-safe, zero subprocess overhead.
+
+    ``"jupyter"``
+        Agent writes ``<python_cell>`` / ``<markdown_cell>`` XML tags.  Your
+        tactic extracts these and runs them via
+        :class:`~lllm.sandbox.jupyter.JupyterSession`.  Only ``query_api_doc``
+        is injected as a tool; ``run_python`` is **not** added.
+
+    ``null`` (or any unrecognised string)
+        No execution tool injected.  Useful when the agent only needs API
+        awareness (``query_api_doc`` + directory in prompt) but execution is
+        handled externally or not needed at all.
+
+    Future sandbox types (e.g. ``"docker"``, ``"wasm"``) can be added by
+    extending the tactic — the string passes through without validation.
+    """
+
+    activate_proxies: List[str] = field(default_factory=list)
+    deploy_mode: bool = False
+    cutoff_date: Optional[str] = None           # ISO date string e.g. "2024-01-01"
+    exec_env: Optional[str] = "interpreter"  # "interpreter" | "jupyter" | None
+    max_output_chars: int = 5000
+    truncation_indicator: str = "... (truncated)"
+    timeout: float = 60.0
+    prompt_template: Optional[str] = None       # None → auto-select based on exec_env
+
+    @classmethod
+    def from_dict(cls, d: Dict[str, Any]) -> "ProxyConfig":
+        return cls(
+            activate_proxies=d.get("activate_proxies", []),
+            deploy_mode=d.get("deploy_mode", False),
+            cutoff_date=d.get("cutoff_date", None),
+            exec_env=d.get("exec_env", "interpreter"),
+            max_output_chars=d.get("max_output_chars", 5000),
+            truncation_indicator=d.get("truncation_indicator", "... (truncated)"),
+            timeout=d.get("timeout", 60.0),
+            prompt_template=d.get("prompt_template", None),
+        )
+
+
 _KNOWN_AGENT_KEYS = frozenset({
     "name", "model_name", "system_prompt", "system_prompt_path",
     "api_type", "model_args",
     "max_exception_retry", "max_interrupt_steps", "max_llm_recall",
-    "extra_settings",
+    "extra_settings", "proxy",
 })
 
 
@@ -770,6 +839,7 @@ class AgentSpec:
     max_interrupt_steps: int = 5
     max_llm_recall: int = 0
     extra_settings: Dict[str, Any] = field(default_factory=dict)
+    proxy: Optional[ProxyConfig] = None
 
     @classmethod
     def from_config(cls, name: str, raw: Dict[str, Any]) -> "AgentSpec":
@@ -807,6 +877,10 @@ class AgentSpec:
         max_llm_recall = raw.pop("max_llm_recall", 0)
         extra_settings = raw.pop("extra_settings", {})
 
+        # -- proxy config (already deep-merged with global by the caller) --
+        proxy_raw = raw.pop("proxy", None)
+        proxy = ProxyConfig.from_dict(proxy_raw) if proxy_raw else None
+
         # -- model_args: explicit dict + leftover unknown keys -------------
         model_args = raw.pop("model_args", {})
         raw.pop("name", None)
@@ -831,6 +905,7 @@ class AgentSpec:
             max_interrupt_steps=max_interrupt_steps,
             max_llm_recall=max_llm_recall,
             extra_settings=extra_settings,
+            proxy=proxy,
         )
 
     def build(self, runtime: Runtime, invoker):
@@ -844,6 +919,55 @@ class AgentSpec:
             prompt = runtime.get_prompt(self.system_prompt_path)
 
         api_type = self.api_type if isinstance(self.api_type, APITypes) else APITypes(self.api_type)
+
+        # -- Proxy tool injection ------------------------------------------
+        if self.proxy is not None:
+            from lllm.proxies.base import ProxyManager
+            from lllm.proxies.interpreter import AgentInterpreter
+            from lllm.proxies.proxy_tools import make_query_api_doc_tool, make_run_python_tool
+            from lllm.proxies.prompt_template import render_proxy_prompt
+
+            cutoff = (
+                dt.datetime.fromisoformat(self.proxy.cutoff_date)
+                if self.proxy.cutoff_date
+                else None
+            )
+            proxy_manager = ProxyManager(
+                activate_proxies=self.proxy.activate_proxies,
+                cutoff_date=cutoff,
+                deploy_mode=self.proxy.deploy_mode,
+                runtime=runtime,
+            )
+            interpreter = AgentInterpreter(
+                proxy_manager,
+                max_output_chars=self.proxy.max_output_chars,
+                truncation_indicator=self.proxy.truncation_indicator,
+                timeout=self.proxy.timeout,
+            )
+
+            query_doc_tool = make_query_api_doc_tool(proxy_manager)
+
+            # Only interpreter mode injects run_python.
+            # Other modes (jupyter, None, future sandboxes) leave execution to
+            # the tactic — the agent writes cell tags or uses another mechanism.
+            extra_tools = [query_doc_tool]
+            if self.proxy.exec_env == "interpreter":
+                extra_tools.append(make_run_python_tool(interpreter))
+
+            proxy_block = render_proxy_prompt(
+                api_directory=proxy_manager.retrieve_api_docs(),
+                max_output_chars=self.proxy.max_output_chars,
+                truncation_indicator=self.proxy.truncation_indicator,
+                exec_env=self.proxy.exec_env,
+                custom_template=self.proxy.prompt_template,
+            )
+
+            # Create a modified prompt without mutating the original.
+            # model_copy triggers model_post_init so _functions is rebuilt.
+            prompt = prompt.model_copy(update={
+                "prompt": prompt.prompt + proxy_block,
+                "function_list": list(prompt.function_list) + extra_tools,
+            })
 
         return Agent(
             name=self.name,

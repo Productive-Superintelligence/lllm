@@ -13,7 +13,7 @@ jobs:
   release:
     name: Build and publish to PyPI
     runs-on: ubuntu-latest
-    environment: pypi  # optional: add a GitHub environment for approval gates
+    # environment: pypi  # optional: add a GitHub environment for approval gates
 
     steps:
       - uses: actions/checkout@v4
