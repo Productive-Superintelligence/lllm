@@ -1,32 +1,45 @@
 site_name: LLLM
 site_url: https://lllm.one/
 site_description: A lightweight framework for researchers to fast-prototype advanced agentic systems.
-repo_url: https://github.com/ChengJunyan1/lllm
-repo_name: ChengJunyan1/lllm
+repo_url: https://github.com/Productive-Superintelligence/lllm
+repo_name: Productive-Superintelligence/lllm
 edit_uri: edit/main/docs/
 theme:
   name: material
-  logo: assets/logo.png
+  logo: assets/logo-black.svg
   favicon: assets/logo.png
+  # 1. Typography: Switching to modern fonts instantly elevates the look
+  font:
+    text: Inter 
+    code: JetBrains Mono
+  # 2. Modern UI Features
   features:
+    # - navigation.tabs           # Moves top-level sections (Home, Core, etc.) to a modern top bar
+    - navigation.tabs.sticky    # Keeps the top bar visible when scrolling down
     - navigation.sections
     - navigation.indexes
+    - navigation.top            # Adds a smooth "Back to top" button
+    - navigation.tracking       # Updates the URL hash as users scroll through headers
     - content.code.copy
+    - search.suggest
+    - search.highlight
+  # 3. Refined Color Palettes
   palette:
     - scheme: default
-      primary: teal
-      accent: deep purple
+      primary: white
+      accent: black
       toggle:
-        icon: material/brightness-7
+        icon: material/weather-night
         name: Switch to dark mode
     - scheme: slate
-      primary: teal
-      accent: deep purple
+      primary: black
+      accent: white
       toggle:
-        icon: material/brightness-4
+        icon: material/weather-sunny
         name: Switch to light mode
-  icon:
-    repo: fontawesome/brands/github
+extra_css:
+  - stylesheets/custom.css
+
 
 nav:
   - Home: index.md

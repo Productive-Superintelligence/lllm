@@ -256,5 +256,19 @@ git push origin main --tags
 mkdocs build --strict
 mkdocs gh-deploy --force --clean
 
+
+# test doc
+
+# Install deps (one-time)
+pip install mkdocs-material mkdocstrings-python
+
+
+# Live-reload dev server — visit http://127.0.0.1:8000
+mkdocs serve
+
+# Strict build (same flags CI uses — catches broken links/anchors)
+python -m mkdocs build --strict
+
+
 -->
 
