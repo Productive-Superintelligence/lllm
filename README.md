@@ -25,21 +25,7 @@
 LLLM is a lightweight framework for developing **advanced agentic systems**. Allows users to build a complex agentic system with <100 LoC. Prioritizing minimalism, modularity, and reliability, it is specifically suitable for complex and frontier agentic systems beyond daily chat. While these fields require deep architectural customization and highly diverse demands, developers and researchers often face the burden of managing low-level complexities such as exception handling, output parsing, and API error management. LLLM bridges this gap by offering necessary abstractions that balance high-level encapsulation with the simplicity required for flexible experimentation. It also tries to make the code plain, compact, easy-to-understand, with less unnecessary indirection, thus easy for customization for different projects' needs, to allow researchers and developers to focus on the core research questions. See https://lllm.one for detailed documentation.
 
 
-## Design Philosophy
-
-It's more designed for developers and researchers, and is designed to be Pythonic like PyPI/npm, PyTorch, and Hugging Face, to help them build their own agentic systems easily, and to allow the modules built to be shared and reused by others. 
-
-- **Agentic System as a Program**:  An agentic system = agents (≈ system prompt + base model, the “callers”) + prompts (the "functions" or "calls") + the tactics (the "program" that wires the callers and functions). The agent call makes LLM agents "deterministic" callers, for minimizing side effects, maximizing compositionality, and parallelizability.
-- **Dialog as Internal "Mental" State**: Dialog is the "internal mental state" of each agent due to system prompt, different bodies in a talk maintain their own internal dialog, i.e., dialog is what each agent "sees" from the others, its objective, not subjective. Dialog is also a function stack for each agent, where top_prompt is the calling convention for the next turn.
-- **Configuration as Declaration**: System shape is declared in config, not hardcoded. What exists (prompts, proxies) and how it's wired (agent configs) are expressed as data.
-
-### Advanced Features
-- **Tool calling as Programming**: Besides regular tool calling provided by LLMs, LLLM provides a mini-interpreter mode that calls tools as a mini Python script, and tools are wrapped through the proxy system, which is more flexible and powerful.
-- **Tactics as Shared Library**: Tactics are the reusable library for different agentic systems, ideally you can "import" a tactic from a library, and use it in your own agentic system. Each prompt, proxy, config, and tactic is a "independent" module, and they are loaded on demand through the lllm.toml file. Theoretically, you can share your tactics, prompts, proxies, configs, etc. with others, and they can use them in their own agentic systems.
-- **Replayable Logging**: The logging system is designed to be replayable, which means you can replay the logging to get the exact same result as the original run, and save the entire traces and costs, etc. This is useful for debugging, A/B testing, prompt optimization, etc.
-
-The LLLM stops at tactic as its highest level of abstraction, i.e., low-level, for the higher levels, like the system itself, the system of systems, and the network of systems, etc., please refer to the [Simple System of Systems Network (SSSN) framework](https://github.com/Productive-Superintelligence/sssn) for more details.
-
+Key design ideas: agentic system as a program (agents + prompts + tactics), dialog as each agent's internal mental state, configuration as declaration. See the [Architecture Overview](https://lllm.one/architecture/overview/) for the full design philosophy.
 
 
 ## Installation

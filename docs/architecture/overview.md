@@ -125,15 +125,27 @@ Multiple named runtimes can coexist for parallel experiments or isolated tests.
 
 ---
 
-## Design Principles
+## Design Philosophy
 
-**1. Low-level by default.** LLLM stops at `Tactic` as its highest abstraction. Higher-level orchestration (system of systems, agent networks) is left to the application layer.
+LLLM is designed for developers and researchers — in the spirit of PyTorch and Hugging Face: modular, composable, and easy to prototype with — so that agentic systems can be built, shared, and reused like ordinary software modules.
 
-**2. Configuration as declaration.** System shape is described in TOML/YAML data, not hardcoded. This makes systems inspectable, shareable, and reproducible.
+### Core Principles
 
-**3. Minimise hidden state.** Each call to `tactic(task)` is fresh. Dialogs are explicit objects you pass around. Nothing happens behind the scenes.
+**Agentic system as a program.** An agentic system = agents (system prompt + base model, the "callers") + prompts (the "functions") + tactics (the "program" that wires them together). Treating each agent invocation as a well-defined function call — with explicit inputs, outputs, and error handling — minimises side effects, maximises compositionality, and makes parallelism straightforward.
 
-**4. Composable and package-friendly.** Tactics, prompts, proxies, and configs are independent modules. The `lllm.toml` package system lets you depend on and share these modules like Python packages.
+**Dialog as internal mental state.** A dialog is the internal view each agent has of the conversation — not a shared global log. Different agents in a task maintain separate dialogs: each agent sees only what it has been told. The `top_prompt` at the head of the dialog also acts as the calling convention for the next turn, making the dialog a kind of function stack.
+
+**Configuration as declaration.** System shape is declared in data (TOML/YAML), not hardcoded. What resources exist (prompts, proxies) and how they are wired (agent configs) are expressed as configuration — making systems inspectable, reproducible, and shareable without touching Python source.
+
+**Low-level by default.** LLLM stops at `Tactic` as its highest abstraction. Higher-level orchestration — systems of systems, agent networks — is left to the application layer. For those patterns, see the [SSSN framework](https://github.com/Productive-Superintelligence/sssn).
+
+### Advanced Capabilities
+
+**Tool calling as programming.** Beyond regular LLM tool calling, the proxy system wraps tools with rich metadata, documentation, and activation filtering — making tools composable and testable rather than just ad-hoc function schemas. A mini-interpreter mode that executes tools as a mini Python script is on the roadmap.
+
+**Tactics as a shared library.** Tactics are reusable modules. Like a Python package, you can import a tactic from a shared library and drop it into your own system. Every prompt, proxy, config, and tactic is an independent, loadable resource — declared in `lllm.toml` and namespaced to avoid collisions.
+
+**Replayable logging.** The logging system records every invocation with enough information to recreate the exact execution context of any run — prompts, model arguments, tool results, costs. This makes debugging, A/B testing, and prompt optimisation tractable on production traces.
 
 ---
 
