@@ -1,0 +1,110 @@
+/* Invert a solid black logo to white in Dark Mode */
+[data-md-color-scheme="slate"] .md-header .md-logo img {
+  filter: invert(1) brightness(2);
+}
+
+/* =========================================
+   PURE MONOCHROME THEME & HOVER STYLING
+   ========================================= */
+
+/* --- LIGHT MODE --- */
+[data-md-color-scheme="default"] {
+  /* Base text and link colors */
+  --md-text-color: #000000;
+  --md-typeset-a-color: #000000; 
+  
+  /* Kill the blue: Set the accent/hover color to a sleek dark gray */
+  --md-accent-fg-color: #666666; 
+  --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.1);
+  --md-accent-bg-color: #e0e0e0;
+
+  /* Make the main reading background pure white */
+  --md-default-bg-color: #ffffff;
+}
+
+/* Sidebar styling (Removed the right border!) */
+[data-md-color-scheme="default"] .md-sidebar--primary {
+  background-color: #ffffff; 
+  border-right: none; 
+}
+
+/* Sticky title with descending gradient fade */
+[data-md-color-scheme="default"] .md-nav__title {
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  position: sticky; 
+}
+[data-md-color-scheme="default"] .md-nav__title::after {
+  content: "";
+  position: absolute;
+  top: 100%; 
+  left: 0;
+  width: 100%;
+  height: 24px; 
+  background: linear-gradient(to bottom, #ffffff 0%, rgba(255, 255, 255, 0) 100%);
+  pointer-events: none; 
+}
+
+
+/* --- DARK MODE --- */
+[data-md-color-scheme="slate"] {
+  /* Base text and link colors */
+  --md-text-color: #ffffff;
+  --md-typeset-a-color: #ffffff; 
+  
+  /* Kill the blue: Set the accent/hover color to a crisp light gray */
+  --md-accent-fg-color: #a3a3a3; 
+  --md-accent-fg-color--transparent: rgba(255, 255, 255, 0.1);
+  --md-accent-bg-color: #333333;
+
+  /* Make the main reading background a true, deep black */
+  --md-default-bg-color: #0a0a0a; 
+}
+
+/* Sidebar styling (Removed the right border!) */
+[data-md-color-scheme="slate"] .md-sidebar--primary {
+  background-color: #000000; 
+  border-right: none; 
+}
+
+/* Sticky title with descending gradient fade */
+[data-md-color-scheme="slate"] .md-nav__title {
+  background-color: #000000 !important;
+  box-shadow: none !important;
+  position: sticky;
+}
+[data-md-color-scheme="slate"] .md-nav__title::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  background: linear-gradient(to bottom, #000000 0%, rgba(0, 0, 0, 0) 100%);
+  pointer-events: none;
+}
+
+
+/* --- SIDEBAR PADDING FIX --- */
+.md-sidebar--primary .md-sidebar__scrollwrap {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* =========================================
+   ACTIVE SIDEBAR TAB HIGHLIGHTING
+   ========================================= */
+
+/* --- LIGHT MODE --- */
+/* Make the selected tab bold and pure black so it stands out */
+[data-md-color-scheme="default"] .md-nav__link--active {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+/* --- DARK MODE --- */
+/* Kill the rogue blue and make the selected tab bold and pure white */
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+}
