@@ -28,7 +28,6 @@ LLLM is a lightweight framework for developing **advanced agentic systems**. All
 Key design ideas: agentic system as a program (agents + prompts + tactics), dialog as each agent's internal mental state, configuration as declaration. See the [Architecture Overview](https://lllm.one/architecture/overview/) for the full design philosophy.
 
 
-> Important notice: please pay attention to this vulnerability of LiteLLM, the default low-level invoker for LLLM: https://futuresearch.ai/blog/litellm-pypi-supply-chain-attack/. It is being actively fixed, but it is recommended to install an older version of LiteLLM to avoid it at present.
 
 
 
