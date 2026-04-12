@@ -10,7 +10,7 @@ jupyter-client>=8.6.0
 tomli>=2.0.1
 dotenv
 anthropic>=0.35.0
-litellm 
+litellm==1.82.3
 Pillow>=10.0.0
 
 

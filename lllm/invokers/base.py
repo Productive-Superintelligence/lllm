@@ -28,6 +28,9 @@ class BaseStreamHandler(ABC):
 
 
 class BaseInvoker(ABC):
+    def __init__(self, config: Dict[str, Any]):
+        self.config = config
+
     @abstractmethod
     def call(
         self,

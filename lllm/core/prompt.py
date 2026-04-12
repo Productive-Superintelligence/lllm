@@ -69,11 +69,11 @@ class AgentCallSession(BaseModel):
     state: Literal["initial", "exception", "interrupt", "llm_recall", "success", "failure"] = "initial"
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    
+
     @property
     def exception_retries_count(self) -> int:
         return sum(len(exceptions) for exceptions in self.exception_retries.values())
-    
+
     @property
     def llm_recalls_count(self) -> int:
         return sum(len(llm_recalls) for llm_recalls in self.llm_recalls.values())
@@ -149,6 +149,7 @@ class AgentCallSession(BaseModel):
                 _cost += invoke_result.cost
         return _cost
 
+AgentCallSession.model_rebuild()
 
 # ---------------------------------------------------------------------------
 # Tools
@@ -207,7 +208,7 @@ class Function(BaseModel):
         return self.function is not None
 
     # -- Execution --------------------------------------------------------
-    
+
     def __call__(self, function_call: FunctionCall) -> FunctionCall:
         assert self.function is not None, f"Function '{self.name}' not linked"
         try:
@@ -400,7 +401,7 @@ class DefaultTagParser(BaseParser, BaseModel):
     """
     Default tagged language parser for the prompt.
 
-    It will find all xml blocks, md blocks, and signal tags in the message, 
+    It will find all xml blocks, md blocks, and signal tags in the message,
     and return a dictionary of the blocks and signal tags. For example, if the message is:
     ```
     <tag1>content1</tag1>
@@ -410,7 +411,7 @@ class DefaultTagParser(BaseParser, BaseModel):
     ```tag4 ... ```
     <STOP_TAG>
     ```
-    The xml_tags should be ['tag1', 'tag2'], the md_tags should be ['tag3', 'tag4'], 
+    The xml_tags should be ['tag1', 'tag2'], the md_tags should be ['tag3', 'tag4'],
     and the signal_tags should be ['STOP_TAG']. And the parser will return:
     ```
     {
@@ -477,7 +478,7 @@ class DefaultTagParser(BaseParser, BaseModel):
             'xml_tags': xml_tag_blocks,
             'md_tags': md_tag_blocks,
             'signal_tags': {k: f'<{k}>' in content for k in self.signal_tags}
-        } 
+        }
         xml_blocks = parsed.get('xml_tags', {})
         md_blocks = parsed.get('md_tags', {})
         for tag in self.required_xml_tags:
@@ -496,7 +497,7 @@ class BaseRenderer(ABC):
     """
     Base class for all renderers.
 
-    By default we just use python string formatter for simplicity, 
+    By default we just use python string formatter for simplicity,
     but you can use more complex renderers like jinja2, or other template engines.
     """
     @abstractmethod
@@ -531,7 +532,7 @@ class BaseHandler(ABC):
 
     @abstractmethod
     def on_interrupt_final(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
-        pass    
+        pass
 
 
 
@@ -549,10 +550,10 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
     interrupt_msg: str = _DEFAULT_INTERRUPT_MSG
     interrupt_final_msg: str = _DEFAULT_INTERRUPT_FINAL_MSG
 
-    
+
     def on_exception(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
-            prompt, 
+            prompt,
             self.exception_msg,
             suffix="exception",
             inherit_tools=True,
@@ -560,7 +561,7 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
 
     def on_interrupt(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
-            prompt, 
+            prompt,
             self.interrupt_msg,
             suffix="interrupt",
             inherit_tools=True,
@@ -568,7 +569,7 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
 
     def on_interrupt_final(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
-            prompt, 
+            prompt,
             self.interrupt_final_msg,
             suffix="interrupt_final",
             inherit_tools=False,

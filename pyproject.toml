@@ -20,7 +20,7 @@ dependencies = [
     "filelock>=3.13.0",
     "nbformat>=5.10.0",
     "jupyter-client>=8.6.0",
-    "litellm>=1.40.0",
+    "litellm==1.82.3",
     "Pillow>=10.0.0",
     "tomli>=2.0.1; python_version < \"3.11\"",
 ]
