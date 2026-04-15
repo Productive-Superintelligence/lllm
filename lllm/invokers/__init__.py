@@ -3,12 +3,18 @@ from __future__ import annotations
 from typing import Callable, Dict
 
 from lllm.invokers.base import BaseInvoker
-from lllm.invokers.litellm import LiteLLMInvoker
 
 InvokerBuilder = Callable[[Dict], BaseInvoker]
 
+
+def _build_litellm_invoker(config: Dict) -> BaseInvoker:
+    from lllm.invokers.litellm import LiteLLMInvoker
+
+    return LiteLLMInvoker(config)
+
+
 _PROVIDER_BUILDERS: Dict[str, InvokerBuilder] = {
-    "litellm": lambda cfg: LiteLLMInvoker(cfg),
+    "litellm": _build_litellm_invoker,
 }
 
 

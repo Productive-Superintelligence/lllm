@@ -1,4 +1,6 @@
 # lllm/__init__.py
+import os
+
 from lllm.core.runtime import (
     Runtime, get_default_runtime, set_default_runtime,
     get_runtime, load_runtime,
@@ -22,10 +24,25 @@ from lllm.logging import LogStore, LocalFileBackend, SQLiteBackend, NoOpBackend,
 __version__ = "0.1.1"
 
 
+def _env_flag_enabled(name: str, *, default: bool = True) -> bool:
+    value = os.getenv(name)
+    if value is None:
+        return default
+    return value.strip().lower() not in {"0", "false", "no", "off"}
+
+
 def _auto_init():
-    rt = get_default_runtime()
-    if rt._discovery_done:
+    if not _env_flag_enabled("LLLM_AUTO_INIT", default=True):
         return
-    load_runtime()
+    rt = get_default_runtime()
+    if rt.discovery_done:
+        return
+    load_runtime(
+        discover_cwd=_env_flag_enabled("LLLM_AUTO_CWD_FALLBACK", default=True),
+        discover_shared_packages=_env_flag_enabled(
+            "LLLM_AUTO_SHARED_PACKAGES",
+            default=True,
+        ),
+    )
 
 _auto_init()

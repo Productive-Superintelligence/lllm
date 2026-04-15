@@ -140,8 +140,8 @@ def load_resource(path: str, runtime: "Optional[Runtime]" = None) -> Any:
     rt = runtime or get_default_runtime()
     pkg_part, resource_part = path.split(":", 1)
 
-    if "." not in pkg_part and rt._default_namespace:
-        full_key = f"{rt._default_namespace}.{pkg_part}:{resource_part}"
+    if "." not in pkg_part and rt.default_namespace:
+        full_key = f"{rt.default_namespace}.{pkg_part}:{resource_part}"
     else:
         full_key = path
 

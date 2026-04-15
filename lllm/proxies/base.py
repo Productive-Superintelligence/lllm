@@ -139,9 +139,7 @@ class ProxyManager:
 
 
     def _load_registered_proxies(self):
-        for qk, node in self._runtime._resources.items():
-            if node.resource_type != "proxy":
-                continue
+        for qk, node in self._runtime.iter_items("proxy"):
             proxy_cls = node.value
             if self.activate_proxies:
                 # Match against qualified key, bare key, or _proxy_path

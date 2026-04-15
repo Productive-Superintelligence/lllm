@@ -14,7 +14,7 @@ import difflib
 import logging
 import warnings
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set, Type, TYPE_CHECKING
+from typing import Any, Dict, Iterator, List, Optional, Set, Type, TYPE_CHECKING
 
 from lllm.core.resource import ResourceNode, PackageInfo
 
@@ -127,6 +127,34 @@ class Runtime:
         if resource_type:
             return sorted(self._type_index.get(resource_type, set()))
         return sorted(self._resources.keys())
+
+    def iter_items(
+        self,
+        resource_type: Optional[str] = None,
+    ) -> Iterator[tuple[str, ResourceNode]]:
+        """Yield ``(qualified_key, node)`` pairs in deterministic order."""
+        for key in self.keys(resource_type):
+            yield key, self._resources[key]
+
+    def iter_nodes(self, resource_type: Optional[str] = None) -> Iterator[ResourceNode]:
+        """Yield registered nodes in deterministic order."""
+        for _, node in self.iter_items(resource_type):
+            yield node
+
+    @property
+    def default_namespace(self) -> Optional[str]:
+        """Return the namespace used for bare-key resolution."""
+        return self._default_namespace
+
+    @property
+    def discovery_done(self) -> bool:
+        """Return whether startup discovery has already been completed."""
+        return self._discovery_done
+
+    @property
+    def loaded_package_paths(self) -> frozenset[str]:
+        """Return a read-only snapshot of deduplicated package load paths."""
+        return frozenset(self._loaded_package_paths)
 
     # ==================================================================
     # Package management
@@ -332,11 +360,25 @@ def _load_shared_packages(rt: "Runtime") -> None:
 def load_runtime(
     toml_path: Optional[str] = None,
     name: Optional[str] = None,
+    *,
+    discover_cwd: bool = True,
+    discover_shared_packages: bool = True,
 ) -> Runtime:
     """Create and populate a Runtime from a TOML file.
 
     *name=None* → replaces the default runtime.
     *name="something"* → stored as a named runtime.
+
+    Parameters
+    ----------
+    discover_cwd:
+        When ``True`` and no ``lllm.toml`` is found, auto-discover resource
+        folders in the current working directory. Set to ``False`` for
+        deterministic "strict boot" startup.
+    discover_shared_packages:
+        When ``True``, auto-load packages found in standard shared-package
+        locations. Set to ``False`` when the caller wants full control over
+        which packages enter the runtime.
     """
     from lllm.core.config import load_package, find_config_file
 
@@ -347,7 +389,7 @@ def load_runtime(
         found = find_config_file()
         if found:
             load_package(str(found), runtime=rt)
-        else:
+        elif discover_cwd:
             from lllm.core.config import load_cwd_fallback
             if load_cwd_fallback(rt):
                 warnings.warn(
@@ -359,10 +401,13 @@ def load_runtime(
                 )
             else:
                 logger.debug("No lllm.toml found. Running with empty runtime (fast mode).")
+        else:
+            logger.debug("No lllm.toml found. Running with empty runtime (strict mode).")
 
     # Always scan lllm_packages/ directories regardless of how the main package
     # was loaded — shared packages layer on top of the project package.
-    _load_shared_packages(rt)
+    if discover_shared_packages:
+        _load_shared_packages(rt)
 
     rt._discovery_done = True
 
