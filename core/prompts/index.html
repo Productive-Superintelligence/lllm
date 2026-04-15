@@ -1,0 +1,2848 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A lightweight framework for researchers to fast-prototype advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/prompts/">
+      
+      
+        <link rel="prev" href="../agent/">
+      
+      
+        <link rel="next" href="../dialog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Prompts - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#prompts" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Prompts
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a Prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rendering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom renderer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parsing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parsing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-parser-raw-passthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No parser — raw passthrough
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-parser-structured-xml-markdown-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag parser — structured XML / Markdown blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-output-pydantic-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured output — Pydantic model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Defining Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-decorator-schema-and-implementation-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @tool decorator — schema and implementation together
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-link_function-schema-and-implementation-apart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function + link_function — schema and implementation apart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom result formatting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handlers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-default-handler-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the default handler does
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-rule-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler — rule-based
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-agentic-meta-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler — agentic (meta-agent)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompt-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt Composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organization-and-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organization and Discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-and-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata and Tracking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example-a-prompt-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Example — a prompt file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy & Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/building-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a Full Package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/project-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../tutorials/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02-agents-and-dialogs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/04-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/05-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Tactics and Packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/06-config-and-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Config and Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/07-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/proxies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lllm.proxies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/modules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a Prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rendering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom renderer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parsing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parsing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-parser-raw-passthrough" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No parser — raw passthrough
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-parser-structured-xml-markdown-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag parser — structured XML / Markdown blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-output-pydantic-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured output — Pydantic model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Defining Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-decorator-schema-and-implementation-together" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @tool decorator — schema and implementation together
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-link_function-schema-and-implementation-apart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function + link_function — schema and implementation apart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom result formatting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handlers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-default-handler-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the default handler does
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-rule-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler — rule-based
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-agentic-meta-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler — agentic (meta-agent)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompt-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt Composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider Capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organization-and-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organization and Discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-and-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata and Tracking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example-a-prompt-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Example — a prompt file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="prompts">Prompts</h1>
+<p>A <code>Prompt</code> is the complete behavioural definition for one agent turn. It bundles four concerns into a single object:</p>
+<ol>
+<li><strong>Template</strong> — the text sent to the LLM, with <code>{variable}</code> placeholders.</li>
+<li><strong>Output contract</strong> — a <code>parser</code> (and optionally a <code>format</code>) that defines what a valid response looks like. The agent loop retries until it gets one.</li>
+<li><strong>Tool surface</strong> — the <code>Function</code> and <code>MCP</code> objects the LLM can call during this turn.</li>
+<li><strong>Handler strategy</strong> — a <code>BaseHandler</code> that decides what prompt to send back when a tool result arrives or when parsing fails.</li>
+</ol>
+<p>The key design principle: <strong>the agent is a function, the <code>Prompt</code> is its type signature</strong>. The invoker reads everything it needs — tools, format, parser — from <code>dialog.top_prompt</code>. Whatever prompt was last sent via <code>send_message</code> becomes the active specification for that turn.</p>
+<hr />
+<h2 id="anatomy-of-a-prompt">Anatomy of a Prompt</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">DefaultTagParser</span><span class="p">,</span> <span class="n">tool</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nd">@tool</span><span class="p">(</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get current weather for a city&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;location&quot;</span><span class="p">:</span> <span class="s2">&quot;City name, e.g. San Francisco, CA&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="p">)</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">units</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;celsius&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Sunny, 22°C in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="n">weather_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;weather/bot&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>        <span class="s2">&quot;You are a weather assistant.</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>        <span class="s2">&quot;Answer the user&#39;s question: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>        <span class="s2">&quot;Put your answer inside &lt;answer&gt; tags.&quot;</span>
+<a id="__codelineno-0-17" name="__codelineno-0-17" href="#__codelineno-0-17"></a>    <span class="p">),</span>
+<a id="__codelineno-0-18" name="__codelineno-0-18" href="#__codelineno-0-18"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+<a id="__codelineno-0-19" name="__codelineno-0-19" href="#__codelineno-0-19"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-20" name="__codelineno-0-20" href="#__codelineno-0-20"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+<a id="__codelineno-0-21" name="__codelineno-0-21" href="#__codelineno-0-21"></a>    <span class="p">),</span>
+<a id="__codelineno-0-22" name="__codelineno-0-22" href="#__codelineno-0-22"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">get_weather</span><span class="p">],</span>
+<a id="__codelineno-0-23" name="__codelineno-0-23" href="#__codelineno-0-23"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;team-weather&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.0&quot;</span><span class="p">},</span>
+<a id="__codelineno-0-24" name="__codelineno-0-24" href="#__codelineno-0-24"></a><span class="p">)</span>
+</code></pre></div>
+<p><strong>Fields at a glance:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td><code>str</code></td>
+<td>Unique identifier in the registry. Used by <code>runtime.get_prompt(path)</code>.</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td><code>str</code></td>
+<td>Template string. Rendered via <code>renderer</code> (default: <code>str.format</code>).</td>
+</tr>
+<tr>
+<td><code>parser</code></td>
+<td><code>BaseParser \| None</code></td>
+<td>Defines valid output shape. <code>None</code> = raw passthrough.</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td><code>type \| dict \| None</code></td>
+<td>Pydantic model or JSON schema for structured output.</td>
+</tr>
+<tr>
+<td><code>function_list</code></td>
+<td><code>list[Function]</code></td>
+<td>Tools the LLM can call this turn.</td>
+</tr>
+<tr>
+<td><code>mcp_servers_list</code></td>
+<td><code>list[MCP]</code></td>
+<td>MCP server descriptors.</td>
+</tr>
+<tr>
+<td><code>addon_args</code></td>
+<td><code>dict</code></td>
+<td>Provider-specific capabilities (web search, computer use, etc.).</td>
+</tr>
+<tr>
+<td><code>handler</code></td>
+<td><code>BaseHandler</code></td>
+<td>Handles exceptions and tool interrupts. Default: <code>DefaultHandler</code>.</td>
+</tr>
+<tr>
+<td><code>renderer</code></td>
+<td><code>BaseRenderer</code></td>
+<td>Renders the template. Default: <code>StringFormatterRenderer</code>.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td><code>dict</code></td>
+<td>Arbitrary tracking info (version, author, experiment name, etc.).</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="rendering">Rendering</h2>
+<p>Calling a <code>Prompt</code> renders its template:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;greeter&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Hello </span><span class="si">{name}</span><span class="s2">, welcome to </span><span class="si">{place}</span><span class="s2">!&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="n">rendered</span> <span class="o">=</span> <span class="n">prompt</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">&quot;Alice&quot;</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="s2">&quot;Wonderland&quot;</span><span class="p">)</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># &quot;Hello {name}, welcome to {place}!&quot; → &quot;Hello Alice, welcome to Wonderland!&quot;</span>
+</code></pre></div>
+<p>With no arguments, the raw template string is returned unchanged. Literal braces in the template must be doubled to escape them: <code>{{</code> and <code>}}</code>.</p>
+<h3 id="custom-renderer">Custom renderer</h3>
+<p>Swap in any template engine by subclassing <code>BaseRenderer</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseRenderer</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">JinjaRenderer</span><span class="p">(</span><span class="n">BaseRenderer</span><span class="p">):</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>        <span class="kn">from</span><span class="w"> </span><span class="nn">jinja2</span><span class="w"> </span><span class="kn">import</span> <span class="n">Environment</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="p">()</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">env</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">prompt</span><span class="p">)</span><span class="o">.</span><span class="n">render</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;jinja/report&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;{</span><span class="si">% f</span><span class="s2">or item in items %}- {{ item }}</span><span class="se">\n</span><span class="s2">{</span><span class="si">% e</span><span class="s2">ndfor %}&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">renderer</span><span class="o">=</span><span class="n">JinjaRenderer</span><span class="p">(),</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="n">rendered</span> <span class="o">=</span> <span class="n">prompt</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;apples&quot;</span><span class="p">,</span> <span class="s2">&quot;bananas&quot;</span><span class="p">,</span> <span class="s2">&quot;cherries&quot;</span><span class="p">])</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="c1"># &quot;- apples\n- bananas\n- cherries\n&quot;</span>
+</code></pre></div>
+<p>The framework takes no dependency on Jinja or any template engine — <code>BaseRenderer</code> is just the extension point.</p>
+<hr />
+<h2 id="parsing">Parsing</h2>
+<p>The parser defines the <strong>return type</strong> of the agent turn. The agent loop retries until the LLM produces output that parses successfully, or until retries are exhausted.</p>
+<h3 id="no-parser-raw-passthrough">No parser — raw passthrough</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">&quot;chat&quot;</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Say hello to </span><span class="si">{name}</span><span class="s2">.&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># response.parsed == {&quot;raw&quot;: &quot;Hello, Alice!&quot;}</span>
+</code></pre></div>
+<h3 id="tag-parser-structured-xml-markdown-blocks">Tag parser — structured XML / Markdown blocks</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;analyst/report&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>        <span class="s2">&quot;Analyse the following text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>        <span class="s2">&quot;Respond with:</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>        <span class="s2">&quot;&lt;reasoning&gt;your step-by-step reasoning&lt;/reasoning&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>        <span class="s2">&quot;&lt;answer&gt;your final answer&lt;/answer&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>        <span class="s2">&quot;End with &lt;DONE&gt; when complete.&quot;</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="p">),</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;answer&quot;</span><span class="p">],</span>   <span class="c1"># extract these if present</span>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>        <span class="c1"># fail parse if missing</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a>        <span class="n">signal_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;DONE&quot;</span><span class="p">],</span>                <span class="c1"># boolean presence check</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="p">),</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a><span class="p">)</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a><span class="c1"># On success, response.parsed looks like:</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a><span class="c1"># {</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a><span class="c1">#     &quot;raw&quot;: &quot;...&quot;,</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a><span class="c1">#     &quot;xml_tags&quot;: {</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="c1">#         &quot;reasoning&quot;: [&quot;step 1: ...\nstep 2: ...&quot;],</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a><span class="c1">#         &quot;answer&quot;:    [&quot;The answer is 42.&quot;],</span>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="c1">#     },</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="c1">#     &quot;md_tags&quot;: {},</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a><span class="c1">#     &quot;signal_tags&quot;: {&quot;DONE&quot;: True},</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a><span class="c1"># }</span>
+</code></pre></div>
+<p>If <code>&lt;answer&gt;</code> is missing, <code>DefaultTagParser</code> raises <code>ParseError</code>, the agent loop catches it, and the exception handler kicks in automatically.</p>
+<p>Markdown code blocks are extracted similarly via <code>md_tags</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="n">md_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">,</span> <span class="s2">&quot;json&quot;</span><span class="p">],</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>    <span class="n">required_md_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;python&quot;</span><span class="p">],</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="c1"># Extracts ```python ... ``` blocks from the response.</span>
+</code></pre></div>
+<h3 id="structured-output-pydantic-model">Structured output — Pydantic model</h3>
+<p>For JSON-mode responses use <code>format</code> instead of <code>parser</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResearchReport</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">sources</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;researcher/report&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Research the following topic and return a structured report: </span><span class="si">{topic}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="nb">format</span><span class="o">=</span><span class="n">ResearchReport</span><span class="p">,</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">)</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="c1"># response.parsed == {&quot;title&quot;: &quot;...&quot;, &quot;summary&quot;: &quot;...&quot;, &quot;confidence&quot;: 0.9, &quot;sources&quot;: [...]}</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="c1"># Access as: ResearchReport(**response.parsed)</span>
+</code></pre></div>
+<p>Note: <code>format</code> is not supported with the Responses API (<code>api_type="response"</code>). Use the default completion API for structured output.</p>
+<h3 id="custom-parser">Custom parser</h3>
+<p>Subclass <code>DefaultTagParser</code> to add domain-specific validation on top of standard tag extraction:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.const</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParseError</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">GraphParser</span><span class="p">(</span><span class="n">DefaultTagParser</span><span class="p">):</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Parses an agent response that includes a graph definition, and validates it has no cycles.&quot;&quot;&quot;</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>        <span class="n">parsed</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>        <span class="n">raw_nodes</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;xml_tags&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;graph&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>        <span class="n">graph</span> <span class="o">=</span> <span class="n">build_graph</span><span class="p">(</span><span class="n">raw_nodes</span><span class="p">)</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>        <span class="k">if</span> <span class="n">has_cycle</span><span class="p">(</span><span class="n">graph</span><span class="p">):</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>                <span class="s2">&quot;The graph you returned contains a cycle. &quot;</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>                <span class="s2">&quot;Please revise so all edges point forward.&quot;</span>
+<a id="__codelineno-7-15" name="__codelineno-7-15" href="#__codelineno-7-15"></a>            <span class="p">)</span>
+<a id="__codelineno-7-16" name="__codelineno-7-16" href="#__codelineno-7-16"></a>        <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;graph&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">graph</span>
+<a id="__codelineno-7-17" name="__codelineno-7-17" href="#__codelineno-7-17"></a>        <span class="k">return</span> <span class="n">parsed</span>
+<a id="__codelineno-7-18" name="__codelineno-7-18" href="#__codelineno-7-18"></a>
+<a id="__codelineno-7-19" name="__codelineno-7-19" href="#__codelineno-7-19"></a>
+<a id="__codelineno-7-20" name="__codelineno-7-20" href="#__codelineno-7-20"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-7-21" name="__codelineno-7-21" href="#__codelineno-7-21"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;planner/dag&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-22" name="__codelineno-7-22" href="#__codelineno-7-22"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Build a dependency graph for: </span><span class="si">{task}</span><span class="s2">. Return it in &lt;graph&gt; tags.&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-23" name="__codelineno-7-23" href="#__codelineno-7-23"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">GraphParser</span><span class="p">(</span>
+<a id="__codelineno-7-24" name="__codelineno-7-24" href="#__codelineno-7-24"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;graph&quot;</span><span class="p">,</span> <span class="s2">&quot;reasoning&quot;</span><span class="p">],</span>
+<a id="__codelineno-7-25" name="__codelineno-7-25" href="#__codelineno-7-25"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;graph&quot;</span><span class="p">],</span>
+<a id="__codelineno-7-26" name="__codelineno-7-26" href="#__codelineno-7-26"></a>    <span class="p">),</span>
+<a id="__codelineno-7-27" name="__codelineno-7-27" href="#__codelineno-7-27"></a><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="defining-tools">Defining Tools</h2>
+<h3 id="tool-decorator-schema-and-implementation-together"><code>@tool</code> decorator — schema and implementation together</h3>
+<p>The common case. The decorator inspects type hints and builds the JSON schema automatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="nd">@tool</span><span class="p">(</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search the web for current information&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;The search query string&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>        <span class="s2">&quot;max_results&quot;</span><span class="p">:</span> <span class="s2">&quot;Maximum number of results to return (default 5)&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>    <span class="p">},</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="p">)</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>    <span class="c1"># Your implementation here</span>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>    <span class="n">results</span> <span class="o">=</span> <span class="o">...</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>    <span class="k">return</span> <span class="n">results</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Execute a Python expression and return the result&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a><span class="k">def</span><span class="w"> </span><span class="nf">calculator</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">expression</span><span class="p">))</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;research/agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Answer the following question using your tools: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">calculator</span><span class="p">],</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="function-link_function-schema-and-implementation-apart"><code>Function</code> + <code>link_function</code> — schema and implementation apart</h3>
+<p>Useful when the prompt file defines <em>what</em> tools exist (for the LLM to see) and the implementation is wired up separately at runtime — for example, from a proxy or a mock in tests:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Function</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="c1"># Schema defined in the prompt file — versionable, readable</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="n">search_schema</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;search&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search an internal knowledge base&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a>    <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Search query&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>        <span class="s2">&quot;top_k&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Number of results&quot;</span><span class="p">},</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="p">},</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">],</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="p">)</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="c1"># Implementation linked at runtime</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a><span class="n">search_schema</span><span class="o">.</span><span class="n">link_function</span><span class="p">(</span><span class="n">my_retriever</span><span class="o">.</span><span class="n">search</span><span class="p">)</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a><span class="c1"># Or check if it&#39;s linked before calling</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a><span class="k">assert</span> <span class="n">search_schema</span><span class="o">.</span><span class="n">linked</span><span class="p">,</span> <span class="s2">&quot;search tool has no implementation&quot;</span>
+</code></pre></div>
+<h3 id="custom-result-formatting">Custom result formatting</h3>
+<p>By default, tool results are formatted as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>Return of calling function &lt;name&gt; with arguments &lt;args&gt;:
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>---
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>&lt;result&gt;
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>---
+</code></pre></div>
+<p>Override this per-tool with a custom processor:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compact_processor</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">function_call</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="c1"># Return only the result itself, no boilerplate</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="nd">@tool</span><span class="p">(</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get stock price&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ticker&quot;</span><span class="p">:</span> <span class="s2">&quot;Stock ticker symbol, e.g. AAPL&quot;</span><span class="p">},</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>    <span class="n">processor</span><span class="o">=</span><span class="n">compact_processor</span><span class="p">,</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="p">)</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_stock_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;$</span><span class="si">{</span><span class="n">fetch_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="handlers">Handlers</h2>
+<p>When the agent loop encounters a tool result or a parse error, it calls <code>dialog.top_prompt.on_exception(call_state)</code> or <code>on_interrupt(call_state)</code> to get the next prompt to send. The <code>handler</code> field on <code>Prompt</code> is the object that answers that question.</p>
+<p>The default handler (<code>DefaultHandler</code>) has built-in sensible behaviour. Swap it by subclassing <code>BaseHandler</code> when you need custom logic.</p>
+<h3 id="what-the-default-handler-does">What the default handler does</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Message sent to LLM</th>
+<th>Inherits tools?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parse error / exception</td>
+<td><code>"Error: {error_message}. Please fix."</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Tool result (interrupt)</td>
+<td><code>"{call_results}"</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Interrupt budget exhausted</td>
+<td><code>"You are reaching the limit of tool calls. Provide the final response."</code></td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>The message is wrapped into a lightweight child <code>Prompt</code> via <code>extend()</code>, so it inherits the parent's parser and other settings.</p>
+<h3 id="custom-handler-rule-based">Custom handler — rule-based</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseHandler</span><span class="p">,</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">AgentCallState</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">RetryWithHintHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="sd">    On first exception: give a gentle hint.</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="sd">    On subsequent exceptions: give a strict format reminder with the schema.</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">call_state</span><span class="p">:</span> <span class="n">AgentCallState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>        <span class="n">retry_count</span> <span class="o">=</span> <span class="n">call_state</span><span class="o">.</span><span class="n">exception_retries_count</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        <span class="k">if</span> <span class="n">retry_count</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Your response had a formatting error: </span><span class="si">{error_message}</span><span class="s2">. Please try again.&quot;</span>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>        <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+<a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a>                <span class="s2">&quot;Formatting error (attempt </span><span class="si">{retry_count}</span><span class="s2">): {{error_message}}.</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>                <span class="s2">&quot;You MUST wrap your answer in &lt;answer&gt; tags. No other format is accepted.&quot;</span>
+<a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>            <span class="p">)</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">retry_count</span><span class="o">=</span><span class="n">retry_count</span><span class="p">)</span>
+<a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_exception_</span><span class="si">{</span><span class="n">retry_count</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-20" name="__codelineno-12-20" href="#__codelineno-12-20"></a>            <span class="n">prompt</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span>
+<a id="__codelineno-12-21" name="__codelineno-12-21" href="#__codelineno-12-21"></a>            <span class="n">function_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">function_list</span><span class="p">,</span>
+<a id="__codelineno-12-22" name="__codelineno-12-22" href="#__codelineno-12-22"></a>            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">mcp_servers_list</span><span class="p">,</span>
+<a id="__codelineno-12-23" name="__codelineno-12-23" href="#__codelineno-12-23"></a>            <span class="n">addon_args</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">addon_args</span><span class="p">,</span>
+<a id="__codelineno-12-24" name="__codelineno-12-24" href="#__codelineno-12-24"></a>        <span class="p">)</span>
+<a id="__codelineno-12-25" name="__codelineno-12-25" href="#__codelineno-12-25"></a>
+<a id="__codelineno-12-26" name="__codelineno-12-26" href="#__codelineno-12-26"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">call_state</span><span class="p">:</span> <span class="n">AgentCallState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+<a id="__codelineno-12-27" name="__codelineno-12-27" href="#__codelineno-12-27"></a>        <span class="c1"># Standard tool-result passthrough</span>
+<a id="__codelineno-12-28" name="__codelineno-12-28" href="#__codelineno-12-28"></a>        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-12-29" name="__codelineno-12-29" href="#__codelineno-12-29"></a>            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_interrupt&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-30" name="__codelineno-12-30" href="#__codelineno-12-30"></a>            <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{call_results}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-31" name="__codelineno-12-31" href="#__codelineno-12-31"></a>            <span class="n">function_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">function_list</span><span class="p">,</span>
+<a id="__codelineno-12-32" name="__codelineno-12-32" href="#__codelineno-12-32"></a>            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">mcp_servers_list</span><span class="p">,</span>
+<a id="__codelineno-12-33" name="__codelineno-12-33" href="#__codelineno-12-33"></a>            <span class="n">addon_args</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">addon_args</span><span class="p">,</span>
+<a id="__codelineno-12-34" name="__codelineno-12-34" href="#__codelineno-12-34"></a>        <span class="p">)</span>
+<a id="__codelineno-12-35" name="__codelineno-12-35" href="#__codelineno-12-35"></a>
+<a id="__codelineno-12-36" name="__codelineno-12-36" href="#__codelineno-12-36"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt_final</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">call_state</span><span class="p">:</span> <span class="n">AgentCallState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+<a id="__codelineno-12-37" name="__codelineno-12-37" href="#__codelineno-12-37"></a>        <span class="n">steps</span> <span class="o">=</span> <span class="n">call_state</span><span class="o">.</span><span class="n">max_interrupt_steps</span>
+<a id="__codelineno-12-38" name="__codelineno-12-38" href="#__codelineno-12-38"></a>        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-12-39" name="__codelineno-12-39" href="#__codelineno-12-39"></a>            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_interrupt_final&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-40" name="__codelineno-12-40" href="#__codelineno-12-40"></a>            <span class="n">prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;You have used all </span><span class="si">{</span><span class="n">steps</span><span class="si">}</span><span class="s2"> tool call rounds. Now provide your final answer.&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-41" name="__codelineno-12-41" href="#__codelineno-12-41"></a>            <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-12-42" name="__codelineno-12-42" href="#__codelineno-12-42"></a>            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-12-43" name="__codelineno-12-43" href="#__codelineno-12-43"></a>            <span class="n">addon_args</span><span class="o">=</span><span class="p">{},</span>
+<a id="__codelineno-12-44" name="__codelineno-12-44" href="#__codelineno-12-44"></a>        <span class="p">)</span>
+<a id="__codelineno-12-45" name="__codelineno-12-45" href="#__codelineno-12-45"></a>
+<a id="__codelineno-12-46" name="__codelineno-12-46" href="#__codelineno-12-46"></a>
+<a id="__codelineno-12-47" name="__codelineno-12-47" href="#__codelineno-12-47"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-12-48" name="__codelineno-12-48" href="#__codelineno-12-48"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;analyst/strict&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-49" name="__codelineno-12-49" href="#__codelineno-12-49"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Analyse </span><span class="si">{topic}</span><span class="s2">. Put your answer in &lt;answer&gt; tags.&quot;</span><span class="p">,</span>
+<a id="__codelineno-12-50" name="__codelineno-12-50" href="#__codelineno-12-50"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span> <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">]),</span>
+<a id="__codelineno-12-51" name="__codelineno-12-51" href="#__codelineno-12-51"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">],</span>
+<a id="__codelineno-12-52" name="__codelineno-12-52" href="#__codelineno-12-52"></a>    <span class="n">handler</span><span class="o">=</span><span class="n">RetryWithHintHandler</span><span class="p">(),</span>
+<a id="__codelineno-12-53" name="__codelineno-12-53" href="#__codelineno-12-53"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="custom-handler-agentic-meta-agent">Custom handler — agentic (meta-agent)</h3>
+<p><code>call_state</code> gives you everything you need to build handlers that themselves call an LLM:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">BugFixingHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Uses a second agent to diagnose and repair the broken response.&quot;&quot;&quot;</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fixer_agent</span><span class="p">):</span>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">fixer_agent</span> <span class="o">=</span> <span class="n">fixer_agent</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">call_state</span><span class="p">:</span> <span class="n">AgentCallState</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>        <span class="c1"># call_state.exception_retries tells you what went wrong at each step</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>        <span class="n">last_errors</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">call_state</span><span class="o">.</span><span class="n">exception_retries</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        <span class="n">diagnosis</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixer_agent</span><span class="o">.</span><span class="n">diagnose</span><span class="p">(</span><span class="n">last_errors</span><span class="p">,</span> <span class="n">prompt</span><span class="p">)</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_bugfix&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>            <span class="n">prompt</span><span class="o">=</span><span class="n">diagnosis</span><span class="p">,</span>
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>            <span class="n">function_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">function_list</span><span class="p">,</span>
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">mcp_servers_list</span><span class="p">,</span>
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>            <span class="n">addon_args</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">addon_args</span><span class="p">,</span>
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>        <span class="p">)</span>
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">call_state</span><span class="p">):</span>
+<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>        <span class="c1"># Fall back to default interrupt behaviour</span>
+<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_interrupt&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a>            <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">{call_results}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a>            <span class="n">function_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">function_list</span><span class="p">,</span>
+<a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a>            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">mcp_servers_list</span><span class="p">,</span>
+<a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a>            <span class="n">addon_args</span><span class="o">=</span><span class="n">prompt</span><span class="o">.</span><span class="n">addon_args</span><span class="p">,</span>
+<a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a>        <span class="p">)</span>
+<a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>
+<a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt_final</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">call_state</span><span class="p">):</span>
+<a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a>        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a>            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_interrupt_final&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a>            <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Provide your final answer now.&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-33" name="__codelineno-13-33" href="#__codelineno-13-33"></a>            <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-13-34" name="__codelineno-13-34" href="#__codelineno-13-34"></a>            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-13-35" name="__codelineno-13-35" href="#__codelineno-13-35"></a>            <span class="n">addon_args</span><span class="o">=</span><span class="p">{},</span>
+<a id="__codelineno-13-36" name="__codelineno-13-36" href="#__codelineno-13-36"></a>        <span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="prompt-composition">Prompt Composition</h2>
+<p><code>extend()</code> creates a child prompt inheriting all fields, with specified overrides. A new <code>path</code> is always required.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">base</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;base/analyst&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;You are a research analyst.</span><span class="se">\n\n</span><span class="s2">Task: </span><span class="si">{task}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>    <span class="p">),</span>
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">calculator</span><span class="p">],</span>
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="p">)</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a><span class="c1"># Specialise the persona, keep everything else</span>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="n">finance_analyst</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;finance/analyst&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;You are a financial research analyst.</span><span class="se">\n\n</span><span class="s2">Task: </span><span class="si">{task}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a><span class="p">)</span>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="c1"># Strip tools for a lightweight summary turn</span>
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="n">summariser</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;base/summariser&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Summarise the following research: </span><span class="si">{research}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a><span class="p">)</span>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a><span class="c1"># Add a stricter parser</span>
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a><span class="n">strict_analyst</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;base/analyst_strict&quot;</span><span class="p">,</span>
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">],</span>
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">],</span>
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>    <span class="p">),</span>
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a><span class="p">)</span>
+</code></pre></div>
+<p>Because <code>extend()</code> builds from field values directly (not serialization), non-serializable objects like custom parsers, renderers, and handler instances are copied correctly.</p>
+<hr />
+<h2 id="provider-capabilities">Provider Capabilities</h2>
+<p>Provider-specific features live in <code>addon_args</code> rather than dedicated fields. This means new provider features never require changes to <code>Prompt</code>.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># OpenAI web search (Responses API only)</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">search_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;web/searcher&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Research this question using web search: </span><span class="si">{question}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">addon_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;web_search&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">)</span>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="c1"># Computer use</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="n">cua_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;browser/agent&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;Complete the following browser task: </span><span class="si">{task}</span><span class="s2">&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a>    <span class="n">addon_args</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a>        <span class="s2">&quot;computer_use&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>            <span class="s2">&quot;display_width&quot;</span><span class="p">:</span> <span class="mi">1280</span><span class="p">,</span>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a>            <span class="s2">&quot;display_height&quot;</span><span class="p">:</span> <span class="mi">800</span><span class="p">,</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a>            <span class="s2">&quot;environment&quot;</span><span class="p">:</span> <span class="s2">&quot;browser&quot;</span><span class="p">,</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a>        <span class="p">}</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a>    <span class="p">},</span>
+<a id="__codelineno-15-19" name="__codelineno-15-19" href="#__codelineno-15-19"></a><span class="p">)</span>
+<a id="__codelineno-15-20" name="__codelineno-15-20" href="#__codelineno-15-20"></a>
+<a id="__codelineno-15-21" name="__codelineno-15-21" href="#__codelineno-15-21"></a><span class="c1"># Convenience read-only properties</span>
+<a id="__codelineno-15-22" name="__codelineno-15-22" href="#__codelineno-15-22"></a><span class="n">search_prompt</span><span class="o">.</span><span class="n">allow_web_search</span>      <span class="c1"># True</span>
+<a id="__codelineno-15-23" name="__codelineno-15-23" href="#__codelineno-15-23"></a><span class="n">cua_prompt</span><span class="o">.</span><span class="n">computer_use_config</span>      <span class="c1"># {&quot;display_width&quot;: 1280, ...}</span>
+</code></pre></div>
+<p>The invoker reads <code>addon_args</code> and translates entries to provider-specific tool configurations. The <code>Prompt</code> itself stays provider-agnostic.</p>
+<hr />
+<h2 id="organization-and-discovery">Organization and Discovery</h2>
+<p>Prompts live as Python objects at module scope in <code>.py</code> files. <code>lllm.toml</code> designates one or more folders, and auto-discovery registers every <code>Prompt</code> object it finds.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="c1"># lllm.toml</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="k">[prompts]</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="n">folders</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">&quot;prompts/&quot;</span><span class="p">]</span>
+</code></pre></div>
+<p>Folder structure maps to path prefixes. A prompt with <code>path="system"</code> in <code>prompts/weather/bot.py</code> is registered as <code>weather/bot/system</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>prompts/
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>├── weather/
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>│   └── bot.py          # system, analysis_prompt
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>├── finance/
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>│   └── analyst.py      # research_prompt, summary_prompt
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>└── coding/
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>    └── agent.py        # planner, executor, reviewer
+</code></pre></div>
+<p>Register manually without discovery:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_prompt</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="n">register_prompt</span><span class="p">(</span><span class="n">my_prompt</span><span class="p">)</span>              <span class="c1"># overwrites by default</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="n">register_prompt</span><span class="p">(</span><span class="n">my_prompt</span><span class="p">,</span> <span class="n">overwrite</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>  <span class="c1"># raises if path already registered</span>
+</code></pre></div>
+<p>Retrieve from the runtime:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_runtime</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">runtime</span> <span class="o">=</span> <span class="n">get_default_runtime</span><span class="p">()</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">&quot;weather/bot/system&quot;</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="metadata-and-tracking">Metadata and Tracking</h2>
+<p><code>metadata</code> accepts any JSON-serializable dict. <code>info_dict()</code> produces a snapshot suitable for experiment tracking systems:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;analyst/v2&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;...&quot;</span><span class="p">,</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;junyan&quot;</span><span class="p">,</span> <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;ablation-no-cot&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;2.1&quot;</span><span class="p">},</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="p">)</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="n">prompt</span><span class="o">.</span><span class="n">info_dict</span><span class="p">()</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="c1"># {</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="c1">#     &quot;path&quot;: &quot;analyst/v2&quot;,</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="c1">#     &quot;prompt_hash&quot;: &quot;a1b2c3d4e5f6&quot;,   # first 12 chars of SHA-256 of the template</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a><span class="c1">#     &quot;metadata&quot;: {&quot;author&quot;: &quot;junyan&quot;, &quot;experiment&quot;: &quot;ablation-no-cot&quot;, &quot;version&quot;: &quot;2.1&quot;},</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a><span class="c1">#     &quot;functions&quot;: [&quot;web_search&quot;, &quot;calculator&quot;],</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a><span class="c1">#     &quot;mcp_servers&quot;: [],</span>
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a><span class="c1">#     &quot;addon_args&quot;: {},</span>
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a><span class="c1">#     &quot;has_parser&quot;: True,</span>
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a><span class="c1">#     &quot;has_format&quot;: False,</span>
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a><span class="c1"># }</span>
+</code></pre></div>
+<p>The <code>prompt_hash</code> changes whenever the template text changes, making it easy to detect prompt drift across experiments.</p>
+<hr />
+<h2 id="complete-example-a-prompt-file">Complete Example — a prompt file</h2>
+<p>Below is what a real prompt <code>.py</code> file looks like. Discovery will register all module-level <code>Prompt</code> objects automatically, prefixed with the folder/file namespace.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="c1"># prompts/research/agent.py</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="c1">#</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="c1"># Registered paths (after discovery):</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a><span class="c1">#   research/agent/system</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a><span class="c1">#   research/agent/task</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a><span class="c1">#   research/agent/summarise</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.models</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">DefaultTagParser</span><span class="p">,</span> <span class="n">tool</span><span class="p">,</span> <span class="n">Function</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.const</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParseError</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a><span class="c1"># Tools</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a><span class="nd">@tool</span><span class="p">(</span>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search the web for current information on a topic&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a>    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="s2">&quot;Search query string&quot;</span><span class="p">},</span>
+<a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a><span class="p">)</span>
+<a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a><span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a>    <span class="c1"># Real implementation would call an API</span>
+<a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[Search results for: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">]&quot;</span>
+<a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a>
+<a id="__codelineno-21-24" name="__codelineno-21-24" href="#__codelineno-21-24"></a>
+<a id="__codelineno-21-25" name="__codelineno-21-25" href="#__codelineno-21-25"></a><span class="nd">@tool</span><span class="p">(</span>
+<a id="__codelineno-21-26" name="__codelineno-21-26" href="#__codelineno-21-26"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Fetch the full text of a URL&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-27" name="__codelineno-21-27" href="#__codelineno-21-27"></a>    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;The URL to fetch&quot;</span><span class="p">},</span>
+<a id="__codelineno-21-28" name="__codelineno-21-28" href="#__codelineno-21-28"></a><span class="p">)</span>
+<a id="__codelineno-21-29" name="__codelineno-21-29" href="#__codelineno-21-29"></a><span class="k">def</span><span class="w"> </span><span class="nf">fetch_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-21-30" name="__codelineno-21-30" href="#__codelineno-21-30"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[Content of: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">]&quot;</span>
+<a id="__codelineno-21-31" name="__codelineno-21-31" href="#__codelineno-21-31"></a>
+<a id="__codelineno-21-32" name="__codelineno-21-32" href="#__codelineno-21-32"></a>
+<a id="__codelineno-21-33" name="__codelineno-21-33" href="#__codelineno-21-33"></a><span class="c1"># Declared here for the LLM to see; implementation linked at runtime from a proxy</span>
+<a id="__codelineno-21-34" name="__codelineno-21-34" href="#__codelineno-21-34"></a><span class="n">save_note</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+<a id="__codelineno-21-35" name="__codelineno-21-35" href="#__codelineno-21-35"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;save_note&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-36" name="__codelineno-21-36" href="#__codelineno-21-36"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Save a research note to the session store&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-37" name="__codelineno-21-37" href="#__codelineno-21-37"></a>    <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-21-38" name="__codelineno-21-38" href="#__codelineno-21-38"></a>        <span class="s2">&quot;title&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Note title&quot;</span><span class="p">},</span>
+<a id="__codelineno-21-39" name="__codelineno-21-39" href="#__codelineno-21-39"></a>        <span class="s2">&quot;content&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Note content&quot;</span><span class="p">},</span>
+<a id="__codelineno-21-40" name="__codelineno-21-40" href="#__codelineno-21-40"></a>    <span class="p">},</span>
+<a id="__codelineno-21-41" name="__codelineno-21-41" href="#__codelineno-21-41"></a>    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;title&quot;</span><span class="p">,</span> <span class="s2">&quot;content&quot;</span><span class="p">],</span>
+<a id="__codelineno-21-42" name="__codelineno-21-42" href="#__codelineno-21-42"></a><span class="p">)</span>
+<a id="__codelineno-21-43" name="__codelineno-21-43" href="#__codelineno-21-43"></a>
+<a id="__codelineno-21-44" name="__codelineno-21-44" href="#__codelineno-21-44"></a>
+<a id="__codelineno-21-45" name="__codelineno-21-45" href="#__codelineno-21-45"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-21-46" name="__codelineno-21-46" href="#__codelineno-21-46"></a><span class="c1"># Custom parser</span>
+<a id="__codelineno-21-47" name="__codelineno-21-47" href="#__codelineno-21-47"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-21-48" name="__codelineno-21-48" href="#__codelineno-21-48"></a>
+<a id="__codelineno-21-49" name="__codelineno-21-49" href="#__codelineno-21-49"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResearchParser</span><span class="p">(</span><span class="n">DefaultTagParser</span><span class="p">):</span>
+<a id="__codelineno-21-50" name="__codelineno-21-50" href="#__codelineno-21-50"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<a id="__codelineno-21-51" name="__codelineno-21-51" href="#__codelineno-21-51"></a><span class="sd">    Extends tag extraction with a confidence-score range check.</span>
+<a id="__codelineno-21-52" name="__codelineno-21-52" href="#__codelineno-21-52"></a><span class="sd">    The agent must provide a confidence value between 0.0 and 1.0.</span>
+<a id="__codelineno-21-53" name="__codelineno-21-53" href="#__codelineno-21-53"></a><span class="sd">    &quot;&quot;&quot;</span>
+<a id="__codelineno-21-54" name="__codelineno-21-54" href="#__codelineno-21-54"></a>
+<a id="__codelineno-21-55" name="__codelineno-21-55" href="#__codelineno-21-55"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-21-56" name="__codelineno-21-56" href="#__codelineno-21-56"></a>        <span class="n">parsed</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+<a id="__codelineno-21-57" name="__codelineno-21-57" href="#__codelineno-21-57"></a>        <span class="n">raw_conf</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;xml_tags&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;confidence&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;&quot;</span><span class="p">])[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+<a id="__codelineno-21-58" name="__codelineno-21-58" href="#__codelineno-21-58"></a>        <span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-21-59" name="__codelineno-21-59" href="#__codelineno-21-59"></a>            <span class="n">conf</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">raw_conf</span><span class="p">)</span>
+<a id="__codelineno-21-60" name="__codelineno-21-60" href="#__codelineno-21-60"></a>        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+<a id="__codelineno-21-61" name="__codelineno-21-61" href="#__codelineno-21-61"></a>            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span>
+<a id="__codelineno-21-62" name="__codelineno-21-62" href="#__codelineno-21-62"></a>                <span class="sa">f</span><span class="s2">&quot;&lt;confidence&gt; must be a float, got: </span><span class="si">{</span><span class="n">raw_conf</span><span class="si">!r}</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-63" name="__codelineno-21-63" href="#__codelineno-21-63"></a>            <span class="p">)</span>
+<a id="__codelineno-21-64" name="__codelineno-21-64" href="#__codelineno-21-64"></a>        <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">conf</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+<a id="__codelineno-21-65" name="__codelineno-21-65" href="#__codelineno-21-65"></a>            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span>
+<a id="__codelineno-21-66" name="__codelineno-21-66" href="#__codelineno-21-66"></a>                <span class="sa">f</span><span class="s2">&quot;&lt;confidence&gt; must be between 0 and 1, got </span><span class="si">{</span><span class="n">conf</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-67" name="__codelineno-21-67" href="#__codelineno-21-67"></a>            <span class="p">)</span>
+<a id="__codelineno-21-68" name="__codelineno-21-68" href="#__codelineno-21-68"></a>        <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;confidence&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">conf</span>
+<a id="__codelineno-21-69" name="__codelineno-21-69" href="#__codelineno-21-69"></a>        <span class="k">return</span> <span class="n">parsed</span>
+<a id="__codelineno-21-70" name="__codelineno-21-70" href="#__codelineno-21-70"></a>
+<a id="__codelineno-21-71" name="__codelineno-21-71" href="#__codelineno-21-71"></a>
+<a id="__codelineno-21-72" name="__codelineno-21-72" href="#__codelineno-21-72"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-21-73" name="__codelineno-21-73" href="#__codelineno-21-73"></a><span class="c1"># Prompts</span>
+<a id="__codelineno-21-74" name="__codelineno-21-74" href="#__codelineno-21-74"></a><span class="c1"># ---------------------------------------------------------------------------</span>
+<a id="__codelineno-21-75" name="__codelineno-21-75" href="#__codelineno-21-75"></a>
+<a id="__codelineno-21-76" name="__codelineno-21-76" href="#__codelineno-21-76"></a><span class="c1"># System-level persona — loaded once by Agent.init_dialog</span>
+<a id="__codelineno-21-77" name="__codelineno-21-77" href="#__codelineno-21-77"></a><span class="n">system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-21-78" name="__codelineno-21-78" href="#__codelineno-21-78"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;system&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-79" name="__codelineno-21-79" href="#__codelineno-21-79"></a>    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-21-80" name="__codelineno-21-80" href="#__codelineno-21-80"></a>        <span class="s2">&quot;You are a careful research assistant with access to web search.</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-81" name="__codelineno-21-81" href="#__codelineno-21-81"></a>        <span class="s2">&quot;Always verify claims with at least two sources before concluding.</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-82" name="__codelineno-21-82" href="#__codelineno-21-82"></a>        <span class="s2">&quot;Current date: </span><span class="si">{date}</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-83" name="__codelineno-21-83" href="#__codelineno-21-83"></a>    <span class="p">),</span>
+<a id="__codelineno-21-84" name="__codelineno-21-84" href="#__codelineno-21-84"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;role&quot;</span><span class="p">:</span> <span class="s2">&quot;system&quot;</span><span class="p">},</span>
+<a id="__codelineno-21-85" name="__codelineno-21-85" href="#__codelineno-21-85"></a><span class="p">)</span>
+<a id="__codelineno-21-86" name="__codelineno-21-86" href="#__codelineno-21-86"></a>
+<a id="__codelineno-21-87" name="__codelineno-21-87" href="#__codelineno-21-87"></a><span class="c1"># Main research task — sent per-request via Agent.send_message</span>
+<a id="__codelineno-21-88" name="__codelineno-21-88" href="#__codelineno-21-88"></a><span class="n">task</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-21-89" name="__codelineno-21-89" href="#__codelineno-21-89"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;task&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-90" name="__codelineno-21-90" href="#__codelineno-21-90"></a>    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-21-91" name="__codelineno-21-91" href="#__codelineno-21-91"></a>        <span class="s2">&quot;Research the following question thoroughly: </span><span class="si">{question}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-92" name="__codelineno-21-92" href="#__codelineno-21-92"></a>        <span class="s2">&quot;Use your tools to gather information, then respond with:</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-93" name="__codelineno-21-93" href="#__codelineno-21-93"></a>        <span class="s2">&quot;&lt;reasoning&gt;your step-by-step research process&lt;/reasoning&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-94" name="__codelineno-21-94" href="#__codelineno-21-94"></a>        <span class="s2">&quot;&lt;answer&gt;your final, sourced answer&lt;/answer&gt;</span><span class="se">\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-95" name="__codelineno-21-95" href="#__codelineno-21-95"></a>        <span class="s2">&quot;&lt;confidence&gt;a float between 0 and 1&lt;/confidence&gt;&quot;</span>
+<a id="__codelineno-21-96" name="__codelineno-21-96" href="#__codelineno-21-96"></a>    <span class="p">),</span>
+<a id="__codelineno-21-97" name="__codelineno-21-97" href="#__codelineno-21-97"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">ResearchParser</span><span class="p">(</span>
+<a id="__codelineno-21-98" name="__codelineno-21-98" href="#__codelineno-21-98"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;reasoning&quot;</span><span class="p">,</span> <span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">],</span>
+<a id="__codelineno-21-99" name="__codelineno-21-99" href="#__codelineno-21-99"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">,</span> <span class="s2">&quot;confidence&quot;</span><span class="p">],</span>
+<a id="__codelineno-21-100" name="__codelineno-21-100" href="#__codelineno-21-100"></a>    <span class="p">),</span>
+<a id="__codelineno-21-101" name="__codelineno-21-101" href="#__codelineno-21-101"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">fetch_url</span><span class="p">,</span> <span class="n">save_note</span><span class="p">],</span>
+<a id="__codelineno-21-102" name="__codelineno-21-102" href="#__codelineno-21-102"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;1.2&quot;</span><span class="p">,</span> <span class="s2">&quot;author&quot;</span><span class="p">:</span> <span class="s2">&quot;research-team&quot;</span><span class="p">},</span>
+<a id="__codelineno-21-103" name="__codelineno-21-103" href="#__codelineno-21-103"></a><span class="p">)</span>
+<a id="__codelineno-21-104" name="__codelineno-21-104" href="#__codelineno-21-104"></a>
+<a id="__codelineno-21-105" name="__codelineno-21-105" href="#__codelineno-21-105"></a><span class="c1"># Summary turn — no tools, just synthesis</span>
+<a id="__codelineno-21-106" name="__codelineno-21-106" href="#__codelineno-21-106"></a><span class="n">summarise</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+<a id="__codelineno-21-107" name="__codelineno-21-107" href="#__codelineno-21-107"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;summarise&quot;</span><span class="p">,</span>
+<a id="__codelineno-21-108" name="__codelineno-21-108" href="#__codelineno-21-108"></a>    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+<a id="__codelineno-21-109" name="__codelineno-21-109" href="#__codelineno-21-109"></a>        <span class="s2">&quot;Summarise the following research findings in 2-3 sentences: </span><span class="si">{findings}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-21-110" name="__codelineno-21-110" href="#__codelineno-21-110"></a>        <span class="s2">&quot;&lt;answer&gt;your summary&lt;/answer&gt;&quot;</span>
+<a id="__codelineno-21-111" name="__codelineno-21-111" href="#__codelineno-21-111"></a>    <span class="p">),</span>
+<a id="__codelineno-21-112" name="__codelineno-21-112" href="#__codelineno-21-112"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>   <span class="c1"># no tools needed</span>
+<a id="__codelineno-21-113" name="__codelineno-21-113" href="#__codelineno-21-113"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+<a id="__codelineno-21-114" name="__codelineno-21-114" href="#__codelineno-21-114"></a>        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+<a id="__codelineno-21-115" name="__codelineno-21-115" href="#__codelineno-21-115"></a>        <span class="n">required_xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;answer&quot;</span><span class="p">],</span>
+<a id="__codelineno-21-116" name="__codelineno-21-116" href="#__codelineno-21-116"></a>    <span class="p">),</span>
+<a id="__codelineno-21-117" name="__codelineno-21-117" href="#__codelineno-21-117"></a><span class="p">)</span>
+</code></pre></div>
+<p>And how an <code>Tactic</code> uses these prompts:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1"># agents/researcher.py</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.tactic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.runtime</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_runtime</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResearchAgent</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>    <span class="n">tactic_type</span> <span class="o">=</span> <span class="s2">&quot;researcher&quot;</span>
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;researcher&quot;</span><span class="p">]</span>
+<a id="__codelineno-22-11" name="__codelineno-22-11" href="#__codelineno-22-11"></a>
+<a id="__codelineno-22-12" name="__codelineno-22-12" href="#__codelineno-22-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-22-13" name="__codelineno-22-13" href="#__codelineno-22-13"></a>        <span class="n">runtime</span> <span class="o">=</span> <span class="n">get_default_runtime</span><span class="p">()</span>
+<a id="__codelineno-22-14" name="__codelineno-22-14" href="#__codelineno-22-14"></a>
+<a id="__codelineno-22-15" name="__codelineno-22-15" href="#__codelineno-22-15"></a>        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;researcher&quot;</span><span class="p">]</span>
+<a id="__codelineno-22-16" name="__codelineno-22-16" href="#__codelineno-22-16"></a>        <span class="n">dialog</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">init_dialog</span><span class="p">(</span>
+<a id="__codelineno-22-17" name="__codelineno-22-17" href="#__codelineno-22-17"></a>            <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()}</span>
+<a id="__codelineno-22-18" name="__codelineno-22-18" href="#__codelineno-22-18"></a>        <span class="p">)</span>
+<a id="__codelineno-22-19" name="__codelineno-22-19" href="#__codelineno-22-19"></a>
+<a id="__codelineno-22-20" name="__codelineno-22-20" href="#__codelineno-22-20"></a>        <span class="c1"># Link the runtime implementation to the declared schema</span>
+<a id="__codelineno-22-21" name="__codelineno-22-21" href="#__codelineno-22-21"></a>        <span class="n">task_prompt</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">&quot;research/agent/task&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-22" name="__codelineno-22-22" href="#__codelineno-22-22"></a>        <span class="n">task_prompt</span><span class="o">.</span><span class="n">link_function</span><span class="p">(</span><span class="s2">&quot;save_note&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_save_note</span><span class="p">)</span>
+<a id="__codelineno-22-23" name="__codelineno-22-23" href="#__codelineno-22-23"></a>
+<a id="__codelineno-22-24" name="__codelineno-22-24" href="#__codelineno-22-24"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span><span class="n">dialog</span><span class="p">,</span> <span class="n">task_prompt</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;question&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">})</span>
+<a id="__codelineno-22-25" name="__codelineno-22-25" href="#__codelineno-22-25"></a>        <span class="n">response</span><span class="p">,</span> <span class="n">dialog</span><span class="p">,</span> <span class="n">call_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span>
+<a id="__codelineno-22-26" name="__codelineno-22-26" href="#__codelineno-22-26"></a>
+<a id="__codelineno-22-27" name="__codelineno-22-27" href="#__codelineno-22-27"></a>        <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;xml_tags&quot;</span><span class="p">][</span><span class="s2">&quot;answer&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-22-28" name="__codelineno-22-28" href="#__codelineno-22-28"></a>        <span class="n">confidence</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;confidence&quot;</span><span class="p">]</span>
+<a id="__codelineno-22-29" name="__codelineno-22-29" href="#__codelineno-22-29"></a>
+<a id="__codelineno-22-30" name="__codelineno-22-30" href="#__codelineno-22-30"></a>        <span class="k">if</span> <span class="n">confidence</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+<a id="__codelineno-22-31" name="__codelineno-22-31" href="#__codelineno-22-31"></a>            <span class="c1"># Low confidence: run a summary turn to consolidate findings</span>
+<a id="__codelineno-22-32" name="__codelineno-22-32" href="#__codelineno-22-32"></a>            <span class="n">summarise_prompt</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">&quot;research/agent/summarise&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-33" name="__codelineno-22-33" href="#__codelineno-22-33"></a>            <span class="n">agent</span><span class="o">.</span><span class="n">send_message</span><span class="p">(</span>
+<a id="__codelineno-22-34" name="__codelineno-22-34" href="#__codelineno-22-34"></a>                <span class="n">dialog</span><span class="p">,</span> <span class="n">summarise_prompt</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;findings&quot;</span><span class="p">:</span> <span class="n">answer</span><span class="p">}</span>
+<a id="__codelineno-22-35" name="__codelineno-22-35" href="#__codelineno-22-35"></a>            <span class="p">)</span>
+<a id="__codelineno-22-36" name="__codelineno-22-36" href="#__codelineno-22-36"></a>            <span class="n">response</span><span class="p">,</span> <span class="n">dialog</span><span class="p">,</span> <span class="n">call_state</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">call</span><span class="p">(</span><span class="n">dialog</span><span class="p">)</span>
+<a id="__codelineno-22-37" name="__codelineno-22-37" href="#__codelineno-22-37"></a>            <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;xml_tags&quot;</span><span class="p">][</span><span class="s2">&quot;answer&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-22-38" name="__codelineno-22-38" href="#__codelineno-22-38"></a>
+<a id="__codelineno-22-39" name="__codelineno-22-39" href="#__codelineno-22-39"></a>        <span class="k">return</span> <span class="n">answer</span>
+<a id="__codelineno-22-40" name="__codelineno-22-40" href="#__codelineno-22-40"></a>
+<a id="__codelineno-22-41" name="__codelineno-22-41" href="#__codelineno-22-41"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_save_note</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-22-42" name="__codelineno-22-42" href="#__codelineno-22-42"></a>        <span class="c1"># Real implementation would persist to a store</span>
+<a id="__codelineno-22-43" name="__codelineno-22-43" href="#__codelineno-22-43"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[Note saved] </span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-22-44" name="__codelineno-22-44" href="#__codelineno-22-44"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Note &#39;</span><span class="si">{</span><span class="n">title</span><span class="si">}</span><span class="s2">&#39; saved successfully.&quot;</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

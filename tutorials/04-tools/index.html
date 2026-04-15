@@ -1,0 +1,2814 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A lightweight framework for researchers to fast-prototype advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/tutorials/04-tools/">
+      
+      
+        <link rel="prev" href="../03-prompts/">
+      
+      
+        <link rel="next" href="../05-tactics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>4. Tools, Proxies, and Sandbox - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#lesson-4-tools-giving-agents-superpowers" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              4. Tools, Proxies, and Sandbox
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy & Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../core/runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/building-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a Full Package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/project-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" checked>
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-agents-and-dialogs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-tool-decorator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The @tool Decorator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#attaching-tools-to-a-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attaching Tools to a Prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-weather-bot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full Example: Weather Bot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controlling-the-tool-call-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlling the Tool-Call Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Result Formatting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-a-function-manually" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building a Function Manually
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Servers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#repeated-tool-call-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeated Tool Call Detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling-in-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling in Tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxy-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxy Tools — Structured Access to External APIs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proxy Tools — Structured Access to External APIs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-a-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Define a proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-configure-the-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Configure the agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Run it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-the-interpreter-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the interpreter works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-vs-per-agent-proxy-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global vs per-agent proxy config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-proxy-config-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full proxy config reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreter-vs-jupyter-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreter vs Jupyter mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jupyter-notebook-sandbox-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jupyter Notebook Sandbox — Step by Step
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jupyter Notebook Sandbox — Step by Step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-write-the-system-prompt-and-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Write the system prompt and parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-configure-the-agent_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Configure the agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-write-the-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Write the tactic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-handle-cell-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Handle cell errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bringing-your-own-execution-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bringing your own execution environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Tactics and Packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-config-and-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Config and Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/proxies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lllm.proxies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/modules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-tool-decorator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The @tool Decorator
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#attaching-tools-to-a-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attaching Tools to a Prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#full-example-weather-bot" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full Example: Weather Bot
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#controlling-the-tool-call-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Controlling the Tool-Call Loop
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Result Formatting
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#building-a-function-manually" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Building a Function Manually
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP Servers
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#repeated-tool-call-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Repeated Tool Call Detection
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#error-handling-in-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Error Handling in Tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#proxy-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Proxy Tools — Structured Access to External APIs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Proxy Tools — Structured Access to External APIs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-a-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Define a proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-configure-the-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Configure the agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Run it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-the-interpreter-works" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How the interpreter works
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#global-vs-per-agent-proxy-config" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Global vs per-agent proxy config
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#full-proxy-config-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Full proxy config reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#interpreter-vs-jupyter-mode" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interpreter vs Jupyter mode
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#jupyter-notebook-sandbox-step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Jupyter Notebook Sandbox — Step by Step
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Jupyter Notebook Sandbox — Step by Step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-write-the-system-prompt-and-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Write the system prompt and parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-configure-the-agent_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Configure the agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-write-the-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Write the tactic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-handle-cell-errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Handle cell errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bringing-your-own-execution-environment" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bringing your own execution environment
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="lesson-4-tools-giving-agents-superpowers">Lesson 4 — Tools: Giving Agents Superpowers</h1>
+<p>Tools let an agent call Python functions during a conversation. The LLM decides when to invoke a tool, receives the result, and continues reasoning. LLLM handles the interrupt loop automatically.</p>
+<hr />
+<h2 id="the-tool-decorator">The <code>@tool</code> Decorator</h2>
+<p>The fastest way to define a tool is with the <code>@tool</code> decorator:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.prompt</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="nd">@tool</span><span class="p">(</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get the current weather for a city&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>        <span class="s2">&quot;city&quot;</span><span class="p">:</span> <span class="s2">&quot;The city name, e.g. &#39;Paris&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>        <span class="s2">&quot;unit&quot;</span><span class="p">:</span> <span class="s2">&quot;Temperature unit: &#39;celsius&#39; or &#39;fahrenheit&#39;&quot;</span><span class="p">,</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    <span class="p">},</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="p">)</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;celsius&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="c1"># Replace with a real API call</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Sunny, 22°C in </span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">&quot;</span>
+</code></pre></div>
+<p><code>@tool</code> inspects the function signature to build the JSON Schema that gets sent to the model. Type hints map to JSON types:</p>
+<table>
+<thead>
+<tr>
+<th>Python</th>
+<th>JSON</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>str</code></td>
+<td><code>"string"</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><code>"integer"</code></td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td><code>"number"</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>"boolean"</code></td>
+</tr>
+<tr>
+<td><code>list</code></td>
+<td><code>"array"</code></td>
+</tr>
+<tr>
+<td><code>dict</code></td>
+<td><code>"object"</code></td>
+</tr>
+</tbody>
+</table>
+<p>Parameters without defaults are marked as <code>required</code> automatically.</p>
+<hr />
+<h2 id="attaching-tools-to-a-prompt">Attaching Tools to a Prompt</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">weather_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;weather_bot/system&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;You are a weather assistant. Use your tools to answer questions.&quot;</span><span class="p">,</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">get_weather</span><span class="p">],</span>   <span class="c1"># list of Function objects</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="p">)</span>
+</code></pre></div>
+<p>When the agent uses this prompt, the model sees the tool schema and can call <code>get_weather</code>.</p>
+<hr />
+<h2 id="full-example-weather-bot">Full Example: Weather Bot</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.prompt</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span><span class="p">,</span> <span class="n">Prompt</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.invokers</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_invoker</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get current weather for a city&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;celsius&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;Sunny, 22°C in </span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">weather_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;weather_bot/system&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;You are a weather assistant.&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">get_weather</span><span class="p">],</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a><span class="p">)</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="n">invoker</span> <span class="o">=</span> <span class="n">build_invoker</span><span class="p">({</span><span class="s2">&quot;invoker&quot;</span><span class="p">:</span> <span class="s2">&quot;litellm&quot;</span><span class="p">})</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;weather_bot&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>    <span class="n">system_prompt</span><span class="o">=</span><span class="n">weather_prompt</span><span class="p">,</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;gpt-4o&quot;</span><span class="p">,</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="n">llm_invoker</span><span class="o">=</span><span class="n">invoker</span><span class="p">,</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="n">max_interrupt_steps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>   <span class="c1"># allow up to 3 tool calls per response</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a><span class="p">)</span>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;chat&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;What is the weather in Paris and Tokyo?&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+<p>The agent loop:
+1. LLM sees the user question and decides to call <code>get_weather(city="Paris")</code>.
+2. LLLM executes the function and feeds the result back.
+3. LLM calls <code>get_weather(city="Tokyo")</code>.
+4. LLLM executes and feeds back.
+5. LLM writes the final answer.
+6. <code>respond()</code> returns it.</p>
+<hr />
+<h2 id="controlling-the-tool-call-loop">Controlling the Tool-Call Loop</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>    <span class="o">...</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">max_interrupt_steps</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>   <span class="c1"># maximum tool calls before forcing a final answer</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">max_exception_retry</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>   <span class="c1"># maximum retries when the model output fails validation</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><code>max_interrupt_steps=0</code> means unlimited (up to 100). Avoid this in production — always set an explicit cap.</li>
+<li>When the limit is reached, the agent appends a message asking the model to stop calling tools and write a final answer.</li>
+</ul>
+<hr />
+<h2 id="custom-result-formatting">Custom Result Formatting</h2>
+<p>By default the tool result is formatted as:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>Return of calling function get_weather with arguments {&#39;city&#39;: &#39;Paris&#39;, &#39;unit&#39;: &#39;celsius&#39;}:
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>---
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>Sunny, 22°C in Paris
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>---
+</code></pre></div>
+<p>You can override this with a custom <code>processor</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">my_processor</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">function_call</span><span class="p">):</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">function_call</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] → </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Get weather&quot;</span><span class="p">,</span> <span class="n">processor</span><span class="o">=</span><span class="n">my_processor</span><span class="p">)</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>    <span class="k">return</span> <span class="s2">&quot;Sunny&quot;</span>
+</code></pre></div>
+<hr />
+<h2 id="building-a-function-manually">Building a <code>Function</code> Manually</h2>
+<p>For tools with complex schemas or when you want to declare the schema separately from the implementation:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.prompt</span><span class="w"> </span><span class="kn">import</span> <span class="n">Function</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">search_fn</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;web_search&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Search the web for information&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="s2">&quot;query&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Search query&quot;</span><span class="p">},</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="s2">&quot;max_results&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;integer&quot;</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Max results (default 5)&quot;</span><span class="p">},</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>    <span class="p">},</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;query&quot;</span><span class="p">],</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="p">)</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a><span class="c1"># Attach the implementation separately</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="n">search_fn</span><span class="o">.</span><span class="n">link_function</span><span class="p">(</span><span class="k">lambda</span> <span class="n">query</span><span class="p">,</span> <span class="n">max_results</span><span class="o">=</span><span class="mi">5</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;Top </span><span class="si">{</span><span class="n">max_results</span><span class="si">}</span><span class="s2"> results for &#39;</span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a><span class="n">my_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;research_bot/system&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-19" name="__codelineno-6-19" href="#__codelineno-6-19"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;You are a research assistant.&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-20" name="__codelineno-6-20" href="#__codelineno-6-20"></a>    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">search_fn</span><span class="p">],</span>
+<a id="__codelineno-6-21" name="__codelineno-6-21" href="#__codelineno-6-21"></a><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="mcp-servers">MCP Servers</h2>
+<p>For tools exposed via the Model Context Protocol (MCP):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.prompt</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCP</span><span class="p">,</span> <span class="n">Prompt</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">mcp_server</span> <span class="o">=</span> <span class="n">MCP</span><span class="p">(</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">server_label</span><span class="o">=</span><span class="s2">&quot;my_tools&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">server_url</span><span class="o">=</span><span class="s2">&quot;http://localhost:8080&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">require_approval</span><span class="o">=</span><span class="s2">&quot;never&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;search&quot;</span><span class="p">,</span> <span class="s2">&quot;fetch_url&quot;</span><span class="p">],</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="p">)</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a><span class="n">my_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;agent/system&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="n">prompt</span><span class="o">=</span><span class="s2">&quot;You are an assistant with web access.&quot;</span><span class="p">,</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="n">mcp_servers_list</span><span class="o">=</span><span class="p">[</span><span class="n">mcp_server</span><span class="p">],</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a><span class="p">)</span>
+</code></pre></div>
+<blockquote>
+<p><strong>Note:</strong> MCP support requires an MCP-compatible invoker. Check the <a href="../../reference/invokers/">Invokers reference</a> for details.</p>
+</blockquote>
+<hr />
+<h2 id="repeated-tool-call-detection">Repeated Tool Call Detection</h2>
+<p>If the agent calls the same tool with the same arguments twice in one turn, LLLM detects the repetition and injects a warning telling the model not to call it again. This prevents infinite loops caused by a confused model.</p>
+<hr />
+<h2 id="error-handling-in-tools">Error Handling in Tools</h2>
+<p>If your tool function raises an exception, LLLM catches it and feeds the error message back to the model as the tool result:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;Divide two numbers&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="k">def</span><span class="w"> </span><span class="nf">divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Division by zero&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">a</span> <span class="o">/</span> <span class="n">b</span><span class="p">)</span>
+</code></pre></div>
+<p>The model sees <code>"Error: Division by zero"</code> as the result and can decide how to proceed (e.g., ask for different arguments).</p>
+<hr />
+<hr />
+<h2 id="proxy-tools">Proxy Tools — Structured Access to External APIs</h2>
+<p>For agents that need to call many API endpoints, the <code>@tool</code> approach scales poorly: dozens of endpoints means dozens of tool definitions and a bloated context. LLLM's <strong>proxy system</strong> solves this with a two-tool pattern the agent uses lazily:</p>
+<ul>
+<li><strong><code>query_api_doc(proxy_name)</code></strong> — retrieve full endpoint documentation on demand</li>
+<li><strong><code>run_python(code)</code></strong> — execute Python in a persistent interpreter with <code>CALL_API</code> pre-injected</li>
+</ul>
+<p>The agent learns the endpoint structure just-in-time, then calls whatever it needs through <code>CALL_API</code> in Python. LLLM injects both tools and the supporting prompt block automatically when you declare a proxy config — no extra wiring needed.</p>
+<h3 id="step-1-define-a-proxy">Step 1: Define a proxy</h3>
+<p>A proxy wraps an API surface. Endpoints are declared with <code>@BaseProxy.endpoint</code> — this metadata drives the API directory, <code>query_api_doc</code> responses, and auto-testing.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.proxies</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseProxy</span><span class="p">,</span> <span class="n">ProxyRegistrator</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="nd">@ProxyRegistrator</span><span class="p">(</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;weather&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;Weather API&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Current weather and forecasts for any city.&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="k">class</span><span class="w"> </span><span class="nc">WeatherProxy</span><span class="p">(</span><span class="n">BaseProxy</span><span class="p">):</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a>    <span class="nd">@BaseProxy</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a>        <span class="n">category</span><span class="o">=</span><span class="s2">&quot;current&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>        <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;conditions&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;Current temperature and conditions for a city.&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a>        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>            <span class="s2">&quot;city*&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;London&quot;</span><span class="p">),</span>       <span class="c1"># * = required</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>            <span class="s2">&quot;units&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;celsius&quot;</span><span class="p">),</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>        <span class="p">},</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>        <span class="n">response</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mi">18</span><span class="p">,</span> <span class="s2">&quot;condition&quot;</span><span class="p">:</span> <span class="s2">&quot;cloudy&quot;</span><span class="p">,</span> <span class="s2">&quot;humidity&quot;</span><span class="p">:</span> <span class="mi">72</span><span class="p">},</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>    <span class="p">)</span>
+<a id="__codelineno-9-20" name="__codelineno-9-20" href="#__codelineno-9-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">conditions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+<a id="__codelineno-9-21" name="__codelineno-9-21" href="#__codelineno-9-21"></a>        <span class="n">city</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-22" name="__codelineno-9-22" href="#__codelineno-9-22"></a>        <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;temperature&quot;</span><span class="p">:</span> <span class="mi">18</span><span class="p">,</span> <span class="s2">&quot;condition&quot;</span><span class="p">:</span> <span class="s2">&quot;cloudy&quot;</span><span class="p">,</span> <span class="s2">&quot;humidity&quot;</span><span class="p">:</span> <span class="mi">72</span><span class="p">}</span>
+<a id="__codelineno-9-23" name="__codelineno-9-23" href="#__codelineno-9-23"></a>
+<a id="__codelineno-9-24" name="__codelineno-9-24" href="#__codelineno-9-24"></a>    <span class="nd">@BaseProxy</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span>
+<a id="__codelineno-9-25" name="__codelineno-9-25" href="#__codelineno-9-25"></a>        <span class="n">category</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-26" name="__codelineno-9-26" href="#__codelineno-9-26"></a>        <span class="n">endpoint</span><span class="o">=</span><span class="s2">&quot;daily&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-27" name="__codelineno-9-27" href="#__codelineno-9-27"></a>        <span class="n">description</span><span class="o">=</span><span class="s2">&quot;5-day daily forecast for a city.&quot;</span><span class="p">,</span>
+<a id="__codelineno-9-28" name="__codelineno-9-28" href="#__codelineno-9-28"></a>        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-9-29" name="__codelineno-9-29" href="#__codelineno-9-29"></a>            <span class="s2">&quot;city*&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">&quot;London&quot;</span><span class="p">),</span>
+<a id="__codelineno-9-30" name="__codelineno-9-30" href="#__codelineno-9-30"></a>            <span class="s2">&quot;days&quot;</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+<a id="__codelineno-9-31" name="__codelineno-9-31" href="#__codelineno-9-31"></a>        <span class="p">},</span>
+<a id="__codelineno-9-32" name="__codelineno-9-32" href="#__codelineno-9-32"></a>        <span class="n">response</span><span class="o">=</span><span class="p">[{</span><span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="s2">&quot;2024-01-01&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">}],</span>
+<a id="__codelineno-9-33" name="__codelineno-9-33" href="#__codelineno-9-33"></a>    <span class="p">)</span>
+<a id="__codelineno-9-34" name="__codelineno-9-34" href="#__codelineno-9-34"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">daily</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<a id="__codelineno-9-35" name="__codelineno-9-35" href="#__codelineno-9-35"></a>        <span class="n">city</span> <span class="o">=</span> <span class="n">params</span><span class="p">[</span><span class="s2">&quot;city&quot;</span><span class="p">]</span>
+<a id="__codelineno-9-36" name="__codelineno-9-36" href="#__codelineno-9-36"></a>        <span class="k">return</span> <span class="p">[{</span><span class="s2">&quot;date&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;2024-01-0</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;high&quot;</span><span class="p">:</span> <span class="mi">18</span><span class="o">+</span><span class="n">i</span><span class="p">,</span> <span class="s2">&quot;low&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="o">+</span><span class="n">i</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">)]</span>
+</code></pre></div>
+<p>Key conventions:
+- <code>path</code> in <code>@ProxyRegistrator</code> is what you put in <code>activate_proxies</code>
+- Parameters with <code>*</code> suffix are required; the second tuple element is the example value
+- <code>response</code> is the example response shown in <code>query_api_doc</code> output</p>
+<h3 id="step-2-configure-the-agent">Step 2: Configure the agent</h3>
+<p>Add a <code>proxy:</code> block to the agent config. With <code>exec_env: interpreter</code> (the default), LLLM builds a <code>ProxyManager</code>, an <code>AgentInterpreter</code>, and injects both tools automatically:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># config.yaml</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">  </span><span class="nt">model_args</span><span class="p">:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nt">agent_configs</span><span class="p">:</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">weather_analyst</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;You</span><span class="nv"> </span><span class="s">are</span><span class="nv"> </span><span class="s">a</span><span class="nv"> </span><span class="s">weather</span><span class="nv"> </span><span class="s">analyst.</span><span class="nv"> </span><span class="s">Use</span><span class="nv"> </span><span class="s">the</span><span class="nv"> </span><span class="s">Weather</span><span class="nv"> </span><span class="s">API</span><span class="nv"> </span><span class="s">to</span><span class="nv"> </span><span class="s">answer</span><span class="nv"> </span><span class="s">questions.&quot;</span>
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">    </span><span class="nt">proxy</span><span class="p">:</span>
+<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">      </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">weather</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">      </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interpreter</span><span class="w">       </span><span class="c1"># default — can be omitted</span>
+<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="w">      </span><span class="nt">max_output_chars</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span>
+<a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60.0</span>
+</code></pre></div>
+<p>Or in Python:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="s2">&quot;global&quot;</span><span class="p">:</span> <span class="p">{</span><span class="s2">&quot;model_name&quot;</span><span class="p">:</span> <span class="s2">&quot;gpt-4o&quot;</span><span class="p">},</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="s2">&quot;agent_configs&quot;</span><span class="p">:</span> <span class="p">[{</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>        <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;weather_analyst&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>        <span class="s2">&quot;system_prompt&quot;</span><span class="p">:</span> <span class="s2">&quot;You are a weather analyst.&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>        <span class="s2">&quot;proxy&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>            <span class="s2">&quot;activate_proxies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;weather&quot;</span><span class="p">],</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>            <span class="s2">&quot;exec_env&quot;</span><span class="p">:</span> <span class="s2">&quot;interpreter&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a>            <span class="s2">&quot;max_output_chars&quot;</span><span class="p">:</span> <span class="mi">5000</span><span class="p">,</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a>        <span class="p">},</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="p">}],</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="p">}</span>
+</code></pre></div>
+<h3 id="step-3-run-it">Step 3: Run it</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">WeatherTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;weather&quot;</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a>    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;weather_analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;weather_analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+<a id="__codelineno-12-10" name="__codelineno-12-10" href="#__codelineno-12-10"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<a id="__codelineno-12-11" name="__codelineno-12-11" href="#__codelineno-12-11"></a>        <span class="k">return</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+<a id="__codelineno-12-12" name="__codelineno-12-12" href="#__codelineno-12-12"></a>
+<a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a><span class="n">tactic</span> <span class="o">=</span> <span class="n">WeatherTactic</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="nb">print</span><span class="p">(</span><span class="n">tactic</span><span class="p">(</span><span class="s2">&quot;What is the current weather in Tokyo and Paris?&quot;</span><span class="p">))</span>
+</code></pre></div>
+<p>The agent will typically:
+1. Call <code>query_api_doc("weather")</code> to see full endpoint specs
+2. Call <code>run_python</code> with code that calls <code>CALL_API("weather/conditions", {"city": "Tokyo"})</code>
+3. Call <code>run_python</code> again (reusing variables) to process both cities and format the answer</p>
+<h3 id="how-the-interpreter-works">How the interpreter works</h3>
+<p><code>AgentInterpreter</code> uses a persistent namespace passed to every <code>exec()</code> call, so variables survive across calls like a live REPL:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1"># Agent turn 1: fetch data</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">data_tokyo</span> <span class="o">=</span> <span class="n">CALL_API</span><span class="p">(</span><span class="s2">&quot;weather/conditions&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;city&quot;</span><span class="p">:</span> <span class="s2">&quot;Tokyo&quot;</span><span class="p">})</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="n">data_paris</span> <span class="o">=</span> <span class="n">CALL_API</span><span class="p">(</span><span class="s2">&quot;weather/conditions&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;city&quot;</span><span class="p">:</span> <span class="s2">&quot;Paris&quot;</span><span class="p">})</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">data_tokyo</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="c1"># Agent turn 2: data_tokyo is still in scope</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">comparison</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Tokyo: </span><span class="si">{</span><span class="n">data_tokyo</span><span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">°C, Paris: </span><span class="si">{</span><span class="n">data_paris</span><span class="p">[</span><span class="s1">&#39;temperature&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">°C&quot;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">comparison</span><span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><strong>Stdout capture</strong> — only <code>print()</code> output is captured; the last expression is not auto-returned.</li>
+<li><strong>Exception handling</strong> — uncaught exceptions are returned as formatted tracebacks so the agent can diagnose and retry without losing session state.</li>
+<li><strong>Truncation</strong> — output longer than <code>max_output_chars</code> is cut off with a truncation indicator. The agent is told this in the injected prompt block.</li>
+<li><strong>Timeout</strong> — each <code>run_python</code> call runs in a daemon thread; <code>TimeoutError</code> is raised if it exceeds <code>timeout</code> seconds.</li>
+</ul>
+<h3 id="global-vs-per-agent-proxy-config">Global vs per-agent proxy config</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="w">    </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">fmp</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">fred</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="w">    </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interpreter</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="nt">agent_configs</span><span class="p">:</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">fast_analyst</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a><span class="w">    </span><span class="c1"># inherits global proxy config</span>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">notebook_analyst</span>
+<a id="__codelineno-15-12" name="__codelineno-15-12" href="#__codelineno-15-12"></a><span class="w">    </span><span class="nt">proxy</span><span class="p">:</span>
+<a id="__codelineno-15-13" name="__codelineno-15-13" href="#__codelineno-15-13"></a><span class="w">      </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jupyter</span><span class="w">      </span><span class="c1"># override: use JupyterSession instead</span>
+<a id="__codelineno-15-14" name="__codelineno-15-14" href="#__codelineno-15-14"></a>
+<a id="__codelineno-15-15" name="__codelineno-15-15" href="#__codelineno-15-15"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">crypto_analyst</span>
+<a id="__codelineno-15-16" name="__codelineno-15-16" href="#__codelineno-15-16"></a><span class="w">    </span><span class="nt">proxy</span><span class="p">:</span>
+<a id="__codelineno-15-17" name="__codelineno-15-17" href="#__codelineno-15-17"></a><span class="w">      </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">fmp</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># override: only fmp</span>
+<a id="__codelineno-15-18" name="__codelineno-15-18" href="#__codelineno-15-18"></a><span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30.0</span>
+</code></pre></div>
+<p>Per-agent values deep-merge on top of global, field by field.</p>
+<h3 id="full-proxy-config-reference">Full proxy config reference</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="nt">proxy</span><span class="p">:</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="w">  </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">fmp</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">fred</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># which proxies to load; empty = all registered</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="w">  </span><span class="nt">deploy_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">               </span><span class="c1"># passed to proxy instances (e.g. for rate limiting)</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="w">  </span><span class="nt">cutoff_date</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;2024-01-01&quot;</span><span class="w">        </span><span class="c1"># ISO date; proxies can use this to filter data</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="w">  </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interpreter</span><span class="w">            </span><span class="c1"># &quot;interpreter&quot; | &quot;jupyter&quot; | null</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a><span class="w">  </span><span class="nt">max_output_chars</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span><span class="w">           </span><span class="c1"># truncate run_python stdout; 0 = no limit</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="w">  </span><span class="nt">truncation_indicator</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;...</span><span class="nv"> </span><span class="s">(truncated)&quot;</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60.0</span><span class="w">                    </span><span class="c1"># seconds per run_python call; interpreter only</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="w">  </span><span class="nt">prompt_template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">            </span><span class="c1"># custom template string; null = auto-select</span>
+</code></pre></div>
+<h3 id="interpreter-vs-jupyter-mode">Interpreter vs Jupyter mode</h3>
+<p>Use <code>exec_env: jupyter</code> when you need notebook files as output artifacts, Matplotlib/Plotly visualizations, or cell-level execution history. In Jupyter mode, only <code>query_api_doc</code> is injected as a tool — the agent writes <code>&lt;python_cell&gt;</code> XML tags that your tactic runs in a <code>JupyterSession</code>.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Interpreter</th>
+<th>Jupyter</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overhead</td>
+<td>None (in-process exec)</td>
+<td>Subprocess per kernel (~2–3s startup)</td>
+</tr>
+<tr>
+<td>Parallel agents</td>
+<td>Safe — isolated namespaces</td>
+<td>Heavy — one subprocess per agent</td>
+</tr>
+<tr>
+<td>Visualizations</td>
+<td>Not available</td>
+<td>Full matplotlib/plotly support</td>
+</tr>
+<tr>
+<td>Output artifact</td>
+<td>None</td>
+<td><code>.ipynb</code> notebook file</td>
+</tr>
+<tr>
+<td>Audit trail</td>
+<td>None</td>
+<td>Cell-by-cell execution history</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>Data retrieval, computation, API orchestration</td>
+<td>Exploratory analysis, charts, reports</td>
+</tr>
+</tbody>
+</table>
+<p>See <a href="../../core/proxy-and-sandbox/">Proxies &amp; Sandbox reference</a> for a complete Jupyter mode example.</p>
+<hr />
+<h2 id="jupyter-notebook-sandbox-step-by-step">Jupyter Notebook Sandbox — Step by Step</h2>
+<p><code>JupyterSession</code> is LLLM's <strong>built-in sandbox</strong>, optimised for the proxy system. Code executes in a real kernel, plots are saved, variables persist across turns, and the session produces a <code>.ipynb</code> file as an output artifact.</p>
+<p>Unlike interpreter mode (where LLLM runs code in-process), in Jupyter mode the split of responsibility is explicit: the <strong>agent</strong> writes <code>&lt;python_cell&gt;</code> / <code>&lt;markdown_cell&gt;</code> XML tags; your <strong>tactic</strong> extracts those cells and runs them in a <code>JupyterSession</code>; execution results are fed back so the agent can continue. This lets you intercept every cell, handle errors, and checkpoint state.</p>
+<h3 id="step-1-write-the-system-prompt-and-parser">Step 1: Write the system prompt and parser</h3>
+<p>The system prompt explains the notebook interface. A parser enforces the tag format:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">find_all_xml_tags_sorted</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.const</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParseError</span>
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a><span class="n">NOTEBOOK_SYSTEM</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;</span>
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a><span class="s2">You are a data analyst working in a Jupyter Notebook.</span>
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a><span class="s2">## Interface</span>
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a><span class="s2">- Write Python in `&lt;python_cell&gt;...&lt;/python_cell&gt;` tags.</span>
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a><span class="s2">- Write notes and summaries in `&lt;markdown_cell&gt;...&lt;/markdown_cell&gt;` tags.</span>
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a><span class="s2">- When your analysis is complete, respond with `&lt;TERMINATE_NOTEBOOK&gt;` alone (no cells in that response).</span>
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a><span class="s2">Rules:</span>
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a><span class="s2">- Cells execute sequentially; variables persist across turns.</span>
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a><span class="s2">- If a cell fails you will see the traceback and must fix that cell only.</span>
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a><span class="s2">- Use `CALL_API(path, params)` to call data APIs — always call `query_api_doc` first.</span>
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a><span class="s2">&quot;&quot;&quot;</span>
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a><span class="k">def</span><span class="w"> </span><span class="nf">notebook_parser</span><span class="p">(</span><span class="n">message</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>    <span class="n">matches</span> <span class="o">=</span> <span class="n">find_all_xml_tags_sorted</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>    <span class="n">terminate</span> <span class="o">=</span> <span class="s2">&quot;&lt;TERMINATE_NOTEBOOK&gt;&quot;</span> <span class="ow">in</span> <span class="n">message</span>
+<a id="__codelineno-17-22" name="__codelineno-17-22" href="#__codelineno-17-22"></a>    <span class="n">cells</span> <span class="o">=</span> <span class="p">[</span>
+<a id="__codelineno-17-23" name="__codelineno-17-23" href="#__codelineno-17-23"></a>        <span class="p">(</span><span class="n">m</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">],</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;content&quot;</span><span class="p">])</span>
+<a id="__codelineno-17-24" name="__codelineno-17-24" href="#__codelineno-17-24"></a>        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">matches</span>
+<a id="__codelineno-17-25" name="__codelineno-17-25" href="#__codelineno-17-25"></a>        <span class="k">if</span> <span class="n">m</span><span class="p">[</span><span class="s2">&quot;tag&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">&quot;python_cell&quot;</span><span class="p">,</span> <span class="s2">&quot;markdown_cell&quot;</span><span class="p">)</span>
+<a id="__codelineno-17-26" name="__codelineno-17-26" href="#__codelineno-17-26"></a>    <span class="p">]</span>
+<a id="__codelineno-17-27" name="__codelineno-17-27" href="#__codelineno-17-27"></a>    <span class="k">if</span> <span class="ow">not</span> <span class="n">cells</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">terminate</span><span class="p">:</span>
+<a id="__codelineno-17-28" name="__codelineno-17-28" href="#__codelineno-17-28"></a>        <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span>
+<a id="__codelineno-17-29" name="__codelineno-17-29" href="#__codelineno-17-29"></a>            <span class="s2">&quot;No cells found. Wrap code in &lt;python_cell&gt;...&lt;/python_cell&gt; &quot;</span>
+<a id="__codelineno-17-30" name="__codelineno-17-30" href="#__codelineno-17-30"></a>            <span class="s2">&quot;or markdown in &lt;markdown_cell&gt;...&lt;/markdown_cell&gt;, &quot;</span>
+<a id="__codelineno-17-31" name="__codelineno-17-31" href="#__codelineno-17-31"></a>            <span class="s2">&quot;or respond with &lt;TERMINATE_NOTEBOOK&gt;.&quot;</span>
+<a id="__codelineno-17-32" name="__codelineno-17-32" href="#__codelineno-17-32"></a>        <span class="p">)</span>
+<a id="__codelineno-17-33" name="__codelineno-17-33" href="#__codelineno-17-33"></a>    <span class="c1"># If TERMINATE_NOTEBOOK is mixed with python cells, ignore the termination signal</span>
+<a id="__codelineno-17-34" name="__codelineno-17-34" href="#__codelineno-17-34"></a>    <span class="k">if</span> <span class="n">terminate</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;python_cell&quot;</span> <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">):</span>
+<a id="__codelineno-17-35" name="__codelineno-17-35" href="#__codelineno-17-35"></a>        <span class="n">terminate</span> <span class="o">=</span> <span class="kc">False</span>
+<a id="__codelineno-17-36" name="__codelineno-17-36" href="#__codelineno-17-36"></a>    <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;raw&quot;</span><span class="p">:</span> <span class="n">message</span><span class="p">,</span> <span class="s2">&quot;cells&quot;</span><span class="p">:</span> <span class="n">cells</span><span class="p">,</span> <span class="s2">&quot;terminate&quot;</span><span class="p">:</span> <span class="n">terminate</span><span class="p">}</span>
+<a id="__codelineno-17-37" name="__codelineno-17-37" href="#__codelineno-17-37"></a>
+<a id="__codelineno-17-38" name="__codelineno-17-38" href="#__codelineno-17-38"></a><span class="n">analyst_system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+<a id="__codelineno-17-39" name="__codelineno-17-39" href="#__codelineno-17-39"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;analyst/system&quot;</span><span class="p">,</span>
+<a id="__codelineno-17-40" name="__codelineno-17-40" href="#__codelineno-17-40"></a>    <span class="n">prompt</span><span class="o">=</span><span class="n">NOTEBOOK_SYSTEM</span><span class="p">,</span>
+<a id="__codelineno-17-41" name="__codelineno-17-41" href="#__codelineno-17-41"></a>    <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;python_cell&quot;</span><span class="p">,</span> <span class="s2">&quot;markdown_cell&quot;</span><span class="p">],</span>
+<a id="__codelineno-17-42" name="__codelineno-17-42" href="#__codelineno-17-42"></a>    <span class="n">signal_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;TERMINATE_NOTEBOOK&quot;</span><span class="p">],</span>
+<a id="__codelineno-17-43" name="__codelineno-17-43" href="#__codelineno-17-43"></a>    <span class="n">parser</span><span class="o">=</span><span class="n">notebook_parser</span><span class="p">,</span>
+<a id="__codelineno-17-44" name="__codelineno-17-44" href="#__codelineno-17-44"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-2-configure-the-agent_1">Step 2: Configure the agent</h3>
+<p>Set <code>exec_env: jupyter</code> so LLLM injects only <code>query_api_doc</code> (not <code>run_python</code> — the tactic drives execution):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="c1"># config.yaml</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a><span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a><span class="w">  </span><span class="nt">model_args</span><span class="p">:</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.1</span>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a><span class="nt">agent_configs</span><span class="p">:</span>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst</span>
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst/system</span>
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a><span class="w">    </span><span class="nt">proxy</span><span class="p">:</span>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a><span class="w">      </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">weather</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a><span class="w">      </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">jupyter</span>
+</code></pre></div>
+<h3 id="step-3-write-the-tactic">Step 3: Write the tactic</h3>
+<p>The tactic drives the loop: send task → get cells → run cells → feed output back → repeat:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.sandbox.jupyter</span><span class="w"> </span><span class="kn">import</span> <span class="n">JupyterSession</span>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="k">class</span><span class="w"> </span><span class="nc">NotebookAnalysisTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;notebook_analysis&quot;</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>        <span class="c1"># Initialise a JupyterSession — CALL_API is wired into the kernel automatically</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>        <span class="n">session</span> <span class="o">=</span> <span class="n">JupyterSession</span><span class="p">(</span>
+<a id="__codelineno-19-13" name="__codelineno-19-13" href="#__codelineno-19-13"></a>            <span class="n">name</span><span class="o">=</span><span class="s2">&quot;analysis&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-14" name="__codelineno-19-14" href="#__codelineno-19-14"></a>            <span class="nb">dir</span><span class="o">=</span><span class="s2">&quot;/tmp/notebooks&quot;</span><span class="p">,</span>
+<a id="__codelineno-19-15" name="__codelineno-19-15" href="#__codelineno-19-15"></a>            <span class="n">metadata</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-19-16" name="__codelineno-19-16" href="#__codelineno-19-16"></a>                <span class="s2">&quot;proxy&quot;</span><span class="p">:</span> <span class="p">{</span>
+<a id="__codelineno-19-17" name="__codelineno-19-17" href="#__codelineno-19-17"></a>                    <span class="s2">&quot;activate_proxies&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;weather&quot;</span><span class="p">],</span>
+<a id="__codelineno-19-18" name="__codelineno-19-18" href="#__codelineno-19-18"></a>                    <span class="s2">&quot;deploy_mode&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">,</span>
+<a id="__codelineno-19-19" name="__codelineno-19-19" href="#__codelineno-19-19"></a>                <span class="p">}</span>
+<a id="__codelineno-19-20" name="__codelineno-19-20" href="#__codelineno-19-20"></a>            <span class="p">},</span>
+<a id="__codelineno-19-21" name="__codelineno-19-21" href="#__codelineno-19-21"></a>        <span class="p">)</span>
+<a id="__codelineno-19-22" name="__codelineno-19-22" href="#__codelineno-19-22"></a>        <span class="n">session</span><span class="o">.</span><span class="n">init_session</span><span class="p">()</span>   <span class="c1"># injects CALL_API into the kernel namespace</span>
+<a id="__codelineno-19-23" name="__codelineno-19-23" href="#__codelineno-19-23"></a>
+<a id="__codelineno-19-24" name="__codelineno-19-24" href="#__codelineno-19-24"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-25" name="__codelineno-19-25" href="#__codelineno-19-25"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<a id="__codelineno-19-26" name="__codelineno-19-26" href="#__codelineno-19-26"></a>
+<a id="__codelineno-19-27" name="__codelineno-19-27" href="#__codelineno-19-27"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>          <span class="c1"># max steps</span>
+<a id="__codelineno-19-28" name="__codelineno-19-28" href="#__codelineno-19-28"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-19-29" name="__codelineno-19-29" href="#__codelineno-19-29"></a>            <span class="n">parsed</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">parsed</span>
+<a id="__codelineno-19-30" name="__codelineno-19-30" href="#__codelineno-19-30"></a>
+<a id="__codelineno-19-31" name="__codelineno-19-31" href="#__codelineno-19-31"></a>            <span class="k">if</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;terminate&quot;</span><span class="p">]:</span>
+<a id="__codelineno-19-32" name="__codelineno-19-32" href="#__codelineno-19-32"></a>                <span class="k">break</span>
+<a id="__codelineno-19-33" name="__codelineno-19-33" href="#__codelineno-19-33"></a>
+<a id="__codelineno-19-34" name="__codelineno-19-34" href="#__codelineno-19-34"></a>            <span class="c1"># Execute each cell and collect output</span>
+<a id="__codelineno-19-35" name="__codelineno-19-35" href="#__codelineno-19-35"></a>            <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-19-36" name="__codelineno-19-36" href="#__codelineno-19-36"></a>            <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;cells&quot;</span><span class="p">]:</span>
+<a id="__codelineno-19-37" name="__codelineno-19-37" href="#__codelineno-19-37"></a>                <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;python_cell&quot;</span><span class="p">:</span>
+<a id="__codelineno-19-38" name="__codelineno-19-38" href="#__codelineno-19-38"></a>                    <span class="n">output</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_cell</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+<a id="__codelineno-19-39" name="__codelineno-19-39" href="#__codelineno-19-39"></a>                    <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[output]</span><span class="se">\n</span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-19-40" name="__codelineno-19-40" href="#__codelineno-19-40"></a>                <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-19-41" name="__codelineno-19-41" href="#__codelineno-19-41"></a>                    <span class="n">session</span><span class="o">.</span><span class="n">add_markdown_cell</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+<a id="__codelineno-19-42" name="__codelineno-19-42" href="#__codelineno-19-42"></a>
+<a id="__codelineno-19-43" name="__codelineno-19-43" href="#__codelineno-19-43"></a>            <span class="c1"># Feed results back so the agent can continue</span>
+<a id="__codelineno-19-44" name="__codelineno-19-44" href="#__codelineno-19-44"></a>            <span class="k">if</span> <span class="n">outputs</span><span class="p">:</span>
+<a id="__codelineno-19-45" name="__codelineno-19-45" href="#__codelineno-19-45"></a>                <span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputs</span><span class="p">))</span>
+<a id="__codelineno-19-46" name="__codelineno-19-46" href="#__codelineno-19-46"></a>
+<a id="__codelineno-19-47" name="__codelineno-19-47" href="#__codelineno-19-47"></a>        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">notebook_path</span>   <span class="c1"># path to the saved .ipynb file</span>
+</code></pre></div>
+<p>The agent typically:
+1. Calls <code>query_api_doc("weather")</code> via the injected tool to see endpoint specs.
+2. Writes a <code>&lt;python_cell&gt;</code> that calls <code>CALL_API(...)</code> — the tactic runs it and returns stdout.
+3. Receives the output, writes more cells to analyse and visualise the data.
+4. Responds with <code>&lt;TERMINATE_NOTEBOOK&gt;</code> when done.</p>
+<h3 id="step-4-handle-cell-errors">Step 4: Handle cell errors</h3>
+<p>If a cell fails, feed the traceback back so the agent can fix just that cell:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;cells&quot;</span><span class="p">]:</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>    <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;python_cell&quot;</span><span class="p">:</span>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>        <span class="n">output</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_cell</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>        <span class="k">if</span> <span class="n">session</span><span class="o">.</span><span class="n">last_cell_failed</span><span class="p">:</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>            <span class="c1"># Agent sees the error and provides a replacement cell</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>            <span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>                <span class="sa">f</span><span class="s2">&quot;Cell failed with the following error:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">&quot;</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>                <span class="s2">&quot;Please fix the error. Provide one &lt;python_cell&gt; with the corrected code only.&quot;</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>            <span class="p">)</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>            <span class="n">fix_msg</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>            <span class="n">_</span><span class="p">,</span> <span class="n">fixed_code</span> <span class="o">=</span> <span class="n">fix_msg</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;cells&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>            <span class="n">output</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">run_cell</span><span class="p">(</span><span class="n">fixed_code</span><span class="p">)</span>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>        <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[output]</span><span class="se">\n</span><span class="si">{</span><span class="n">output</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="bringing-your-own-execution-environment">Bringing your own execution environment</h3>
+<p><code>JupyterSession</code> is the built-in sandbox, but the pattern — agent writes tags, tactic runs code — works with any executor. The prompt and parser stay unchanged; only the sandbox object changes:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">DockerSandbox</span><span class="p">:</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;Minimal example: run cells in an isolated container.&quot;&quot;&quot;</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">run_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>        <span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>            <span class="p">[</span><span class="s2">&quot;docker&quot;</span><span class="p">,</span> <span class="s2">&quot;exec&quot;</span><span class="p">,</span> <span class="s2">&quot;my_sandbox&quot;</span><span class="p">,</span> <span class="s2">&quot;python3&quot;</span><span class="p">,</span> <span class="s2">&quot;-c&quot;</span><span class="p">,</span> <span class="n">code</span><span class="p">],</span>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>        <span class="p">)</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span> <span class="ow">or</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">add_markdown_cell</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>        <span class="k">pass</span>   <span class="c1"># no-op for non-notebook environments</span>
+<a id="__codelineno-21-14" name="__codelineno-21-14" href="#__codelineno-21-14"></a>
+<a id="__codelineno-21-15" name="__codelineno-21-15" href="#__codelineno-21-15"></a>    <span class="n">last_cell_failed</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>   <span class="c1"># set after run_cell if needed</span>
+<a id="__codelineno-21-16" name="__codelineno-21-16" href="#__codelineno-21-16"></a>
+<a id="__codelineno-21-17" name="__codelineno-21-17" href="#__codelineno-21-17"></a>
+<a id="__codelineno-21-18" name="__codelineno-21-18" href="#__codelineno-21-18"></a><span class="k">class</span><span class="w"> </span><span class="nc">DockerAnalysisTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<a id="__codelineno-21-19" name="__codelineno-21-19" href="#__codelineno-21-19"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;docker_analysis&quot;</span>
+<a id="__codelineno-21-20" name="__codelineno-21-20" href="#__codelineno-21-20"></a>    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-21-21" name="__codelineno-21-21" href="#__codelineno-21-21"></a>
+<a id="__codelineno-21-22" name="__codelineno-21-22" href="#__codelineno-21-22"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-21-23" name="__codelineno-21-23" href="#__codelineno-21-23"></a>        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-21-24" name="__codelineno-21-24" href="#__codelineno-21-24"></a>        <span class="n">sandbox</span> <span class="o">=</span> <span class="n">DockerSandbox</span><span class="p">()</span>
+<a id="__codelineno-21-25" name="__codelineno-21-25" href="#__codelineno-21-25"></a>
+<a id="__codelineno-21-26" name="__codelineno-21-26" href="#__codelineno-21-26"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;main&quot;</span><span class="p">)</span>
+<a id="__codelineno-21-27" name="__codelineno-21-27" href="#__codelineno-21-27"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<a id="__codelineno-21-28" name="__codelineno-21-28" href="#__codelineno-21-28"></a>
+<a id="__codelineno-21-29" name="__codelineno-21-29" href="#__codelineno-21-29"></a>        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">10</span><span class="p">):</span>
+<a id="__codelineno-21-30" name="__codelineno-21-30" href="#__codelineno-21-30"></a>            <span class="n">msg</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-21-31" name="__codelineno-21-31" href="#__codelineno-21-31"></a>            <span class="n">parsed</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">parsed</span>
+<a id="__codelineno-21-32" name="__codelineno-21-32" href="#__codelineno-21-32"></a>            <span class="k">if</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;terminate&quot;</span><span class="p">]:</span>
+<a id="__codelineno-21-33" name="__codelineno-21-33" href="#__codelineno-21-33"></a>                <span class="k">break</span>
+<a id="__codelineno-21-34" name="__codelineno-21-34" href="#__codelineno-21-34"></a>            <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+<a id="__codelineno-21-35" name="__codelineno-21-35" href="#__codelineno-21-35"></a>            <span class="k">for</span> <span class="n">tag</span><span class="p">,</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">&quot;cells&quot;</span><span class="p">]:</span>
+<a id="__codelineno-21-36" name="__codelineno-21-36" href="#__codelineno-21-36"></a>                <span class="k">if</span> <span class="n">tag</span> <span class="o">==</span> <span class="s2">&quot;python_cell&quot;</span><span class="p">:</span>
+<a id="__codelineno-21-37" name="__codelineno-21-37" href="#__codelineno-21-37"></a>                    <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sandbox</span><span class="o">.</span><span class="n">run_cell</span><span class="p">(</span><span class="n">code</span><span class="p">))</span>
+<a id="__codelineno-21-38" name="__codelineno-21-38" href="#__codelineno-21-38"></a>                <span class="k">else</span><span class="p">:</span>
+<a id="__codelineno-21-39" name="__codelineno-21-39" href="#__codelineno-21-39"></a>                    <span class="n">sandbox</span><span class="o">.</span><span class="n">add_markdown_cell</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+<a id="__codelineno-21-40" name="__codelineno-21-40" href="#__codelineno-21-40"></a>            <span class="k">if</span> <span class="n">outputs</span><span class="p">:</span>
+<a id="__codelineno-21-41" name="__codelineno-21-41" href="#__codelineno-21-41"></a>                <span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputs</span><span class="p">))</span>
+<a id="__codelineno-21-42" name="__codelineno-21-42" href="#__codelineno-21-42"></a>
+<a id="__codelineno-21-43" name="__codelineno-21-43" href="#__codelineno-21-43"></a>        <span class="k">return</span> <span class="n">agent</span><span class="o">.</span><span class="n">current_dialog</span><span class="o">.</span><span class="n">tail</span><span class="o">.</span><span class="n">content</span>
+</code></pre></div>
+<p>You could replace <code>DockerSandbox</code> with a remote code execution service, a WebAssembly sandbox, a database query runner — anything that accepts code strings and returns output strings.</p>
+<p>See <a href="../../core/proxy-and-sandbox/">Proxies &amp; Sandbox reference</a> for the full <code>JupyterSession</code> API, <code>init_session</code> wiring details, and a complete Jupyter mode example.</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Define a tool</td>
+<td><code>@tool(description=..., prop_desc={...})</code></td>
+</tr>
+<tr>
+<td>Attach to prompt</td>
+<td><code>Prompt(function_list=[my_fn])</code></td>
+</tr>
+<tr>
+<td>Control loop depth</td>
+<td><code>Agent(max_interrupt_steps=N)</code></td>
+</tr>
+<tr>
+<td>Custom result format</td>
+<td><code>@tool(processor=my_fn)</code></td>
+</tr>
+<tr>
+<td>Manual schema</td>
+<td><code>Function(name=..., properties={...})</code></td>
+</tr>
+<tr>
+<td>MCP server</td>
+<td><code>Prompt(mcp_servers_list=[MCP(...)])</code></td>
+</tr>
+<tr>
+<td>Define a proxy</td>
+<td><code>@ProxyRegistrator</code> + <code>@BaseProxy.endpoint</code></td>
+</tr>
+<tr>
+<td>Wire proxy to agent</td>
+<td><code>proxy: {activate_proxies: [...], exec_env: interpreter}</code></td>
+</tr>
+<tr>
+<td>Lazy API docs</td>
+<td><code>query_api_doc(proxy_name)</code> (auto-injected)</td>
+</tr>
+<tr>
+<td>Execute code</td>
+<td><code>run_python(code)</code> with <code>CALL_API</code> (auto-injected)</td>
+</tr>
+<tr>
+<td>Jupyter sandbox</td>
+<td><code>exec_env: jupyter</code> + <code>JupyterSession</code> in tactic</td>
+</tr>
+<tr>
+<td>Custom sandbox</td>
+<td>Replace <code>JupyterSession</code> with any object that has <code>run_cell()</code></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Next:</strong> <a href="../05-tactics/">Lesson 5 — Tactics: Coordinating Multiple Agents</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,3116 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A lightweight framework for researchers to fast-prototype advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/logging/">
+      
+      
+        <link rel="prev" href="../invokers/">
+      
+      
+        <link rel="next" href="../proxy-and-sandbox/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Logging - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#logging-printing" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Logging
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#session-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Session Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core idea
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactic-identity-the-stable-pkgname-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactic identity: the stable pkg::name key
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tactic identity: the stable pkg::name key">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-not-use-the-full-runtime-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why not use the full runtime path?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-if-i-rename-the-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What if I rename the package?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-used-without-the-package-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics used without the package system
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-logstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a LogStore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating a LogStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attaching-a-store-to-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attaching a store to a tactic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saving-sessions-with-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saving sessions with tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#querying-by-tactic-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Querying by tactic path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Querying by tactic path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#listing-and-filtering-sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and filtering sessions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loading-a-full-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading a full session
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loading-a-session-with-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading a session with metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cost-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-and-deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exporting and deleting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tag-system-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag System — Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tag System — Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended vocabulary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-composition-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag composition pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partitions-for-project-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partitions for project isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags-vs-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tags vs metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#terminal-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Terminal Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quick-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-stdlib-logging-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using stdlib logging directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#level-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#silencing-specific-subsystems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silencing specific subsystems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-coloredformatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom ColoredFormatter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom Backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#redis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#firebase-firestore-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firebase / Firestore example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-notes-for-custom-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design notes for custom backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy & Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/building-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a Full Package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/project-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../tutorials/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02-agents-and-dialogs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/04-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/05-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Tactics and Packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/06-config-and-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Config and Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/07-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/proxies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lllm.proxies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/modules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#session-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Session Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Session Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-idea" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Core idea
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactic-identity-the-stable-pkgname-key" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactic identity: the stable pkg::name key
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tactic identity: the stable pkg::name key">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#why-not-use-the-full-runtime-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Why not use the full runtime path?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#what-if-i-rename-the-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What if I rename the package?
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-used-without-the-package-system" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics used without the package system
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-logstore" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a LogStore
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating a LogStore">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#backend-comparison" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Backend comparison
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attaching-a-store-to-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attaching a store to a tactic
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#saving-sessions-with-tags" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Saving sessions with tags
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#querying-by-tactic-path" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Querying by tactic path
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Querying by tactic path">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#listing-and-filtering-sessions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Listing and filtering sessions
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loading-a-full-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading a full session
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#loading-a-session-with-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading a session with metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inspecting-failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Inspecting failures
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#cost-summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Cost summary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#exporting-and-deleting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Exporting and deleting
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tag-system-best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag System — Best Practices
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Tag System — Best Practices">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#recommended-vocabulary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Recommended vocabulary
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-composition-pattern" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag composition pattern
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#partitions-for-project-isolation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Partitions for project isolation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tags-vs-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tags vs metadata
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#terminal-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Terminal Logging
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Terminal Logging">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#quick-setup" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick setup
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#using-stdlib-logging-directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Using stdlib logging directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#level-guide" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Level guide
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#silencing-specific-subsystems" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Silencing specific subsystems
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-coloredformatter" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom ColoredFormatter
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom Backends
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Custom Backends">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#redis-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redis example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#firebase-firestore-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Firebase / Firestore example
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#design-notes-for-custom-backends" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design notes for custom backends
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete Example
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="logging-printing">Logging &amp; Printing</h1>
+<p>LLLM provides two orthogonal systems:</p>
+<ul>
+<li><strong>Session logging</strong> — persist every <code>TacticCallSession</code> to a backend store; query and retrieve them later by tactic identity, tags, or time range.</li>
+<li><strong>Terminal logging</strong> — route internal diagnostic messages through Python's standard <code>logging</code> module with ANSI colours.</li>
+</ul>
+<hr />
+<h2 id="session-logging">Session Logging</h2>
+<h3 id="core-idea">Core idea</h3>
+<p>Tactics are the top-level abstraction in LLLM, so the unit of logging is the <code>TacticCallSession</code> — one complete invocation of a tactic. Every call is automatically saved if you hand a <code>LogStore</code> to the tactic.</p>
+<h3 id="tactic-identity-the-stable-pkgname-key">Tactic identity: the stable <code>pkg::name</code> key</h3>
+<p>Every session carries a <strong>tactic identity</strong> that answers "which tactic produced this session?" unambiguously. LLLM uses the format:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>{package_name}::{tactic_name}
+</code></pre></div>
+<p>For example: <code>my_pkg::researcher</code>.</p>
+<h4 id="why-not-use-the-full-runtime-path">Why not use the full runtime path?</h4>
+<p>The runtime path (<code>my_pkg.tactics:folder/researcher</code>) encodes where the tactic lives inside the package — its directory, any <code>under</code> prefix from lllm.toml, etc. That's useful for <em>accessing</em> a tactic at runtime but is a poor physical storage key because:</p>
+<table>
+<thead>
+<tr>
+<th>Structural change</th>
+<th>Effect on runtime path</th>
+<th>Effect on <code>pkg::name</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Move tactic file to subfolder</td>
+<td>Changes</td>
+<td><strong>Stable</strong></td>
+</tr>
+<tr>
+<td>Add <code>under v2</code> in lllm.toml</td>
+<td>Changes</td>
+<td><strong>Stable</strong></td>
+</tr>
+<tr>
+<td>Add/change/remove an alias</td>
+<td>Changes aliases</td>
+<td><strong>Stable</strong></td>
+</tr>
+<tr>
+<td>Rename <code>[package] name</code></td>
+<td>Changes</td>
+<td>Changes</td>
+</tr>
+<tr>
+<td>Rename <code>Tactic.name</code></td>
+<td>Changes</td>
+<td>Changes</td>
+</tr>
+</tbody>
+</table>
+<p>The last two rows are <em>semantic</em> changes — renaming the package or the tactic — and are expected to be deliberate breaking changes. File layout and <code>under</code> prefixes are structural, and restructuring should never corrupt historical logs.</p>
+<p><strong>The solution:</strong> Store sessions under <code>pkg::name</code> (stable). Resolve any runtime path or alias to this stable key at query time using the attached runtime. The runtime itself is ephemeral; the DB is permanent.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>Physical DB key:    my_pkg::researcher             ← stored once, never changes
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>Runtime path:       my_pkg.tactics:v2/researcher   ← changes freely with toml
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>Alias path:         alias.tactics:v2/researcher    ← resolves → stable key at query time
+</code></pre></div>
+<h4 id="what-if-i-rename-the-package">What if I rename the package?</h4>
+<p>Old sessions remain under <code>old_pkg::researcher</code>. New sessions go under <code>new_pkg::researcher</code>. If you need continuity, you have two options:</p>
+<ol>
+<li><strong>Migration script</strong>: iterate over old sessions, re-save them under the new key, delete the old.</li>
+<li><strong>Keep the package name stable</strong>: treat <code>[package] name</code> as a permanent identity, like a Python package name. This is the recommended approach.</li>
+</ol>
+<h4 id="tactics-used-without-the-package-system">Tactics used without the package system</h4>
+<p>When a tactic is constructed directly (not via <code>build_tactic</code> or package discovery), there is no namespace to extract a package name from. In that case <code>tactic_path</code> falls back to the bare <code>Tactic.name</code> (e.g., <code>"researcher"</code>). Sessions are still saved and queryable by that bare name.</p>
+<hr />
+<h3 id="creating-a-logstore">Creating a LogStore</h3>
+<p><code>LogStore</code> wraps a <code>LogBackend</code> and provides the full query API. Three convenience factories cover the common cases:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">local_store</span><span class="p">,</span> <span class="n">sqlite_store</span><span class="p">,</span> <span class="n">noop_store</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_runtime</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">rt</span> <span class="o">=</span> <span class="n">get_default_runtime</span><span class="p">()</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># --- local files (one file per session, human-readable JSON tree) ---</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">store</span> <span class="o">=</span> <span class="n">local_store</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="c1"># --- SQLite (single portable file, atomic writes) ---</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a><span class="n">store</span> <span class="o">=</span> <span class="n">sqlite_store</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs.db&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="c1"># --- dry-run / tests (silently discards everything) ---</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a><span class="n">store</span> <span class="o">=</span> <span class="n">noop_store</span><span class="p">()</span>
+</code></pre></div>
+<p>The <code>runtime</code> argument enables alias resolution when querying by tactic path (see <a href="#querying-by-tactic-path">Querying by tactic path</a>).</p>
+<p>You can also construct them explicitly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogStore</span><span class="p">,</span> <span class="n">LocalFileBackend</span><span class="p">,</span> <span class="n">SQLiteBackend</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># Multiple partitions in one directory — each project stays isolated</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">store_a</span> <span class="o">=</span> <span class="n">LogStore</span><span class="p">(</span><span class="n">LocalFileBackend</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs&quot;</span><span class="p">),</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;project-a&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">store_b</span> <span class="o">=</span> <span class="n">LogStore</span><span class="p">(</span><span class="n">LocalFileBackend</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs&quot;</span><span class="p">),</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;project-b&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="c1"># Multiple partitions in one SQLite file</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a><span class="n">store</span> <span class="o">=</span> <span class="n">LogStore</span><span class="p">(</span><span class="n">SQLiteBackend</span><span class="p">(</span><span class="s2">&quot;~/.lllm/all.db&quot;</span><span class="p">),</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="backend-comparison">Backend comparison</h4>
+<table>
+<thead>
+<tr>
+<th>Backend</th>
+<th>Best for</th>
+<th>Storage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LocalFileBackend</code></td>
+<td>Development, human inspection of raw JSON</td>
+<td>One file per session under a directory tree</td>
+</tr>
+<tr>
+<td><code>SQLiteBackend</code></td>
+<td>Production, atomic writes, concurrent access</td>
+<td>Single <code>.db</code> file</td>
+</tr>
+<tr>
+<td><code>NoOpBackend</code></td>
+<td>Tests, CI, dry-run workflows</td>
+<td>Nothing written</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attaching-a-store-to-a-tactic">Attaching a store to a tactic</h3>
+<p>Pass <code>log_store=</code> at construction time. All subsequent calls are saved automatically.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_runtime</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">sqlite_store</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.tactic</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_tactic</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_config</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a><span class="n">rt</span> <span class="o">=</span> <span class="n">get_default_runtime</span><span class="p">()</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a><span class="n">store</span> <span class="o">=</span> <span class="n">sqlite_store</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs.db&quot;</span><span class="p">,</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;my-project&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="c1"># build_tactic resolves pkg::name from the runtime and embeds it in every session</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="n">config</span> <span class="o">=</span> <span class="n">resolve_config</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="n">tactic</span> <span class="o">=</span> <span class="n">build_tactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ckpt_dir</span><span class="o">=</span><span class="s2">&quot;./runs&quot;</span><span class="p">,</span> <span class="n">log_store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+</code></pre></div>
+<p>Or when subclassing <code>Tactic</code> directly:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.tactic</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>    <span class="n">name</span> <span class="o">=</span> <span class="s2">&quot;my_tactic&quot;</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;analyst&quot;</span><span class="p">]</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>        <span class="o">...</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">tactic</span> <span class="o">=</span> <span class="n">MyTactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ckpt_dir</span><span class="o">=</span><span class="s2">&quot;./ckpt&quot;</span><span class="p">,</span> <span class="n">log_store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+</code></pre></div>
+<p>If no store is configured the tactic emits a <code>UserWarning</code> once per instance and continues normally.</p>
+<h3 id="saving-sessions-with-tags">Saving sessions with tags</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># Basic call — session auto-saved under &quot;my_pkg::my_tactic&quot;</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">result</span> <span class="o">=</span> <span class="n">tactic</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="c1"># Call with tags for filtering later</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">tactic</span><span class="p">(</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>    <span class="n">task</span><span class="p">,</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>        <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;exp-001&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>        <span class="s2">&quot;dataset&quot;</span><span class="p">:</span>    <span class="s2">&quot;arxiv-2024&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="s2">&quot;split&quot;</span><span class="p">:</span>      <span class="s2">&quot;val&quot;</span><span class="p">,</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>    <span class="p">},</span>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="s2">&quot;alice&quot;</span><span class="p">,</span> <span class="s2">&quot;git_sha&quot;</span><span class="p">:</span> <span class="s2">&quot;abc1234&quot;</span><span class="p">},</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a><span class="p">)</span>
+</code></pre></div>
+<p><code>tags</code> are indexed for filtering. <code>metadata</code> is arbitrary extra data stored alongside the session but not used for filtering.</p>
+<hr />
+<h2 id="querying-by-tactic-path">Querying by tactic path</h2>
+<p><code>list_sessions(tactic_path=...)</code> accepts <strong>any</strong> path form the runtime understands and resolves them all to the same stable key:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="c1"># All of the following are equivalent when the runtime is attached:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg::researcher&quot;</span><span class="p">)</span>              <span class="c1"># stable key (direct)</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg.tactics:folder/researcher&quot;</span><span class="p">)</span> <span class="c1"># full runtime path</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:folder/researcher&quot;</span><span class="p">)</span>         <span class="c1"># package-qualified</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;alias_pkg:folder/researcher&quot;</span><span class="p">)</span>      <span class="c1"># any alias</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;researcher&quot;</span><span class="p">)</span>                       <span class="c1"># bare name (default ns)</span>
+</code></pre></div>
+<p>The resolution chain:
+1. <code>store._resolve_tactic_path(path)</code> → calls <code>runtime.get_node(path, resource_type="tactic")</code>
+2. Extracts <code>package_name</code> from <code>node.namespace</code> (e.g. <code>"my_pkg.tactics"</code> → <code>"my_pkg"</code>)
+3. Extracts <code>tactic_name</code> from <code>node.value.name</code> (the class attribute)
+4. Returns <code>"my_pkg::researcher"</code></p>
+<p>If no runtime is attached, or the path is not in the registry, the path is compared literally.</p>
+<h3 id="listing-and-filtering-sessions">Listing and filtering sessions</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="c1"># All sessions (newest first, up to 100)</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="n">summaries</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">()</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="c1"># Filter by tactic (any path form)</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="n">summaries</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:folder/researcher&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="c1"># Filter by tags — all specified tags must match exactly</span>
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a><span class="n">summaries</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;exp-001&quot;</span><span class="p">})</span>
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a><span class="c1"># Filter by state: &quot;success&quot;, &quot;failure&quot;, &quot;running&quot;</span>
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a><span class="n">failures</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">state</span><span class="o">=</span><span class="s2">&quot;failure&quot;</span><span class="p">)</span>
+<a id="__codelineno-8-14" name="__codelineno-8-14" href="#__codelineno-8-14"></a>
+<a id="__codelineno-8-15" name="__codelineno-8-15" href="#__codelineno-8-15"></a><span class="c1"># Filter by time range</span>
+<a id="__codelineno-8-16" name="__codelineno-8-16" href="#__codelineno-8-16"></a><span class="n">summaries</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span>
+<a id="__codelineno-8-17" name="__codelineno-8-17" href="#__codelineno-8-17"></a>    <span class="n">after</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<a id="__codelineno-8-18" name="__codelineno-8-18" href="#__codelineno-8-18"></a>    <span class="n">before</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<a id="__codelineno-8-19" name="__codelineno-8-19" href="#__codelineno-8-19"></a><span class="p">)</span>
+<a id="__codelineno-8-20" name="__codelineno-8-20" href="#__codelineno-8-20"></a>
+<a id="__codelineno-8-21" name="__codelineno-8-21" href="#__codelineno-8-21"></a><span class="c1"># Combine all filters</span>
+<a id="__codelineno-8-22" name="__codelineno-8-22" href="#__codelineno-8-22"></a><span class="n">summaries</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span>
+<a id="__codelineno-8-23" name="__codelineno-8-23" href="#__codelineno-8-23"></a>    <span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:folder/researcher&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;exp-001&quot;</span><span class="p">},</span>
+<a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;success&quot;</span><span class="p">,</span>
+<a id="__codelineno-8-26" name="__codelineno-8-26" href="#__codelineno-8-26"></a>    <span class="n">limit</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
+<a id="__codelineno-8-27" name="__codelineno-8-27" href="#__codelineno-8-27"></a><span class="p">)</span>
+<a id="__codelineno-8-28" name="__codelineno-8-28" href="#__codelineno-8-28"></a>
+<a id="__codelineno-8-29" name="__codelineno-8-29" href="#__codelineno-8-29"></a><span class="c1"># Inspect a summary</span>
+<a id="__codelineno-8-30" name="__codelineno-8-30" href="#__codelineno-8-30"></a><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">summaries</span><span class="p">:</span>
+<a id="__codelineno-8-31" name="__codelineno-8-31" href="#__codelineno-8-31"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>        <span class="c1"># &quot;20250316_142301_a3f7c2b1&quot;</span>
+<a id="__codelineno-8-32" name="__codelineno-8-32" href="#__codelineno-8-32"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">tactic_path</span><span class="p">)</span>       <span class="c1"># &quot;my_pkg::researcher&quot;   ← stable key</span>
+<a id="__codelineno-8-33" name="__codelineno-8-33" href="#__codelineno-8-33"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">tactic_name</span><span class="p">)</span>       <span class="c1"># &quot;researcher&quot;           ← simple name</span>
+<a id="__codelineno-8-34" name="__codelineno-8-34" href="#__codelineno-8-34"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>             <span class="c1"># &quot;success&quot;</span>
+<a id="__codelineno-8-35" name="__codelineno-8-35" href="#__codelineno-8-35"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span>        <span class="c1"># 0.0023 (USD)</span>
+<a id="__codelineno-8-36" name="__codelineno-8-36" href="#__codelineno-8-36"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">agent_call_count</span><span class="p">)</span>  <span class="c1"># 4</span>
+<a id="__codelineno-8-37" name="__codelineno-8-37" href="#__codelineno-8-37"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>         <span class="c1"># ISO-8601</span>
+<a id="__codelineno-8-38" name="__codelineno-8-38" href="#__codelineno-8-38"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+</code></pre></div>
+<p><code>SessionSummary</code> fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>session_id</code></td>
+<td><code>str</code></td>
+<td>Unique ID, format <code>YYYYMMDD_HHMMSS_&lt;hex8&gt;</code></td>
+</tr>
+<tr>
+<td><code>tactic_name</code></td>
+<td><code>str</code></td>
+<td>Simple <code>Tactic.name</code> attribute</td>
+</tr>
+<tr>
+<td><code>tactic_path</code></td>
+<td><code>str</code></td>
+<td>Stable key <code>pkg::name</code>, e.g. <code>"my_pkg::researcher"</code></td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td><code>str</code></td>
+<td><code>"success"</code>, <code>"failure"</code>, or <code>"running"</code></td>
+</tr>
+<tr>
+<td><code>total_cost</code></td>
+<td><code>float</code></td>
+<td>Total USD cost (sum of all agent calls)</td>
+</tr>
+<tr>
+<td><code>agent_call_count</code></td>
+<td><code>int</code></td>
+<td>Number of agent LLM calls</td>
+</tr>
+<tr>
+<td><code>timestamp</code></td>
+<td><code>str</code></td>
+<td>ISO-8601</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td><code>Dict[str, str]</code></td>
+<td>Tags attached at call time</td>
+</tr>
+</tbody>
+</table>
+<h3 id="loading-a-full-session">Loading a full session</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1"># Load the TacticCallSession object</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">session</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">load_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">tactic_name</span><span class="p">)</span>          <span class="c1"># &quot;researcher&quot;</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">tactic_path</span><span class="p">)</span>          <span class="c1"># &quot;my_pkg::researcher&quot;</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>                <span class="c1"># &quot;success&quot; | &quot;failure&quot;</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span>           <span class="c1"># InvokeCost</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">agent_call_count</span><span class="p">)</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="p">)</span>             <span class="c1"># return value of tactic.call()</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>                <span class="c1"># error string if failed</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">error_traceback</span><span class="p">)</span>      <span class="c1"># full traceback string if failed</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="c1"># Browse all agent call sessions</span>
+<a id="__codelineno-9-14" name="__codelineno-9-14" href="#__codelineno-9-14"></a><span class="k">for</span> <span class="n">agent_name</span><span class="p">,</span> <span class="n">agent_sessions</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_sessions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-9-15" name="__codelineno-9-15" href="#__codelineno-9-15"></a>    <span class="k">for</span> <span class="n">agent_sess</span> <span class="ow">in</span> <span class="n">agent_sessions</span><span class="p">:</span>
+<a id="__codelineno-9-16" name="__codelineno-9-16" href="#__codelineno-9-16"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">agent_name</span><span class="p">,</span> <span class="n">agent_sess</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">agent_sess</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
+<a id="__codelineno-9-17" name="__codelineno-9-17" href="#__codelineno-9-17"></a>        <span class="c1"># agent_sess.delivery → the Message returned</span>
+<a id="__codelineno-9-18" name="__codelineno-9-18" href="#__codelineno-9-18"></a>        <span class="c1"># agent_sess.interrupts → tool calls at each interrupt step</span>
+<a id="__codelineno-9-19" name="__codelineno-9-19" href="#__codelineno-9-19"></a>        <span class="c1"># agent_sess.invoke_traces → raw InvokeResult per step</span>
+</code></pre></div>
+<h3 id="loading-a-session-with-metadata">Loading a session with metadata</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">record</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">load_session_record</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">timestamp</span><span class="p">)</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">tags</span><span class="p">)</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">traceback</span><span class="p">)</span>   <span class="c1"># full traceback string, or None if succeeded</span>
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="n">session</span> <span class="o">=</span> <span class="n">record</span><span class="o">.</span><span class="n">session</span>  <span class="c1"># full TacticCallSession</span>
+</code></pre></div>
+<h3 id="inspecting-failures">Inspecting failures</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">failures</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    <span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:folder/researcher&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;failure&quot;</span><span class="p">,</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="p">)</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">record</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">load_session_record</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;=== </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">tactic_path</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">timestamp</span><span class="si">}</span><span class="s2"> ===&quot;</span><span class="p">)</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">traceback</span><span class="p">)</span>
+</code></pre></div>
+<p>Save standalone errors (outside any tactic):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="k">try</span><span class="p">:</span>
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>    <span class="o">...</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>    <span class="n">error_id</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">save_error</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;step&quot;</span><span class="p">:</span> <span class="s2">&quot;preprocessing&quot;</span><span class="p">,</span> <span class="s2">&quot;file&quot;</span><span class="p">:</span> <span class="n">path</span><span class="p">})</span>
+</code></pre></div>
+<h3 id="cost-summary">Cost summary</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="n">summary</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">export_cost_summary</span><span class="p">()</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;total_cost_usd&quot;</span><span class="p">])</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="nb">print</span><span class="p">(</span><span class="n">summary</span><span class="p">[</span><span class="s2">&quot;session_count&quot;</span><span class="p">])</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="n">summary</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">export_cost_summary</span><span class="p">(</span>
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>    <span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:folder/researcher&quot;</span><span class="p">,</span>
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;exp-001&quot;</span><span class="p">},</span>
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>    <span class="n">after</span><span class="o">=</span><span class="n">dt</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2025</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a><span class="p">)</span>
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a><span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">summary</span><span class="p">[</span><span class="s2">&quot;sessions&quot;</span><span class="p">]:</span>
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">row</span><span class="p">[</span><span class="s2">&quot;session_id&quot;</span><span class="p">],</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;cost_usd&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="exporting-and-deleting">Exporting and deleting</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">json_str</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">export_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="n">store</span><span class="o">.</span><span class="n">delete_session</span><span class="p">(</span><span class="n">session_id</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="tag-system-best-practices">Tag System — Best Practices</h2>
+<p>Tags are <code>str → str</code> dictionaries indexed for exact-match filtering.</p>
+<h3 id="recommended-vocabulary">Recommended vocabulary</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># Experiment / run tracking</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;ablation-001&quot;</span><span class="p">,</span> <span class="s2">&quot;run&quot;</span><span class="p">:</span> <span class="s2">&quot;run-003&quot;</span><span class="p">,</span> <span class="s2">&quot;variant&quot;</span><span class="p">:</span> <span class="s2">&quot;no-retrieval&quot;</span><span class="p">}</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1"># Dataset splits</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;dataset&quot;</span><span class="p">:</span> <span class="s2">&quot;pubmed-2024&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="s2">&quot;subset&quot;</span><span class="p">:</span> <span class="s2">&quot;cardiology&quot;</span><span class="p">}</span>
+<a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a>
+<a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="c1"># Multi-stage pipelines</span>
+<a id="__codelineno-15-8" name="__codelineno-15-8" href="#__codelineno-15-8"></a><span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;pipeline&quot;</span><span class="p">:</span> <span class="s2">&quot;document-qa&quot;</span><span class="p">,</span> <span class="s2">&quot;stage&quot;</span><span class="p">:</span> <span class="s2">&quot;extraction&quot;</span><span class="p">,</span> <span class="s2">&quot;doc_id&quot;</span><span class="p">:</span> <span class="s2">&quot;doc-00127&quot;</span><span class="p">}</span>
+<a id="__codelineno-15-9" name="__codelineno-15-9" href="#__codelineno-15-9"></a>
+<a id="__codelineno-15-10" name="__codelineno-15-10" href="#__codelineno-15-10"></a><span class="c1"># Production / CI</span>
+<a id="__codelineno-15-11" name="__codelineno-15-11" href="#__codelineno-15-11"></a><span class="n">tags</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;env&quot;</span><span class="p">:</span> <span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="s2">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;v2.3.1&quot;</span><span class="p">,</span> <span class="s2">&quot;requester&quot;</span><span class="p">:</span> <span class="s2">&quot;user-alice&quot;</span><span class="p">}</span>
+</code></pre></div>
+<h3 id="tag-composition-pattern">Tag composition pattern</h3>
+<p>Build tags incrementally so every level is independently filterable:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">BASE</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;doc-qa&quot;</span><span class="p">,</span> <span class="s2">&quot;model&quot;</span><span class="p">:</span> <span class="s2">&quot;gpt-4o&quot;</span><span class="p">}</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a><span class="k">for</span> <span class="n">exp</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;baseline&quot;</span><span class="p">,</span> <span class="s2">&quot;rag-v1&quot;</span><span class="p">,</span> <span class="s2">&quot;rag-v2&quot;</span><span class="p">]:</span>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="k">for</span> <span class="n">doc_id</span> <span class="ow">in</span> <span class="n">document_ids</span><span class="p">:</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>        <span class="n">tactic</span><span class="p">(</span><span class="n">make_task</span><span class="p">(</span><span class="n">doc_id</span><span class="p">),</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="o">**</span><span class="n">BASE</span><span class="p">,</span> <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="n">exp</span><span class="p">,</span> <span class="s2">&quot;doc_id&quot;</span><span class="p">:</span> <span class="n">doc_id</span><span class="p">})</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a><span class="c1"># Query at any granularity:</span>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;doc-qa&quot;</span><span class="p">})</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;doc-qa&quot;</span><span class="p">,</span> <span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;baseline&quot;</span><span class="p">})</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;project&quot;</span><span class="p">:</span> <span class="s2">&quot;doc-qa&quot;</span><span class="p">,</span> <span class="s2">&quot;doc_id&quot;</span><span class="p">:</span> <span class="s2">&quot;doc-00127&quot;</span><span class="p">})</span>
+</code></pre></div>
+<h3 id="partitions-for-project-isolation">Partitions for project isolation</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">store_a</span> <span class="o">=</span> <span class="n">local_store</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs&quot;</span><span class="p">,</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;project-a&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">store_b</span> <span class="o">=</span> <span class="n">local_store</span><span class="p">(</span><span class="s2">&quot;~/.lllm/logs&quot;</span><span class="p">,</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;project-b&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a><span class="c1"># Sessions in each partition are invisible to the other</span>
+</code></pre></div>
+<h3 id="tags-vs-metadata">Tags vs metadata</h3>
+<ul>
+<li><strong>tags</strong> — short, machine-readable values for filtering.</li>
+<li><strong>metadata</strong> — rich context you want to retrieve but not filter on.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">tactic</span><span class="p">(</span>
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>    <span class="n">task</span><span class="p">,</span>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;exp-001&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">:</span> <span class="s2">&quot;val&quot;</span><span class="p">},</span>
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;git_sha&quot;</span><span class="p">:</span> <span class="s2">&quot;abc1234&quot;</span><span class="p">,</span> <span class="s2">&quot;input_file&quot;</span><span class="p">:</span> <span class="s2">&quot;/data/val.jsonl&quot;</span><span class="p">,</span> <span class="s2">&quot;config&quot;</span><span class="p">:</span> <span class="n">config</span><span class="p">},</span>
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="terminal-logging">Terminal Logging</h2>
+<p>LLLM uses Python's standard <code>logging</code> module internally. All loggers live under the <code>lllm</code> hierarchy:</p>
+<table>
+<thead>
+<tr>
+<th>Logger</th>
+<th>Covers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lllm</code></td>
+<td>Root — captures everything</td>
+</tr>
+<tr>
+<td><code>lllm.tactic</code></td>
+<td>Tactic start/completion/failure, session persistence</td>
+</tr>
+<tr>
+<td><code>lllm.agent</code></td>
+<td>Agent open/respond lifecycle</td>
+</tr>
+<tr>
+<td><code>lllm.invoker</code></td>
+<td>LLM API call retries, parse errors</td>
+</tr>
+<tr>
+<td><code>lllm.config</code></td>
+<td>Package discovery, missing config warnings</td>
+</tr>
+<tr>
+<td><code>lllm.proxy</code></td>
+<td>Proxy manager registration</td>
+</tr>
+<tr>
+<td><code>lllm.sandbox</code></td>
+<td>Jupyter/sandbox lifecycle</td>
+</tr>
+<tr>
+<td><code>lllm.cua</code></td>
+<td>Computer-use agent events</td>
+</tr>
+</tbody>
+</table>
+<h3 id="quick-setup">Quick setup</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a><span class="n">setup_logging</span><span class="p">()</span>                                   <span class="c1"># INFO, colours on</span>
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a><span class="n">setup_logging</span><span class="p">(</span><span class="s2">&quot;DEBUG&quot;</span><span class="p">)</span>                            <span class="c1"># show tool traces, etc.</span>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a><span class="n">setup_logging</span><span class="p">(</span><span class="s2">&quot;WARNING&quot;</span><span class="p">,</span> <span class="n">color</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>             <span class="c1"># plain output for CI</span>
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a><span class="n">setup_logging</span><span class="p">(</span><span class="s2">&quot;INFO&quot;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2">  </span><span class="si">%(levelname)s</span><span class="s2">  </span><span class="si">%(name)s</span><span class="s2"> — </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+<p>Colour scheme:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Colour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DEBUG</td>
+<td>Dark gray</td>
+</tr>
+<tr>
+<td>INFO</td>
+<td>Green</td>
+</tr>
+<tr>
+<td>WARNING</td>
+<td>Yellow</td>
+</tr>
+<tr>
+<td>ERROR</td>
+<td>Red</td>
+</tr>
+<tr>
+<td>CRITICAL</td>
+<td>Bold red</td>
+</tr>
+</tbody>
+</table>
+<h3 id="using-stdlib-logging-directly">Using stdlib logging directly</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a><span class="c1"># Fine-grained control</span>
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;lllm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">)</span>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;lllm.tactic&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">)</span>
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a><span class="c1"># File handler for production</span>
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">FileHandler</span><span class="p">(</span><span class="s2">&quot;lllm.log&quot;</span><span class="p">)</span>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a><span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">Formatter</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(asctime)s</span><span class="s2"> </span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(name)s</span><span class="s2"> — </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">))</span>
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;lllm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="level-guide">Level guide</h3>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>What you see</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>WARNING</code> (default)</td>
+<td>Rate limit warnings, missing config, recoverable errors</td>
+</tr>
+<tr>
+<td><code>INFO</code></td>
+<td>Tactic start/completion, cost per call</td>
+</tr>
+<tr>
+<td><code>DEBUG</code></td>
+<td>Every agent respond, tool call traces, prompt rendering</td>
+</tr>
+</tbody>
+</table>
+<h3 id="silencing-specific-subsystems">Silencing specific subsystems</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;lllm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span>         <span class="c1"># mostly silent</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;lllm.invoker&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">ERROR</span><span class="p">)</span> <span class="c1"># mute retry noise</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">&quot;lllm&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">CRITICAL</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>  <span class="c1"># fully silent</span>
+</code></pre></div>
+<h3 id="custom-coloredformatter">Custom ColoredFormatter</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span><span class="o">,</span><span class="w"> </span><span class="nn">sys</span>
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">ColoredFormatter</span>
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a><span class="n">handler</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">StreamHandler</span><span class="p">(</span><span class="n">sys</span><span class="o">.</span><span class="n">stdout</span><span class="p">)</span>
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a><span class="n">handler</span><span class="o">.</span><span class="n">setFormatter</span><span class="p">(</span><span class="n">ColoredFormatter</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%(levelname)-8s</span><span class="s2"> </span><span class="si">%(name)s</span><span class="s2"> — </span><span class="si">%(message)s</span><span class="s2">&quot;</span><span class="p">))</span>
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">addHandler</span><span class="p">(</span><span class="n">handler</span><span class="p">)</span>
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">()</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="custom-backends">Custom Backends</h2>
+<p>Implement <code>LogBackend</code> to connect any KV store. The interface has four methods operating on <code>str</code> keys and <code>bytes</code> values:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogBackend</span><span class="p">,</span> <span class="n">LogStore</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a><span class="k">class</span><span class="w"> </span><span class="nc">MyBackend</span><span class="p">(</span><span class="n">LogBackend</span><span class="p">):</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Write *data* under *key*, overwriting any existing entry.&quot;&quot;&quot;</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>        <span class="o">...</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the bytes stored under *key*, or ``None`` if missing.&quot;&quot;&quot;</span>
+<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>        <span class="o">...</span>
+<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>
+<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-23-16" name="__codelineno-23-16" href="#__codelineno-23-16"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Return all keys that start with *prefix* (empty = all keys).&quot;&quot;&quot;</span>
+<a id="__codelineno-23-17" name="__codelineno-23-17" href="#__codelineno-23-17"></a>        <span class="o">...</span>
+<a id="__codelineno-23-18" name="__codelineno-23-18" href="#__codelineno-23-18"></a>
+<a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-23-20" name="__codelineno-23-20" href="#__codelineno-23-20"></a><span class="w">        </span><span class="sd">&quot;&quot;&quot;Remove *key* (silently succeed if it does not exist).&quot;&quot;&quot;</span>
+<a id="__codelineno-23-21" name="__codelineno-23-21" href="#__codelineno-23-21"></a>        <span class="o">...</span>
+</code></pre></div>
+<p>Keys are forward-slash-separated strings, e.g. <code>"default/sessions/20250316_a3f7c2b1"</code>. You do not need to interpret their structure — <code>LogStore</code> owns the layout.</p>
+<h3 id="redis-example">Redis example</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">redis</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogBackend</span><span class="p">,</span> <span class="n">LogStore</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a>
+<a id="__codelineno-24-5" name="__codelineno-24-5" href="#__codelineno-24-5"></a>
+<a id="__codelineno-24-6" name="__codelineno-24-6" href="#__codelineno-24-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">RedisBackend</span><span class="p">(</span><span class="n">LogBackend</span><span class="p">):</span>
+<a id="__codelineno-24-7" name="__codelineno-24-7" href="#__codelineno-24-7"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">client</span><span class="p">:</span> <span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">,</span> <span class="n">key_prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lllm&quot;</span><span class="p">):</span>
+<a id="__codelineno-24-8" name="__codelineno-24-8" href="#__codelineno-24-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_r</span> <span class="o">=</span> <span class="n">client</span>
+<a id="__codelineno-24-9" name="__codelineno-24-9" href="#__codelineno-24-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span> <span class="o">=</span> <span class="n">key_prefix</span>
+<a id="__codelineno-24-10" name="__codelineno-24-10" href="#__codelineno-24-10"></a>
+<a id="__codelineno-24-11" name="__codelineno-24-11" href="#__codelineno-24-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_k</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-24-12" name="__codelineno-24-12" href="#__codelineno-24-12"></a>        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="si">}</span><span class="s2">:</span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span>
+<a id="__codelineno-24-13" name="__codelineno-24-13" href="#__codelineno-24-13"></a>
+<a id="__codelineno-24-14" name="__codelineno-24-14" href="#__codelineno-24-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-24-15" name="__codelineno-24-15" href="#__codelineno-24-15"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_r</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_k</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">data</span><span class="p">)</span>
+<a id="__codelineno-24-16" name="__codelineno-24-16" href="#__codelineno-24-16"></a>
+<a id="__codelineno-24-17" name="__codelineno-24-17" href="#__codelineno-24-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<a id="__codelineno-24-18" name="__codelineno-24-18" href="#__codelineno-24-18"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_r</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_k</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+<a id="__codelineno-24-19" name="__codelineno-24-19" href="#__codelineno-24-19"></a>
+<a id="__codelineno-24-20" name="__codelineno-24-20" href="#__codelineno-24-20"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-24-21" name="__codelineno-24-21" href="#__codelineno-24-21"></a>        <span class="n">pattern</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_k</span><span class="p">(</span><span class="n">prefix</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;*&quot;</span>
+<a id="__codelineno-24-22" name="__codelineno-24-22" href="#__codelineno-24-22"></a>        <span class="n">strip</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_prefix</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+<a id="__codelineno-24-23" name="__codelineno-24-23" href="#__codelineno-24-23"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">k</span><span class="o">.</span><span class="n">decode</span><span class="p">()[</span><span class="n">strip</span><span class="p">:]</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_r</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="n">pattern</span><span class="p">)]</span>
+<a id="__codelineno-24-24" name="__codelineno-24-24" href="#__codelineno-24-24"></a>
+<a id="__codelineno-24-25" name="__codelineno-24-25" href="#__codelineno-24-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-24-26" name="__codelineno-24-26" href="#__codelineno-24-26"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_r</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_k</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+<a id="__codelineno-24-27" name="__codelineno-24-27" href="#__codelineno-24-27"></a>
+<a id="__codelineno-24-28" name="__codelineno-24-28" href="#__codelineno-24-28"></a>
+<a id="__codelineno-24-29" name="__codelineno-24-29" href="#__codelineno-24-29"></a><span class="n">store</span> <span class="o">=</span> <span class="n">LogStore</span><span class="p">(</span><span class="n">RedisBackend</span><span class="p">(</span><span class="n">redis</span><span class="o">.</span><span class="n">Redis</span><span class="p">()),</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="firebase-firestore-example">Firebase / Firestore example</h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">google.cloud</span><span class="w"> </span><span class="kn">import</span> <span class="n">firestore</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">LogBackend</span><span class="p">,</span> <span class="n">LogStore</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span>
+<a id="__codelineno-25-4" name="__codelineno-25-4" href="#__codelineno-25-4"></a>
+<a id="__codelineno-25-5" name="__codelineno-25-5" href="#__codelineno-25-5"></a>
+<a id="__codelineno-25-6" name="__codelineno-25-6" href="#__codelineno-25-6"></a><span class="k">class</span><span class="w"> </span><span class="nc">FirestoreBackend</span><span class="p">(</span><span class="n">LogBackend</span><span class="p">):</span>
+<a id="__codelineno-25-7" name="__codelineno-25-7" href="#__codelineno-25-7"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">collection</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;lllm_logs&quot;</span><span class="p">):</span>
+<a id="__codelineno-25-8" name="__codelineno-25-8" href="#__codelineno-25-8"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_db</span> <span class="o">=</span> <span class="n">firestore</span><span class="o">.</span><span class="n">Client</span><span class="p">()</span>
+<a id="__codelineno-25-9" name="__codelineno-25-9" href="#__codelineno-25-9"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_col</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_db</span><span class="o">.</span><span class="n">collection</span><span class="p">(</span><span class="n">collection</span><span class="p">)</span>
+<a id="__codelineno-25-10" name="__codelineno-25-10" href="#__codelineno-25-10"></a>
+<a id="__codelineno-25-11" name="__codelineno-25-11" href="#__codelineno-25-11"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">_doc_id</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<a id="__codelineno-25-12" name="__codelineno-25-12" href="#__codelineno-25-12"></a>        <span class="k">return</span> <span class="n">key</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">,</span> <span class="s2">&quot;__&quot;</span><span class="p">)</span>  <span class="c1"># Firestore IDs can&#39;t contain &quot;/&quot;</span>
+<a id="__codelineno-25-13" name="__codelineno-25-13" href="#__codelineno-25-13"></a>
+<a id="__codelineno-25-14" name="__codelineno-25-14" href="#__codelineno-25-14"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">put</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-25-15" name="__codelineno-25-15" href="#__codelineno-25-15"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_col</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">(</span><span class="n">key</span><span class="p">))</span><span class="o">.</span><span class="n">set</span><span class="p">({</span><span class="s2">&quot;data&quot;</span><span class="p">:</span> <span class="n">data</span><span class="p">,</span> <span class="s2">&quot;key&quot;</span><span class="p">:</span> <span class="n">key</span><span class="p">})</span>
+<a id="__codelineno-25-16" name="__codelineno-25-16" href="#__codelineno-25-16"></a>
+<a id="__codelineno-25-17" name="__codelineno-25-17" href="#__codelineno-25-17"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bytes</span><span class="p">]:</span>
+<a id="__codelineno-25-18" name="__codelineno-25-18" href="#__codelineno-25-18"></a>        <span class="n">snap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">(</span><span class="n">key</span><span class="p">))</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+<a id="__codelineno-25-19" name="__codelineno-25-19" href="#__codelineno-25-19"></a>        <span class="k">return</span> <span class="n">snap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;data&quot;</span><span class="p">)</span> <span class="k">if</span> <span class="n">snap</span><span class="o">.</span><span class="n">exists</span> <span class="k">else</span> <span class="kc">None</span>
+<a id="__codelineno-25-20" name="__codelineno-25-20" href="#__codelineno-25-20"></a>
+<a id="__codelineno-25-21" name="__codelineno-25-21" href="#__codelineno-25-21"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">list_keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prefix</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+<a id="__codelineno-25-22" name="__codelineno-25-22" href="#__codelineno-25-22"></a>        <span class="k">return</span> <span class="p">[</span><span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">)</span> <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_col</span><span class="o">.</span><span class="n">stream</span><span class="p">()</span>
+<a id="__codelineno-25-23" name="__codelineno-25-23" href="#__codelineno-25-23"></a>                <span class="k">if</span> <span class="n">d</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;key&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">prefix</span><span class="p">)]</span>
+<a id="__codelineno-25-24" name="__codelineno-25-24" href="#__codelineno-25-24"></a>
+<a id="__codelineno-25-25" name="__codelineno-25-25" href="#__codelineno-25-25"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<a id="__codelineno-25-26" name="__codelineno-25-26" href="#__codelineno-25-26"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_col</span><span class="o">.</span><span class="n">document</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_doc_id</span><span class="p">(</span><span class="n">key</span><span class="p">))</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+<a id="__codelineno-25-27" name="__codelineno-25-27" href="#__codelineno-25-27"></a>
+<a id="__codelineno-25-28" name="__codelineno-25-28" href="#__codelineno-25-28"></a>
+<a id="__codelineno-25-29" name="__codelineno-25-29" href="#__codelineno-25-29"></a><span class="n">store</span> <span class="o">=</span> <span class="n">LogStore</span><span class="p">(</span><span class="n">FirestoreBackend</span><span class="p">(</span><span class="s2">&quot;my_project_logs&quot;</span><span class="p">),</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;prod&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="design-notes-for-custom-backends">Design notes for custom backends</h3>
+<ul>
+<li><strong>Atomicity</strong>: <code>put</code> should be atomic or use WAL/transactions where available. Non-atomic writes can corrupt index entries.</li>
+<li><strong><code>list_keys</code> efficiency</strong>: <code>list_sessions</code> calls <code>list_keys(prefix)</code> then <code>get</code> for every returned key. For large stores, implement prefix indexing or a secondary index to avoid a full scan.</li>
+<li><strong>Concurrency</strong>: If multiple processes write to the same backend, ensure <code>put</code> is safe under concurrent access. <code>SQLiteBackend</code> uses WAL mode; <code>LocalFileBackend</code> relies on OS filesystem atomicity.</li>
+<li><strong>Serialisation</strong>: All data passed to <code>put</code> is already JSON-encoded <code>bytes</code>. Store it as a blob, base64, or JSON document — as long as <code>get</code> returns the same bytes.</li>
+</ul>
+<hr />
+<h2 id="complete-example">Complete Example</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">dt</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_runtime</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.logging</span><span class="w"> </span><span class="kn">import</span> <span class="n">setup_logging</span><span class="p">,</span> <span class="n">sqlite_store</span>
+<a id="__codelineno-26-4" name="__codelineno-26-4" href="#__codelineno-26-4"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.tactic</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_tactic</span>
+<a id="__codelineno-26-5" name="__codelineno-26-5" href="#__codelineno-26-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.core.config</span><span class="w"> </span><span class="kn">import</span> <span class="n">resolve_config</span>
+<a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a>
+<a id="__codelineno-26-7" name="__codelineno-26-7" href="#__codelineno-26-7"></a><span class="c1"># 1. Load runtime from lllm.toml</span>
+<a id="__codelineno-26-8" name="__codelineno-26-8" href="#__codelineno-26-8"></a><span class="n">rt</span> <span class="o">=</span> <span class="n">load_runtime</span><span class="p">()</span>
+<a id="__codelineno-26-9" name="__codelineno-26-9" href="#__codelineno-26-9"></a>
+<a id="__codelineno-26-10" name="__codelineno-26-10" href="#__codelineno-26-10"></a><span class="c1"># 2. Configure terminal output</span>
+<a id="__codelineno-26-11" name="__codelineno-26-11" href="#__codelineno-26-11"></a><span class="n">setup_logging</span><span class="p">(</span><span class="s2">&quot;INFO&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-12" name="__codelineno-26-12" href="#__codelineno-26-12"></a>
+<a id="__codelineno-26-13" name="__codelineno-26-13" href="#__codelineno-26-13"></a><span class="c1"># 3. Create a persistent store bound to the runtime.</span>
+<a id="__codelineno-26-14" name="__codelineno-26-14" href="#__codelineno-26-14"></a><span class="c1">#    Sessions are stored under the stable key &quot;my_pkg::researcher&quot;,</span>
+<a id="__codelineno-26-15" name="__codelineno-26-15" href="#__codelineno-26-15"></a><span class="c1">#    regardless of file layout or aliases in lllm.toml.</span>
+<a id="__codelineno-26-16" name="__codelineno-26-16" href="#__codelineno-26-16"></a><span class="n">store</span> <span class="o">=</span> <span class="n">sqlite_store</span><span class="p">(</span><span class="s2">&quot;~/.lllm/my-project.db&quot;</span><span class="p">,</span> <span class="n">partition</span><span class="o">=</span><span class="s2">&quot;experiment-001&quot;</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">rt</span><span class="p">)</span>
+<a id="__codelineno-26-17" name="__codelineno-26-17" href="#__codelineno-26-17"></a>
+<a id="__codelineno-26-18" name="__codelineno-26-18" href="#__codelineno-26-18"></a><span class="c1"># 4. Build tactic — pkg::name is resolved and embedded in every session</span>
+<a id="__codelineno-26-19" name="__codelineno-26-19" href="#__codelineno-26-19"></a><span class="n">config</span> <span class="o">=</span> <span class="n">resolve_config</span><span class="p">(</span><span class="s2">&quot;default&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-20" name="__codelineno-26-20" href="#__codelineno-26-20"></a><span class="n">tactic</span> <span class="o">=</span> <span class="n">build_tactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ckpt_dir</span><span class="o">=</span><span class="s2">&quot;./runs&quot;</span><span class="p">,</span> <span class="n">log_store</span><span class="o">=</span><span class="n">store</span><span class="p">)</span>
+<a id="__codelineno-26-21" name="__codelineno-26-21" href="#__codelineno-26-21"></a>
+<a id="__codelineno-26-22" name="__codelineno-26-22" href="#__codelineno-26-22"></a><span class="c1"># 5. Run with tags</span>
+<a id="__codelineno-26-23" name="__codelineno-26-23" href="#__codelineno-26-23"></a><span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">doc</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">documents</span><span class="p">):</span>
+<a id="__codelineno-26-24" name="__codelineno-26-24" href="#__codelineno-26-24"></a>    <span class="n">tactic</span><span class="p">(</span>
+<a id="__codelineno-26-25" name="__codelineno-26-25" href="#__codelineno-26-25"></a>        <span class="n">doc</span><span class="p">,</span>
+<a id="__codelineno-26-26" name="__codelineno-26-26" href="#__codelineno-26-26"></a>        <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;experiment-001&quot;</span><span class="p">,</span> <span class="s2">&quot;doc_id&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;doc-</span><span class="si">{</span><span class="n">i</span><span class="si">:</span><span class="s2">04d</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">:</span> <span class="s2">&quot;test&quot;</span><span class="p">},</span>
+<a id="__codelineno-26-27" name="__codelineno-26-27" href="#__codelineno-26-27"></a>        <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;source_path&quot;</span><span class="p">:</span> <span class="n">doc</span><span class="o">.</span><span class="n">path</span><span class="p">},</span>
+<a id="__codelineno-26-28" name="__codelineno-26-28" href="#__codelineno-26-28"></a>    <span class="p">)</span>
+<a id="__codelineno-26-29" name="__codelineno-26-29" href="#__codelineno-26-29"></a>
+<a id="__codelineno-26-30" name="__codelineno-26-30" href="#__codelineno-26-30"></a><span class="c1"># 6. All of the following query the same sessions (resolved to &quot;my_pkg::researcher&quot;):</span>
+<a id="__codelineno-26-31" name="__codelineno-26-31" href="#__codelineno-26-31"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg::researcher&quot;</span><span class="p">)</span>              <span class="c1"># direct stable key</span>
+<a id="__codelineno-26-32" name="__codelineno-26-32" href="#__codelineno-26-32"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg.tactics:research/researcher&quot;</span><span class="p">)</span>  <span class="c1"># runtime path</span>
+<a id="__codelineno-26-33" name="__codelineno-26-33" href="#__codelineno-26-33"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:research/researcher&quot;</span><span class="p">)</span>      <span class="c1"># short form</span>
+<a id="__codelineno-26-34" name="__codelineno-26-34" href="#__codelineno-26-34"></a><span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span><span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;researcher&quot;</span><span class="p">)</span>                       <span class="c1"># bare name</span>
+<a id="__codelineno-26-35" name="__codelineno-26-35" href="#__codelineno-26-35"></a>
+<a id="__codelineno-26-36" name="__codelineno-26-36" href="#__codelineno-26-36"></a><span class="c1"># If you later add &quot;under v2&quot; in lllm.toml, the tactic moves to</span>
+<a id="__codelineno-26-37" name="__codelineno-26-37" href="#__codelineno-26-37"></a><span class="c1"># my_pkg.tactics:v2/researcher in the runtime, but all of the above</span>
+<a id="__codelineno-26-38" name="__codelineno-26-38" href="#__codelineno-26-38"></a><span class="c1"># still query the same stored sessions because they resolve to the same</span>
+<a id="__codelineno-26-39" name="__codelineno-26-39" href="#__codelineno-26-39"></a><span class="c1"># stable key &quot;my_pkg::researcher&quot;.</span>
+<a id="__codelineno-26-40" name="__codelineno-26-40" href="#__codelineno-26-40"></a>
+<a id="__codelineno-26-41" name="__codelineno-26-41" href="#__codelineno-26-41"></a><span class="c1"># 7. Inspect failures</span>
+<a id="__codelineno-26-42" name="__codelineno-26-42" href="#__codelineno-26-42"></a><span class="n">failures</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">list_sessions</span><span class="p">(</span>
+<a id="__codelineno-26-43" name="__codelineno-26-43" href="#__codelineno-26-43"></a>    <span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:research/researcher&quot;</span><span class="p">,</span>
+<a id="__codelineno-26-44" name="__codelineno-26-44" href="#__codelineno-26-44"></a>    <span class="n">state</span><span class="o">=</span><span class="s2">&quot;failure&quot;</span><span class="p">,</span>
+<a id="__codelineno-26-45" name="__codelineno-26-45" href="#__codelineno-26-45"></a><span class="p">)</span>
+<a id="__codelineno-26-46" name="__codelineno-26-46" href="#__codelineno-26-46"></a><span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">failures</span><span class="p">:</span>
+<a id="__codelineno-26-47" name="__codelineno-26-47" href="#__codelineno-26-47"></a>    <span class="n">record</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">load_session_record</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+<a id="__codelineno-26-48" name="__codelineno-26-48" href="#__codelineno-26-48"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;[</span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">tactic_path</span><span class="si">}</span><span class="s2">] failed @ </span><span class="si">{</span><span class="n">s</span><span class="o">.</span><span class="n">timestamp</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-49" name="__codelineno-26-49" href="#__codelineno-26-49"></a>    <span class="nb">print</span><span class="p">(</span><span class="n">record</span><span class="o">.</span><span class="n">traceback</span><span class="p">)</span>
+<a id="__codelineno-26-50" name="__codelineno-26-50" href="#__codelineno-26-50"></a>
+<a id="__codelineno-26-51" name="__codelineno-26-51" href="#__codelineno-26-51"></a><span class="c1"># 8. Cost report</span>
+<a id="__codelineno-26-52" name="__codelineno-26-52" href="#__codelineno-26-52"></a><span class="n">summary</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">export_cost_summary</span><span class="p">(</span>
+<a id="__codelineno-26-53" name="__codelineno-26-53" href="#__codelineno-26-53"></a>    <span class="n">tactic_path</span><span class="o">=</span><span class="s2">&quot;my_pkg:research/researcher&quot;</span><span class="p">,</span>
+<a id="__codelineno-26-54" name="__codelineno-26-54" href="#__codelineno-26-54"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;experiment&quot;</span><span class="p">:</span> <span class="s2">&quot;experiment-001&quot;</span><span class="p">},</span>
+<a id="__codelineno-26-55" name="__codelineno-26-55" href="#__codelineno-26-55"></a><span class="p">)</span>
+<a id="__codelineno-26-56" name="__codelineno-26-56" href="#__codelineno-26-56"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;session_count&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2"> sessions  $</span><span class="si">{</span><span class="n">summary</span><span class="p">[</span><span class="s1">&#39;total_cost_usd&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-26-57" name="__codelineno-26-57" href="#__codelineno-26-57"></a>
+<a id="__codelineno-26-58" name="__codelineno-26-58" href="#__codelineno-26-58"></a><span class="c1"># 9. Drill into one session</span>
+<a id="__codelineno-26-59" name="__codelineno-26-59" href="#__codelineno-26-59"></a><span class="n">session</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">load_session</span><span class="p">(</span><span class="n">failures</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">session_id</span><span class="p">)</span>
+<a id="__codelineno-26-60" name="__codelineno-26-60" href="#__codelineno-26-60"></a><span class="k">for</span> <span class="n">agent_name</span><span class="p">,</span> <span class="n">calls</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_sessions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+<a id="__codelineno-26-61" name="__codelineno-26-61" href="#__codelineno-26-61"></a>    <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="n">calls</span><span class="p">:</span>
+<a id="__codelineno-26-62" name="__codelineno-26-62" href="#__codelineno-26-62"></a>        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;  </span><span class="si">{</span><span class="n">agent_name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">call</span><span class="o">.</span><span class="n">state</span><span class="si">}</span><span class="s2">  cost=</span><span class="si">{</span><span class="n">call</span><span class="o">.</span><span class="n">cost</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

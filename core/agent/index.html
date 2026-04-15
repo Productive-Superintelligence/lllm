@@ -1,0 +1,2447 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="A lightweight framework for researchers to fast-prototype advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/agent/">
+      
+      
+        <link rel="prev" href="../../architecture/packages/">
+      
+      
+        <link rel="next" href="../prompts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Agent - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Inter:300,300i,400,400i,700,700i%7CJetBrains+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Inter";--md-code-font:"JetBrains Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agent" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow md-header--lifted" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Agent
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="black" data-md-color-accent="white"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+    
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo-black.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Getting Started
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Architecture
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/overview/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../architecture/packages/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Package System
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Core Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#declaration-by-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declaration by Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm-call-vs-agent-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM Call vs. Agent Call
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-call-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Call Loop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Call Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interrupt-and-exception-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interrupt and Exception Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dialog-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dialog Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use skills
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-skill-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local skill discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-local-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a local skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anthropic-hosted-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anthropic-hosted skills
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works-at-build-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works at build time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allowed-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        allowed-tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Advanced
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxy & Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_6" >
+        
+          
+          <label class="md-nav__link" for="__nav_6" id="__nav_6_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Project Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/building-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Building a Full Package
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/project-template/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Project Structure
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_7" >
+        
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../tutorials/" class="md-nav__link ">
+              
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_7" id="__nav_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_7">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/02-agents-and-dialogs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/04-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/05-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Tactics and Packages
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/06-config-and-discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Config and Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/07-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../tutorials/08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers API
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/proxies/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    lllm.proxies
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/modules/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Module Index
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#declaration-by-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declaration by Configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm-call-vs-agent-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM Call vs. Agent Call
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-call-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The Call Loop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The Call Loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interrupt-and-exception-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interrupt and Exception Handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dialog-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dialog Management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use skills
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-skill-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local skill discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-local-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a local skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#anthropic-hosted-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anthropic-hosted skills
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-it-works-at-build-time" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works at build time
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allowed-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        allowed-tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="agent">Agent</h1>
+<p>An <code>Agent</code> is LLLM's "caller" — it holds a system prompt and a base model, and executes prompts through a deterministic call loop. It is <strong>not</strong> a long-running process; it is stateless per call. The tactic creates fresh agent instances for each invocation and passes them the dialogs to work on.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;task_1&quot;</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;topic&quot;</span><span class="p">:</span> <span class="n">topic</span><span class="p">})</span>  <span class="c1"># create a dialog, seed with system prompt</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;Analyze this paper&quot;</span><span class="p">)</span>                  <span class="c1"># append user turn</span>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>                           <span class="c1"># run the call loop, return Message</span>
+</code></pre></div>
+<hr />
+<h2 id="declaration-by-configuration">Declaration by Configuration</h2>
+<p>Agents are declared in YAML, not in Python. A config entry specifies everything about an agent: which model it uses, which system prompt it reads, and how its call loop behaves.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># configs/research_writer.yaml</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="nt">agent_group_configs</span><span class="p">:</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">  </span><span class="nt">researcher</span><span class="p">:</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="w">    </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher_system</span><span class="w">   </span><span class="c1"># loaded from the prompt registry</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="w">    </span><span class="nt">max_completion_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4000</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="w">    </span><span class="nt">max_exception_retry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">  </span><span class="nt">writer</span><span class="p">:</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">    </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">writer_system</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+</code></pre></div>
+<p><code>build_tactic</code> reads this config, resolves each <code>system_prompt_path</code> from the runtime, and constructs live <code>Agent</code> instances at call time:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_tactic</span><span class="p">,</span> <span class="n">resolve_config</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">config</span> <span class="o">=</span> <span class="n">resolve_config</span><span class="p">(</span><span class="s2">&quot;research_writer&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">tactic</span> <span class="o">=</span> <span class="n">build_tactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">ckpt_dir</span><span class="o">=</span><span class="s2">&quot;./runs&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a><span class="c1"># inside tactic.call():</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">researcher</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;researcher&quot;</span><span class="p">]</span>   <span class="c1"># Agent instance, ready to use</span>
+</code></pre></div>
+<p>For the full config schema — global defaults, <code>model_args</code>, inheritance via <code>base</code>, and multi-package vendoring — see <a href="../config/">Configuration</a>.</p>
+<hr />
+<h2 id="llm-call-vs-agent-call">LLM Call vs. Agent Call</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM Call</th>
+<th>Agent Call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Input</td>
+<td>Flat list of chat messages.</td>
+<td><code>Dialog</code> owned by the agent, seeded with a system <code>Prompt</code>.</td>
+</tr>
+<tr>
+<td>Output</td>
+<td>Raw model string plus metadata.</td>
+<td><code>AgentCallSession</code> — delivered message, invoke traces, full diagnostics.</td>
+</tr>
+<tr>
+<td>Responsibility</td>
+<td>Caller decides whether to retry, parse, or continue.</td>
+<td>Agent handles retries, parsing, exception recovery, and interrupts.</td>
+</tr>
+<tr>
+<td>Determinism</td>
+<td>Best-effort.</td>
+<td>Guaranteed next state or explicit exception.</td>
+</tr>
+</tbody>
+</table>
+<p>A core philosophy of LLLM is to treat the agent as a "function" — the goal of the agent call is to make it as stable and deterministic as possible.</p>
+<p><img alt="Agent call state machine" src="../../assets/agent_call.png" /></p>
+<hr />
+<h2 id="the-call-loop">The Call Loop</h2>
+<p><code>agent.respond()</code> runs a state machine that advances until it reaches a terminal state:</p>
+<ol>
+<li>The invoker calls the LLM and returns an <code>InvokeResult</code>.</li>
+<li>If parsing failed (<code>invoke_result.has_errors</code>), the error is recorded and the prompt's <strong>exception handler</strong> generates a retry message. The dialog is forked for the retry so recovery messages never pollute the canonical history.</li>
+<li>If the LLM returned tool calls, each function is executed, results are fed back via the <strong>interrupt handler</strong>, and the loop continues.</li>
+<li>If the LLM returned a plain assistant message, the loop transitions to <code>"success"</code> and the message becomes <code>session.delivery</code>.</li>
+<li>Network/API errors trigger backoff and LLM recall retries (up to <code>max_llm_recall</code>).</li>
+</ol>
+<h3 id="key-types">Key types</h3>
+<p><strong><code>InvokeResult</code></strong> — returned by the invoker per LLM call:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">InvokeResult</span><span class="p">:</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>    <span class="n">raw_response</span><span class="p">:</span> <span class="n">Any</span>                   <span class="c1"># raw API response</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">model_args</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>          <span class="c1"># actual args sent to the API</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>    <span class="n">execution_errors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span>   <span class="c1"># parse/validation errors</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Message</span><span class="p">]</span>          <span class="c1"># the clean conversational message</span>
+</code></pre></div>
+<p><strong><code>AgentCallSession</code></strong> — tracks the full lifecycle:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">AgentCallSession</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="n">agent_name</span><span class="p">:</span> <span class="nb">str</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="n">state</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">&quot;initial&quot;</span><span class="p">,</span> <span class="s2">&quot;exception&quot;</span><span class="p">,</span> <span class="s2">&quot;interrupt&quot;</span><span class="p">,</span> <span class="s2">&quot;llm_recall&quot;</span><span class="p">,</span> <span class="s2">&quot;success&quot;</span><span class="p">,</span> <span class="s2">&quot;failure&quot;</span><span class="p">]</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>    <span class="n">exception_retries</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]]</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a>    <span class="n">interrupts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">FunctionCall</span><span class="p">]]</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">llm_recalls</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]]</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">invoke_traces</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">InvokeResult</span><span class="p">]]</span>  <span class="c1"># all invocations per step</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">delivery</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Message</span><span class="p">]</span>                   <span class="c1"># final message on success</span>
+</code></pre></div>
+<hr />
+<h2 id="interrupt-and-exception-handling">Interrupt and Exception Handling</h2>
+<p>Each <code>Prompt</code> can specify inline handlers that the call loop uses automatically:</p>
+<ul>
+<li><strong><code>on_exception</code></strong> — receives <code>{error_message}</code> whenever parsing or validation fails. Called up to <code>max_exception_retry</code> times. The dialog is forked for each retry.</li>
+<li><strong><code>on_interrupt</code></strong> — receives <code>{call_results}</code> after function execution. Remains in the dialog for transparency.</li>
+<li><strong><code>on_interrupt_final</code></strong> — fires when the agent hits <code>max_interrupt_steps</code>, prompting a natural-language summary.</li>
+</ul>
+<p>Handlers inherit the prompt's parser, tools, and allowed functions, so a single prompt definition covers the entire agent loop.</p>
+<hr />
+<h2 id="dialog-management">Dialog Management</h2>
+<p>Agents own the dialogs they create, keyed by a user-chosen alias. The alias makes code self-documenting and prevents dialogs from leaking between agents.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;coder&quot;</span><span class="p">]</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1"># Open a dialog — seeds with system prompt, becomes active</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;task_1&quot;</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="s2">&quot;Python&quot;</span><span class="p">})</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;Write a sorting function&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a><span class="c1"># Open a second dialog, switch between them</span>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;task_2&quot;</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;language&quot;</span><span class="p">:</span> <span class="s2">&quot;Rust&quot;</span><span class="p">})</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">agent</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s2">&quot;task_1&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;Now add error handling&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a><span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="c1"># Fork a dialog for exploration (last_n messages carry over)</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="n">agent</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="s2">&quot;task_1&quot;</span><span class="p">,</span> <span class="s2">&quot;task_1_alt&quot;</span><span class="p">,</span> <span class="n">last_n</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">switch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;Try a different algorithm&quot;</span><span class="p">)</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+</code></pre></div>
+<p>For multi-agent collaboration, each agent maintains its own dialog. Information is shared explicitly by passing content between agents in the tactic:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">coder</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;collab&quot;</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">reviewer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;collab&quot;</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="n">coder</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">&quot;Write a REST API&quot;</span><span class="p">)</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a><span class="n">code</span> <span class="o">=</span> <span class="n">coder</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="n">reviewer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">code</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">coder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a><span class="n">review</span> <span class="o">=</span> <span class="n">reviewer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a><span class="n">coder</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">review</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">reviewer</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="n">revision</span> <span class="o">=</span> <span class="n">coder</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="skills">Skills</h2>
+<blockquote>
+<p><strong>Experimental.</strong> LLLM's skills support follows the <a href="https://agentskills.io">agentskills.io</a> open standard, which is itself new and actively evolving. Both the spec and this implementation may change in future releases. The config format, discovery paths, tool names, and activation behaviour described here reflect the current state and should not be considered stable API.</p>
+</blockquote>
+<p>Skills are reusable, self-contained capability packages that you attach to an agent via config. They follow the <a href="https://agentskills.io">agentskills.io</a> open standard and let you add specialized knowledge, workflows, or tool access to any agent without modifying its system prompt directly.</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pdf</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">skill_01abc</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">https</span><span class="p p-Indicator">:</span><span class="nv">//example.com/skills/review/SKILL.md</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="when-to-use-skills">When to use skills</h3>
+<p>Use skills instead of baking knowledge into the system prompt when:</p>
+<ul>
+<li>The capability is reusable across multiple agents or projects (e.g. "how to fill a PDF form", "git commit conventions").</li>
+<li>You want to version and share capabilities independently of your prompt definitions.</li>
+<li>You need Anthropic-managed tool grants (e.g. computer use) that must be declared server-side.</li>
+<li>The instructions are long enough that you only want to load them for agents that actually need them.</li>
+</ul>
+<p>Do <strong>not</strong> use skills for:
+- Agent-specific persona or role instructions — keep those in <code>system_prompt</code> / <code>system_prompt_path</code>.
+- Configuration that changes per call (e.g. user name, date) — use prompt template variables instead.</p>
+<h3 id="entry-types">Entry types</h3>
+<p>Each entry in the <code>skills</code> list is auto-classified by its format:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Example</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local name</td>
+<td><code>pdf</code></td>
+<td>Scanned from standard directories; SKILL.md content injected into system prompt. Works with any LLM.</td>
+</tr>
+<tr>
+<td>Anthropic skill ID</td>
+<td><code>skill_01abc123</code></td>
+<td>Passed to the Anthropic API as <code>skills: [{id: ...}]</code>. Content injected server-side. Anthropic models only.</td>
+</tr>
+<tr>
+<td>URL</td>
+<td><code>https://example.com/skills/review/SKILL.md</code></td>
+<td>Downloaded at agent build time; content injected into system prompt. Works with any LLM.</td>
+</tr>
+<tr>
+<td><code>"*"</code></td>
+<td><code>skills: "*"</code></td>
+<td>All locally discovered skills are loaded.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="config-examples">Config examples</h3>
+<p><strong>Same skills for all agents (global):</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pdf</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">review-pr</span><span class="p p-Indicator">]</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nt">agent_configs</span><span class="p">:</span>
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coder</span>
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/coder</span>
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reviewer</span>
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/reviewer</span>
+</code></pre></div>
+<p><strong>Per-agent override:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">commit</span><span class="p p-Indicator">]</span><span class="w">          </span><span class="c1"># default: all agents get this</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="nt">agent_configs</span><span class="p">:</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coder</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/coder</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">pdf</span><span class="p p-Indicator">]</span><span class="w">   </span><span class="c1"># replaces global list for this agent</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reviewer</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/reviewer</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="c1"># inherits global: skills: [commit]</span>
+</code></pre></div>
+<blockquote>
+<p>Per-agent <code>skills</code> <strong>replaces</strong> (not merges with) the global list. Specify the full set you want for that agent.</p>
+</blockquote>
+<p><strong>Mixed entry types:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">agent_configs</span><span class="p">:</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/analyst</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">skills</span><span class="p">:</span>
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data-analysis</span><span class="w">              </span><span class="c1"># local skill</span>
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">skill_01abc123def</span><span class="w">          </span><span class="c1"># Anthropic-hosted skill (API-level)</span>
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://acme.com/skills/forecast/SKILL.md</span><span class="w">  </span><span class="c1"># remote skill</span>
+</code></pre></div>
+<p><strong>Load all local skills:</strong></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">global</span><span class="p">:</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;*&quot;</span>
+</code></pre></div>
+<h3 id="local-skill-discovery">Local skill discovery</h3>
+<p>Local skill names are resolved by scanning these directories in order (first match wins):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>&lt;project&gt;/.agents/skills/&lt;name&gt;/SKILL.md
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>&lt;project&gt;/.claude/skills/&lt;name&gt;/SKILL.md
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>~/.agents/skills/&lt;name&gt;/SKILL.md
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a>~/.claude/skills/&lt;name&gt;/SKILL.md
+</code></pre></div>
+<p>Project-level paths take precedence over user-level paths, so you can override a shared skill locally.</p>
+<h3 id="creating-a-local-skill">Creating a local skill</h3>
+<p>A skill is a directory containing a <code>SKILL.md</code> file:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>.agents/skills/
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>└── pdf/
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>    ├── SKILL.md          # required: frontmatter + instructions
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>    ├── scripts/          # optional: Python/Bash helpers
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>    └── references/       # optional: reference documents
+</code></pre></div>
+<p><code>SKILL.md</code> uses YAML frontmatter followed by Markdown instructions:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>---
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>name: pdf
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>description: &gt;
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>  Fill PDF forms, extract text, merge files. Use when the task
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>  involves reading, writing, or transforming PDF documents.
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>license: MIT
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>allowed-tools:
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="w">  </span><span class="k">-</span><span class="w"> </span>computer_20250124
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a><span class="gu">  - text_editor_20250124</span>
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a><span class="gu">---</span>
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a><span class="gh"># PDF Skill</span>
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a><span class="gu">## Filling a form</span>
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a><span class="k">1.</span> Open the PDF with <span class="sb">`scripts/open_pdf.py`</span>.
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a><span class="k">2.</span> Locate the field by label using <span class="sb">`get_field(label)`</span>.
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a><span class="k">3.</span> Write the value with <span class="sb">`set_field(label, value)`</span>.
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a><span class="k">4.</span> Save with <span class="sb">`save_pdf(output_path)`</span>.
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a><span class="gu">## Extracting text</span>
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>Run <span class="sb">`scripts/extract_text.py &lt;input.pdf&gt;`</span> and pipe the output
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>to your analysis step.
+</code></pre></div>
+<p><strong>Frontmatter fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Yes</td>
+<td>Lowercase, numbers, hyphens only. Must match the directory name.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Yes</td>
+<td>What the skill does and when to use it.</td>
+</tr>
+<tr>
+<td><code>license</code></td>
+<td>No</td>
+<td>License identifier (e.g. <code>MIT</code>).</td>
+</tr>
+<tr>
+<td><code>allowed-tools</code></td>
+<td>No</td>
+<td>Tools the skill needs (relevant for Anthropic-hosted skills).</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>No</td>
+<td>Arbitrary key/value pairs (author, version, etc.).</td>
+</tr>
+</tbody>
+</table>
+<h3 id="anthropic-hosted-skills">Anthropic-hosted skills</h3>
+<p>When an entry starts with <code>skill_</code>, LLLM passes it directly to the Anthropic API:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="c1"># model_args sent at call time:</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="c1"># {</span>
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="c1">#   &quot;skills&quot;: [{&quot;id&quot;: &quot;skill_01abc123&quot;}],</span>
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a><span class="c1">#   &quot;extra_headers&quot;: {&quot;anthropic-beta&quot;: &quot;skills-2025-10-02&quot;}</span>
+<a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a><span class="c1"># }</span>
+</code></pre></div>
+<p>Anthropic injects the skill content server-side and grants any <code>allowed-tools</code> declared in the skill's manifest. This means:</p>
+<ul>
+<li><strong>No token cost</strong> for skill content in your context window.</li>
+<li><strong>Tool grants</strong> (computer use, text editor, etc.) are handled automatically.</li>
+<li><strong>Versioning</strong> is managed by Anthropic — you reference the skill by ID, not by content.</li>
+</ul>
+<p>To create and manage hosted skills, use the Anthropic Skills API (or LiteLLM's <code>/skills</code> endpoint):</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">litellm</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_skill</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">zipfile</span><span class="o">,</span><span class="w"> </span><span class="nn">os</span>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a><span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="s2">&quot;pdf&quot;</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;pdf/SKILL.md&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>    <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">skill_content</span><span class="p">)</span>
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="k">with</span> <span class="n">zipfile</span><span class="o">.</span><span class="n">ZipFile</span><span class="p">(</span><span class="s2">&quot;pdf.zip&quot;</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">z</span><span class="p">:</span>
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>    <span class="n">z</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="s2">&quot;pdf/SKILL.md&quot;</span><span class="p">,</span> <span class="s2">&quot;pdf/SKILL.md&quot;</span><span class="p">)</span>
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a><span class="n">response</span> <span class="o">=</span> <span class="n">create_skill</span><span class="p">(</span>
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>    <span class="n">display_title</span><span class="o">=</span><span class="s2">&quot;PDF Processing&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>    <span class="n">files</span><span class="o">=</span><span class="p">[</span><span class="nb">open</span><span class="p">(</span><span class="s2">&quot;pdf.zip&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)],</span>
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>    <span class="n">custom_llm_provider</span><span class="o">=</span><span class="s2">&quot;anthropic&quot;</span><span class="p">,</span>
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a><span class="p">)</span>
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a><span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>   <span class="c1"># skill_01abc123 — use this in your config</span>
+</code></pre></div>
+<p>Once you have the ID, put it directly in <code>skills</code>:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">skill_01abc123</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="how-it-works-at-build-time">How it works at build time</h3>
+<p>At agent build time (<code>AgentSpec.build()</code>), <code>SkillsConfig</code> follows the agentskills.io <strong>progressive disclosure</strong> model:</p>
+<p><strong>Tier 1 — Catalog (local + URL skills)</strong></p>
+<p>Only skill names and descriptions are appended to the system prompt (~50–100 tokens per skill), plus a one-line instruction. An <code>activate_skill</code> tool is injected into the agent's function list:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>&lt;system prompt text&gt;
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>When a task matches a skill&#39;s description, call the `activate_skill` tool
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>with that skill&#39;s name to load its full instructions before proceeding.
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>&lt;available_skills&gt;
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>  &lt;skill name=&quot;pdf&quot;&gt;
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>    &lt;description&gt;Extract PDF text, fill forms, merge files. Use when handling PDFs.&lt;/description&gt;
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>  &lt;/skill&gt;
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>  &lt;skill name=&quot;commit&quot;&gt;
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>    &lt;description&gt;Write conventional commit messages. Use before git commit.&lt;/description&gt;
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>  &lt;/skill&gt;
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>&lt;/available_skills&gt;
+</code></pre></div>
+<p><strong>Tier 2 — Activation (on demand)</strong></p>
+<p>When the model calls <code>activate_skill(name="pdf")</code>, it receives the full <code>SKILL.md</code> body, the skill directory path (so it can resolve relative references), and a listing of any bundled resource files:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="nt">&lt;skill_content</span><span class="w"> </span><span class="na">name=</span><span class="s">&quot;pdf&quot;</span><span class="nt">&gt;</span>
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>#<span class="w"> </span>PDF<span class="w"> </span>Processing
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>...full<span class="w"> </span>instructions...
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>Skill<span class="w"> </span>directory:<span class="w"> </span>/path/to/.agents/skills/pdf
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>Relative<span class="w"> </span>paths<span class="w"> </span>in<span class="w"> </span>this<span class="w"> </span>skill<span class="w"> </span>resolve<span class="w"> </span>against<span class="w"> </span>the<span class="w"> </span>skill<span class="w"> </span>directory.
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a><span class="nt">&lt;skill_resources&gt;</span>
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a><span class="w">  </span><span class="nt">&lt;file&gt;</span>scripts/extract.py<span class="nt">&lt;/file&gt;</span>
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a><span class="w">  </span><span class="nt">&lt;file&gt;</span>references/REFERENCE.md<span class="nt">&lt;/file&gt;</span>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a><span class="nt">&lt;/skill_resources&gt;</span>
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a><span class="nt">&lt;/skill_content&gt;</span>
+</code></pre></div>
+<p><strong>Tier 3 — Resources (on demand)</strong></p>
+<p>After activating a skill, the model can load any referenced files using its standard file-reading capability. Scripts, reference documents, and assets are loaded only when the instructions actually call for them.</p>
+<p><strong>Anthropic-hosted skill IDs</strong> skip tiers 1–3 entirely — they are merged into <code>model_args</code> before every API call:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a><span class="n">model_args</span><span class="p">[</span><span class="s2">&quot;skills&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="s2">&quot;skill_01abc&quot;</span><span class="p">}]</span>
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a><span class="n">model_args</span><span class="p">[</span><span class="s2">&quot;extra_headers&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;anthropic-beta&quot;</span><span class="p">:</span> <span class="s2">&quot;skills-2025-10-02&quot;</span><span class="p">}</span>
+</code></pre></div>
+<p>Anthropic handles content injection and tool grants server-side.</p>
+<h3 id="allowed-tools"><code>allowed-tools</code></h3>
+<p>The <code>allowed-tools</code> frontmatter field has different semantics depending on how the skill is loaded:</p>
+<p><strong>Anthropic-hosted skills</strong> (<code>skill_01abc</code>): <code>allowed-tools</code> is processed server-side. Tool grants (computer use, text editor, etc.) are applied automatically. No action required on your end.</p>
+<p><strong>Local and URL skills</strong>: <code>allowed-tools</code> is informational only. When the model activates a skill via <code>activate_skill</code>, the tool response includes a note listing the declared tool requirements. The agent does <strong>not</strong> automatically receive those tools — you must ensure they are configured on the agent's <code>Prompt</code> definition. If a skill needs API-level tool grants (e.g. <code>computer_20250124</code>), use the Anthropic-hosted version instead.</p>
+<h3 id="best-practices">Best practices</h3>
+<p><strong>Use progressive disclosure by default.</strong> The catalog + <code>activate_skill</code> pattern means agents with many installed skills pay only ~50–100 tokens per skill upfront. Full content is only loaded when actually needed.</p>
+<p><strong>Prefer Anthropic-hosted skills for tool-heavy capabilities.</strong> If a skill needs <code>computer_20250124</code>, <code>text_editor_20250124</code>, or other API-level tool grants, hosting it on Anthropic is the only way to get those tools granted automatically. For local skills, you'd have to manually wire up the tools yourself.</p>
+<p><strong>Keep <code>SKILL.md</code> under 500 lines.</strong> Move detailed reference material to <code>references/</code> files — the model can load them on demand from the <code>&lt;skill_resources&gt;</code> listing. This keeps tier-2 activation tokens low.</p>
+<p><strong>Write <code>description</code> as a trigger, not a title.</strong> The description is the only thing the model sees before deciding whether to activate a skill. Write it to answer "when should I use this?" with concrete keywords. <code>Extract PDF text, fill forms, merge files. Use when handling PDFs.</code> is better than <code>PDF utilities</code>.</p>
+<p><strong>Scope skills to the agents that need them.</strong> Giving every agent every skill bloats the catalog. Set skills globally when they apply universally; override per-agent for specialised roles. Per-agent <code>skills</code> replaces the global list, not merges with it.</p>
+<p><strong>Version control your <code>.agents/skills/</code> directory.</strong> Local skills are just files — commit them alongside your prompts and configs so the team shares the same capabilities.</p>
+<p><strong>URL skills are fetched at build time, not call time.</strong> If the remote URL is unreachable, a warning is logged and the skill is silently skipped. Cache important remote skills locally for reliability.</p>
+<hr />
+<h2 id="diagnostics">Diagnostics</h2>
+<p>Pass <code>return_session=True</code> to get the full <code>AgentCallSession</code> alongside the message:</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">ResearchTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">&quot;researcher&quot;</span><span class="p">]</span>
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>        <span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">&quot;research&quot;</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;topic&quot;</span><span class="p">:</span> <span class="n">task</span><span class="p">})</span>
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>        <span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="o">.</span><span class="n">parsed</span><span class="p">)</span>          <span class="c1"># structured output (if Pydantic format)</span>
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>            <span class="c1"># token costs</span>
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">invoke_traces</span><span class="p">))</span>       <span class="c1"># number of interrupt steps taken</span>
+<a id="__codelineno-21-11" name="__codelineno-21-11" href="#__codelineno-21-11"></a>        <span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">current_dialog</span><span class="o">.</span><span class="n">tree_overview</span><span class="p">())</span>  <span class="c1"># dialog tree structure</span>
+<a id="__codelineno-21-12" name="__codelineno-21-12" href="#__codelineno-21-12"></a>
+<a id="__codelineno-21-13" name="__codelineno-21-13" href="#__codelineno-21-13"></a>        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="o">.</span><span class="n">content</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.tabs.sticky", "navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
