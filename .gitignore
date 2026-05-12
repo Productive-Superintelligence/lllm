@@ -208,3 +208,6 @@ __marimo__/
 
 # MacOS
 .DS_Store
+
+# uv
+uv.lock
