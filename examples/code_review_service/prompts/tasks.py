@@ -52,7 +52,7 @@ class CodeReviewResult(BaseModel):
 
 # Stage 1 — raw analysis (free-form text)
 analyze_task = Prompt(
-    path="task/analyze",
+    path="analyze",
     prompt=(
         "Analyze the following {language} code.\n"
         "Identify all bugs, anti-patterns, security issues, and improvement opportunities.\n"
@@ -64,7 +64,7 @@ analyze_task = Prompt(
 
 # Stage 2 — structured review (LLM must respond with CodeReviewResult JSON)
 review_task = Prompt(
-    path="task/review",
+    path="review",
     prompt=(
         "Based on the code analysis below, produce a structured review.\n\n"
         "Analysis:\n{analysis}"
