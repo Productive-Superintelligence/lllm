@@ -24,8 +24,8 @@ No config files. No folder structure. No subclassing.
 ```python
 from lllm import Tactic
 
-agent = Tactic.quick("You are a helpful assistant.", model="gpt-4o")
-agent.open("chat")
+response, agent = Tactic.quick("Good morning.", model="gpt-4o", return_agent=True)
+agent.open("new_chat")
 agent.receive("What is the capital of France?")
 print(agent.respond().content)
 ```
@@ -35,7 +35,7 @@ print(agent.respond().content)
 To use Anthropic instead:
 
 ```python
-agent = Tactic.quick("You are a helpful assistant.", model="claude-opus-4-6")
+response = Tactic.quick("Good morning.", model="claude-opus-4-6")
 ```
 
 LiteLLM handles all provider differences automatically.
@@ -49,7 +49,12 @@ For experiments and one-off scripts, everything can stay inline. No config neede
 ```python
 from lllm import Tactic
 
-agent = Tactic.quick("You are a helpful assistant.", model="gpt-4o")
+response, agent = Tactic.quick(
+    "Good morning.", 
+    model="gpt-4o", 
+    system_prompt="You are a helpful assistant.",
+    return_agent=True
+)
 agent.open("session1")
 agent.receive("Summarize quantum computing in two sentences.")
 print(agent.respond().content)
