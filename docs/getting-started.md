@@ -66,6 +66,18 @@ print(agent.respond().content)
 
 When your prompts get long, you need multiple agents, or you want to reuse components across projects, it's time to move to a proper package.
 
+Start a standard project with:
+
+```bash
+lllm create my-app
+cd my-app
+uv sync --extra dev
+cp .env.example .env
+uv run python main.py
+```
+
+The default scaffold creates `lllm.toml`, `prompts/`, `configs/`, `tactics/`, `main.py`, and a smoke test. The `--template` flag accepts a bundled template name or a local folder containing `lllm-template.toml`.
+
 The [Tutorial: Build a Full Package](guides/building-agents.md) walks through it step by step — from a single file to a complete multi-agent system with logging and advanced customization.
 
 Or understand the model first:

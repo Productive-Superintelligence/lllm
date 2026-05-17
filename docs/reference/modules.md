@@ -10,6 +10,7 @@ This section lists the primary modules in the repository.
 | `lllm/core/resource.py` | `ResourceNode` (lazy/eager wrapper), `PackageInfo`, and convenience loaders (`load_prompt`, `load_tactic`, `load_proxy`, `load_config`, `load_resource`). |
 | `lllm/core/runtime.py` | `Runtime` — unified `ResourceNode`-based registry with namespace-aware resolution. Named runtimes via `load_runtime` / `get_runtime`. |
 | `lllm/core/config.py` | Package loading (`load_package`), TOML parsing, resource discovery, config inheritance (`resolve_config`, `_deep_merge`), `AgentSpec`, `parse_agent_configs`. |
+| `lllm/core/templates.py` | Template manifest parsing, source resolution, and rendering used by `lllm create`. |
 | `lllm/core/prompt.py` | `Prompt` model — template, parser, tools, handler. `Function`, `FunctionCall`, `MCP` descriptors. |
 | `lllm/core/dialog.py` | `Dialog` — append-only message sequence with tree structure. `Message`, `DialogTreeNode`. Serialization uses qualified prompt keys. |
 | `lllm/core/agent.py` | `Agent` — dialog management, agent call loop, retry/interrupt handling. |
@@ -21,12 +22,12 @@ This section lists the primary modules in the repository.
 | `lllm/invokers/` | Provider registry and concrete backends implementing `BaseInvoker`. |
 | `lllm/sandbox/` | `JupyterSession`, kernel management for code execution. |
 | `lllm/tools/cua.py` | Experimental Computer Use Agent (Playwright browser automation). |
-| `lllm/cli.py` | `lllm` command-line interface and template renderer. |
+| `lllm/cli.py` | `lllm` command-line interface for project creation and package management. |
 | `lllm/utils.py` | Filesystem helpers, caching, HTTP utilities, stream wrappers. |
 
-## Templates & Examples (`template/`)
+## Templates (`lllm/templates/`)
 
 | Path | Description |
 | --- | --- |
-| `template/init_template/` | Minimal scaffold used by `lllm create`. Includes `lllm.toml`, config stub. |
-| `template/example/` | Comprehensive example with system orchestration, prompts, proxies, and MCP wiring. |
+| `lllm/templates/minimal/lllm-template.toml` | Manifest for the bundled minimal project template. |
+| `lllm/templates/minimal/template/` | Files rendered by `lllm create my-app`. |

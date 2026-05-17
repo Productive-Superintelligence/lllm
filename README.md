@@ -90,8 +90,20 @@ That's it — no `lllm.toml`, no folder structure, no subclassing.
 
 As your project grows, you can gradually introduce structure:
 
+```bash
+lllm create my-app
+cd my-app
+uv sync --extra dev
+cp .env.example .env
+uv run python main.py
+```
+
+The generated project includes `lllm.toml`, `prompts/`, `configs/`, `tactics/`, `main.py`, and a smoke test. `lllm create` uses bundled templates and can also render a local template folder containing `lllm-template.toml`.
+
+You can also add structure manually:
+
 1. **Add a config file** — copy `lllm.toml.example` to `lllm.toml` and point it at your prompt/proxy folders
-2. **Move prompts to files** — put `.md` files under a `prompts/` folder; they auto-register via discovery
+2. **Move prompts to files** — put Python files with `Prompt` objects under a `prompts/` folder; they auto-register via discovery
 3. **Define agents in YAML** — use `AgentSpec` configs for multi-agent tactics
 4. **Subclass `Tactic`** — implement `call()` to orchestrate multiple agents
 
@@ -286,4 +298,3 @@ python -m mkdocs build --strict
 
 
 -->
-

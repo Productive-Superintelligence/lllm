@@ -18,6 +18,12 @@ Quick reference for naming conventions, folder layout, and configuration tips. F
 
 ## Recommended Folder Layout
 
+Create this structure automatically with:
+
+```bash
+lllm create my_project
+```
+
 ```
 my_project/
 ├── lllm.toml

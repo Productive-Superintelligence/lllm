@@ -46,6 +46,11 @@ dev = [
 ]
 
 [tool.setuptools.package-data]
+"lllm" = [
+    "templates/*/lllm-template.toml",
+    "templates/*/template/*",
+    "templates/*/template/**/*",
+]
 "lllm.core" = ["models.toml"]
 "lllm.proxies.builtin" = ["*.json", "*.md"]
 
@@ -56,4 +61,3 @@ markers = [
     "openai: marks tests that require OPENAI_API_KEY",
     "anthropic: marks tests that require ANTHROPIC_API_KEY",
 ]
-
