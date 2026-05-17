@@ -100,6 +100,16 @@ uv run python main.py
 
 The generated project includes `lllm.toml`, `prompts/`, `configs/`, `tactics/`, `main.py`, and a smoke test. `lllm create` uses bundled templates and can also render a local template folder containing `lllm-template.toml`.
 
+Built-in templates:
+
+| Template | Use when |
+| --- | --- |
+| `minimal` | You want the smallest runnable LLLM app. |
+| `pipeline` | You want a planner/writer/reviewer multi-agent workflow. |
+| `service` | You want a FastAPI-ready tactic service. |
+| `proxy` | You want to wrap an API/tool surface as an LLLM proxy. |
+| `research` | You want an experiment workspace with batch scripts and data. |
+
 You can also add structure manually:
 
 1. **Add a config file** — copy `lllm.toml.example` to `lllm.toml` and point it at your prompt/proxy folders

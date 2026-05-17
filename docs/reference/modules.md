@@ -29,5 +29,8 @@ This section lists the primary modules in the repository.
 
 | Path | Description |
 | --- | --- |
-| `lllm/templates/minimal/lllm-template.toml` | Manifest for the bundled minimal project template. |
-| `lllm/templates/minimal/template/` | Files rendered by `lllm create my-app`. |
+| `lllm/templates/minimal/` | Smallest runnable LLLM app. |
+| `lllm/templates/pipeline/` | Planner/writer/reviewer multi-agent workflow. |
+| `lllm/templates/service/` | FastAPI-ready tactic service. |
+| `lllm/templates/proxy/` | API/tool proxy integration scaffold. |
+| `lllm/templates/research/` | Experiment workspace with batch scripts and data resources. |

@@ -1,0 +1,18 @@
+[project]
+name = "{{pyproject_name}}"
+version = "0.1.0"
+description = "{{project_title}} LLLM service."
+requires-python = ">=3.10"
+dependencies = [
+    "lllm-core>=0.1.1.1",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

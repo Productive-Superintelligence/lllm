@@ -6,6 +6,63 @@ import unittest
 from pathlib import Path
 
 
+BUILTIN_TEMPLATES = {
+    "minimal": {
+        "config": "default",
+        "tactic": "assistant",
+        "agents": {"assistant"},
+        "resources": [
+            "prompts:assistant/system",
+            "configs:default",
+            "tactics:assistant",
+        ],
+    },
+    "pipeline": {
+        "config": "default",
+        "tactic": "pipeline",
+        "agents": {"planner", "writer", "reviewer"},
+        "resources": [
+            "prompts:pipeline/planner/system",
+            "prompts:pipeline/tasks/plan",
+            "configs:default",
+            "tactics:pipeline",
+        ],
+    },
+    "service": {
+        "config": "default",
+        "tactic": "service",
+        "agents": {"assistant"},
+        "resources": [
+            "prompts:service/system",
+            "configs:default",
+            "tactics:service",
+        ],
+    },
+    "proxy": {
+        "config": "default",
+        "tactic": "proxy_analyst",
+        "agents": {"analyst"},
+        "resources": [
+            "prompts:analyst/system",
+            "proxies:sample",
+            "configs:default",
+            "tactics:proxy_analyst",
+        ],
+    },
+    "research": {
+        "config": "default",
+        "tactic": "research",
+        "agents": {"researcher", "synthesizer"},
+        "resources": [
+            "prompts:research/researcher/system",
+            "data:topics.yaml",
+            "configs:default",
+            "tactics:research",
+        ],
+    },
+}
+
+
 def _write(path: Path, content: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(textwrap.dedent(content), encoding="utf-8")
@@ -13,13 +70,17 @@ def _write(path: Path, content: str) -> None:
 
 class TestTemplateResolution(unittest.TestCase):
     def test_builtin_template_resolution(self):
-        from lllm.core.templates import resolve_template
+        from lllm.core.templates import list_builtin_template_names, resolve_template
 
-        source = resolve_template("minimal")
+        self.assertEqual(sorted(BUILTIN_TEMPLATES), list_builtin_template_names())
 
-        self.assertEqual(source.kind, "builtin")
-        self.assertEqual(source.spec.name, "minimal")
-        self.assertEqual(source.spec.entry, "template")
+        for template_name in BUILTIN_TEMPLATES:
+            with self.subTest(template=template_name):
+                source = resolve_template(template_name)
+
+                self.assertEqual(source.kind, "builtin")
+                self.assertEqual(source.spec.name, template_name)
+                self.assertEqual(source.spec.entry, "template")
 
     def test_local_template_resolution(self):
         from lllm.core.templates import resolve_template
@@ -108,7 +169,7 @@ class TestTemplateRendering(unittest.TestCase):
 
 
 class TestCreateProject(unittest.TestCase):
-    def test_create_project_smoke(self):
+    def test_create_project_smoke_all_builtin_templates(self):
         from lllm.cli import create_project
         from lllm import build_tactic, resolve_config
         from lllm.core.config import load_package
@@ -132,31 +193,44 @@ class TestCreateProject(unittest.TestCase):
             ):
                 raise AssertionError("Smoke test should not call the LLM.")
 
-        with tempfile.TemporaryDirectory() as tmp:
-            project = create_project("demo-app", cwd=tmp)
+        for template_name, expected in BUILTIN_TEMPLATES.items():
+            with self.subTest(template=template_name):
+                with tempfile.TemporaryDirectory() as tmp:
+                    project = create_project(
+                        f"{template_name}-app",
+                        template_ref=template_name,
+                        cwd=tmp,
+                    )
+                    package_name = f"{template_name}_app"
 
-            self.assertTrue((project / "lllm.toml").is_file())
-            self.assertTrue((project / ".gitignore").is_file())
-            self.assertTrue((project / ".env.example").is_file())
-            self.assertEqual(
-                (project / "lllm.toml").read_text(encoding="utf-8").splitlines()[1],
-                'name = "demo_app"',
-            )
+                    self.assertTrue((project / "lllm.toml").is_file())
+                    self.assertTrue((project / ".gitignore").is_file())
+                    self.assertTrue((project / ".env.example").is_file())
+                    self.assertIn(
+                        f'name = "{package_name}"',
+                        (project / "lllm.toml").read_text(encoding="utf-8"),
+                    )
 
-            runtime = Runtime()
-            load_package(project / "lllm.toml", runtime=runtime)
-            self.assertTrue(runtime.has("demo_app.prompts:assistant/system"))
-            self.assertTrue(runtime.has("demo_app.configs:default"))
-            self.assertTrue(runtime.has("demo_app.tactics:assistant"))
+                    runtime = Runtime()
+                    load_package(project / "lllm.toml", runtime=runtime)
+                    for resource in expected["resources"]:
+                        section, key = resource.split(":", 1)
+                        self.assertTrue(
+                            runtime.has(f"{package_name}.{section}:{key}"),
+                            f"missing {resource}",
+                        )
 
-            config = resolve_config("demo_app:default", runtime=runtime)
-            config["invoker"] = "dummy"
-            register_invoker("dummy", lambda cfg: DummyInvoker(cfg), overwrite=True)
+                    config = resolve_config(
+                        f"{package_name}:{expected['config']}",
+                        runtime=runtime,
+                    )
+                    config["invoker"] = "dummy"
+                    register_invoker("dummy", lambda cfg: DummyInvoker(cfg), overwrite=True)
 
-            tactic = build_tactic(config, runtime=runtime)
+                    tactic = build_tactic(config, runtime=runtime)
 
-            self.assertEqual(tactic.name, "assistant")
-            self.assertIn("assistant", tactic.agents)
+                    self.assertEqual(tactic.name, expected["tactic"])
+                    self.assertEqual(set(tactic.agents), expected["agents"])
 
     def test_create_project_collision(self):
         from lllm.cli import create_project

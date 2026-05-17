@@ -1,0 +1,15 @@
+tactic_type: proxy_analyst
+
+global:
+  model_name: "{{model_name}}"
+  model_args:
+    temperature: 0.2
+  proxy:
+    activate_proxies: [sample]
+    exec_env: interpreter
+    max_output_chars: 4000
+    timeout: 30.0
+
+agent_configs:
+  - name: analyst
+    system_prompt_path: analyst/system

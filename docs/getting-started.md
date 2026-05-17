@@ -78,6 +78,16 @@ uv run python main.py
 
 The default scaffold creates `lllm.toml`, `prompts/`, `configs/`, `tactics/`, `main.py`, and a smoke test. The `--template` flag accepts a bundled template name or a local folder containing `lllm-template.toml`.
 
+Built-in templates:
+
+| Template | Purpose |
+| --- | --- |
+| `minimal` | Smallest runnable app |
+| `pipeline` | Planner/writer/reviewer workflow |
+| `service` | FastAPI-ready service |
+| `proxy` | API/tool proxy integration |
+| `research` | Experiment and batch workspace |
+
 The [Tutorial: Build a Full Package](guides/building-agents.md) walks through it step by step — from a single file to a complete multi-agent system with logging and advanced customization.
 
 Or understand the model first:

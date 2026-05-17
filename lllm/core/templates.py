@@ -147,6 +147,23 @@ def resolve_template(ref: str = DEFAULT_TEMPLATE) -> TemplateSource:
     )
 
 
+def list_builtin_templates() -> list[TemplateSpec]:
+    """Return specs for built-in templates bundled with LLLM."""
+
+    templates_root = resources.files("lllm").joinpath("templates")
+    specs: list[TemplateSpec] = []
+    for child in templates_root.iterdir():
+        if child.is_dir() and _has_manifest(child):
+            specs.append(_read_spec(child))
+    return sorted(specs, key=lambda spec: spec.name)
+
+
+def list_builtin_template_names() -> list[str]:
+    """Return names of built-in templates bundled with LLLM."""
+
+    return [spec.name for spec in list_builtin_templates()]
+
+
 def _is_simple_template_name(ref: str) -> bool:
     return re.fullmatch(r"[A-Za-z0-9_.-]+", ref) is not None
 

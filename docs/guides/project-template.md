@@ -24,6 +24,8 @@ Create this structure automatically with:
 lllm create my_project
 ```
 
+Use `--template pipeline`, `--template service`, `--template proxy`, or `--template research` for more specialized scaffolds.
+
 ```
 my_project/
 ├── lllm.toml

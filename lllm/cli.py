@@ -6,6 +6,7 @@ from pathlib import Path
 
 from lllm.core.templates import (
     DEFAULT_TEMPLATE,
+    list_builtin_template_names,
     normalize_package_name,
     normalize_pyproject_name,
     render_template,
@@ -26,7 +27,11 @@ def main(argv: list[str] | None = None) -> None:
     create_parser.add_argument(
         "--template",
         default=DEFAULT_TEMPLATE,
-        help=f"Built-in template name or local template folder (default: {DEFAULT_TEMPLATE}).",
+        help=(
+            "Built-in template name or local template folder "
+            f"(default: {DEFAULT_TEMPLATE}; built-ins: "
+            f"{', '.join(list_builtin_template_names())})."
+        ),
     )
     create_parser.add_argument(
         "--model",
