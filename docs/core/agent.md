@@ -153,6 +153,38 @@ revision = coder.respond()
 
 ---
 
+## Tools
+
+Agents can receive always-available tools through config. This is the agent-level version of adding resource URLs to a prompt's `function_list`: direct callable tools are appended to the agent's system prompt and are available on every prompt turn.
+
+```yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - shared_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.tactics:research#summarize
+    - shared_pkg.proxies:market_data
+
+agent_configs:
+  - name: analyst
+    system_prompt_path: system/analyst
+
+  - name: writer
+    system_prompt_path: system/writer
+    tools: []   # replaces global tools; writer gets none
+```
+
+Like `skills`, `tools` may be declared globally or per agent. A per-agent list replaces the global list. Use agent tools when a capability is part of the agent's standing surface. Use prompt-local `function_list` entries when only one prompt needs the tool.
+
+Supported entries are regular `@tool`/`Function` resources (`shared_pkg.tools:search`), tactic tool resources (`shared_pkg.tactics:code_review` or `shared_pkg.tactics:research#summarize`), and explicit proxy resources (`shared_pkg.proxies:market_data`). This is the resource-reference style: the agent config declares URLs, and the runtime resolves implementations from package resources. Proxy resources enable the proxy programming surface instead of becoming one direct function schema.
+
+Full URLs are best for package sharing. Bare names and package shorthand work for regular tools and tactic tools, resolving relative to the system prompt's package before runtime-default fallback. Prefer explicit proxy URLs for proxies so the config is unambiguous.
+
+To avoid cyclic definitions, config stores resource references rather than live agent objects. Prompt `Function` declarations bind to same-package `@tool` implementations by exact key when the prompt runs. Tool modules should define callables/classes at import time, not build agents or tactics at module scope. If a tool needs an agent, build or load that agent inside the tool function body.
+
+---
+
 ## Skills
 
 > **Experimental.** LLLM's skills support follows the [agentskills.io](https://agentskills.io) open standard, which is itself new and actively evolving. Both the spec and this implementation may change in future releases. The config format, discovery paths, tool names, and activation behaviour described here reflect the current state and should not be considered stable API.

@@ -19,7 +19,7 @@ from typing import Any, Dict, Iterator, List, Optional, Set, Type, TYPE_CHECKING
 from lllm.core.resource import ResourceNode, PackageInfo
 
 if TYPE_CHECKING:
-    from lllm.core.prompt import Prompt
+    from lllm.core.prompt import Function, Prompt
     from lllm.proxies.base import BaseProxy
 
 logger = logging.getLogger(__name__)
@@ -98,7 +98,7 @@ class Runtime:
                 ns_key = f"{self._default_namespace}.{resource_type}s:{key}"
                 if ns_key in self._resources:
                     return self._resources[ns_key]
-            for section in ("prompts", "proxies", "tactics", "configs"):
+            for section in ("prompts", "tools", "proxies", "tactics", "configs"):
                 ns_key = f"{self._default_namespace}.{section}:{key}"
                 if ns_key in self._resources:
                     return self._resources[ns_key]
@@ -182,9 +182,31 @@ class Runtime:
                                   namespace=namespace, resource_type="prompt")
         self.register(node, overwrite=overwrite)
         prompt._qualified_key = node.qualified_key  # type: ignore[attr-defined]
+        prompt._resource_namespace = node.namespace  # type: ignore[attr-defined]
 
     def get_prompt(self, path: str) -> "Prompt":
         return self.get(path, resource_type="prompt")
+
+    # ==================================================================
+    # Typed convenience — Tools
+    # ==================================================================
+
+    def register_tool(self, name: str, tool: "Function",
+                      overwrite: bool = True, namespace: str = "") -> None:
+        resource_leaf = str(name).rstrip("/").rsplit("/", 1)[-1]
+        if resource_leaf != tool.name:
+            raise ValueError(
+                f"Tool resource key '{name}' does not match tool name "
+                f"'{tool.name}'. Register tools under their exact name."
+            )
+        node = ResourceNode.eager(name, tool,
+                                  namespace=namespace, resource_type="tool")
+        self.register(node, overwrite=overwrite)
+        tool._qualified_key = node.qualified_key  # type: ignore[attr-defined]
+        tool._resource_namespace = node.namespace  # type: ignore[attr-defined]
+
+    def get_tool(self, path: str) -> "Function":
+        return self.get(path, resource_type="tool")
 
     # ==================================================================
     # Typed convenience — Proxies
@@ -195,6 +217,8 @@ class Runtime:
         node = ResourceNode.eager(name, proxy_cls,
                                   namespace=namespace, resource_type="proxy")
         self.register(node, overwrite=overwrite)
+        proxy_cls._qualified_key = node.qualified_key  # type: ignore[attr-defined]
+        proxy_cls._resource_namespace = node.namespace  # type: ignore[attr-defined]
 
     def get_proxy(self, path: str) -> Type["BaseProxy"]:
         return self.get(path, resource_type="proxy")
@@ -208,6 +232,8 @@ class Runtime:
         node = ResourceNode.eager(tactic_type, tactic_cls,
                                   namespace=namespace, resource_type="tactic")
         self.register(node, overwrite=overwrite)
+        tactic_cls._qualified_key = node.qualified_key  # type: ignore[attr-defined]
+        tactic_cls._resource_namespace = node.namespace  # type: ignore[attr-defined]
 
     def get_tactic(self, name: str) -> Type:
         return self.get(name, resource_type="tactic")

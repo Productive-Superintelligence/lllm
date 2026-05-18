@@ -49,8 +49,8 @@ class CodeReviewTactic(Tactic):
         synthesizer = self.agents["synthesizer"]
 
         # Load task prompts from the runtime registry (registered via lllm.toml)
-        analyze_prompt = load_prompt("task/analyze")
-        review_prompt  = load_prompt("task/review")
+        analyze_prompt = load_prompt("tasks/analyze")
+        review_prompt  = load_prompt("tasks/review")
 
         # ── Stage 1: free-form code analysis ────────────────────────────────
         analyzer.open("analysis")

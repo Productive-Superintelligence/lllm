@@ -177,9 +177,8 @@ class Function(BaseModel):
     Declarative description of a callable tool.
 
     The *schema* (name, description, properties, required) describes the tool
-    to the LLM.  The *implementation* is attached separately via
-    :meth:`link_function` or by using the :func:`tool` decorator which does
-    both in one step.
+    to the LLM.  The implementation is supplied by a package tool resource
+    with the same key, usually created by the :func:`tool` decorator.
     """
 
     name: str
@@ -195,22 +194,15 @@ class Function(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # -- Linking ----------------------------------------------------------
-
-    def link_function(self, fn: Any) -> None:
-        """Attach the Python callable that backs this tool."""
-        if not callable(fn):
-            raise TypeError(f"Expected a callable for function '{self.name}', got {type(fn)!r}")
-        self.function = fn
-
-    @property
-    def linked(self) -> bool:
-        return self.function is not None
-
     # -- Execution --------------------------------------------------------
 
     def __call__(self, function_call: FunctionCall) -> FunctionCall:
-        assert self.function is not None, f"Function '{self.name}' not linked"
+        if self.function is None:
+            raise RuntimeError(
+                f"Function '{self.name}' has no implementation. "
+                "Declare the schema in the prompt and register a matching "
+                "package tool implementation with @tool."
+            )
         try:
             result = self.function(**function_call.arguments)
         except Exception as e:
@@ -334,7 +326,7 @@ def tool(
         def get_weather(location: str, units: str = "celsius") -> str:
             return "Sunny, 22°C"
 
-        # get_weather is now a Function instance with the callable already linked.
+        # get_weather is now a Function instance with its implementation.
         prompt = Prompt(path="bot", prompt="...", function_list=[get_weather])
     """
 
@@ -627,7 +619,7 @@ class Prompt(BaseModel):
     format: Optional[Any] = None # Structured output (Pydantic model class or JSON schema dict)
 
     # -- Tools ------------------------------------------------------------
-    function_list: List[Function] = Field(default_factory=list)
+    function_list: List[Union[Function, str]] = Field(default_factory=list)
     mcp_servers_list: List[MCP] = Field(default_factory=list)
 
     # Provider-specific capabilities or args (like allow_web_search, computer_use_config, etc.)
@@ -647,7 +639,10 @@ class Prompt(BaseModel):
     _template_vars: set = PrivateAttr(default_factory=set)
 
     def model_post_init(self, __context):
-        self._functions = {f.name: f for f in self.function_list}
+        self._functions = {
+            f.name: f for f in self.function_list
+            if isinstance(f, Function)
+        }
         self._mcp_servers = {m.server_label: m for m in self.mcp_servers_list}
 
         _parser = string.Formatter()
@@ -659,6 +654,18 @@ class Prompt(BaseModel):
 
     @property
     def functions(self) -> Dict[str, Function]:
+        # ``model_copy(update={"function_list": ...})`` does not rebuild
+        # private attrs in pydantic v2. Rebuild lazily so copied prompts and
+        # resolved tactic refs expose the correct tool map.
+        functions = {
+            f.name: f for f in self.function_list
+            if isinstance(f, Function)
+        }
+        if (
+            set(functions) != set(self._functions)
+            or any(self._functions.get(k) is not v for k, v in functions.items())
+        ):
+            self._functions = functions
         return self._functions
 
     @property
@@ -700,15 +707,6 @@ class Prompt(BaseModel):
 
     # -- Tool management --------------------------------------------------
 
-    def link_function(self, name: str, fn: Callable) -> None:
-        """Attach a Python callable to an already-declared Function by name."""
-        if name not in self.functions:
-            raise KeyError(
-                f"Function '{name}' not declared on prompt '{self.path}'. "
-                f"Available: {sorted(self.functions)}"
-            )
-        self.functions[name].link_function(fn)
-
     def get_function(self, name: str) -> Function:
         """Retrieve a declared Function by name, with a clear error."""
         if name not in self.functions:
@@ -720,6 +718,84 @@ class Prompt(BaseModel):
 
     def register_mcp_server(self, server: MCP) -> None:
         self.mcp_servers[server.server_label] = server
+
+    def resolve_function_refs(self, runtime: Optional[Runtime] = None) -> "Prompt":
+        """
+        Resolve tool declarations into executable ``Function``s.
+
+        String entries may be regular tool resources or tactic tool resources.
+        Unimplemented ``Function`` objects are declarations that bind to a
+        regular tool resource with the same key in the prompt's package.
+        Resolution is package-local first when the prompt has a qualified
+        resource key.
+        """
+        runtime = runtime or get_default_runtime()
+        needs_resolution = any(
+            isinstance(item, str)
+            or (isinstance(item, Function) and item.function is None)
+            for item in self.function_list
+        )
+        if not needs_resolution:
+            # Still force a lazy rebuild for prompts produced by model_copy.
+            self._functions = {
+                f.name: f for f in self.function_list
+                if isinstance(f, Function)
+            }
+            return self
+
+        from lllm.core.tactic_tool import (
+            bind_function_declaration,
+            build_prompt_function_ref,
+            namespace_from_qualified_key,
+        )
+
+        base_namespace = (
+            getattr(self, "_resource_namespace", None)
+            or namespace_from_qualified_key(getattr(self, "_qualified_key", None))
+        )
+
+        resolved: List[Function] = []
+        seen: set[str] = set()
+        for item in self.function_list:
+            if isinstance(item, Function):
+                function = bind_function_declaration(
+                    item,
+                    runtime=runtime,
+                    base_namespace=base_namespace,
+                )
+            elif isinstance(item, str):
+                function = build_prompt_function_ref(
+                    item,
+                    runtime=runtime,
+                    base_namespace=base_namespace,
+                )
+            else:
+                raise TypeError(
+                    "function_list entries must be Function objects or tool "
+                    f"resource strings, got {type(item).__name__}"
+                )
+
+            if function.name in seen:
+                raise ValueError(
+                    f"Duplicate tool name '{function.name}' on prompt '{self.path}'"
+                )
+            seen.add(function.name)
+            resolved.append(function)
+
+        current = {
+            name: getattr(self, name)
+            for name in type(self).model_fields
+            if name not in ("_functions", "_mcp_servers")
+        }
+        current["function_list"] = resolved
+        prompt = type(self)(**current)
+        qualified_key = getattr(self, "_qualified_key", None)
+        if qualified_key is not None:
+            prompt._qualified_key = qualified_key  # type: ignore[attr-defined]
+        resource_namespace = getattr(self, "_resource_namespace", None)
+        if resource_namespace is not None:
+            prompt._resource_namespace = resource_namespace  # type: ignore[attr-defined]
+        return prompt
 
 
     # -- Handler management -----------------------------------------------
@@ -779,7 +855,10 @@ class Prompt(BaseModel):
             "path": self.path,
             "prompt_hash": hashlib.sha256(self.prompt.encode()).hexdigest()[:12],
             "metadata": self.metadata,
-            "functions": [f.name for f in self.function_list],
+            "functions": [
+                f.name if isinstance(f, Function) else f
+                for f in self.function_list
+            ],
             "mcp_servers": [m.server_label for m in self.mcp_servers_list],
             "addon_args": self.addon_args,
             "has_parser": self.parser is not None,

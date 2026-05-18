@@ -90,8 +90,30 @@ That's it — no `lllm.toml`, no folder structure, no subclassing.
 
 As your project grows, you can gradually introduce structure:
 
+```bash
+lllm create my-app
+cd my-app
+uv sync --extra dev
+cp .env.example .env
+uv run python main.py
+```
+
+The generated project includes `lllm.toml`, `prompts/`, `configs/`, `tactics/`, `main.py`, and a smoke test. `lllm create` uses bundled templates and can also render a local template folder containing `lllm-template.toml`.
+
+Built-in templates:
+
+| Template | Use when |
+| --- | --- |
+| `minimal` | You want the smallest runnable LLLM app. |
+| `pipeline` | You want a planner/writer/reviewer multi-agent workflow. |
+| `service` | You want a FastAPI-ready tactic service. |
+| `proxy` | You want to wrap an API/tool surface as an LLLM proxy. |
+| `research` | You want an experiment workspace with batch scripts and data. |
+
+You can also add structure manually:
+
 1. **Add a config file** — copy `lllm.toml.example` to `lllm.toml` and point it at your prompt/proxy folders
-2. **Move prompts to files** — put `.md` files under a `prompts/` folder; they auto-register via discovery
+2. **Move prompts to files** — put Python files with `Prompt` objects under a `prompts/` folder; they auto-register via discovery
 3. **Define agents in YAML** — use `AgentSpec` configs for multi-agent tactics
 4. **Subclass `Tactic`** — implement `call()` to orchestrate multiple agents
 
@@ -113,13 +135,14 @@ Each notebook is self-contained and includes environment setup instructions at t
 
 See [`examples/README.md`](examples/README.md) for the full index. A quick map:
 
-**Standalone scripts** — one API key, no extra setup:
+**Standalone scripts** — mostly one API key, no extra setup:
 
 | Script | What it shows |
 |--------|--------------|
 | [`basic_chat.py`](examples/basic_chat.py) | `Tactic.quick()` — zero-config single-agent chat |
 | [`multi_turn_chat.py`](examples/multi_turn_chat.py) | Multi-turn history, dialog `fork()` |
 | [`tool_use.py`](examples/tool_use.py) | `@tool` decorator, function calling, diagnostics |
+| [`package_tool_refs.py`](examples/package_tool_refs.py) | Package-style tool refs for coupled/decoupled regular tools, tactic tools, and proxies |
 | [`structured_output.py`](examples/structured_output.py) | `Prompt(format=MyModel)` — Pydantic structured output |
 
 **Advanced scripts** (in [`examples/advanced/`](examples/advanced/)) — auto-detect provider from env:
@@ -153,6 +176,20 @@ Built-in proxies (financial data, search, etc.) register automatically when thei
 This mirrors how prompts are auto-registered via `[prompts]` in `lllm.toml`.
 
 Once proxies are loaded you can check what is available by calling `Proxy().available()`.
+
+**Agent-level tools by resource URL** — add `tools:` to an agent config to make package-shared capabilities available on every prompt turn:
+
+```yaml
+global:
+  tools:
+    - shared_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.proxies:market_data
+```
+
+Regular `@tool` implementations and tactic refs become direct prompt tools. Prompt `Function` declarations bind to same-package `@tool` implementations by exact key. Proxy refs enable the proxy programming surface.
+
+That gives two regular tool styles: pass a decorated `@tool` function or URL when declaration and implementation are coupled, or put a `Function` declaration in the prompt/config and let the runtime match an exact-key package implementation. Tactic tools and proxies are adapters over those styles for agentic subsystems and programming-based API access.
 
 **Agent-level proxy tool injection** — add a `proxy:` block to an agent's config and LLLM automatically injects `run_python` and `query_api_doc` tools plus an API directory block into the system prompt:
 
@@ -200,7 +237,7 @@ pytest tests/
 - [x] Refactor registry to runtime (runtime.py), and discovery system (discovery.py)
 - [x] Refactor prompt model and prompt management (prompt.py)
   - [x] Prompt composition and inheritance
-  - [x] More graceful tool (link_function)
+  - [x] Package-key tool declarations and implementations
   - [x] Clearing up ad-hoc designs
   - [x] Better parsing system, more intuitive argument passing
   - [x] Better handling system for error, exception, interrupt
@@ -286,4 +323,3 @@ python -m mkdocs build --strict
 
 
 -->
-

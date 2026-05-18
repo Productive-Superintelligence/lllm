@@ -177,6 +177,34 @@ p = load_prompt("shared:common/system")
 
 ---
 
+## Agent Tools
+
+You can attach package tools to agents directly in YAML. This makes the tool available for every prompt turn for that agent:
+
+```yaml
+# configs/default.yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - shared_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.proxies:market_data
+
+agent_configs:
+  - name: analyst
+    system_prompt_path: system/analyst
+
+  - name: writer
+    system_prompt_path: system/writer
+    tools: []  # replaces global tools for this agent
+```
+
+`tools` follows the same global/per-agent replacement rule as `skills`. Entries can point to regular `@tool`/`Function` resources, tactic tools, or explicit proxy resources. This is the resource-reference style: the config declares URLs, and the runtime resolves implementations from package resources. It is the right place for global capabilities; keep one-off tools in the prompt's `function_list`. Use full URLs for package-shared tools; use `#tool_name` when selecting one exposed method from a tactic with multiple `@tactictool(...)` methods.
+
+Configs should name tools by URL, not construct agents in the tool module. Direct Function and tactic refs are resolved lazily when the prompt runs, which avoids most definition cycles. Proxy refs are resolved during agent construction because they inject the proxy directory and execution tools.
+
+---
+
 ## Skills
 
 > **Experimental.** Skills support follows the [agentskills.io](https://agentskills.io) open standard, which is actively evolving. Both the spec and this implementation may change in future releases.
@@ -329,6 +357,7 @@ A file at `prompts/v2/greeter.py` with `path="greeter/system"` will be registere
 | Load a prompt | `load_prompt("path")` |
 | Package dependencies | `[dependencies] packages = [...]` in `lllm.toml` |
 | Named runtimes | `load_runtime("name", ...)` |
+| Attach tools to agents | `tools: [pkg.tools:name, pkg.tactics:name, pkg.proxies:name]` in YAML (global or per-agent) |
 | Attach skills to agents | `skills: [pdf, commit]` in YAML (global or per-agent) |
 | Create a local skill | `.agents/skills/<name>/SKILL.md` with frontmatter |
 

@@ -18,6 +18,14 @@ Quick reference for naming conventions, folder layout, and configuration tips. F
 
 ## Recommended Folder Layout
 
+Create this structure automatically with:
+
+```bash
+lllm create my_project
+```
+
+Use `--template pipeline`, `--template service`, `--template proxy`, or `--template research` for more specialized scaffolds.
+
 ```
 my_project/
 ├── lllm.toml

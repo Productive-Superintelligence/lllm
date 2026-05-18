@@ -1,0 +1,19 @@
+[project]
+name = "{{pyproject_name}}"
+version = "0.1.0"
+description = "{{project_title}} research workspace built with LLLM."
+requires-python = ">=3.10"
+dependencies = [
+    "lllm-core>=0.1.1.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
+notebook = [
+    "jupyter>=1.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

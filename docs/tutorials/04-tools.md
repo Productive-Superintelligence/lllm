@@ -2,6 +2,13 @@
 
 Tools let an agent call Python functions during a conversation. The LLM decides when to invoke a tool, receives the result, and continues reasoning. LLLM handles the interrupt loop automatically.
 
+LLLM keeps the regular tool model small:
+
+- **Coupled declaration and implementation:** decorate a Python function with `@tool`. The resulting `Function` contains both the model-facing schema and the implementation. Pass it directly to a prompt, or register it in a package and reference its URL.
+- **Decoupled declaration and implementation:** put a `Function` declaration in the prompt, then define the implementation in a package tool module with an exact matching `@tool(name=...)`. This is useful when prompts or configs should act like headers while Python modules hold the implementation.
+
+Other tool definitions are adapters over those ideas. A tactic tool exposes an agentic subsystem as a `Function`; a proxy exposes many endpoints through a programming surface with `query_api_doc`, `run_python`, and `CALL_API`.
+
 ---
 
 ## The `@tool` Decorator
@@ -51,6 +58,18 @@ weather_prompt = Prompt(
 ```
 
 When the agent uses this prompt, the model sees the tool schema and can call `get_weather`.
+
+If the tool is packaged in an LLLM package, reference it by URL instead of importing the `Function` object:
+
+```python
+weather_prompt = Prompt(
+    path="weather_bot/system",
+    prompt="You are a weather assistant. Use your tools to answer questions.",
+    function_list=["shared_pkg.tools:get_weather"],
+)
+```
+
+Bare names resolve relative to the prompt's package first. Full URLs are clearer for shared packages.
 
 ---
 
@@ -136,9 +155,9 @@ def get_weather(city: str) -> str:
 
 ---
 
-## Building a `Function` Manually
+## Decoupled `Function` Declarations
 
-For tools with complex schemas or when you want to declare the schema separately from the implementation:
+For tools with complex schemas, or when you want the prompt to declare the schema separately from the implementation, create the `Function` as a declaration:
 
 ```python
 from lllm import Prompt
@@ -154,15 +173,43 @@ search_fn = Function(
     required=["query"],
 )
 
-# Attach the implementation separately
-search_fn.link_function(lambda query, max_results=5: f"Top {max_results} results for '{query}'")
-
 my_prompt = Prompt(
     path="research_bot/system",
     prompt="You are a research assistant.",
     function_list=[search_fn],
 )
 ```
+
+Then define the implementation as a package tool with the exact same public name:
+
+```python
+from lllm import tool
+
+@tool(name="web_search", description="Search the web for information")
+def web_search(query: str, max_results: int = 5) -> str:
+    return f"Top {max_results} results for {query!r}"
+```
+
+When the prompt runs in the same package, LLLM binds the declaration to `pkg.tools:web_search` automatically. If you need a tool from another package or a nested tool module, put the resource URL directly in `function_list`.
+
+### Mixing prompt-local tool styles
+
+A prompt can mix the styles when that is the clearest expression of ownership:
+
+```python
+prompt = Prompt(
+    path="research_bot/system",
+    prompt="Use the available tools when helpful.",
+    function_list=[
+        local_validator,                  # direct @tool Function object
+        "shared_pkg.tools:web_search",    # packaged @tool implementation
+        search_fn,                        # decoupled Function declaration
+        "shared_pkg.tactics:code_review", # tactic-backed tool
+    ],
+)
+```
+
+Use the direct object for local script code, the URL for package-shared implementations, the declaration form when the prompt should define an interface, and the tactic URL when the tool implementation is itself an agentic workflow.
 
 ---
 
@@ -213,16 +260,41 @@ The model sees `"Error: Division by zero"` as the result and can decide how to p
 
 ---
 
+## Agent Config Tools
+
+Use prompt-local `function_list` entries when only one prompt needs a tool. Use agent config `tools:` when the capability should be available on every prompt turn for that agent:
+
+```yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - shared_pkg.tools:web_search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.proxies:market_data
+
+agent_configs:
+  - name: analyst
+    system_prompt_path: analyst/system
+```
+
+Supported entries:
+
+- `pkg.tools:name` — a regular `@tool` / `Function` resource.
+- `pkg.tactics:name` or `pkg.tactics:name#method` — a tactic tool exposed with `@tactictool`.
+- `pkg.proxies:name` — a proxy resource; LLLM injects `query_api_doc` and, in interpreter mode, `run_python` with `CALL_API`.
+
+Configs store resource URLs, not live objects. This is the decoupled style at the agent-definition level: the config names the capabilities, and the runtime resolves implementations from package resources. Regular tool and tactic refs are resolved lazily when the prompt runs, which keeps package definitions from importing and building agents at module import time.
+
 ---
 
 ## Proxy Tools — Structured Access to External APIs { #proxy-tools }
 
-For agents that need to call many API endpoints, the `@tool` approach scales poorly: dozens of endpoints means dozens of tool definitions and a bloated context. LLLM's **proxy system** solves this with a two-tool pattern the agent uses lazily:
+For agents that need to call many API endpoints, the regular `@tool` approach scales poorly: dozens of endpoints means dozens of function schemas and a bloated context. LLLM's **proxy system** is the programming-based path: it gives the agent a small tool surface and lets it drive a mini sandbox lazily.
 
 - **`query_api_doc(proxy_name)`** — retrieve full endpoint documentation on demand
 - **`run_python(code)`** — execute Python in a persistent interpreter with `CALL_API` pre-injected
 
-The agent learns the endpoint structure just-in-time, then calls whatever it needs through `CALL_API` in Python. LLLM injects both tools and the supporting prompt block automatically when you declare a proxy config — no extra wiring needed.
+The agent learns the endpoint structure just-in-time, then calls whatever it needs through `CALL_API` in Python. LLLM injects both tools and the supporting prompt block automatically when you declare a proxy config or include an explicit proxy resource in config `tools:` — no tactic-level wiring needed.
 
 ### Step 1: Define a proxy
 
@@ -292,6 +364,17 @@ agent_configs:
       max_output_chars: 5000
       timeout: 60.0
 ```
+
+For a single packaged proxy, config `tools:` can be shorter:
+
+```yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - my_pkg.proxies:weather
+```
+
+Use the full `proxy:` block when you need to tune `exec_env`, timeout, truncation, or activate several proxies through one shared policy.
 
 Or in Python:
 
@@ -628,11 +711,14 @@ See [Proxies & Sandbox reference](../core/proxy-and-sandbox.md) for the full `Ju
 
 | Concept | API |
 |---|---|
-| Define a tool | `@tool(description=..., prop_desc={...})` |
+| Coupled tool definition | `@tool(description=..., prop_desc={...})` |
 | Attach to prompt | `Prompt(function_list=[my_fn])` |
+| Attach packaged tool to prompt | `Prompt(function_list=["pkg.tools:name"])` |
+| Attach tools to agent config | `tools: [pkg.tools:name, pkg.tactics:name, pkg.proxies:name]` |
 | Control loop depth | `Agent(max_interrupt_steps=N)` |
 | Custom result format | `@tool(processor=my_fn)` |
-| Manual schema | `Function(name=..., properties={...})` |
+| Decoupled tool declaration | `Function(name=..., properties={...})` + matching `@tool(name=...)` |
+| Tactic tool | `@tactictool("name", config=...)` + `pkg.tactics:name` |
 | MCP server | `Prompt(mcp_servers_list=[MCP(...)])` |
 | Define a proxy | `@ProxyRegistrator` + `@BaseProxy.endpoint` |
 | Wire proxy to agent | `proxy: {activate_proxies: [...], exec_env: interpreter}` |

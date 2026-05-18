@@ -8,16 +8,16 @@ from lllm.core.runtime import (
 )
 from lllm.core.resource import (
     ResourceNode, PackageInfo,
-    load_prompt, load_tactic, load_proxy, load_config, load_resource,
+    load_prompt, load_tool, load_tactic, load_proxy, load_config, load_resource,
 )
 from lllm.core.config import (
     load_package, find_config_file, load_cwd_fallback,
     resolve_config, AgentSpec, parse_agent_configs,
 )
-from lllm.core.prompt import Function, FunctionCall, MCP, Prompt
+from lllm.core.prompt import Function, FunctionCall, MCP, Prompt, tool
 from lllm.core.dialog import Message, Dialog
 from lllm.core.agent import Agent
-from lllm.core.tactic import Tactic, build_tactic, register_tactic_class
+from lllm.core.tactic import Tactic, build_tactic, register_tactic_class, tactictool
 from lllm.proxies import BaseProxy, ProxyManager, register_proxy, ProxyRegistrator
 from lllm.logging import LogStore, LocalFileBackend, SQLiteBackend, NoOpBackend, setup_logging
 

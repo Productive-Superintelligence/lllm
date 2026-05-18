@@ -117,6 +117,12 @@ def load_proxy(path: str, runtime: "Optional[Runtime]" = None):
     return (runtime or get_default_runtime()).get_proxy(path)
 
 
+def load_tool(path: str, runtime: "Optional[Runtime]" = None):
+    """Load a registered Function tool."""
+    from lllm.core.runtime import get_default_runtime
+    return (runtime or get_default_runtime()).get_tool(path)
+
+
 def load_config(path: str, runtime: "Optional[Runtime]" = None) -> Any:
     """Load a config dict (triggers lazy file read if needed)."""
     from lllm.core.runtime import get_default_runtime

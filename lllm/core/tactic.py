@@ -47,6 +47,7 @@ from lllm.core.const import APITypes
 from lllm.core.config import AgentSpec, parse_agent_configs
 from lllm.logging import LogStore
 from lllm.invokers import build_invoker
+from lllm.core.tactic_tool import tactictool
 
 logger = logging.getLogger(__name__)
 
@@ -537,6 +538,7 @@ class Tactic(ABC):
             system_prompt=prompt,
             model=model,
             llm_invoker=invoker,
+            runtime=get_default_runtime(),
             model_args=model_args,
         )
         if query is not None:

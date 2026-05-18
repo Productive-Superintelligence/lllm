@@ -3,7 +3,7 @@
 !!! note "Most users never touch this"
     The runtime initialises automatically when you `import lllm`. You only need this page if you are writing tests with isolated registries, running parallel experiments with separate runtimes, or integrating LLLM into a larger system that manages its own package loading.
 
-Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced URLs. It's where prompts, configs, tactics, and proxies are looked up by name.
+Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced URLs. It's where prompts, tools, configs, tactics, and proxies are looked up by name.
 
 
 ## Automatic Initialization
@@ -12,7 +12,7 @@ Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced U
 
 1. Searches upward from `cwd` for `lllm.toml` (or uses `$LLLM_CONFIG`).
 2. If found — loads the full package tree (dependencies, all resource sections).
-3. If not found — scans `cwd` for any of the standard folders (`prompts/`, `configs/`, `tactics/`, `proxies/`). If any exist, loads them and emits a `RuntimeWarning` suggesting you add an `lllm.toml`. If none exist, starts empty (fast mode, no output).
+3. If not found — scans `cwd` for any of the standard folders (`prompts/`, `tools/`, `configs/`, `tactics/`, `proxies/`). If any exist, loads them and emits a `RuntimeWarning` suggesting you add an `lllm.toml`. If none exist, starts empty (fast mode, no output).
 
 This means **you never call `load_runtime()` in normal usage** — it has already run by the time your first line of application code executes.
 
@@ -65,7 +65,7 @@ Runtime
 When you call `runtime.get(key)` or any typed convenience method, the resolution order is:
 
 1. **Exact match** — if `key` exists in `_resources`, return it.
-2. **Default namespace fallback** — if `key` has no `:`, try `default_ns.<section>s:key` for each built-in section (prompts, proxies, tactics, configs).
+2. **Default namespace fallback** — if `key` has no `:`, try `default_ns.<section>s:key` for each built-in section (prompts, tools, proxies, tactics, configs).
 3. **Section injection** — if `key` has `:` but no `.` in the package part (e.g. `"pkg:foo"`), and a `resource_type` is specified, try `"pkg.<type>s:foo"`.
 
 This means:
@@ -99,6 +99,9 @@ runtime = get_default_runtime()
 p = Prompt(path="test/greeting", prompt="Hello {name}!")
 runtime.register_prompt(p, namespace="my_pkg.prompts")
 
+# Register a regular Function tool
+runtime.register_tool("search", search_fn, namespace="my_pkg.tools")
+
 # Register a proxy class
 runtime.register_proxy("search/web", WebProxy, namespace="my_pkg.proxies")
 
@@ -110,6 +113,8 @@ runtime.register_config("default", {"model_name": "gpt-4o"}, namespace="my_pkg.c
 runtime.register_config("heavy", loader=lambda: yaml.safe_load(open("heavy.yaml")),
                          namespace="my_pkg.configs")
 ```
+
+For tools, the resource key's final path segment must match `search_fn.name`. This keeps prompt declarations and tool implementations bound by exact key instead of an explicit binding step.
 
 ### Via Low-Level API
 
@@ -186,6 +191,8 @@ def clean_runtime():
 | `keys(resource_type=None)` | List qualified keys, optionally filtered. |
 | `register_prompt(prompt, overwrite, namespace)` | Typed registration for prompts. |
 | `get_prompt(path)` | Typed retrieval for prompts. |
+| `register_tool(name, tool, overwrite, namespace)` | Typed registration for regular `Function` tools. |
+| `get_tool(path)` | Typed retrieval for regular `Function` tools. |
 | `register_proxy(name, cls, overwrite, namespace)` | Typed registration for proxies. |
 | `get_proxy(path)` | Typed retrieval for proxies. |
 | `register_tactic(name, cls, overwrite, namespace)` | Typed registration for tactics. |

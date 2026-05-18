@@ -9,6 +9,7 @@ logger = logging.getLogger(__name__)
 from lllm.core.prompt import Prompt, AgentException, AgentCallSession
 from lllm.core.const import Roles, APITypes
 from lllm.core.dialog import Dialog, Message, ContextManager
+from lllm.core.runtime import Runtime, get_default_runtime
 from lllm.invokers.base import BaseInvoker, BaseStreamHandler
 import lllm.utils as U
 
@@ -49,6 +50,7 @@ class Agent:
     model: str # the model identifier (e.g., 'gpt-4o'), by default, it from litellm model list (https://models.litellm.ai/)
     llm_invoker: BaseInvoker
     stream_handler: Optional[BaseStreamHandler] = None
+    runtime: Optional[Runtime] = None
 
     api_type: APITypes = APITypes.COMPLETION
     model_args: Dict[str, Any] = field(default_factory=dict) # additional args, like temperature, seed, etc.
@@ -60,6 +62,9 @@ class Agent:
     # Dialog management
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)
     _active_alias: Optional[str] = field(default=None, repr=False)
+
+    def __post_init__(self):
+        self.runtime = self.runtime or get_default_runtime()
 
     def open(self, alias: str, prompt_args: Optional[Dict[str, Any]] = None, session_name: Optional[str] = None, switch: bool = True):
         """
@@ -80,6 +85,7 @@ class Agent:
         dialog = Dialog(
             session_name=session_name or f"{self.name}_{alias}",
             owner=self.name,
+            runtime=self.runtime,
         )
         dialog.put_prompt(
             self.system_prompt, prompt_args,
@@ -285,6 +291,9 @@ class Agent:
         # Prompt: a function maps prompt args and dialog into the expected output 
         if dialog.top_prompt is None:
             dialog.top_prompt = self.system_prompt
+        dialog.top_prompt = dialog.top_prompt.resolve_function_refs(
+            dialog.runtime or self.runtime
+        )
         interrupts = []
         _max_steps = 100 if self.max_interrupt_steps == 0 else self.max_interrupt_steps + 1  # +1 for the final response
         if self.max_interrupt_steps == 0:
@@ -377,4 +386,3 @@ class Agent:
                 return session
         session.failure()
         raise ValueError(f'Failed to call the agent: {session}')
-

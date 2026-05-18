@@ -8,7 +8,7 @@ from lllm.core.prompt import Prompt
 
 
 analyzer_system = Prompt(
-    path="system/analyzer",
+    path="analyzer",
     prompt=(
         "You are an expert code analyst. "
         "Your job is to carefully read code and identify issues: bugs, security problems, "
@@ -20,7 +20,7 @@ analyzer_system = Prompt(
 )
 
 synthesizer_system = Prompt(
-    path="system/synthesizer",
+    path="synthesizer",
     prompt=(
         "You are a senior code reviewer. "
         "Given a raw code analysis, you produce a clear, structured review "
