@@ -193,6 +193,12 @@ class Runtime:
 
     def register_tool(self, name: str, tool: "Function",
                       overwrite: bool = True, namespace: str = "") -> None:
+        resource_leaf = str(name).rstrip("/").rsplit("/", 1)[-1]
+        if resource_leaf != tool.name:
+            raise ValueError(
+                f"Tool resource key '{name}' does not match tool name "
+                f"'{tool.name}'. Register tools under their exact name."
+            )
         node = ResourceNode.eager(name, tool,
                                   namespace=namespace, resource_type="tool")
         self.register(node, overwrite=overwrite)

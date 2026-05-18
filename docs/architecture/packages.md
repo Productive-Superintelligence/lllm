@@ -2,7 +2,7 @@
 
 After the quick start, you have one script and one agent. That works fine for experiments. But as your system grows — multiple prompts, multiple agents, tactics you want to reuse across projects — you need a way to organise and discover resources without hardcoding paths everywhere.
 
-The LLLM **package system** is that organisational layer. A package is a folder with an `lllm.toml` manifest that declares where your prompts, configs, tactics, and proxies live. LLLM handles discovery, namespacing, and lazy loading from there.
+The LLLM **package system** is that organisational layer. A package is a folder with an `lllm.toml` manifest that declares where your prompts, tools, proxies, configs, and tactics live. LLLM handles discovery, namespacing, and lazy loading from there.
 
 This is what the jump looks like:
 
@@ -22,13 +22,14 @@ For a step-by-step walkthrough of building a complete package from scratch, see 
 
 ---
 
-LLLM is Pythonic: you can use it purely as a library and organise your own code however you want. But separating LLLM resources (prompts, proxies, configs, tactics) into a package is the recommended approach for anything beyond a single script.
+LLLM is Pythonic: you can use it purely as a library and organise your own code however you want. But separating LLLM resources (prompts, tools, proxies, configs, tactics) into a package is the recommended approach for anything beyond a single script.
 
 A package is structured as:
 
 ```
 package_name/
   ├── prompts/        # Prompt objects for agents to call
+  ├── tools/          # Regular @tool Function implementations
   ├── proxies/        # Proxy-based tool implementations
   ├── configs/        # Agent configuration YAML files
   ├── tactics/        # Tactic subclasses
@@ -46,14 +47,14 @@ project_name/
 └── ... (application code, data, etc.)
 ```
 
-Conceptually, LLLM maintains a registry of prompts, proxies, configs, and tactics, loaded on demand through the `lllm.toml` file. All resources are indexed by URLs of the form `<package>.<section>:<resource_path>`. Tactics are the top-level building blocks — they find agent configs by key, prompts from the prompt registry, and proxy-based tools from the proxy registry.
+Conceptually, LLLM maintains a registry of prompts, tools, proxies, configs, and tactics, loaded on demand through the `lllm.toml` file. All resources are indexed by URLs of the form `<package>.<section>:<resource_path>`. Tactics are the top-level building blocks — they find agent configs by key, prompts from the prompt registry, regular tools from the tool registry, and proxy-based tools from the proxy registry.
 
 
 ## Runtime Initialization
 
 Everything is automatic. When `lllm` is imported, it searches upward from `cwd` for `lllm.toml` and loads the full package tree into the default runtime. `load_prompt("my_prompt")` works immediately with no setup code.
 
-If no `lllm.toml` is found, LLLM falls back to scanning the current directory for any of the four standard folders (`prompts/`, `configs/`, `tactics/`, `proxies/`). If found, those are loaded and a `RuntimeWarning` recommends adding an `lllm.toml`. If neither exists, the runtime starts empty (fast mode).
+If no `lllm.toml` is found, LLLM falls back to scanning the current directory for any of the five standard folders (`prompts/`, `tools/`, `configs/`, `tactics/`, `proxies/`). If found, those are loaded and a `RuntimeWarning` recommends adding an `lllm.toml`. If none exist, the runtime starts empty (fast mode).
 
 After loading the main package, LLLM also scans for **shared packages** in standard directories (see [Sharing Packages](#sharing-packages) below).
 
@@ -252,19 +253,20 @@ Include a `configs/example.yaml` (or similar) and a short `README` showing the t
 
 ## Resources
 
-LLLM has four built-in resource types: prompts, proxies, configs, and tactics. You can also define custom resource types via custom TOML sections.
+LLLM has five built-in resource types: prompts, tools, proxies, configs, and tactics. You can also define custom resource types via custom TOML sections.
 
-Every resource is internally wrapped in a `ResourceNode` object, which manages the qualified key, namespace, lazy loading, and metadata. `ResourceNode` is a **wrapper**, not a base class — the existing classes (Prompt, Tactic, BaseProxy) do not inherit from it.
+Every resource is internally wrapped in a `ResourceNode` object, which manages the qualified key, namespace, lazy loading, and metadata. `ResourceNode` is a **wrapper**, not a base class — the existing classes (`Prompt`, `Function`, `Tactic`, `BaseProxy`) do not inherit from it.
 
-For eager resources (prompts, tactics discovered at import time), the value is set immediately. For lazy resources (config YAML files, custom assets), the `ResourceNode` holds a loader callable and the file is only read on first access, then cached.
+For eager resources (prompts, tools, proxies, and tactics discovered at import time), the value is set immediately. For lazy resources (config YAML files, custom assets), the `ResourceNode` holds a loader callable and the file is only read on first access, then cached.
 
 
 ## lllm.toml Format
 
-An `lllm.toml` has six official sections: `[package]`, `[prompts]`, `[proxies]`, `[configs]`, `[tactics]`, and `[dependencies]`. Custom sections like `[assets]` are also supported.
+An `lllm.toml` has seven official sections: `[package]`, `[prompts]`, `[tools]`, `[proxies]`, `[configs]`, `[tactics]`, and `[dependencies]`. Custom sections like `[assets]` are also supported.
 
 - **[package]**: Package identity — name, version, description. All resources declared in this TOML are namespaced under this package name.
 - **[prompts]**: Paths to prompt folders. Defaults to `prompts/` if omitted. Empty if neither the section nor the subfolder exists.
+- **[tools]**: Paths to regular `Function` tools created by `@tool`. Defaults to `tools/`. Data files in this folder are also registered as lazy resources.
 - **[proxies]**: Paths to proxy folders. Defaults to `proxies/`.
 - **[configs]**: Paths to config folders (YAML files, loaded lazily). Defaults to `configs/`.
 - **[tactics]**: Paths to tactic folders. Defaults to `tactics/`.
@@ -422,7 +424,7 @@ Note: `under` modifies how resources appear in the **importing** package's names
 
 ## Custom Sections
 
-Beyond the four built-in sections, you can define any custom section in `lllm.toml` to package arbitrary files — images, ML model weights, JSON schemas, data files, or anything else your system needs.
+Beyond the built-in sections, you can define any custom section in `lllm.toml` to package arbitrary files — images, ML model weights, JSON schemas, data files, or anything else your system needs.
 
 ### How It Works
 
@@ -439,7 +441,7 @@ File loading behavior depends on extension:
 
 Resource keys **include the file extension** (unlike Python-based sections where `.py` is stripped), because the extension is part of the file identity — `logo.png` and `logo.svg` are different resources.
 
-Any `.py` files in custom section folders are also scanned for Python-defined resources (Prompt, Tactic, BaseProxy subclasses), so you can mix code and data in the same section.
+Any `.py` files in custom section folders are also scanned for Python-defined resources (`Prompt`, `Function`, `Tactic`, `BaseProxy` subclasses), so you can mix code and data in the same section.
 
 ### Declaring Custom Sections
 
@@ -588,6 +590,62 @@ agent_configs:
 ```
 
 
+### Tools
+
+Regular tools are `Function` objects, usually created with the `@tool` decorator.
+
+There are two package-friendly styles:
+
+- **Coupled style:** the decorated callable is the declaration and implementation. Import the `Function` object directly in local code, or reference the package resource URL from a prompt or agent config.
+- **Decoupled style:** a prompt declares a `Function` schema, and the package provides an exact-key `@tool(name=...)` implementation. This is similar to a header file plus implementation file: the prompt says what the model may call, and the tool module says how the call runs.
+
+**Registration paths:**
+
+1. **Discovery** (recommended) — list folders in `[tools]` section of `lllm.toml`. Every `Function` instance found at module scope is registered automatically.
+2. **Manual** — `runtime.register_tool("name", tool_fn, namespace="pkg.tools")`.
+
+**Defining a tool:**
+
+```python
+# tools/search.py
+from lllm import tool
+
+@tool(name="search", description="Search internal documents.")
+def search(query: str, top_k: int = 5) -> str:
+    return f"Top {top_k} results for {query}"
+```
+
+With `[tools] paths = ["tools"]` under package `my_pkg`, this registers as:
+- `my_pkg.tools:search`
+
+If you register manually with `runtime.register_tool("search", search, namespace="my_pkg.tools")`, the URL is:
+- `my_pkg.tools:search`
+
+If a module exposes several tools, each function name is included under the module path, e.g. `tools/math.py` with `square` and `cube` becomes `my_pkg.tools:math/square` and `my_pkg.tools:math/cube`.
+
+The resource key's final segment must match the tool's public name from `@tool(name=...)`. Prompt `Function` declarations bind to implementations by that exact name.
+
+**Using tools:**
+
+```python
+Prompt(
+    path="research/system",
+    prompt="Use tools when needed.",
+    function_list=["my_pkg.tools:search"],
+)
+```
+
+In agent config, `tools:` can include regular tools, tactic tools, and explicit proxies:
+
+```yaml
+global:
+  tools:
+    - my_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - market_pkg.proxies:prices
+```
+
+
 ### Proxies
 
 Proxies are `BaseProxy` subclasses decorated with `@ProxyRegistrator`. They have their own dispatch system (`Proxy` runtime) on top of the resource registry.
@@ -700,6 +758,6 @@ See [Configuration](../core/config.md) for full details on `global` merge, `base
 
 ### Custom Sections
 
-Any TOML section besides the six official ones is treated as a custom resource section. All non-Python files are registered lazily; Python files are also scanned for typed resources.
+Any TOML section besides the seven official ones is treated as a custom resource section. All non-Python files are registered lazily; Python files are also scanned for typed resources.
 
 See the [Custom Sections](#custom-sections) section above for full details.

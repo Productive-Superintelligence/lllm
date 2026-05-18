@@ -14,7 +14,7 @@ The key design principle: **the agent is a function, the `Prompt` is its type si
 ## Anatomy of a Prompt
 
 ```python
-from lllm.core.models import Prompt, DefaultTagParser, tool
+from lllm.core.prompt import Prompt, DefaultTagParser, tool
 
 @tool(
     description="Get current weather for a city",
@@ -78,7 +78,7 @@ With no arguments, the raw template string is returned unchanged. Literal braces
 Swap in any template engine by subclassing `BaseRenderer`:
 
 ```python
-from lllm.core.models import BaseRenderer
+from lllm.core.prompt import BaseRenderer
 
 class JinjaRenderer(BaseRenderer):
     def __init__(self):
@@ -118,7 +118,7 @@ prompt = Prompt(path="chat", prompt="Say hello to {name}.")
 ### Tag parser — structured XML / Markdown blocks
 
 ```python
-from lllm.core.models import DefaultTagParser
+from lllm.core.prompt import DefaultTagParser
 
 prompt = Prompt(
     path="analyst/report",
@@ -190,7 +190,7 @@ Note: `format` is not supported with the Responses API (`api_type="response"`). 
 Subclass `DefaultTagParser` to add domain-specific validation on top of standard tag extraction:
 
 ```python
-from lllm.core.models import DefaultTagParser
+from lllm.core.prompt import DefaultTagParser
 from lllm.core.const import ParseError
 
 class GraphParser(DefaultTagParser):
@@ -223,12 +223,19 @@ prompt = Prompt(
 
 ## Defining Tools
 
-### `@tool` decorator — schema and implementation together
+LLLM has one regular tool surface, `Function`, and two ways to program against it:
 
-The common case. The decorator inspects type hints and builds the JSON schema automatically:
+- **Coupled declaration and implementation:** use `@tool` when the Python function should carry its own schema and implementation together. This is the shortest path for local tools and for package tools that callers reference by URL.
+- **Decoupled declaration and implementation:** put a `Function` declaration in the prompt when the prompt should read like an interface, then provide a package `@tool(name=...)` implementation with the same final key. Runtime binding is an exact-key match.
+
+Tactic tools and proxies are built on top of this model. A tactic tool generates a `Function` backed by a tactic method. A proxy is the programming-oriented surface for broad API access, where the agent uses `query_api_doc`, `run_python`, and `CALL_API` instead of calling many one-off function schemas.
+
+### `@tool` decorator — tool implementations
+
+The common case. The decorator marks a Python callable as a package tool implementation and uses type hints to build a matching JSON schema automatically:
 
 ```python
-from lllm.core.models import tool
+from lllm.core.prompt import tool
 
 @tool(
     description="Search the web for current information",
@@ -274,14 +281,14 @@ names, then fall back to the runtime default namespace. Proxy refs are not
 valid in `function_list`; put `shared_pkg.proxies:name` in agent config
 `tools` so LLLM can inject the proxy directory and execution tools.
 
-### `Function` + `link_function` — schema and implementation apart
+### `Function` Declarations — schema and implementation apart
 
-Useful when the prompt file defines *what* tools exist (for the LLM to see) and the implementation is wired up separately at runtime — for example, from a proxy or a mock in tests:
+Useful when the prompt file defines *what* tools exist (for the LLM to see) and a package tool module defines *how* they run. Think of the prompt `Function` as a header declaration. At runtime, LLLM resolves it to an implementation in the same package by exact tool key.
 
 ```python
-from lllm.core.models import Function
+from lllm.core.prompt import Function
 
-# Schema defined in the prompt file — versionable, readable
+# prompts/research.py — schema declaration, versionable and readable
 search_schema = Function(
     name="search",
     description="Search an internal knowledge base",
@@ -291,13 +298,18 @@ search_schema = Function(
     },
     required=["query"],
 )
-
-# Implementation linked at runtime
-search_schema.link_function(my_retriever.search)
-
-# Or check if it's linked before calling
-assert search_schema.linked, "search tool has no implementation"
 ```
+
+```python
+# tools/search.py — implementation
+from lllm import tool
+
+@tool(name="search", description="Search internal documents.")
+def search(query: str, top_k: int = 5) -> str:
+    return my_retriever.search(query, top_k=top_k)
+```
+
+With both files in the same package, `search_schema` resolves to `pkg.tools:search` automatically when the prompt runs. If the implementation name differs, resolution fails instead of silently binding the wrong callable.
 
 ### Custom result formatting
 
@@ -348,7 +360,7 @@ The message is wrapped into a lightweight child `Prompt` via `extend()`, so it i
 ### Custom handler — rule-based
 
 ```python
-from lllm.core.models import BaseHandler, Prompt, AgentCallState
+from lllm.core.prompt import BaseHandler, Prompt, AgentCallState
 
 class RetryWithHintHandler(BaseHandler):
     """
@@ -549,7 +561,7 @@ prompts/
 Register manually without discovery:
 
 ```python
-from lllm.core.models import register_prompt
+from lllm.core.prompt import register_prompt
 
 register_prompt(my_prompt)              # overwrites by default
 register_prompt(my_prompt, overwrite=False)  # raises if path already registered
@@ -606,7 +618,7 @@ Below is what a real prompt `.py` file looks like. Discovery will register all m
 #   research/agent/task
 #   research/agent/summarise
 
-from lllm.core.models import Prompt, DefaultTagParser, tool, Function
+from lllm.core.prompt import Prompt, DefaultTagParser, tool, Function
 from lllm.core.const import ParseError
 
 
@@ -631,7 +643,7 @@ def fetch_url(url: str) -> str:
     return f"[Content of: {url}]"
 
 
-# Declared here for the LLM to see; implementation linked at runtime from a proxy
+# Declared here for the LLM to see; implemented by a package tool
 save_note = Function(
     name="save_note",
     description="Save a research note to the session store",
@@ -740,9 +752,7 @@ class ResearchAgent(Tactic):
             prompt_args={"date": datetime.date.today().isoformat()}
         )
 
-        # Link the runtime implementation to the declared schema
         task_prompt = runtime.get_prompt("research/agent/task")
-        task_prompt.link_function("save_note", self._save_note)
 
         agent.send_message(dialog, task_prompt, prompt_args={"question": task})
         response, dialog, call_state = agent.call(dialog)

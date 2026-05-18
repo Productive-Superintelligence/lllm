@@ -177,9 +177,8 @@ class Function(BaseModel):
     Declarative description of a callable tool.
 
     The *schema* (name, description, properties, required) describes the tool
-    to the LLM.  The *implementation* is attached separately via
-    :meth:`link_function` or by using the :func:`tool` decorator which does
-    both in one step.
+    to the LLM.  The implementation is supplied by a package tool resource
+    with the same key, usually created by the :func:`tool` decorator.
     """
 
     name: str
@@ -195,22 +194,15 @@ class Function(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    # -- Linking ----------------------------------------------------------
-
-    def link_function(self, fn: Any) -> None:
-        """Attach the Python callable that backs this tool."""
-        if not callable(fn):
-            raise TypeError(f"Expected a callable for function '{self.name}', got {type(fn)!r}")
-        self.function = fn
-
-    @property
-    def linked(self) -> bool:
-        return self.function is not None
-
     # -- Execution --------------------------------------------------------
 
     def __call__(self, function_call: FunctionCall) -> FunctionCall:
-        assert self.function is not None, f"Function '{self.name}' not linked"
+        if self.function is None:
+            raise RuntimeError(
+                f"Function '{self.name}' has no implementation. "
+                "Declare the schema in the prompt and register a matching "
+                "package tool implementation with @tool."
+            )
         try:
             result = self.function(**function_call.arguments)
         except Exception as e:
@@ -334,7 +326,7 @@ def tool(
         def get_weather(location: str, units: str = "celsius") -> str:
             return "Sunny, 22°C"
 
-        # get_weather is now a Function instance with the callable already linked.
+        # get_weather is now a Function instance with its implementation.
         prompt = Prompt(path="bot", prompt="...", function_list=[get_weather])
     """
 
@@ -715,15 +707,6 @@ class Prompt(BaseModel):
 
     # -- Tool management --------------------------------------------------
 
-    def link_function(self, name: str, fn: Callable) -> None:
-        """Attach a Python callable to an already-declared Function by name."""
-        if name not in self.functions:
-            raise KeyError(
-                f"Function '{name}' not declared on prompt '{self.path}'. "
-                f"Available: {sorted(self.functions)}"
-            )
-        self.functions[name].link_function(fn)
-
     def get_function(self, name: str) -> Function:
         """Retrieve a declared Function by name, with a clear error."""
         if name not in self.functions:
@@ -738,14 +721,21 @@ class Prompt(BaseModel):
 
     def resolve_function_refs(self, runtime: Optional[Runtime] = None) -> "Prompt":
         """
-        Resolve string entries in ``function_list`` into linked ``Function``s.
+        Resolve tool declarations into executable ``Function``s.
 
         String entries may be regular tool resources or tactic tool resources.
+        Unimplemented ``Function`` objects are declarations that bind to a
+        regular tool resource with the same key in the prompt's package.
         Resolution is package-local first when the prompt has a qualified
         resource key.
         """
         runtime = runtime or get_default_runtime()
-        if not any(isinstance(item, str) for item in self.function_list):
+        needs_resolution = any(
+            isinstance(item, str)
+            or (isinstance(item, Function) and item.function is None)
+            for item in self.function_list
+        )
+        if not needs_resolution:
             # Still force a lazy rebuild for prompts produced by model_copy.
             self._functions = {
                 f.name: f for f in self.function_list
@@ -754,6 +744,7 @@ class Prompt(BaseModel):
             return self
 
         from lllm.core.tactic_tool import (
+            bind_function_declaration,
             build_prompt_function_ref,
             namespace_from_qualified_key,
         )
@@ -767,7 +758,11 @@ class Prompt(BaseModel):
         seen: set[str] = set()
         for item in self.function_list:
             if isinstance(item, Function):
-                function = item
+                function = bind_function_declaration(
+                    item,
+                    runtime=runtime,
+                    base_namespace=base_namespace,
+                )
             elif isinstance(item, str):
                 function = build_prompt_function_ref(
                     item,

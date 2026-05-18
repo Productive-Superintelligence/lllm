@@ -57,9 +57,18 @@ def _runtime_with_regular_tool():
         description="Uppercase text.",
     )
 
+    def local_shout(text: str) -> str:
+        return text.upper()
+
+    local_tool_fn = Function.from_callable(
+        local_shout,
+        name="local_shout",
+        description="Uppercase text.",
+    )
+
     rt = Runtime()
     rt.register_tool("shout", tool_fn, namespace="producer.tools")
-    rt.register_tool("local_shout", tool_fn, namespace="consumer.tools")
+    rt.register_tool("local_shout", local_tool_fn, namespace="consumer.tools")
     return rt, tool_fn
 
 
@@ -252,6 +261,112 @@ class TestTacticPromptToolRefs(unittest.TestCase):
 
 
 class TestRegisteredFunctionToolRefs(unittest.TestCase):
+    def test_prompt_can_mix_direct_tool_url_and_declaration_styles(self):
+        from lllm.core.const import FunctionCall
+        from lllm.core.prompt import Function, Prompt
+
+        rt, _ = _runtime_with_regular_tool()
+
+        def count_chars(text: str) -> int:
+            return len(text)
+
+        direct_tool = Function.from_callable(
+            count_chars,
+            name="count_chars",
+            description="Count characters.",
+        )
+        declaration = Function(
+            name="local_shout",
+            description="Uppercase text.",
+            properties={"text": {"type": "string"}},
+            required=["text"],
+        )
+        prompt = Prompt(
+            path="main",
+            prompt="Use tools.",
+            function_list=[
+                direct_tool,
+                "producer.tools:shout",
+                declaration,
+            ],
+        )
+        prompt._qualified_key = "consumer.prompts:main"
+
+        resolved = prompt.resolve_function_refs(rt)
+        self.assertEqual(
+            sorted(resolved.functions),
+            ["count_chars", "local_shout", "shout"],
+        )
+
+        direct_result = resolved.functions["count_chars"](
+            FunctionCall(id="call_1", name="count_chars", arguments={"text": "abc"})
+        )
+        url_result = resolved.functions["shout"](
+            FunctionCall(id="call_2", name="shout", arguments={"text": "hello"})
+        )
+        declaration_result = resolved.functions["local_shout"](
+            FunctionCall(id="call_3", name="local_shout", arguments={"text": "local"})
+        )
+        self.assertEqual(direct_result.result, 3)
+        self.assertEqual(url_result.result, "HELLO")
+        self.assertEqual(declaration_result.result, "LOCAL")
+
+    def test_prompt_function_declaration_auto_binds_by_package_key(self):
+        from lllm.core.const import FunctionCall
+        from lllm.core.prompt import Function, Prompt
+
+        rt, _ = _runtime_with_regular_tool()
+        declaration = Function(
+            name="shout",
+            description="Uppercase text.",
+            properties={"text": {"type": "string"}},
+            required=["text"],
+        )
+        prompt = Prompt(
+            path="main",
+            prompt="Use tools.",
+            function_list=[declaration],
+        )
+        prompt._qualified_key = "producer.prompts:main"
+
+        resolved = prompt.resolve_function_refs(rt)
+        self.assertIn("shout", resolved.functions)
+        self.assertIsNotNone(resolved.functions["shout"].function)
+
+        result = resolved.functions["shout"](
+            FunctionCall(id="call_1", name="shout", arguments={"text": "hello"})
+        )
+        self.assertEqual(result.result, "HELLO")
+
+    def test_prompt_function_declaration_requires_exact_tool_name_match(self):
+        from lllm.core.prompt import Function, Prompt
+        from lllm.core.resource import ResourceNode
+        from lllm.core.runtime import Runtime
+
+        _, tool_fn = _runtime_with_regular_tool()
+        rt = Runtime()
+        rt.register(ResourceNode.eager(
+            "local_shout",
+            tool_fn,
+            namespace="consumer.tools",
+            resource_type="tool",
+        ))
+        declaration = Function(
+            name="local_shout",
+            description="Uppercase text.",
+            properties={"text": {"type": "string"}},
+            required=["text"],
+        )
+        prompt = Prompt(
+            path="main",
+            prompt="Use tools.",
+            function_list=[declaration],
+        )
+        prompt._qualified_key = "consumer.prompts:main"
+
+        with self.assertRaisesRegex(ValueError, "exact name"):
+            prompt.resolve_function_refs(rt)
+
     def test_prompt_function_list_resolves_registered_tool_url(self):
         from lllm.core.const import FunctionCall
         from lllm.core.prompt import Prompt
@@ -283,13 +398,22 @@ class TestRegisteredFunctionToolRefs(unittest.TestCase):
         prompt._qualified_key = "consumer.prompts:main"
 
         resolved = prompt.resolve_function_refs(rt)
-        self.assertIn("shout", resolved.functions)
+        self.assertIn("local_shout", resolved.functions)
 
     def test_ambiguous_tool_and_tactic_ref_requires_full_url(self):
+        from lllm.core.prompt import Function
         from lllm.core.prompt import Prompt
 
         rt, _ = _runtime_with_echo()
-        _, tool_fn = _runtime_with_regular_tool()
+
+        def echo(text: str) -> str:
+            return text
+
+        tool_fn = Function.from_callable(
+            echo,
+            name="echo",
+            description="Echo text.",
+        )
         rt.register_tool("echo", tool_fn, namespace="producer.tools")
 
         prompt = Prompt(
@@ -324,11 +448,19 @@ class TestRegisteredFunctionToolRefs(unittest.TestCase):
                 def double(value: int) -> int:
                     return value * 2
             """))
+            (tmp / "tools" / "search.py").write_text(textwrap.dedent("""\
+                from lllm import tool
+
+                @tool(name="search", description="Search documents.")
+                def search(query: str) -> str:
+                    return f"result: {query}"
+            """))
 
             rt = Runtime()
             load_package(str(tmp / "lllm.toml"), runtime=rt)
 
         self.assertTrue(rt.has("tool_pkg.tools:basic/double"))
+        self.assertTrue(rt.has("tool_pkg.tools:search"))
         prompt = Prompt(
             path="main",
             prompt="Use tools.",
@@ -498,6 +630,130 @@ class TestAgentConfigTools(unittest.TestCase):
         self.assertIn("run_python", agent.system_prompt.functions)
         self.assertIn("Market Proxy", agent.system_prompt.prompt)
         self.assertIn("quote", agent.system_prompt.prompt)
+
+    def test_agent_config_can_mix_regular_tactic_and_proxy_refs(self):
+        from lllm.core.config import parse_agent_configs
+        from lllm.core.const import FunctionCall
+        from lllm.core.prompt import Prompt
+        from lllm.proxies.base import BaseProxy
+
+        rt, _ = _runtime_with_echo()
+        _, shout_fn = _runtime_with_regular_tool()
+        rt.register_tool("shout", shout_fn, namespace="producer.tools")
+
+        class MarketProxy(BaseProxy):
+            _proxy_path = "market"
+            _proxy_name = "Market Proxy"
+            _proxy_description = "Market data"
+
+            @BaseProxy.endpoint(
+                category="market",
+                endpoint="quote",
+                description="Get a quote.",
+                params={"symbol*": (str, "AAPL")},
+                response=["quote"],
+            )
+            def quote(self, symbol: str):
+                return {"symbol": symbol, "price": 1}
+
+        rt.register_proxy("market", MarketProxy, namespace="producer.proxies")
+        prompt = Prompt(path="system/main", prompt="Use tools.")
+        rt.register_prompt(prompt, namespace="consumer.prompts")
+
+        config = {
+            "global": {
+                "model_name": "noop-model",
+                "tools": [
+                    "producer.tools:shout",
+                    "producer.tactics:echo",
+                    "producer.proxies:market",
+                ],
+            },
+            "agent_configs": [
+                {
+                    "name": "assistant",
+                    "system_prompt_path": "consumer.prompts:system/main",
+                }
+            ],
+        }
+
+        spec = parse_agent_configs(config, ["assistant"], "tool_test")["assistant"]
+        agent = spec.build(rt, object())
+
+        self.assertIn("query_api_doc", agent.system_prompt.functions)
+        self.assertIn("run_python", agent.system_prompt.functions)
+
+        resolved_prompt = agent.system_prompt.resolve_function_refs(rt)
+        self.assertIn("shout", resolved_prompt.functions)
+        self.assertIn("echo", resolved_prompt.functions)
+
+        shout_result = resolved_prompt.functions["shout"](
+            FunctionCall(id="call_1", name="shout", arguments={"text": "hello"})
+        )
+        echo_result = resolved_prompt.functions["echo"](
+            FunctionCall(
+                id="call_2",
+                name="echo",
+                arguments={"text": "hello", "suffix": "?"},
+            )
+        )
+        self.assertEqual(shout_result.result, "HELLO")
+        self.assertEqual(echo_result.result, '{"value":"hello?"}')
+
+    def test_direct_tool_refs_are_lazy_until_prompt_resolution(self):
+        from lllm.core.config import parse_agent_configs
+        from lllm.core.prompt import Prompt
+        from lllm.core.runtime import Runtime
+
+        rt = Runtime()
+        prompt = Prompt(path="system/main", prompt="Use tools.")
+        rt.register_prompt(prompt, namespace="consumer.prompts")
+
+        config = {
+            "global": {
+                "model_name": "noop-model",
+                "tools": ["producer.tools:missing"],
+            },
+            "agent_configs": [
+                {
+                    "name": "assistant",
+                    "system_prompt_path": "consumer.prompts:system/main",
+                }
+            ],
+        }
+
+        spec = parse_agent_configs(config, ["assistant"], "tool_test")["assistant"]
+        agent = spec.build(rt, object())
+
+        self.assertIn("producer.tools:missing", agent.system_prompt.function_list)
+        with self.assertRaisesRegex(KeyError, "Could not resolve tool resource"):
+            agent.system_prompt.resolve_function_refs(rt)
+
+    def test_proxy_refs_are_resolved_during_agent_build(self):
+        from lllm.core.config import parse_agent_configs
+        from lllm.core.prompt import Prompt
+        from lllm.core.runtime import Runtime
+
+        rt = Runtime()
+        prompt = Prompt(path="system/main", prompt="Use tools.")
+        rt.register_prompt(prompt, namespace="consumer.prompts")
+
+        config = {
+            "global": {
+                "model_name": "noop-model",
+                "tools": ["producer.proxies:missing"],
+            },
+            "agent_configs": [
+                {
+                    "name": "assistant",
+                    "system_prompt_path": "consumer.prompts:system/main",
+                }
+            ],
+        }
+
+        spec = parse_agent_configs(config, ["assistant"], "tool_test")["assistant"]
+        with self.assertRaisesRegex(KeyError, "Could not resolve proxy resource"):
+            spec.build(rt, object())
 
     def test_global_bare_tools_resolve_relative_to_prompt_package(self):
         from lllm.core.config import parse_agent_configs

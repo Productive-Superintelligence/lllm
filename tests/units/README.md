@@ -1,6 +1,6 @@
 # Unit Tests
 
-**558 tests** across 9 test files, all passing with no external dependencies or API keys required.
+**669 tests** across 13 test files. They do not require API keys; context-window tests require `litellm`, and cache tests need a writable LLLM cache directory.
 
 Run the full suite:
 
@@ -47,7 +47,7 @@ Dialog, message, and conversation tree structures (`lllm/core/dialog.py`).
 
 ---
 
-### `test_prompt.py` — 95 tests
+### `test_prompt.py` — 91 tests
 Prompt rendering, extension, parsing, and the `@tool` decorator (`lllm/core/prompt.py`).
 
 | Class | What it tests |
@@ -99,6 +99,18 @@ Tactic session tracking and agent wrapping (`lllm/core/tactic.py`).
 | `TestTrackedAgent` | `__getattr__`/`__setattr__` delegation, `respond()` recording, `return_session=True` |
 | `TestTacticRegistration` | `@Tactic` subclass auto-registers by `name`, `get_nonexistent` raises |
 | `TestTacticAutoRegistration` | Subclass with `name` attribute is auto-registered on class definition |
+
+---
+
+### `test_tactic_tool.py` — 25 tests
+Tactic tools, package-discovered regular tools, proxy refs in agent config, and shared tool URL resolution (`lllm/core/tactic_tool.py`, `lllm/core/config.py`, `lllm/proxies/base.py`).
+
+| Class | What it tests |
+|---|---|
+| `TestTacticPromptToolRefs` | `@tactictool`, full/bare/shorthand tactic URLs, URL fragments, fallback warnings, missing config errors |
+| `TestRegisteredFunctionToolRefs` | Regular `Function` tool URLs, mixed direct/URL/declaration prompt styles, prompt declaration auto-binding, `[tools]` section discovery, package-local bare refs, ambiguity between tool and tactic shorthand |
+| `TestTacticProxyEndpoints` | Tactic-backed proxy endpoints, API directory exposure, `ProxyManager` dispatch, imperative registration |
+| `TestAgentConfigTools` | Global/per-agent `tools`, mixed regular/tactic/proxy refs, proxy refs enabling `query_api_doc` / `run_python` |
 
 ---
 

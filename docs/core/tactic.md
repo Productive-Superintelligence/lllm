@@ -347,6 +347,8 @@ Simple tactics can just use `str` in and `str` out — both work through the sam
 
 Tactic tools intentionally make the abstraction graph recursive. A `Tactic` is LLLM's top-level orchestration unit, while a `Prompt` is the low-level call signature an agent sees at one turn. Exposing a tactic as a tool lets a prompt call back into a complete agentic subsystem: a planner prompt can invoke a code-review tactic, that tactic can run its own agents and prompts, and the result returns through the normal tool-call loop. This is the package-sharing path for reusable agentic capabilities.
 
+Mechanically, a tactic tool is a generated `Function` backed by a decorated tactic method. It is not a separate regular-tool system: use `@tool` when a plain Python function is enough, and use `@tactictool` when the implementation needs tactic initialization, agent configs, prompts, or multiple internal agent turns.
+
 Package-shared tactics can be exposed as tools by putting a tactic resource URL directly in a prompt's `function_list`:
 
 ```python
@@ -414,7 +416,7 @@ class SharedProxy(BaseProxy):
 
 Tactic-backed proxy endpoints appear in `query_api_doc` and dispatch through `CALL_API` like regular proxy endpoints.
 
-You can also attach tactic tools at agent-config time so every prompt turn for that agent sees them:
+You can also attach package tools at agent-config time so every prompt turn for that agent sees them:
 
 ```yaml
 global:

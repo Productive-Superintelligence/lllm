@@ -2,6 +2,8 @@
 
 LLLM treats external API access as a first-class capability. Proxies standardize how agents reach external APIs. The sandbox system enables agents to execute Python code.
 
+A proxy is not just another way to define one regular function tool. It is the programming-based tool surface: the agent asks for endpoint docs with `query_api_doc`, writes small Python programs with `run_python`, and calls registered endpoints through `CALL_API`. Use proxies when an agent needs many related endpoints, stateful analysis, or a mini sandbox; use regular `@tool` functions when the model should call a small number of direct schemas.
+
 LLLM ships two built-in execution environments:
 
 - **Interpreter** — lightweight in-process `exec()`, zero overhead, parallel-safe. Best for fast data retrieval and computation.
@@ -13,7 +15,7 @@ Both are optional. You can also bring your own execution environment — any obj
 
 ## Overview: Execution Modes
 
-When an agent is configured with `proxy:`, it gets automatic API awareness. The `exec_env` field controls *how* the agent uses those APIs:
+When an agent is configured with `proxy:` or with an explicit proxy resource in config `tools:`, it gets automatic API awareness. The `exec_env` field controls *how* the agent uses those APIs:
 
 | `exec_env` | Tools injected | What the agent does | Who runs code |
 |-----------------|----------------|---------------------|---------------|
@@ -44,6 +46,17 @@ proxy:
   timeout: 60.0                        # seconds before TimeoutError (interpreter only)
   prompt_template: null                # override auto-selected system prompt block
 ```
+
+For a single packaged proxy with default interpreter settings, you can also use agent config `tools:`:
+
+```yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - market_pkg.proxies:fmp
+```
+
+Use `proxy:` when you need to tune `exec_env`, timeout, truncation, deploy mode, or activate several proxies through one shared policy.
 
 ```yaml
 global:

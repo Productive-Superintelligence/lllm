@@ -195,22 +195,10 @@ class TestFunction(unittest.TestCase):
         fn = self._make_fn()
         self.assertEqual(fn.name, "get_weather")
         self.assertIsNone(fn.function)
-        self.assertFalse(fn.linked)
-
-    def test_link_function(self):
-        fn = self._make_fn()
-        fn.link_function(lambda city, units="celsius": f"Sunny in {city}")
-        self.assertTrue(fn.linked)
-
-    def test_link_non_callable_raises(self):
-        fn = self._make_fn()
-        with self.assertRaises(TypeError):
-            fn.link_function("not a callable")
 
     def test_call_success(self):
         from lllm.core.const import FunctionCall
-        fn = self._make_fn()
-        fn.link_function(lambda city, units="celsius": f"22°C in {city}")
+        fn = self._make_fn(function=lambda city, units="celsius": f"22°C in {city}")
         fc = FunctionCall(id="c1", name="get_weather", arguments={"city": "Paris"})
         result = fn(fc)
         self.assertTrue(result.success)
@@ -218,18 +206,17 @@ class TestFunction(unittest.TestCase):
 
     def test_call_exception_captured(self):
         from lllm.core.const import FunctionCall
-        fn = self._make_fn()
-        fn.link_function(lambda city, units: 1 / 0)  # will raise ZeroDivisionError
+        fn = self._make_fn(function=lambda city, units: 1 / 0)  # will raise ZeroDivisionError
         fc = FunctionCall(id="c1", name="get_weather", arguments={"city": "Paris", "units": "celsius"})
         result = fn(fc)
         self.assertIsNotNone(result.error_message)
         self.assertFalse(result.success)
 
-    def test_call_unlinked_raises_assertion(self):
+    def test_call_unimplemented_raises_runtime_error(self):
         from lllm.core.const import FunctionCall
         fn = self._make_fn()
         fc = FunctionCall(id="c1", name="get_weather", arguments={"city": "Paris"})
-        with self.assertRaises(AssertionError):
+        with self.assertRaises(RuntimeError):
             fn(fc)
 
     def test_to_tool_litellm(self):
@@ -343,7 +330,7 @@ class TestToolDecorator(unittest.TestCase):
         self.assertIsInstance(get_temp, Function)
         self.assertEqual(get_temp.name, "get_temp")
         self.assertEqual(get_temp.description, "Get the current temperature")
-        self.assertTrue(get_temp.linked)
+        self.assertTrue(callable(get_temp.function))
 
     def test_decorator_with_name_override(self):
         from lllm.core.prompt import tool, Function
@@ -516,18 +503,6 @@ class TestPrompt(unittest.TestCase):
         result = p.parse("<answer>42</answer>")
         self.assertEqual(result["xml_tags"]["answer"], ["42"])
         self.assertIn("raw", result)
-
-    def test_link_function(self):
-        from lllm.core.prompt import Prompt, Function
-        fn = Function(name="get_data", description="Get data", properties={}, required=[])
-        p = Prompt(path="test", prompt="Use get_data", function_list=[fn])
-        p.link_function("get_data", lambda: {"data": 42})
-        self.assertTrue(p.functions["get_data"].linked)
-
-    def test_link_function_not_found_raises(self):
-        p = self._make()
-        with self.assertRaises(KeyError):
-            p.link_function("nonexistent", lambda: None)
 
     def test_get_function(self):
         from lllm.core.prompt import Prompt, Function

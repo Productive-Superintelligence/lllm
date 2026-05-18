@@ -1,11 +1,13 @@
 # LLLM Examples
 
-All examples require an API key for at least one provider:
+Most examples require an API key for at least one provider:
 
 ```bash
 export OPENAI_API_KEY=sk-...        # uses gpt-4o / gpt-4o-mini
 export ANTHROPIC_API_KEY=sk-ant-... # uses claude-haiku-4-5-20251001
 ```
+
+`package_tool_refs.py` is local-only and does not call an LLM.
 
 ---
 
@@ -46,6 +48,18 @@ python examples/tool_use.py
 ```
 
 Covers: `@tool` decorator (auto-infers JSON schema from type hints), attaching tools to a `Prompt` via `function_list`, agent automatically calling tools and feeding results back, call diagnostics via `return_session=True`.
+
+---
+
+### [`package_tool_refs.py`](package_tool_refs.py)
+
+Package-style tool references without an LLM call.
+
+```bash
+python examples/package_tool_refs.py
+```
+
+Covers: coupled direct `@tool` objects, packaged `pkg.tools` URL refs, decoupled prompt `Function` declarations bound by exact key, tactic tool resources under `pkg.tactics`, proxy resources under `pkg.proxies`, prompt-local tool URL resolution, and agent config `tools:` wiring.
 
 ---
 
@@ -162,6 +176,7 @@ See [`code_review_service/README.md`](code_review_service/README.md) for full do
 | Zero-config single-agent chat | `basic_chat.py` |
 | Multi-turn conversation + dialog fork | `multi_turn_chat.py` |
 | `@tool` decorator + function calling | `tool_use.py` |
+| Package tool refs in prompt/config | `package_tool_refs.py` |
 | Pydantic structured output | `structured_output.py` |
 | Custom `Tactic` subclass | `advanced/multi_agent_tactic.py` |
 | Session persistence + querying | `advanced/session_logging.py` |

@@ -166,9 +166,11 @@ Supported entries:
 - `shared_pkg.tactics:research#summarize` — a named tactic tool method.
 - `shared_pkg.proxies:market_data` — a proxy resource; this enables the proxy programming surface (`query_api_doc` plus `run_python` when `exec_env: interpreter`).
 
+This is the config-level form of the decoupled tool style. The config declares the tool URLs that belong to the agent's global surface; the implementation is resolved from package resources. Regular `@tool` functions and tactic tools become direct prompt tools. Proxy refs enable a programming surface rather than one direct function schema, because the agent discovers endpoint docs and calls `CALL_API` from the sandbox.
+
 Full URLs are recommended for shared packages. Bare names and package shorthand work for regular tools and tactic tools, resolving relative to the agent's system-prompt package before falling back to the runtime default namespace. Proxy entries should use an explicit proxy URL such as `pkg.proxies:name`, because proxies change the whole prompt/tool surface rather than becoming one direct function schema.
 
-To avoid cyclic definitions, config stores only resource references. Regular `Function` and tactic refs are left as strings when the agent is built and are resolved only when the prompt is about to run. Proxy refs are the exception because the agent must inject the proxy directory and execution tools before the first model call. Keep tool modules declarative at import time: define `@tool` functions and `BaseProxy` classes there, but do not build agents or tactics at module scope. If a tool needs to call an agent, construct or load that agent inside the tool function body.
+To avoid cyclic definitions, config stores only resource references. Regular tool and tactic refs are left as strings when the agent is built and are resolved only when the prompt is about to run. Prompt `Function` declarations bind to same-package `@tool` implementations by exact key. Proxy refs are the exception because the agent must inject the proxy directory and execution tools before the first model call. Keep tool modules declarative at import time: define `@tool` functions and `BaseProxy` classes there, but do not build agents or tactics at module scope. If a tool needs to call an agent, construct or load that agent inside the tool function body.
 
 ---
 

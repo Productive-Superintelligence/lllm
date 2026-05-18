@@ -199,7 +199,7 @@ agent_configs:
     tools: []  # replaces global tools for this agent
 ```
 
-`tools` follows the same global/per-agent replacement rule as `skills`. Entries can point to regular `@tool`/`Function` resources, tactic tools, or explicit proxy resources. Use full URLs for package-shared tools; use `#tool_name` when selecting one exposed method from a tactic with multiple `@tactictool(...)` methods.
+`tools` follows the same global/per-agent replacement rule as `skills`. Entries can point to regular `@tool`/`Function` resources, tactic tools, or explicit proxy resources. This is the resource-reference style: the config declares URLs, and the runtime resolves implementations from package resources. It is the right place for global capabilities; keep one-off tools in the prompt's `function_list`. Use full URLs for package-shared tools; use `#tool_name` when selecting one exposed method from a tactic with multiple `@tactictool(...)` methods.
 
 Configs should name tools by URL, not construct agents in the tool module. Direct Function and tactic refs are resolved lazily when the prompt runs, which avoids most definition cycles. Proxy refs are resolved during agent construction because they inject the proxy directory and execution tools.
 
@@ -357,7 +357,7 @@ A file at `prompts/v2/greeter.py` with `path="greeter/system"` will be registere
 | Load a prompt | `load_prompt("path")` |
 | Package dependencies | `[dependencies] packages = [...]` in `lllm.toml` |
 | Named runtimes | `load_runtime("name", ...)` |
-| Attach tactic tools to agents | `tools: [shared_pkg.tactics:tool]` in YAML (global or per-agent) |
+| Attach tools to agents | `tools: [pkg.tools:name, pkg.tactics:name, pkg.proxies:name]` in YAML (global or per-agent) |
 | Attach skills to agents | `skills: [pdf, commit]` in YAML (global or per-agent) |
 | Create a local skill | `.agents/skills/<name>/SKILL.md` with frontmatter |
 

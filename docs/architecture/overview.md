@@ -62,10 +62,17 @@ A `Prompt` is the specification for a single agent turn:
 
 - **Template** — string or `.md` file with `{variable}` slots
 - **Parser** — extracts structured output from the raw LLM text
-- **Tools** — callable Python functions linked to the prompt's tool schema
+- **Tools** — regular function tools, tactic-backed tools, and proxy programming surfaces
 - **Handlers** — `on_exception` and `on_interrupt` prompts for the call loop
 
 Prompts compose: one prompt can `extend()` another, inheriting its tools and parser.
+
+Tool definitions have two regular programming styles:
+
+- **Coupled declaration and implementation.** `@tool` decorates a Python callable and produces a `Function` with both the schema and the implementation. Pass that object directly to `Prompt(function_list=[...])`, or register it in a package and reference it by URL such as `shared_pkg.tools:search`.
+- **Decoupled declaration and implementation.** A prompt can carry a bare `Function` declaration - effectively a header - while a package `@tool(name=...)` function provides the implementation. At runtime LLLM binds them by exact package key, so the prompt remains declarative and the implementation remains normal Python.
+
+Tactic tools and proxies build on those ideas rather than forming unrelated tool systems. A tactic tool exposes a whole `Tactic` as a prompt-callable `Function`, which makes the abstraction graph recursive: a low-level prompt turn can call a high-level agentic subsystem. A proxy exposes an API surface through `query_api_doc`, `run_python`, and `CALL_API`, which is the programming-based path for agents that need many related endpoints or a small sandbox.
 
 ### Dialog — the mental state
 
@@ -105,10 +112,12 @@ tactic(task)
 
 The four abstractions describe *what* is inside an agentic system. The **package system** describes *how* it is organised and made available across files and projects.
 
-A package is a folder with an `lllm.toml` manifest. It declares where your prompts, configs, tactics, and proxies live, and LLLM handles discovery, namespacing, and lazy loading from there. All resources are addressable by a namespaced URL:
+A package is a folder with an `lllm.toml` manifest. It declares where your prompts, tools, configs, tactics, and proxies live, and LLLM handles discovery, namespacing, and lazy loading from there. All resources are addressable by a namespaced URL:
 
 ```
 my_pkg.prompts:research/system
+my_pkg.tools:search
+my_pkg.proxies:market_data
 my_pkg.tactics:research_writer
 ```
 

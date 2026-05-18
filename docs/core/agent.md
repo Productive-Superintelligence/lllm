@@ -177,11 +177,11 @@ agent_configs:
 
 Like `skills`, `tools` may be declared globally or per agent. A per-agent list replaces the global list. Use agent tools when a capability is part of the agent's standing surface. Use prompt-local `function_list` entries when only one prompt needs the tool.
 
-Supported entries are regular `@tool`/`Function` resources (`shared_pkg.tools:search`), tactic tool resources (`shared_pkg.tactics:code_review` or `shared_pkg.tactics:research#summarize`), and explicit proxy resources (`shared_pkg.proxies:market_data`). Proxy resources enable the proxy programming surface instead of becoming one direct function schema.
+Supported entries are regular `@tool`/`Function` resources (`shared_pkg.tools:search`), tactic tool resources (`shared_pkg.tactics:code_review` or `shared_pkg.tactics:research#summarize`), and explicit proxy resources (`shared_pkg.proxies:market_data`). This is the resource-reference style: the agent config declares URLs, and the runtime resolves implementations from package resources. Proxy resources enable the proxy programming surface instead of becoming one direct function schema.
 
 Full URLs are best for package sharing. Bare names and package shorthand work for regular tools and tactic tools, resolving relative to the system prompt's package before runtime-default fallback. Prefer explicit proxy URLs for proxies so the config is unambiguous.
 
-To avoid cyclic definitions, config stores resource references rather than live agent objects. Tool modules should define callables/classes at import time, not build agents or tactics at module scope. If a tool needs an agent, build or load that agent inside the tool function body.
+To avoid cyclic definitions, config stores resource references rather than live agent objects. Prompt `Function` declarations bind to same-package `@tool` implementations by exact key when the prompt runs. Tool modules should define callables/classes at import time, not build agents or tactics at module scope. If a tool needs an agent, build or load that agent inside the tool function body.
 
 ---
 

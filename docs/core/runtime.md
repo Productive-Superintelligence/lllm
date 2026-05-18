@@ -3,7 +3,7 @@
 !!! note "Most users never touch this"
     The runtime initialises automatically when you `import lllm`. You only need this page if you are writing tests with isolated registries, running parallel experiments with separate runtimes, or integrating LLLM into a larger system that manages its own package loading.
 
-Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced URLs. It's where prompts, configs, tactics, and proxies are looked up by name.
+Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced URLs. It's where prompts, tools, configs, tactics, and proxies are looked up by name.
 
 
 ## Automatic Initialization
@@ -12,7 +12,7 @@ Every LLLM runtime is a unified `ResourceNode`-based store keyed by namespaced U
 
 1. Searches upward from `cwd` for `lllm.toml` (or uses `$LLLM_CONFIG`).
 2. If found — loads the full package tree (dependencies, all resource sections).
-3. If not found — scans `cwd` for any of the standard folders (`prompts/`, `configs/`, `tactics/`, `proxies/`). If any exist, loads them and emits a `RuntimeWarning` suggesting you add an `lllm.toml`. If none exist, starts empty (fast mode, no output).
+3. If not found — scans `cwd` for any of the standard folders (`prompts/`, `tools/`, `configs/`, `tactics/`, `proxies/`). If any exist, loads them and emits a `RuntimeWarning` suggesting you add an `lllm.toml`. If none exist, starts empty (fast mode, no output).
 
 This means **you never call `load_runtime()` in normal usage** — it has already run by the time your first line of application code executes.
 
@@ -113,6 +113,8 @@ runtime.register_config("default", {"model_name": "gpt-4o"}, namespace="my_pkg.c
 runtime.register_config("heavy", loader=lambda: yaml.safe_load(open("heavy.yaml")),
                          namespace="my_pkg.configs")
 ```
+
+For tools, the resource key's final path segment must match `search_fn.name`. This keeps prompt declarations and tool implementations bound by exact key instead of an explicit binding step.
 
 ### Via Low-Level API
 

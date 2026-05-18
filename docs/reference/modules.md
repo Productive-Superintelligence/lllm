@@ -7,11 +7,12 @@ This section lists the primary modules in the repository.
 | File | Description |
 | --- | --- |
 | `lllm/__init__.py` | Public exports, `_auto_init()` to populate the default runtime from `lllm.toml`. |
-| `lllm/core/resource.py` | `ResourceNode` (lazy/eager wrapper), `PackageInfo`, and convenience loaders (`load_prompt`, `load_tactic`, `load_proxy`, `load_config`, `load_resource`). |
+| `lllm/core/resource.py` | `ResourceNode` (lazy/eager wrapper), `PackageInfo`, and convenience loaders (`load_prompt`, `load_tool`, `load_tactic`, `load_proxy`, `load_config`, `load_resource`). |
 | `lllm/core/runtime.py` | `Runtime` — unified `ResourceNode`-based registry with namespace-aware resolution. Named runtimes via `load_runtime` / `get_runtime`. |
 | `lllm/core/config.py` | Package loading (`load_package`), TOML parsing, resource discovery, config inheritance (`resolve_config`, `_deep_merge`), `AgentSpec`, `parse_agent_configs`. |
 | `lllm/core/templates.py` | Template manifest parsing, source resolution, and rendering used by `lllm create`. |
 | `lllm/core/prompt.py` | `Prompt` model — template, parser, tools, handler. `Function`, `FunctionCall`, `MCP` descriptors. |
+| `lllm/core/tactic_tool.py` | Adapters for package tool refs: regular `Function` resources, tactic tools, and proxy refs in agent config. |
 | `lllm/core/dialog.py` | `Dialog` — append-only message sequence with tree structure. `Message`, `DialogTreeNode`. Serialization uses qualified prompt keys. |
 | `lllm/core/agent.py` | `Agent` — dialog management, agent call loop, retry/interrupt handling. |
 | `lllm/core/tactic.py` | `Tactic` — top-level abstraction wiring agents to prompts. `TacticCallSession`, `_TrackedAgent`, `build_tactic`, `register_tactic_class`. |

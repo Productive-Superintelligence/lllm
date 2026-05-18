@@ -589,7 +589,10 @@ def _register_tools(module, relative, runtime, namespace, resource_type, prefix)
     for attr_name, attr in vars(module).items():
         if not isinstance(attr, Function):
             continue
-        key = _make_key(prefix, relative, attr.name)
+        if attr.name == Path(relative).name:
+            key = _make_key(prefix, "", relative)
+        else:
+            key = _make_key(prefix, relative, attr.name)
         node = ResourceNode.eager(key, attr, namespace=namespace,
                                   resource_type=resource_type)
         try:

@@ -236,6 +236,53 @@ def _copy_function_tool(function: Function) -> Function:
     return function.model_copy()
 
 
+def bind_function_declaration(
+    declaration: Function,
+    *,
+    runtime: Optional[Runtime] = None,
+    base_namespace: Optional[str] = None,
+) -> Function:
+    """
+    Bind a prompt-local ``Function`` declaration to its package implementation.
+
+    Prompt declarations behave like header files: they describe the schema the
+    model sees. The implementation is a registered ``pkg.tools:<name>``
+    resource created by ``@tool``. Matching is exact on the declaration name
+    within the prompt package, then through the runtime's normal typed fallback.
+    """
+    if declaration.function is not None:
+        return declaration
+
+    node = resolve_resource_node(
+        declaration.name,
+        runtime=runtime,
+        resource_type="tool",
+        base_namespace=base_namespace,
+    )
+    implementation = node.value
+    if not isinstance(implementation, Function):
+        raise TypeError(
+            f"Tool resource '{node.qualified_key}' is {type(implementation).__name__}, "
+            "expected lllm.core.prompt.Function."
+        )
+    if implementation.name != declaration.name:
+        raise ValueError(
+            f"Tool declaration '{declaration.name}' resolved to "
+            f"'{node.qualified_key}', but the implementation tool name is "
+            f"'{implementation.name}'. Tool declarations bind only by exact name."
+        )
+    if implementation.function is None:
+        raise ValueError(
+            f"Tool resource '{node.qualified_key}' has no implementation. "
+            "Use @tool to define the callable implementation."
+        )
+
+    return declaration.model_copy(update={
+        "function": implementation.function,
+        "processor": implementation.processor,
+    })
+
+
 def build_registered_function(
     tool_ref: str,
     *,
@@ -256,6 +303,18 @@ def build_registered_function(
             "expected lllm.core.prompt.Function. "
             "Only @tool/Function resources are directly prompt-callable."
         )
+    resource_leaf = node.key.rstrip("/").rsplit("/", 1)[-1]
+    if resource_leaf != function.name:
+        raise ValueError(
+            f"Tool resource '{node.qualified_key}' key does not match "
+            f"implementation name '{function.name}'. Tool resources bind by "
+            "exact name."
+        )
+    if function.function is None:
+        raise ValueError(
+            f"Tool resource '{node.qualified_key}' has no implementation. "
+            "Use @tool to define the callable implementation."
+        )
     return _copy_function_tool(function)
 
 
@@ -266,7 +325,7 @@ def build_prompt_function_ref(
     base_namespace: Optional[str] = None,
 ) -> Function:
     """
-    Resolve a prompt-callable string ref into a linked ``Function``.
+    Resolve a prompt-callable string ref into an executable ``Function``.
 
     Supported callable refs are registered ``Function`` tools and tactic
     tools. Proxy refs are intentionally rejected here; proxies need agent-level
@@ -734,7 +793,7 @@ def build_tactic_function(
     base_namespace: Optional[str] = None,
     config: Any = None,
 ) -> Function:
-    """Build a linked ``Function`` that calls the referenced tactic."""
+    """Build an executable ``Function`` that calls the referenced tactic."""
     runtime = runtime or get_default_runtime()
     spec = get_tactic_tool_spec(
         tactic_ref,
