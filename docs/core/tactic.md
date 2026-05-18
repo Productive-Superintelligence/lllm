@@ -343,6 +343,98 @@ Simple tactics can just use `str` in and `str` out — both work through the sam
 
 ---
 
+## Tactics as Tools
+
+Tactic tools intentionally make the abstraction graph recursive. A `Tactic` is LLLM's top-level orchestration unit, while a `Prompt` is the low-level call signature an agent sees at one turn. Exposing a tactic as a tool lets a prompt call back into a complete agentic subsystem: a planner prompt can invoke a code-review tactic, that tactic can run its own agents and prompts, and the result returns through the normal tool-call loop. This is the package-sharing path for reusable agentic capabilities.
+
+Package-shared tactics can be exposed as tools by putting a tactic resource URL directly in a prompt's `function_list`:
+
+```python
+prompt = Prompt(
+    path="agent/system",
+    prompt="Use the available tools when useful.",
+    function_list=["shared_pkg.tactics:code_review"],
+)
+```
+
+The URL resolves through the active runtime. Full URLs (`shared_pkg.tactics:code_review`) are canonical, package shorthand (`shared_pkg:code_review`) is accepted for tactic lookups, and bare names resolve relative to the prompt package before falling back to the runtime default namespace.
+
+For a tactic to be directly callable as a package-shared tool, decorate the method you want to expose:
+
+```python
+from lllm import Tactic, tactictool
+
+class CodeReviewTactic(Tactic):
+    name = "code_review"
+    agent_group = ["reviewer"]
+
+    @tactictool(
+        "code_review",
+        description="Review code and return structured issues.",
+        config="shared_pkg:default",
+    )
+    def call(self, task: CodeInput) -> CodeReviewResult:
+        ...
+```
+
+If the exposed method takes a Pydantic `BaseModel`, LLLM uses that model as the tool input schema. Primitive annotated parameters also work. Missing annotations or descriptions are filled in with warnings. Missing `config` raises an error for prompt URL usage because the URL identifies the tactic class, not the config needed to instantiate it.
+
+A tactic can expose more than one tool. Select non-default tools with a URL fragment:
+
+```python
+class ReviewTactic(Tactic):
+    name = "review"
+    agent_group = ["reviewer"]
+
+    @tactictool("review_code", config="shared_pkg:default")
+    def call(self, task: CodeInput) -> CodeReviewResult:
+        ...
+
+    @tactictool("summarize", config="shared_pkg:default")
+    def summarize_review(self, task: SummaryInput) -> SummaryOutput:
+        ...
+
+Prompt(..., function_list=[
+    "shared_pkg.tactics:review",            # decorated call()
+    "shared_pkg.tactics:review#summarize",  # named method
+])
+```
+
+If a tactic has multiple decorated methods and no decorated `call()`, use a fragment such as `#summarize` so resolution is unambiguous. Undecorated `call()` is only a fallback for callers that pass `config=...` explicitly, such as a proxy endpoint.
+
+The same tactic adapter can be exposed through a proxy:
+
+```python
+class SharedProxy(BaseProxy):
+    code_review = BaseProxy.tactic_endpoint(
+        "shared_pkg.tactics:code_review",
+        config="shared_pkg:default",
+    )
+```
+
+Tactic-backed proxy endpoints appear in `query_api_doc` and dispatch through `CALL_API` like regular proxy endpoints.
+
+You can also attach tactic tools at agent-config time so every prompt turn for that agent sees them:
+
+```yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - shared_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.proxies:market_data
+
+agent_configs:
+  - name: reviewer
+    system_prompt_path: system/reviewer
+```
+
+`tools` works like `skills`: entries under `global` apply to all agents, and a per-agent `tools` list replaces the global list for that agent. The list can contain regular `@tool`/`Function` resources, tactic tool resources, and explicit proxy resources. Use this when a capability is part of the agent's global surface, not just one prompt's local needs.
+
+This design is intentionally reference-based to avoid definition cycles. A config should name tools by URL; it should not import and build the agent while defining the tool module. Regular Function and tactic refs stay lazy until the prompt is executed. Proxy refs are resolved during agent construction only because they must inject the proxy directory and `CALL_API` programming tools into the prompt.
+
+---
+
 ## Quick Constructor
 
 For prototyping without config files or discovery:

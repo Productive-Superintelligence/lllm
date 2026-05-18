@@ -16,6 +16,9 @@ version = "0.1.0"
 [prompts]
 paths = ["prompts/"]
 
+[tools]
+paths = ["tools/"]
+
 [proxies]
 paths = ["proxies/"]
 
@@ -35,6 +38,7 @@ packages = ["./packages/shared_lib"]
 | --- | --- | --- |
 | `[package]` | Name, version, description. All resources are namespaced under `name`. | — |
 | `[prompts]` | Folders scanned for `Prompt` objects and `.md` files. | `prompts/` |
+| `[tools]` | Folders scanned for `Function` objects created by `@tool`; colocated data files are also registered. | `tools/` |
 | `[proxies]` | Folders scanned for `BaseProxy` subclasses. | `proxies/` |
 | `[configs]` | Folders scanned for YAML agent config files (loaded lazily). | `configs/` |
 | `[tactics]` | Folders scanned for `Tactic` subclasses. | `tactics/` |
@@ -75,6 +79,10 @@ global:                # defaults merged into every agent in this file
   max_exception_retry: 3
   max_interrupt_steps: 5
   max_llm_recall: 3
+  tools:
+    - shared_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.proxies:market_data
 
 agent_configs:
   - name: analyzer
@@ -102,6 +110,7 @@ agent_configs:
 | `max_exception_retry` | No | Max retries on parse/validation errors. Default: 3. |
 | `max_interrupt_steps` | No | Max consecutive tool-call interrupts. Default: 5. |
 | `max_llm_recall` | No | Max retries on LLM API errors. Default: 0. |
+| `tools` | No | Regular tool, tactic tool, or proxy refs available to the agent on every prompt turn. |
 | `extra_settings` | No | Reserved for advanced usage. |
 
 Any unrecognized keys are treated as additional `model_args`.
@@ -125,6 +134,41 @@ agent_configs:
 ```
 
 Result: `creative_writer` gets `model_name: gpt-4o`, `model_args: {temperature: 0.9, max_tokens: 4000}`.
+
+For list fields such as `tools` and `skills`, a per-agent list **replaces** the global list. This lets one agent opt into a different capability surface without inheriting every global tool.
+
+### Agent Tools
+
+`tools` attaches package resources to an agent through config:
+
+```yaml
+global:
+  model_name: gpt-4o
+  tools:
+    - shared_pkg.tools:search
+    - shared_pkg.tactics:code_review
+    - shared_pkg.tactics:research#summarize
+    - shared_pkg.proxies:market_data
+
+agent_configs:
+  - name: analyst
+    system_prompt_path: system/analyst
+
+  - name: writer
+    system_prompt_path: system/writer
+    tools: []   # replaces global tools; writer gets none
+```
+
+Supported entries:
+
+- `shared_pkg.tools:search` — a regular `Function` created with `@tool`.
+- `shared_pkg.tactics:code_review` — the default exposed tactic tool.
+- `shared_pkg.tactics:research#summarize` — a named tactic tool method.
+- `shared_pkg.proxies:market_data` — a proxy resource; this enables the proxy programming surface (`query_api_doc` plus `run_python` when `exec_env: interpreter`).
+
+Full URLs are recommended for shared packages. Bare names and package shorthand work for regular tools and tactic tools, resolving relative to the agent's system-prompt package before falling back to the runtime default namespace. Proxy entries should use an explicit proxy URL such as `pkg.proxies:name`, because proxies change the whole prompt/tool surface rather than becoming one direct function schema.
+
+To avoid cyclic definitions, config stores only resource references. Regular `Function` and tactic refs are left as strings when the agent is built and are resolved only when the prompt is about to run. Proxy refs are the exception because the agent must inject the proxy directory and execution tools before the first model call. Keep tool modules declarative at import time: define `@tool` functions and `BaseProxy` classes there, but do not build agents or tactics at module scope. If a tool needs to call an agent, construct or load that agent inside the tool function body.
 
 ---
 

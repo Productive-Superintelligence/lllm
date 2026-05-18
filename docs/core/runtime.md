@@ -65,7 +65,7 @@ Runtime
 When you call `runtime.get(key)` or any typed convenience method, the resolution order is:
 
 1. **Exact match** — if `key` exists in `_resources`, return it.
-2. **Default namespace fallback** — if `key` has no `:`, try `default_ns.<section>s:key` for each built-in section (prompts, proxies, tactics, configs).
+2. **Default namespace fallback** — if `key` has no `:`, try `default_ns.<section>s:key` for each built-in section (prompts, tools, proxies, tactics, configs).
 3. **Section injection** — if `key` has `:` but no `.` in the package part (e.g. `"pkg:foo"`), and a `resource_type` is specified, try `"pkg.<type>s:foo"`.
 
 This means:
@@ -98,6 +98,9 @@ runtime = get_default_runtime()
 # Register a prompt
 p = Prompt(path="test/greeting", prompt="Hello {name}!")
 runtime.register_prompt(p, namespace="my_pkg.prompts")
+
+# Register a regular Function tool
+runtime.register_tool("search", search_fn, namespace="my_pkg.tools")
 
 # Register a proxy class
 runtime.register_proxy("search/web", WebProxy, namespace="my_pkg.proxies")
@@ -186,6 +189,8 @@ def clean_runtime():
 | `keys(resource_type=None)` | List qualified keys, optionally filtered. |
 | `register_prompt(prompt, overwrite, namespace)` | Typed registration for prompts. |
 | `get_prompt(path)` | Typed retrieval for prompts. |
+| `register_tool(name, tool, overwrite, namespace)` | Typed registration for regular `Function` tools. |
+| `get_tool(path)` | Typed retrieval for regular `Function` tools. |
 | `register_proxy(name, cls, overwrite, namespace)` | Typed registration for proxies. |
 | `get_proxy(path)` | Typed retrieval for proxies. |
 | `register_tactic(name, cls, overwrite, namespace)` | Typed registration for tactics. |

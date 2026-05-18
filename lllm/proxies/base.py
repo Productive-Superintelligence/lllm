@@ -18,8 +18,12 @@ class BaseProxy:
         cutoff_date: Optional[dt.datetime] = None,
         deploy_mode: bool = False,
         use_cache: bool = True,
+        runtime: Runtime = None,
         **kwargs,
     ):
+        self._runtime = runtime or get_default_runtime()
+        self._qualified_key = getattr(self.__class__, "_qualified_key", None)
+        self._resource_namespace = getattr(self.__class__, "_resource_namespace", None)
         self.activate_proxies = activate_proxies[:] if activate_proxies else []
         self.cutoff_date = cutoff_date
         self.deploy_mode = deploy_mode
@@ -57,9 +61,120 @@ class BaseProxy:
         func.is_postcall = True
         return func
 
+    @staticmethod
+    def tactic_endpoint(
+        tactic_url: str,
+        *,
+        config: Any = None,
+        endpoint: str = None,
+        category: str = "tactics",
+        name: str = None,
+        description: str = None,
+        response: Any = None,
+        method: str = "TACTIC",
+    ):
+        """Create a proxy endpoint backed by a tactic resource URL."""
+        from lllm.core.tactic_tool import sanitize_tool_name
+
+        endpoint_name = endpoint or sanitize_tool_name(tactic_url)
+
+        def _call_tactic_endpoint(self, params: Any = None, **kwargs):
+            from lllm.core.tactic_tool import call_tactic_proxy_endpoint
+
+            return call_tactic_proxy_endpoint(
+                tactic_url,
+                params=params,
+                kwargs=kwargs,
+                runtime=getattr(self, "_runtime", None),
+                base_namespace=getattr(self, "_resource_namespace", None),
+                config=config,
+            )
+
+        _call_tactic_endpoint.__name__ = endpoint_name
+        _call_tactic_endpoint.endpoint_info = {
+            "category": category,
+            "endpoint": endpoint_name,
+            "name": name or endpoint_name,
+            "description": description or f"Run tactic {tactic_url}.",
+            "sub_category": None,
+            "remove_keys": None,
+            "params": {},
+            "response": response if response is not None else "str",
+            "dt_cutoff": None,
+            "method": method,
+        }
+        _call_tactic_endpoint._lllm_tactic_endpoint = {
+            "tactic_url": tactic_url,
+            "config": config,
+            "endpoint": endpoint,
+            "category": category,
+            "name": name,
+            "description": description,
+            "response": response,
+            "method": method,
+        }
+        return _call_tactic_endpoint
+
+    @classmethod
+    def register_tactic(
+        cls,
+        tactic_url: str,
+        *,
+        endpoint: str = None,
+        config: Any = None,
+        category: str = "tactics",
+        name: str = None,
+        description: str = None,
+        response: Any = None,
+        method: str = "TACTIC",
+    ):
+        """Imperatively add a tactic-backed endpoint to this proxy class."""
+        from lllm.core.tactic_tool import sanitize_tool_name
+
+        attr_name = sanitize_tool_name(endpoint or name or tactic_url)
+        method_fn = BaseProxy.tactic_endpoint(
+            tactic_url,
+            config=config,
+            endpoint=endpoint or attr_name,
+            category=category,
+            name=name,
+            description=description,
+            response=response,
+            method=method,
+        )
+        setattr(cls, attr_name, method_fn)
+        return method_fn
+
     # ------------------------------------------------------------------
     # Endpoint metadata helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _callable_attr(method, attr: str, default: Any = None) -> Any:
+        value = getattr(method, attr, None)
+        if value is not None:
+            return value
+        func = getattr(method, "__func__", None)
+        return getattr(func, attr, default)
+
+    def _materialize_endpoint_info(self, attr_name: str, method, info: Dict[str, Any]) -> Dict[str, Any]:
+        tactic_meta = self._callable_attr(method, "_lllm_tactic_endpoint")
+        if not tactic_meta:
+            return info
+
+        from lllm.core.tactic_tool import build_tactic_endpoint_info
+
+        return build_tactic_endpoint_info(
+            tactic_meta["tactic_url"],
+            runtime=getattr(self, "_runtime", None),
+            base_namespace=getattr(self, "_resource_namespace", None),
+            endpoint=tactic_meta.get("endpoint") or attr_name,
+            category=tactic_meta.get("category") or "tactics",
+            name=tactic_meta.get("name"),
+            description=tactic_meta.get("description"),
+            response=tactic_meta.get("response"),
+            method=tactic_meta.get("method") or "TACTIC",
+        )
 
     def _endpoint_methods(self):
         """
@@ -67,8 +182,9 @@ class BaseProxy:
         decorated with :func:`BaseProxy.endpoint`.
         """
         for name, method in inspect.getmembers(self, predicate=callable):
-            info = getattr(method, "endpoint_info", None)
+            info = self._callable_attr(method, "endpoint_info")
             if info:
+                info = self._materialize_endpoint_info(name, method, dict(info))
                 yield name, method, info
 
     def endpoint_directory(self) -> List[Dict[str, Any]]:
@@ -155,9 +271,13 @@ class ProxyManager:
                     cutoff_date=self.cutoff_date,
                     activate_proxies=self.activate_proxies,
                     deploy_mode=self.deploy_mode,
+                    runtime=self._runtime,
                 )
             except TypeError:
                 instance = proxy_cls()
+            instance._runtime = self._runtime
+            instance._qualified_key = node.qualified_key
+            instance._resource_namespace = node.namespace
             # Store under the bare key (what existing code expects for dispatch)
             self.proxies[node.key] = instance
 
@@ -170,9 +290,13 @@ class ProxyManager:
                 cutoff_date=self.cutoff_date,
                 activate_proxies=self.activate_proxies,
                 deploy_mode=self.deploy_mode,
+                runtime=self._runtime,
             )
         except TypeError:
             instance = proxy_cls(self.activate_proxies, self.cutoff_date, self.deploy_mode)
+        instance._runtime = self._runtime
+        instance._qualified_key = getattr(proxy_cls, "_qualified_key", None)
+        instance._resource_namespace = getattr(proxy_cls, "_resource_namespace", None)
         self.proxies[name] = instance
 
     def available(self) -> List[str]:

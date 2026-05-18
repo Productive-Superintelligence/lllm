@@ -48,7 +48,7 @@ weather_prompt = Prompt(
 | `prompt` | `str` | Template string. Rendered via `renderer` (default: `str.format`). |
 | `parser` | `BaseParser \| None` | Defines valid output shape. `None` = raw passthrough. |
 | `format` | `type \| dict \| None` | Pydantic model or JSON schema for structured output. |
-| `function_list` | `list[Function]` | Tools the LLM can call this turn. |
+| `function_list` | `list[Function \| str]` | Tools the LLM can call this turn. Strings are package resource refs resolved at runtime. |
 | `mcp_servers_list` | `list[MCP]` | MCP server descriptors. |
 | `addon_args` | `dict` | Provider-specific capabilities (web search, computer use, etc.). |
 | `handler` | `BaseHandler` | Handles exceptions and tool interrupts. Default: `DefaultHandler`. |
@@ -254,6 +254,25 @@ prompt = Prompt(
     function_list=[web_search, calculator],
 )
 ```
+
+Package-discovered tools can also be referenced by URL instead of importing the
+`Function` object:
+
+```python
+prompt = Prompt(
+    path="research/agent",
+    prompt="Answer the following question using your tools: {question}",
+    function_list=[
+        "shared_pkg.tools:web_search",
+        "shared_pkg.tactics:code_review",
+    ],
+)
+```
+
+Regular tool and tactic refs resolve relative to the prompt package for bare
+names, then fall back to the runtime default namespace. Proxy refs are not
+valid in `function_list`; put `shared_pkg.proxies:name` in agent config
+`tools` so LLLM can inject the proxy directory and execution tools.
 
 ### `Function` + `link_function` — schema and implementation apart
 

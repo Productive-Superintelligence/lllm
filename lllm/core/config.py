@@ -35,15 +35,23 @@ PACKAGE_SECTION = "package"
 DEPENDENCY_SECTION = "dependencies"
 PROMPT_SECTION = "prompts"
 PROXY_SECTION = "proxies"
+TOOLS_SECTION = "tools"
 CONFIG_SECTION = "configs"
 TACTIC_SECTION = "tactics"
 
 META_SECTIONS = frozenset({PACKAGE_SECTION, DEPENDENCY_SECTION})
-BUILTIN_RESOURCE_SECTIONS = (PROMPT_SECTION, PROXY_SECTION, CONFIG_SECTION, TACTIC_SECTION)
+BUILTIN_RESOURCE_SECTIONS = (
+    PROMPT_SECTION,
+    TOOLS_SECTION,
+    PROXY_SECTION,
+    CONFIG_SECTION,
+    TACTIC_SECTION,
+)
 KNOWN_SECTIONS = META_SECTIONS | frozenset(BUILTIN_RESOURCE_SECTIONS)
 
 _SECTION_TO_RESOURCE_TYPE = {
     PROMPT_SECTION: "prompt",
+    TOOLS_SECTION: "tool",
     PROXY_SECTION: "proxy",
     CONFIG_SECTION: "config",
     TACTIC_SECTION: "tactic",
@@ -351,6 +359,12 @@ def _discover_section(
 
         if section_name == CONFIG_SECTION:
             _discover_configs(path, runtime, namespace, resource_type, prefix)
+        elif section_name == TOOLS_SECTION:
+            # Keep [tools] useful for colocated metadata files while also
+            # registering Python @tool Function objects as callable resources.
+            _discover_files(path, runtime, namespace, resource_type, prefix)
+            _discover_python_modules(path, runtime, namespace, section_name,
+                                     resource_type, prefix)
         elif section_name in BUILTIN_RESOURCE_SECTIONS:
             # Built-in Python-based sections (prompts, proxies, tactics)
             _discover_python_modules(path, runtime, namespace, section_name,
@@ -492,12 +506,20 @@ def _discover_python_modules(
 
         if section_name == PROMPT_SECTION:
             _register_prompts(module, relative, runtime, namespace, resource_type, prefix)
+        elif section_name == TOOLS_SECTION:
+            _register_tools(module, relative, runtime, namespace, resource_type, prefix)
+            # Preserve the previous custom-section behavior for packages that
+            # already used [tools] to group non-Function Python resources.
+            _register_prompts(module, relative, runtime, namespace, resource_type, prefix)
+            _register_proxies(module, relative, runtime, namespace, resource_type, prefix)
+            _register_tactics(module, relative, runtime, namespace, resource_type, prefix)
         elif section_name == PROXY_SECTION:
             _register_proxies(module, relative, runtime, namespace, resource_type, prefix)
         elif section_name == TACTIC_SECTION:
             _register_tactics(module, relative, runtime, namespace, resource_type, prefix)
         else:
             # Custom section — try all typed registrations
+            _register_tools(module, relative, runtime, namespace, resource_type, prefix)
             _register_prompts(module, relative, runtime, namespace, resource_type, prefix)
             _register_proxies(module, relative, runtime, namespace, resource_type, prefix)
             _register_tactics(module, relative, runtime, namespace, resource_type, prefix)
@@ -557,8 +579,25 @@ def _register_prompts(module, relative, runtime, namespace, resource_type, prefi
         try:
             runtime.register(node, overwrite=True)
             attr._qualified_key = node.qualified_key
+            attr._resource_namespace = node.namespace
         except Exception as exc:
             logger.warning("Failed to register prompt '%s': %s", key, exc)
+
+
+def _register_tools(module, relative, runtime, namespace, resource_type, prefix):
+    from lllm.core.prompt import Function
+    for attr_name, attr in vars(module).items():
+        if not isinstance(attr, Function):
+            continue
+        key = _make_key(prefix, relative, attr.name)
+        node = ResourceNode.eager(key, attr, namespace=namespace,
+                                  resource_type=resource_type)
+        try:
+            runtime.register(node, overwrite=True)
+            attr._qualified_key = node.qualified_key
+            attr._resource_namespace = node.namespace
+        except Exception as exc:
+            logger.warning("Failed to register tool '%s': %s", key, exc)
 
 
 def _register_proxies(module, relative, runtime, namespace, resource_type, prefix):
@@ -575,6 +614,8 @@ def _register_proxies(module, relative, runtime, namespace, resource_type, prefi
                                   resource_type=resource_type)
         try:
             runtime.register(node, overwrite=True)
+            cls._qualified_key = node.qualified_key
+            cls._resource_namespace = node.namespace
         except Exception as exc:
             logger.warning("Failed to register proxy '%s': %s", key, exc)
 
@@ -592,6 +633,8 @@ def _register_tactics(module, relative, runtime, namespace, resource_type, prefi
                                   resource_type=resource_type)
         try:
             runtime.register(node, overwrite=True)
+            cls._qualified_key = node.qualified_key
+            cls._resource_namespace = node.namespace
         except Exception as exc:
             logger.warning("Failed to register tactic '%s': %s", key, exc)
 
@@ -1212,8 +1255,37 @@ _KNOWN_AGENT_KEYS = frozenset({
     "name", "model_name", "system_prompt", "system_prompt_path",
     "api_type", "model_args",
     "max_exception_retry", "max_interrupt_steps", "max_llm_recall",
-    "extra_settings", "proxy", "context_manager", "skills",
+    "extra_settings", "proxy", "context_manager", "skills", "tools",
 })
+
+
+def _copy_prompt_with_update(prompt, update: Dict[str, Any]):
+    copied = prompt.model_copy(update=update)
+    for attr in ("_qualified_key", "_resource_namespace"):
+        value = getattr(prompt, attr, None)
+        if value is not None:
+            setattr(copied, attr, value)
+    return copied
+
+
+def _parse_tool_refs(raw: Any) -> List[str]:
+    if raw is None:
+        return []
+    if isinstance(raw, str):
+        return [raw]
+    if not isinstance(raw, (list, tuple)):
+        raise TypeError(
+            "Agent config 'tools' must be a tool/proxy URL string or a list of strings"
+        )
+    refs: List[str] = []
+    for item in raw:
+        if not isinstance(item, str):
+            raise TypeError(
+                "Agent config 'tools' entries must be tool/proxy URL strings, "
+                f"got {type(item).__name__}"
+            )
+        refs.append(item)
+    return refs
 
 
 @dataclass
@@ -1238,6 +1310,10 @@ class AgentSpec:
         max_interrupt_steps: 5
         max_llm_recall: 0
         extra_settings: {}
+        tools:
+          - shared_pkg.tactics:code_review
+          - shared_pkg.tools:search
+          - shared_pkg.proxies:market_data
     """
 
     name: str
@@ -1253,6 +1329,7 @@ class AgentSpec:
     proxy: Optional[ProxyConfig] = None
     context_manager: Optional[ContextManagerConfig] = None
     skills: Optional[SkillsConfig] = None
+    tools: List[str] = field(default_factory=list)
 
     @classmethod
     def from_config(cls, name: str, raw: Dict[str, Any]) -> "AgentSpec":
@@ -1307,6 +1384,9 @@ class AgentSpec:
         skills_raw = raw.pop("skills", None)
         skills_cfg = SkillsConfig.from_config(skills_raw) if skills_raw is not None else None
 
+        # -- tactic tools --------------------------------------------------
+        tools = _parse_tool_refs(raw.pop("tools", None))
+
         # -- model_args: explicit dict + leftover unknown keys -------------
         model_args = raw.pop("model_args", {})
         raw.pop("name", None)
@@ -1334,6 +1414,7 @@ class AgentSpec:
             proxy=proxy,
             context_manager=context_manager_cfg,
             skills=skills_cfg,
+            tools=tools,
         )
 
     def build(self, runtime: Runtime, invoker):
@@ -1347,30 +1428,69 @@ class AgentSpec:
             prompt = runtime.get_prompt(self.system_prompt_path)
 
         api_type = self.api_type if isinstance(self.api_type, APITypes) else APITypes(self.api_type)
+        tool_function_refs = list(self.tools)
+        tool_proxy_refs: List[str] = []
+        if self.tools:
+            from lllm.core.tactic_tool import (
+                namespace_from_qualified_key,
+                partition_agent_tool_refs,
+            )
+
+            base_namespace = (
+                getattr(prompt, "_resource_namespace", None)
+                or namespace_from_qualified_key(getattr(prompt, "_qualified_key", None))
+            )
+            partitioned_tools = partition_agent_tool_refs(
+                self.tools,
+                runtime=runtime,
+                base_namespace=base_namespace,
+            )
+            tool_function_refs = partitioned_tools.function_refs
+            tool_proxy_refs = partitioned_tools.proxy_refs
 
         # -- Proxy tool injection ------------------------------------------
-        if self.proxy is not None:
+        proxy_config = self.proxy
+        if tool_proxy_refs:
+            if proxy_config is None:
+                proxy_config = ProxyConfig(activate_proxies=tool_proxy_refs)
+            else:
+                merged_activate_proxies: List[str] = []
+                for ref in [*proxy_config.activate_proxies, *tool_proxy_refs]:
+                    if ref not in merged_activate_proxies:
+                        merged_activate_proxies.append(ref)
+                proxy_config = ProxyConfig(
+                    activate_proxies=merged_activate_proxies,
+                    deploy_mode=proxy_config.deploy_mode,
+                    cutoff_date=proxy_config.cutoff_date,
+                    exec_env=proxy_config.exec_env,
+                    max_output_chars=proxy_config.max_output_chars,
+                    truncation_indicator=proxy_config.truncation_indicator,
+                    timeout=proxy_config.timeout,
+                    prompt_template=proxy_config.prompt_template,
+                )
+
+        if proxy_config is not None:
             from lllm.proxies.base import ProxyManager
             from lllm.proxies.interpreter import AgentInterpreter
             from lllm.proxies.proxy_tools import make_query_api_doc_tool, make_run_python_tool
             from lllm.proxies.prompt_template import render_proxy_prompt
 
             cutoff = (
-                dt.datetime.fromisoformat(self.proxy.cutoff_date)
-                if self.proxy.cutoff_date
+                dt.datetime.fromisoformat(proxy_config.cutoff_date)
+                if proxy_config.cutoff_date
                 else None
             )
             proxy_manager = ProxyManager(
-                activate_proxies=self.proxy.activate_proxies,
+                activate_proxies=proxy_config.activate_proxies,
                 cutoff_date=cutoff,
-                deploy_mode=self.proxy.deploy_mode,
+                deploy_mode=proxy_config.deploy_mode,
                 runtime=runtime,
             )
             interpreter = AgentInterpreter(
                 proxy_manager,
-                max_output_chars=self.proxy.max_output_chars,
-                truncation_indicator=self.proxy.truncation_indicator,
-                timeout=self.proxy.timeout,
+                max_output_chars=proxy_config.max_output_chars,
+                truncation_indicator=proxy_config.truncation_indicator,
+                timeout=proxy_config.timeout,
             )
 
             query_doc_tool = make_query_api_doc_tool(proxy_manager)
@@ -1379,22 +1499,27 @@ class AgentSpec:
             # Other modes (jupyter, None, future sandboxes) leave execution to
             # the tactic — the agent writes cell tags or uses another mechanism.
             extra_tools = [query_doc_tool]
-            if self.proxy.exec_env == "interpreter":
+            if proxy_config.exec_env == "interpreter":
                 extra_tools.append(make_run_python_tool(interpreter))
 
             proxy_block = render_proxy_prompt(
                 api_directory=proxy_manager.retrieve_api_docs(),
-                max_output_chars=self.proxy.max_output_chars,
-                truncation_indicator=self.proxy.truncation_indicator,
-                exec_env=self.proxy.exec_env,
-                custom_template=self.proxy.prompt_template,
+                max_output_chars=proxy_config.max_output_chars,
+                truncation_indicator=proxy_config.truncation_indicator,
+                exec_env=proxy_config.exec_env,
+                custom_template=proxy_config.prompt_template,
             )
 
             # Create a modified prompt without mutating the original.
-            # model_copy triggers model_post_init so _functions is rebuilt.
-            prompt = prompt.model_copy(update={
+            prompt = _copy_prompt_with_update(prompt, {
                 "prompt": prompt.prompt + proxy_block,
                 "function_list": list(prompt.function_list) + extra_tools,
+            })
+
+        # -- Direct tool refs ----------------------------------------------
+        if tool_function_refs:
+            prompt = _copy_prompt_with_update(prompt, {
+                "function_list": list(prompt.function_list) + tool_function_refs,
             })
 
         # -- Skills injection ----------------------------------------------
@@ -1405,7 +1530,7 @@ class AgentSpec:
             if text_skills:
                 catalog_block = SkillsConfig.build_catalog_block(text_skills)
                 activate_tool = make_activate_skill_tool(text_skills)
-                prompt = prompt.model_copy(update={
+                prompt = _copy_prompt_with_update(prompt, {
                     "prompt": prompt.prompt + catalog_block,
                     "function_list": list(prompt.function_list) + [activate_tool],
                 })
@@ -1426,6 +1551,7 @@ class AgentSpec:
             system_prompt=prompt,
             model=self.model,
             llm_invoker=invoker,
+            runtime=runtime,
             api_type=api_type,
             model_args=model_args,
             max_exception_retry=self.max_exception_retry,
