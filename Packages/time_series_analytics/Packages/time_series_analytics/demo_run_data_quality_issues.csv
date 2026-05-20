@@ -1,0 +1,3 @@
+issue,severity,evidence
+Severely limited sample size,critical,"Only 10 consecutive daily observations (2026-05-01 to 2026-05-10); insufficient to estimate weekly seasonality, trend stability, or error structure."
+Unverified high-leverage outlier,high,Outlier on 2026-05-05 (sales = 180) distorts classical model assumptions if unhandled.
