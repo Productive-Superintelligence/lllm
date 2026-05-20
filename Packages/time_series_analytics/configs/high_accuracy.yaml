@@ -1,0 +1,6 @@
+base: time_series_analytics:default
+
+global:
+  model_name: gpt-4o
+  model_args:
+    temperature: 0.1

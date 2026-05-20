@@ -1,0 +1,22 @@
+tactic_type: time_series_analysis
+
+global:
+  model_name: openai/qwen-plus
+  model_args:
+    temperature: 0.2
+
+agent_configs:
+  - name: profiler
+    system_prompt_path: time_series_analytics:system/profiler
+    model_args:
+      temperature: 0.25
+
+  - name: forecaster
+    system_prompt_path: time_series_analytics:system/forecaster
+    model_args:
+      temperature: 0.2
+
+  - name: synthesizer
+    system_prompt_path: time_series_analytics:system/synthesizer
+    model_args:
+      temperature: 0.1
