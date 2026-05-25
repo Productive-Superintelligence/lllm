@@ -3,7 +3,6 @@ import uuid
 import subprocess
 import time
 import re
-import json
 import logging
 from dataclasses import dataclass, field
 from typing import Dict, Any, Optional, List
@@ -15,7 +14,6 @@ import datetime as dt
 import requests
 from enum import Enum
 import lllm.utils as U
-import atexit
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +56,7 @@ class JupyterSession:
         if _cutoff_date:
             if isinstance(_cutoff_date, str):
                 _cutoff_date = dt.datetime.strptime(_cutoff_date, '%Y-%m-%d')
-            assert isinstance(_cutoff_date, dt.datetime), f"Cutoff date must be a datetime object"
+            assert isinstance(_cutoff_date, dt.datetime), "Cutoff date must be a datetime object"
             _cutoff_date_str = f"'{_cutoff_date.strftime('%Y-%m-%d')}'"
         else:
             _cutoff_date_str = 'None'

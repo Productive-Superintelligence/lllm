@@ -186,7 +186,8 @@ class TestMissingDependencyWarning(unittest.TestCase):
 
     def test_missing_dep_emits_warning(self):
         """Create a temp lllm.toml with a broken dep path and load it."""
-        import tempfile, textwrap
+        import tempfile
+        import textwrap
         from lllm.core.config import load_package
 
         toml_content = textwrap.dedent("""\
@@ -220,7 +221,8 @@ class TestMissingDependencyWarning(unittest.TestCase):
 
     def test_missing_dep_does_not_crash(self):
         """Verify the load call doesn't raise, only warns."""
-        import tempfile, textwrap
+        import tempfile
+        import textwrap
         from lllm.core.config import load_package
 
         toml_content = textwrap.dedent("""\
@@ -484,7 +486,8 @@ class TestPackageAliasing(unittest.TestCase):
 
     def test_alias_dep_via_toml(self):
         """Create a temp package that loads pkg_alpha as 'alpha_alias'."""
-        import tempfile, textwrap
+        import tempfile
+        import textwrap
         from lllm.core.config import load_package
 
         toml_content = textwrap.dedent(f"""\

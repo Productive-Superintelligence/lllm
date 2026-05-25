@@ -2,9 +2,6 @@ from __future__ import annotations
 
 import hashlib
 import inspect
-import json
-import re
-from functools import cached_property
 import string
 from typing import (
     Any,
@@ -20,14 +17,11 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
 from lllm.core.const import (
-    APITypes,
     InvokeCost,
     InvokeResult,
     Invokers,
-    Modalities,
     ParseError,
     FunctionCall,
-    Roles,
 )
 from lllm.core.dialog import Message
 from lllm.core.runtime import Runtime, get_default_runtime

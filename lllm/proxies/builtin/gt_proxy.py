@@ -6,7 +6,6 @@ import os
 import datetime as dt
 import lllm.utils as U
 from lllm.proxies.base import BaseProxy, ProxyRegistrator
-import requests
 
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__)) # /home/junyanc/analytical_engine/analytica/proxy/modules

@@ -5,8 +5,6 @@
 
 import os
 import lllm.utils as U
-import requests
-import datetime as dt
 from lllm.proxies.base import BaseProxy, ProxyRegistrator
 
 

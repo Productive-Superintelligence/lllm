@@ -4,7 +4,6 @@ Covers: Roles, Invokers, Modalities, APITypes, FunctionCall, ParseError,
         InvokeResult, InvokeCost, LLM_SIDE_ROLES.
 """
 import unittest
-from unittest.mock import MagicMock
 
 
 class TestRolesEnum(unittest.TestCase):

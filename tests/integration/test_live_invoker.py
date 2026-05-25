@@ -8,11 +8,9 @@ Skipped automatically when the relevant API key is absent or invalid.
 All tests are tagged @pytest.mark.live so they are excluded from normal
 unit test runs (`pytest tests/units/`).
 """
-import asyncio
-import os
 import pytest
 
-from lllm.core.const import Roles, InvokeCost, APITypes
+from lllm.core.const import Roles, InvokeCost
 from lllm.core.dialog import Message
 from lllm.core.prompt import Prompt, AgentCallSession
 
@@ -209,7 +207,7 @@ class TestOpenAIToolCalls:
 
     def _make_agent_with_tool(self, force_tool: bool = False):
         from lllm.core.agent import Agent
-        from lllm.core.prompt import Prompt, Function, tool
+        from lllm.core.prompt import Prompt, tool
         from lllm.invokers import build_invoker
 
         @tool()

@@ -475,7 +475,6 @@ class TestRegisteredFunctionToolRefs(unittest.TestCase):
 
 class TestTacticProxyEndpoints(unittest.TestCase):
     def test_tactic_endpoint_appears_in_api_directory_and_dispatches(self):
-        from lllm.core.runtime import Runtime
         from lllm.proxies.base import BaseProxy, ProxyManager
 
         rt, _ = _runtime_with_echo()
@@ -502,7 +501,6 @@ class TestTacticProxyEndpoints(unittest.TestCase):
         self.assertEqual(result, '{"value":"ok."}')
 
     def test_proxy_register_tactic_bare_ref_resolves_relative_to_proxy_package(self):
-        from lllm.core.runtime import Runtime
         from lllm.proxies.base import BaseProxy, ProxyManager
 
         rt, _ = _runtime_with_echo()

@@ -333,7 +333,7 @@ class TestToolDecorator(unittest.TestCase):
         self.assertTrue(callable(get_temp.function))
 
     def test_decorator_with_name_override(self):
-        from lllm.core.prompt import tool, Function
+        from lllm.core.prompt import tool
 
         @tool(name="weather_api", description="Get weather")
         def _internal_fn(city: str) -> str:
@@ -356,7 +356,7 @@ class TestToolDecorator(unittest.TestCase):
         self.assertEqual(result.result, 21)
 
     def test_decorator_uses_docstring_as_description(self):
-        from lllm.core.prompt import tool, Function
+        from lllm.core.prompt import tool
 
         @tool()
         def compute(x: float) -> float:
@@ -366,7 +366,7 @@ class TestToolDecorator(unittest.TestCase):
         self.assertIn("square", compute.description)
 
     def test_decorator_prop_desc(self):
-        from lllm.core.prompt import tool, Function
+        from lllm.core.prompt import tool
 
         @tool(prop_desc={"city": "The city to look up"})
         def lookup(city: str) -> dict:
@@ -687,8 +687,7 @@ class TestAgentCallSession(unittest.TestCase):
         )
 
     def _make_invoke_result(self, tokens=0):
-        from lllm.core.const import InvokeResult, InvokeCost
-        from lllm.core.dialog import Message
+        from lllm.core.const import InvokeResult
         from lllm.core.const import Roles
         msg = Message(role=Roles.ASSISTANT, content="reply", name="agent",
                       usage={"prompt_tokens": tokens, "completion_tokens": 0, "total_tokens": tokens})
@@ -737,7 +736,6 @@ class TestAgentCallSession(unittest.TestCase):
 
     def test_success_sets_delivery(self):
         from lllm.core.const import Roles
-        from lllm.core.dialog import Message
         s = self._make_session()
         msg = Message(role=Roles.ASSISTANT, content="final", name="agent")
         s.success(msg)

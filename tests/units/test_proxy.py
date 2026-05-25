@@ -7,10 +7,8 @@ Covers: BaseProxy, ProxyManager, ProxyRegistrator, register_proxy,
 Uses the real proxy classes from tests/test_cases/packages/pkg_delta/proxies/
 as well as inline proxy definitions for isolated unit tests.
 """
-import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
 
 # Make the pkg_delta proxy importable for integration tests
 _PKG_DELTA_PROXIES = Path(__file__).parent.parent / "test_cases" / "packages" / "pkg_delta" / "proxies"
@@ -117,7 +115,6 @@ class TestBaseProxyConstruction(unittest.TestCase):
         self.assertTrue(p.use_cache)
 
     def test_construction_with_args(self):
-        import datetime as dt
         p = self.ProxyCls(
             activate_proxies=["simple", "other"],
             deploy_mode=True,
@@ -439,7 +436,6 @@ class TestProxyRegistrator(unittest.TestCase):
 
     def test_register_proxy_function(self):
         from lllm.proxies.base import register_proxy, BaseProxy
-        from lllm.core.runtime import get_default_runtime
 
         class FuncProxy(BaseProxy):
             pass

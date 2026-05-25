@@ -1,8 +1,7 @@
 import datetime as dt
-import functools as ft
 import inspect
 import logging
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from lllm.core.runtime import Runtime, get_default_runtime
 

@@ -403,7 +403,7 @@ class Dialog:
             try:
                 raw = base64.b64decode(image)
             except Exception:
-                raise ValueError(f"Invalid base64 encoded image string")
+                raise ValueError("Invalid base64 encoded image string")
             if not any(raw.startswith(m) for m in _IMAGE_MAGIC):
                 raise ValueError(
                     f"Base64 string does not appear to be a supported image "
@@ -566,7 +566,7 @@ class Dialog:
             if divider:
                 stream.divider()
             stream.write(
-                U.html_collapse(f"Context overview", _overview), unsafe_allow_html=True
+                U.html_collapse("Context overview", _overview), unsafe_allow_html=True
             )
             stream.write(str(cost))
         return _overview

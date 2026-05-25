@@ -1,8 +1,7 @@
 import os
 import json
-import re
 import logging
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 from lllm.core.prompt import Prompt, FunctionCall
 from lllm.core.const import Roles, Modalities, APITypes, Invokers, InvokeResult
@@ -248,7 +247,7 @@ class LiteLLMInvoker(BaseInvoker):
             for tool_call in choice.message.tool_calls:
                 try:
                     arguments = json.loads(tool_call.function.arguments)
-                except (json.JSONDecodeError, TypeError) as exc:
+                except (json.JSONDecodeError, TypeError):
                     errors.append(
                         ValueError(
                             f"Malformed JSON in tool call arguments for '{tool_call.function.name}': "

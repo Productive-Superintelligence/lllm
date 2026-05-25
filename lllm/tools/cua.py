@@ -6,7 +6,6 @@
 
 import base64
 import asyncio
-import functools as ft
 import importlib
 import logging
 from dataclasses import asdict, dataclass, field
@@ -14,14 +13,12 @@ import json
 import os
 import uuid
 from typing import Any, Dict, Optional
-from lllm.core.dialog import Dialog
 from lllm.core.const import ParseError
 from lllm.utils import is_openai_rate_limit_error
 from openai import RateLimitError
 from enum import Enum
 import datetime as dt
 import random
-import time
 
 from tqdm import tqdm
 
@@ -420,7 +417,7 @@ class OpenAICUA:
             try:
                 response = await self._get_client().responses.create(**_call_args)
                 break
-            except RateLimitError as e:
+            except RateLimitError:
                 wait_time = random.random()*15+1
                 logger.warning("Rate limit error, retrying in %.2fs", wait_time)
                 await asyncio.sleep(wait_time)
@@ -633,7 +630,7 @@ class OpenAICUA:
                     "role": "user",
                     "content": [{
                         "type": "input_text",
-                        "text":  f"The last screenshot before termination is attached. The browser tab was closed."
+                        "text":  "The last screenshot before termination is attached. The browser tab was closed."
                     }]
                 })
             if _termination_reason:
@@ -688,7 +685,7 @@ class OpenAICUA:
                             "role": "user",
                             "content": [{
                                 "type": "input_text",
-                                "text":  f"The session was terminated already. The action was ignored. Please do not make any more actions."
+                                "text":  "The session was terminated already. The action was ignored. Please do not make any more actions."
                             }]
                         })
                     inputs.append({

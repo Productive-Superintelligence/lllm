@@ -17,7 +17,7 @@ import types
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Iterable, Optional, List, Dict, Tuple, Union
+from typing import Any, Optional, List, Dict, Tuple, Union
 import tomllib
 
 from lllm.core.runtime import Runtime, get_default_runtime
