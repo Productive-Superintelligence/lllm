@@ -1,18 +1,17 @@
 import logging
 import random
 import time
-from typing import Dict, Any, Tuple, Optional, Union
 from dataclasses import dataclass, field
+from typing import Any, Dict, Literal, Optional, Union, overload
 
 logger = logging.getLogger(__name__)
 
-from lllm.core.prompt import Prompt, AgentException, AgentCallSession
-from lllm.core.const import Roles, APITypes
-from lllm.core.dialog import Dialog, Message, ContextManager
+import lllm.utils as U
+from lllm.core.const import APITypes, Roles
+from lllm.core.dialog import ContextManager, Dialog, Message
+from lllm.core.prompt import AgentCallSession, AgentException, Prompt
 from lllm.core.runtime import Runtime, get_default_runtime
 from lllm.invokers.base import BaseInvoker, BaseStreamHandler
-import lllm.utils as U
-
 
 
 @dataclass
@@ -45,19 +44,24 @@ class Agent:
         max_interrupt_steps: Max consecutive tool call interrupts.
         max_llm_recall: Max retries for LLM API errors.
     """
-    name: str # the role of the agent, or a name of the agent
+
+    name: str  # the role of the agent, or a name of the agent
     system_prompt: Prompt
-    model: str # the model identifier (e.g., 'gpt-4o'), by default, it from litellm model list (https://models.litellm.ai/)
+    model: str  # the model identifier (e.g., 'gpt-4o'), by default, it from litellm model list (https://models.litellm.ai/)
     llm_invoker: BaseInvoker
     stream_handler: Optional[BaseStreamHandler] = None
     runtime: Optional[Runtime] = None
 
     api_type: APITypes = APITypes.COMPLETION
-    model_args: Dict[str, Any] = field(default_factory=dict) # additional args, like temperature, seed, etc.
+    model_args: Dict[str, Any] = field(
+        default_factory=dict
+    )  # additional args, like temperature, seed, etc.
     max_exception_retry: int = 3
     max_interrupt_steps: int = 5
     max_llm_recall: int = 0
-    context_manager: Optional[ContextManager] = None  # applied before each LLM call; None = disabled
+    context_manager: Optional[ContextManager] = (
+        None  # applied before each LLM call; None = disabled
+    )
 
     # Dialog management
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)
@@ -66,7 +70,13 @@ class Agent:
     def __post_init__(self):
         self.runtime = self.runtime or get_default_runtime()
 
-    def open(self, alias: str, prompt_args: Optional[Dict[str, Any]] = None, session_name: Optional[str] = None, switch: bool = True):
+    def open(
+        self,
+        alias: str,
+        prompt_args: Optional[Dict[str, Any]] = None,
+        session_name: Optional[str] = None,
+        switch: bool = True,
+    ):
         """
         Create a new dialog owned by this agent, keyed by alias.
 
@@ -88,15 +98,24 @@ class Agent:
             runtime=self.runtime,
         )
         dialog.put_prompt(
-            self.system_prompt, prompt_args,
-            name='system', role=Roles.SYSTEM,
+            self.system_prompt,
+            prompt_args,
+            name="system",
+            role=Roles.SYSTEM,
         )
         self._dialogs[alias] = dialog
         if switch:
             self._active_alias = alias
-        return self # for chaining
-        
-    def fork(self, alias: str, child_alias: str, last_n: int = 0, first_k: int = 1, switch: bool = True) -> 'Agent':
+        return self  # for chaining
+
+    def fork(
+        self,
+        alias: str,
+        child_alias: str,
+        last_n: int = 0,
+        first_k: int = 1,
+        switch: bool = True,
+    ) -> "Agent":
         """
         Branch an existing dialog into a new child dialog.
 
@@ -124,7 +143,7 @@ class Agent:
         self._dialogs[child_alias] = child
         if switch:
             self._active_alias = child_alias
-        return self # for chaining
+        return self  # for chaining
 
     def close(self, alias: str) -> Dialog:
         """
@@ -138,7 +157,7 @@ class Agent:
             self._active_alias = None
         return dialog
 
-    def switch(self, alias: str) -> 'Agent':
+    def switch(self, alias: str) -> "Agent":
         """
         Set the active dialog by alias.  Returns self for chaining.
 
@@ -153,7 +172,7 @@ class Agent:
         self._active_alias = alias
         return self
 
-    def _get_dialog(self, alias: str = None) -> Dialog:
+    def _get_dialog(self, alias: Optional[str] = None) -> Dialog:
         """Resolve alias → Dialog, falling back to active dialog if alias is None."""
         if alias is not None:
             if alias not in self._dialogs:
@@ -190,9 +209,9 @@ class Agent:
     def receive(
         self,
         text: str,
-        alias: str = None,
+        alias: Optional[str] = None,
         role: Roles = Roles.USER,
-        name: str = 'user',
+        name: str = "user",
     ) -> Message:
         """Put a text message into the active (or specified) dialog."""
         return self._get_dialog(alias).put_text(text, name=name, role=role)
@@ -201,36 +220,62 @@ class Agent:
         self,
         prompt: Prompt,
         prompt_args: Optional[Dict[str, Any]] = None,
-        alias: str = None,
+        alias: Optional[str] = None,
         role: Roles = Roles.USER,
-        name: str = 'user',
+        name: str = "user",
     ) -> Message:
         """Put a structured prompt message into the dialog."""
         return self._get_dialog(alias).put_prompt(
-            prompt, prompt_args, name=name, role=role,
+            prompt,
+            prompt_args,
+            name=name,
+            role=role,
         )
 
     def receive_image(
         self,
         image,
-        caption: str = None,
-        alias: str = None,
+        caption: Optional[str] = None,
+        alias: Optional[str] = None,
         role: Roles = Roles.USER,
-        name: str = 'user',
+        name: str = "user",
     ) -> Message:
         """Put an image message into the dialog."""
         return self._get_dialog(alias).put_image(
-            image, caption=caption, name=name, role=role,
+            image,
+            caption=caption,
+            name=name,
+            role=role,
         )
+
+    @overload
+    def respond(
+        self,
+        alias: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        args: Optional[Dict[str, Any]] = None,
+        parser_args: Optional[Dict[str, Any]] = None,
+        return_session: Literal[False] = False,
+    ) -> Message: ...
+
+    @overload
+    def respond(
+        self,
+        alias: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        args: Optional[Dict[str, Any]] = None,
+        parser_args: Optional[Dict[str, Any]] = None,
+        return_session: Literal[True] = True,
+    ) -> AgentCallSession: ...
 
     def respond(
         self,
-        alias: str = None,
+        alias: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
         return_session: bool = False,
-    ) -> Union[Message, Tuple[Message, AgentCallSession]]:
+    ) -> Union[Message, AgentCallSession]:
         """
         High-level: run the agent call loop on a dialog, return the response.
 
@@ -245,12 +290,13 @@ class Agent:
             return_session: if True, return the entire AgentCallSession instead of just the message (use session.delivery to get the final message).
         """
         dialog = self._get_dialog(alias)
-        session = self._call(dialog, metadata=metadata, args=args, parser_args=parser_args)
+        session = self._call(
+            dialog, metadata=metadata, args=args, parser_args=parser_args
+        )
         if return_session:
             return session
         else:
             return session.delivery
-
 
     # ===================================================================
     # Core agent call loop
@@ -260,8 +306,12 @@ class Agent:
     def _call(
         self,
         dialog: Dialog,  # it assumes the prompt is already loaded into the dialog as the top prompt by send_message
-        metadata: Optional[Dict[str, Any]] = None,  # for tracking additional information, such as frontend replay info
-        args: Optional[Dict[str, Any]] = None,  # for tracking additional information, such as frontend replay info
+        metadata: Optional[
+            Dict[str, Any]
+        ] = None,  # for tracking additional information, such as frontend replay info
+        args: Optional[
+            Dict[str, Any]
+        ] = None,  # for tracking additional information, such as frontend replay info
         parser_args: Optional[Dict[str, Any]] = None,
     ) -> AgentCallSession:
         """
@@ -288,14 +338,16 @@ class Agent:
         metadata = dict(metadata) if metadata else {}
         args = dict(args) if args else {}
         parser_args = dict(parser_args) if parser_args else {}
-        # Prompt: a function maps prompt args and dialog into the expected output 
+        # Prompt: a function maps prompt args and dialog into the expected output
         if dialog.top_prompt is None:
             dialog.top_prompt = self.system_prompt
         dialog.top_prompt = dialog.top_prompt.resolve_function_refs(
             dialog.runtime or self.runtime
         )
         interrupts = []
-        _max_steps = 100 if self.max_interrupt_steps == 0 else self.max_interrupt_steps + 1  # +1 for the final response
+        _max_steps = (
+            100 if self.max_interrupt_steps == 0 else self.max_interrupt_steps + 1
+        )  # +1 for the final response
         if self.max_interrupt_steps == 0:
             logger.warning(
                 "Agent '%s': max_interrupt_steps=0 means unlimited (up to 100 iterations). "
@@ -303,14 +355,16 @@ class Agent:
                 self.name,
             )
         for i in range(_max_steps):
-            working_dialog = dialog.fork() # make a copy of the dialog, truncate all exception handling dialogs
+            working_dialog = (
+                dialog.fork()
+            )  # make a copy of the dialog, truncate all exception handling dialogs
             if self.context_manager is not None:
                 working_dialog = self.context_manager(working_dialog)
-            while True: # ensure the response is no exception
+            while True:  # ensure the response is no exception
                 try:
                     _model_args = self.model_args.copy()
                     _model_args.update(args)
-                    
+
                     invoke_result = self.llm_invoker.call(
                         working_dialog,
                         self.model,
@@ -322,67 +376,71 @@ class Agent:
                         stream_handler=self.stream_handler,
                     )
                     session.new_invoke_trace(invoke_result, i)
-                    working_dialog.append(invoke_result.message) 
+                    working_dialog.append(invoke_result.message)
                     if invoke_result.has_errors:
                         raise AgentException(invoke_result.error_message)
-                    else: 
+                    else:
                         break
-                except AgentException as e: # handle the exception from the agent
+                except AgentException as e:  # handle the exception from the agent
                     if not session.reach_max_exception_retry:
                         session.exception(e, i)
                         working_dialog.put_prompt(
-                            dialog.top_prompt.on_exception(session), 
-                            {'error_message': str(e)}, 
-                            name='exception'
+                            dialog.top_prompt.on_exception(session),
+                            {"error_message": str(e)},
+                            name="exception",
                         )
                         continue
                     else:
                         raise e
-                except Exception as e: # handle the exception from the LLM
+                except Exception as e:  # handle the exception from the LLM
                     # Simplified error handling for now
-                    wait_time = random.random()*15+1
-                    if U.is_openai_rate_limit_error(e): # for safe
+                    wait_time = random.random() * 15 + 1
+                    if U.is_openai_rate_limit_error(e):  # for safe
                         time.sleep(wait_time)
                     else:
                         if not session.reach_max_llm_recall:
                             session.llm_recall(e, i)
-                            time.sleep(1) # wait for a while before retrying
+                            time.sleep(1)  # wait for a while before retrying
                             continue
                         else:
                             raise e
 
-            dialog.append(invoke_result.message) # update the dialog state
+            dialog.append(invoke_result.message)  # update the dialog state
             # now handle the interruption
             if invoke_result.message.is_function_call:
-                _func_names = [func_call.name for func_call in invoke_result.message.function_calls]
+                _func_names = [
+                    func_call.name for func_call in invoke_result.message.function_calls
+                ]
                 # handle the function call
                 session.interrupt(invoke_result.message.function_calls, i)
                 for function_call in invoke_result.message.function_calls:
                     if function_call.is_repeated(interrupts):
-                        result_str = f'The function {function_call.name} with identical arguments {function_call.arguments} has been called earlier, please check the previous results and do not call it again. If you do not need to call more functions, just stop calling and provide the final response.'
+                        result_str = f"The function {function_call.name} with identical arguments {function_call.arguments} has been called earlier, please check the previous results and do not call it again. If you do not need to call more functions, just stop calling and provide the final response."
                     else:
                         if function_call.name not in dialog.top_prompt.functions:
-                            raise KeyError(f"Function '{function_call.name}' not registered on prompt '{dialog.top_prompt.path}'")
+                            raise KeyError(
+                                f"Function '{function_call.name}' not registered on prompt '{dialog.top_prompt.path}'"
+                            )
                         function = dialog.top_prompt.functions[function_call.name]
                         function_call = function(function_call)
                         result_str = function_call.result_str
                         interrupts.append(function_call)
                     dialog.put_prompt(
                         dialog.top_prompt.on_interrupt(session),
-                        {'call_results': result_str},
+                        {"call_results": result_str},
                         role=Roles.TOOL,
                         name=function_call.name,
-                        metadata={'tool_call_id': function_call.id},
+                        metadata={"tool_call_id": function_call.id},
                     )
-                
+
                 if session.reach_max_interrupt_steps:
                     dialog.put_prompt(
-                        dialog.top_prompt.on_interrupt_final(session), 
-                        role=Roles.USER, 
-                        name=function_call.name
+                        dialog.top_prompt.on_interrupt_final(session),
+                        role=Roles.USER,
+                        name=function_call.name,
                     )
-            else: # the response is not a function call, it is the final response
+            else:  # the response is not a function call, it is the final response
                 session.success(invoke_result.message)
                 return session
         session.failure()
-        raise ValueError(f'Failed to call the agent: {session}')
+        raise ValueError(f"Failed to call the agent: {session}")

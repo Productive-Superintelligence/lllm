@@ -1,21 +1,23 @@
 from __future__ import annotations
 
-import uuid
 import base64
-import io
-import datetime as dt
-from pathlib import Path
 import copy
-import re
-from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, ClassVar, List, Dict, Any, Optional, Union
-from dataclasses import dataclass, field
-from pydantic import BaseModel, Field, ConfigDict, field_validator
-
-from lllm.core.const import Roles, Modalities, APITypes, InvokeCost, FunctionCall
-import lllm.utils as U
-from lllm.core.runtime import Runtime, get_default_runtime
+import datetime as dt
+import io
 import logging
+import re
+import uuid
+from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+import lllm.utils as U
+from lllm.core.const import APITypes, FunctionCall, InvokeCost, Modalities, Roles
+from lllm.core.runtime import Runtime, get_default_runtime
+
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
@@ -26,6 +28,7 @@ def _is_pil_image(obj: Any) -> bool:
     """Return True if *obj* is a PIL/Pillow Image without requiring PIL at import time."""
     try:
         from PIL import Image
+
         return isinstance(obj, Image.Image)
     except ImportError:
         return False
@@ -35,9 +38,10 @@ class TokenLogprob(BaseModel):
     token: Optional[str] = None
     logprob: Optional[float] = None
     bytes: Optional[List[int]] = None
-    top_logprobs: List['TokenLogprob'] = Field(default_factory=list)
+    top_logprobs: List["TokenLogprob"] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
+
 
 TokenLogprob.model_rebuild()
 
@@ -47,22 +51,27 @@ TokenLogprob.model_rebuild()
 
 
 def _sanitize_name(raw_name: str) -> str:
-    return re.sub(r'[^a-zA-Z0-9_-]', '_', raw_name)[:64]
+    return re.sub(r"[^a-zA-Z0-9_-]", "_", raw_name)[:64]
+
 
 class Message(BaseModel):
     role: Roles
-    content: Union[str, List[Dict[str, Any]]] # Content can be string or list of content parts (for images)
-    name: str # name of the sender
+    content: Union[
+        str, List[Dict[str, Any]]
+    ]  # Content can be string or list of content parts (for images)
+    name: str  # name of the sender
     function_calls: List[FunctionCall] = Field(default_factory=list)
     modality: Modalities = Modalities.TEXT
     logprobs: List[TokenLogprob] = Field(default_factory=list)
     parsed: Dict[str, Any] = Field(default_factory=dict)
     model: Optional[str] = None
-    usage: Dict[str, Any] = Field(default_factory=dict) # 
-    metadata: Dict[str, Any] = Field(default_factory=dict) 
+    usage: Dict[str, Any] = Field(default_factory=dict)  #
+    metadata: Dict[str, Any] = Field(default_factory=dict)
     api_type: APITypes = APITypes.COMPLETION
 
-    vectors: List[float] = Field(default_factory=list) # place holder for embedding vectors of the message, can be used for training, similarity search, etc. Need special invoker to support this.
+    vectors: List[float] = Field(
+        default_factory=list
+    )  # place holder for embedding vectors of the message, can be used for training, similarity search, etc. Need special invoker to support this.
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @property
@@ -93,27 +102,29 @@ class Message(BaseModel):
         if not self.usage:
             return InvokeCost()
 
-        p_tokens = self.usage.get('prompt_tokens', 0)
-        c_tokens = self.usage.get('completion_tokens', 0)
-        t_tokens = self.usage.get('total_tokens', p_tokens + c_tokens)
-        p_details = self.usage.get('prompt_tokens_details', {}) or {}
-        c_details = self.usage.get('completion_tokens_details', {}) or {}
-    
+        p_tokens = self.usage.get("prompt_tokens", 0)
+        c_tokens = self.usage.get("completion_tokens", 0)
+        t_tokens = self.usage.get("total_tokens", p_tokens + c_tokens)
+        p_details = self.usage.get("prompt_tokens_details", {}) or {}
+        c_details = self.usage.get("completion_tokens_details", {}) or {}
+
         return InvokeCost(
             prompt_tokens=p_tokens,
             completion_tokens=c_tokens,
             total_tokens=t_tokens,
-            cached_prompt_tokens=p_details.get('cached_tokens') or 0,
-            audio_prompt_tokens=p_details.get('audio_tokens') or 0,
-            reasoning_tokens=c_details.get('reasoning_tokens') or 0,
-            audio_completion_tokens=c_details.get('audio_tokens') or 0,
+            cached_prompt_tokens=p_details.get("cached_tokens") or 0,
+            audio_prompt_tokens=p_details.get("audio_tokens") or 0,
+            reasoning_tokens=c_details.get("reasoning_tokens") or 0,
+            audio_completion_tokens=c_details.get("audio_tokens") or 0,
             # Dollar costs
             input_cost_per_token=self.usage.get("input_cost_per_token", 0.0),
             output_cost_per_token=self.usage.get("output_cost_per_token", 0.0),
-            cache_read_input_token_cost=self.usage.get("cache_read_input_token_cost", 0.0),
+            cache_read_input_token_cost=self.usage.get(
+                "cache_read_input_token_cost", 0.0
+            ),
             prompt_cost=self.usage.get("prompt_cost", 0.0),
             completion_cost=self.usage.get("completion_cost", 0.0),
-            cost=self.usage.get("response_cost", 0.0)
+            cost=self.usage.get("response_cost", 0.0),
         )
 
     @property
@@ -127,13 +138,13 @@ class Message(BaseModel):
     def from_dict(cls, d: dict):
         return cls(**d)
 
+
 Message.model_rebuild()
 
 
 # ---------------------------------------------------------------------------
 # DialogTree and Dialog
 # ---------------------------------------------------------------------------
-
 
 
 @dataclass
@@ -157,6 +168,7 @@ class DialogTreeNode:
         first_k:   The number of the first k messages that are copied from the parent dialog.
         children_ids: dialog_ids of all direct child dialogs.
     """
+
     dialog_id: str = field(default_factory=lambda: uuid.uuid4().hex)
     owner: Optional[str] = None
     parent_id: Optional[str] = None
@@ -166,8 +178,8 @@ class DialogTreeNode:
     first_k: Optional[int] = None
 
     # Live in-process references (not serialized)
-    _parent: Optional['DialogTreeNode'] = field(default=None, repr=False)
-    _children: List['DialogTreeNode'] = field(default_factory=list, repr=False)
+    _parent: Optional["DialogTreeNode"] = field(default=None, repr=False)
+    _children: List["DialogTreeNode"] = field(default_factory=list, repr=False)
 
     # -- Lineage helpers --------------------------------------------------
 
@@ -184,7 +196,7 @@ class DialogTreeNode:
             cur = cur._parent
         return d
 
-    def add_child(self, child: 'DialogTreeNode') -> None:
+    def add_child(self, child: "DialogTreeNode") -> None:
         """Wire a child node into this node (both live refs and id lists)."""
         child._parent = self
         child.parent_id = self.dialog_id
@@ -205,34 +217,32 @@ class DialogTreeNode:
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'dialog_id': self.dialog_id,
-            'owner': self.owner,
-            'parent_id': self.parent_id,
-            'split_point': self.split_point,
-            'children_ids': list(self.children_ids),
-            'last_n': self.last_n,
-            'first_k': self.first_k,
+            "dialog_id": self.dialog_id,
+            "owner": self.owner,
+            "parent_id": self.parent_id,
+            "split_point": self.split_point,
+            "children_ids": list(self.children_ids),
+            "last_n": self.last_n,
+            "first_k": self.first_k,
         }
 
     @classmethod
-    def from_dict(cls, d: Dict[str, Any]) -> 'DialogTreeNode':
+    def from_dict(cls, d: Dict[str, Any]) -> "DialogTreeNode":
         return cls(
-            dialog_id=d['dialog_id'],
-            owner=d.get('owner'),
-            parent_id=d.get('parent_id'),
-            split_point=d.get('split_point'),
-            last_n=d.get('last_n'),
-            first_k=d.get('first_k'),
-            children_ids=d.get('children_ids', []),
+            dialog_id=d["dialog_id"],
+            owner=d.get("owner"),
+            parent_id=d.get("parent_id"),
+            split_point=d.get("split_point"),
+            last_n=d.get("last_n"),
+            first_k=d.get("first_k"),
+            children_ids=d.get("children_ids", []),
         )
-
-
 
 
 @dataclass
 class Dialog:
     """
-    An append-only message sequence owned by a single agent. 
+    An append-only message sequence owned by a single agent.
 
     The agent that creates a dialog seeds it with its system prompt, and that
     ownership is recorded on the ``tree_node``.  Other participants (user,
@@ -244,7 +254,8 @@ class Dialog:
     automatically linked to the parent's tree_node — callers (including
     Agent) never need to wire lineage manually.
     """
-    session_name: str = None
+
+    session_name: Optional[str] = None
     top_prompt: Optional[Prompt] = None
     runtime: Optional[Runtime] = None
     owner: Optional[str] = None
@@ -253,86 +264,99 @@ class Dialog:
     _messages: List[Message] = field(default_factory=list)
 
     # Tree structure — each Dialog has exactly one node
-    tree_node: DialogTreeNode = field(default=None)
+    tree_node: Optional[DialogTreeNode] = field(default=None)
 
     # Live Dialog-level parent/children refs (parallel to tree_node's node-level refs)
-    _parent_dialog: Optional['Dialog'] = field(default=None, repr=False)
-    _children_dialogs: List['Dialog'] = field(default_factory=list, repr=False)
-
+    _parent_dialog: Optional["Dialog"] = field(default=None, repr=False)
+    _children_dialogs: List["Dialog"] = field(default_factory=list, repr=False)
 
     def __post_init__(self):
         if self.tree_node is None:
             self.tree_node = DialogTreeNode(owner=self.owner)
         if self.session_name is None:
-            self.session_name = dt.datetime.now().strftime('%Y%m%d_%H%M%S') + '_' + str(uuid.uuid4())[:6]
+            self.session_name = (
+                dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+                + "_"
+                + str(uuid.uuid4())[:6]
+            )
         self.runtime = self.runtime or get_default_runtime()
 
     # -- Convenience proxies to tree_node ---------------------------------
 
     @property
     def dialog_id(self) -> str:
+        assert self.tree_node is not None
         return self.tree_node.dialog_id
 
     @property
-    def parent(self) -> Optional['Dialog']:
+    def parent(self) -> Optional["Dialog"]:
         """Live reference to parent Dialog (None for root dialogs)."""
         return self._parent_dialog
 
     @property
-    def children(self) -> List['Dialog']:
+    def children(self) -> List["Dialog"]:
         """Live references to child Dialogs forked from this one."""
         return list(self._children_dialogs)
 
     @property
     def is_root(self) -> bool:
+        assert self.tree_node is not None
         return self.tree_node.is_root
 
     @property
     def depth(self) -> int:
+        assert self.tree_node is not None
         return self.tree_node.depth
 
     # -- Message access ---------------------------------------------------
 
-    def append(self, message: Message):
-        message.metadata['dialog_id'] = self.dialog_id
+    def append(self, message: Message) -> None:
+        assert self.tree_node is not None
+        message.metadata["dialog_id"] = self.dialog_id
         self._messages.append(message)
 
-    def to_dict(self):
+    def to_dict(self) -> Dict[str, Any]:
+        assert self.tree_node is not None
         return {
-            'messages': [message.to_dict() for message in self._messages],
-            'session_name': self.session_name,
-            'owner': self.owner,
-            'tree_node': self.tree_node.to_dict(),
-            'top_prompt_path': (
-                getattr(self.top_prompt, '_qualified_key', None) or self.top_prompt.path
-            ) if self.top_prompt is not None else None,
+            "messages": [message.to_dict() for message in self._messages],
+            "session_name": self.session_name,
+            "owner": self.owner,
+            "tree_node": self.tree_node.to_dict(),
+            "top_prompt_path": (
+                getattr(self.top_prompt, "_qualified_key", None) or self.top_prompt.path
+            )
+            if self.top_prompt is not None
+            else None,
         }
 
     @classmethod
-    def from_dict(cls, d: dict, runtime: Runtime = None):
-        top_prompt_path = d.get('top_prompt_path')
+    def from_dict(cls, d: dict, runtime: Optional[Runtime] = None) -> "Dialog":
+        top_prompt_path = d.get("top_prompt_path")
         runtime = runtime or get_default_runtime()
         top_prompt = None
         if top_prompt_path is not None:
             try:
                 top_prompt = runtime.get_prompt(top_prompt_path)
             except KeyError:
-                logger.warning("Prompt '%s' not found in runtime during Dialog.from_dict", top_prompt_path)
-        tree_node_data = d.get('tree_node')
+                logger.warning(
+                    "Prompt '%s' not found in runtime during Dialog.from_dict",
+                    top_prompt_path,
+                )
+        tree_node_data = d.get("tree_node")
         tree_node = DialogTreeNode.from_dict(tree_node_data) if tree_node_data else None
         return cls(
-            _messages=[Message.from_dict(message) for message in d['messages']],
-            session_name=d['session_name'],
-            owner=d.get('owner'),
+            _messages=[Message.from_dict(message) for message in d["messages"]],
+            session_name=d["session_name"],
+            owner=d.get("owner"),
             top_prompt=top_prompt,
             runtime=runtime,
             tree_node=tree_node,
         )
-    
+
     @property
-    def messages(self):
+    def messages(self) -> List[Message]:
         return self._messages
-    
+
     # -----------------------------------------------------------------------
     # Message Operations, you can only put or fork, dialog is immutable and monotonic.
     # If you want to modify the dialog, you can use ContextManager to dynamically edit it on the fly.
@@ -343,8 +367,8 @@ class Dialog:
     def put_image(
         self,
         image: Union[str, Path, Any],
-        caption: str = None,
-        name: str = 'user',
+        caption: Optional[str] = None,
+        name: str = "user",
         metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
@@ -361,36 +385,36 @@ class Dialog:
             except (OSError, ValueError):
                 pass  # not a path; treat as base64 below
         if isinstance(image, Path):
-            with image.open('rb') as f:
-                image_base64 = base64.b64encode(f.read()).decode('utf-8')
+            with image.open("rb") as f:
+                image_base64 = base64.b64encode(f.read()).decode("utf-8")
         elif _is_pil_image(image):
             buf = io.BytesIO()
-            fmt = image.format or 'PNG'
+            fmt = image.format or "PNG"
             image.save(buf, format=fmt)
-            image_base64 = base64.b64encode(buf.getvalue()).decode('utf-8')
+            image_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         elif isinstance(image, str):
             # Validate that the base64 string decodes to a known image format
             _IMAGE_MAGIC = (
-                b'\x89PNG',       # PNG
-                b'\xff\xd8\xff',  # JPEG
-                b'RIFF',          # WebP (RIFF....WEBP)
-                b'GIF8',          # GIF
+                b"\x89PNG",  # PNG
+                b"\xff\xd8\xff",  # JPEG
+                b"RIFF",  # WebP (RIFF....WEBP)
+                b"GIF8",  # GIF
             )
             try:
                 raw = base64.b64decode(image)
             except Exception:
-                raise ValueError(f'Invalid base64 encoded image string')
+                raise ValueError(f"Invalid base64 encoded image string")
             if not any(raw.startswith(m) for m in _IMAGE_MAGIC):
                 raise ValueError(
-                    f'Base64 string does not appear to be a supported image '
-                    f'(PNG/JPEG/WebP/GIF); got header {raw[:8]!r}'
+                    f"Base64 string does not appear to be a supported image "
+                    f"(PNG/JPEG/WebP/GIF); got header {raw[:8]!r}"
                 )
             image_base64 = image
         else:
-            raise ValueError(f'Invalid image type: {type(image)}')
+            raise ValueError(f"Invalid image type: {type(image)}")
         payload = dict(metadata) if metadata else {}
         if caption is not None:
-            payload['caption'] = caption
+            payload["caption"] = caption
         message = Message(
             role=role,
             content=image_base64,
@@ -404,20 +428,21 @@ class Dialog:
     def put_text(
         self,
         text: str,
-        name: str = 'user',
+        name: str = "user",
         metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
         from lllm.core.prompt import Prompt  # lazy import to avoid circular dependency
+
         metadata = dict(metadata) if metadata else {}
         # create a temporary prompt for the text to reset parsers and other state
-        prompt = Prompt(path='__temp_prompt_'+str(uuid.uuid4())[:6], prompt=text)
+        prompt = Prompt(path="__temp_prompt_" + str(uuid.uuid4())[:6], prompt=text)
         message = Message(
             role=role,
             content=text,
             name=name,
             modality=Modalities.TEXT,
-            metadata=metadata
+            metadata=metadata,
         )
         self.append(message)
         self.top_prompt = prompt
@@ -429,7 +454,7 @@ class Dialog:
         self,
         prompt: Prompt | str,
         prompt_args: Optional[Dict[str, Any]] = None,
-        name: str = 'user',  # or 'user', etc.
+        name: str = "user",  # or 'user', etc.
         metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
@@ -444,17 +469,17 @@ class Dialog:
             content=content,
             name=name,
             modality=Modalities.TEXT,
-            metadata=metadata
+            metadata=metadata,
         )
         self.append(message)
         self.top_prompt = prompt
         return message
-    
+
     # -----------------------------------------------------------------------
     # Forking — the only way to branch a dialog
     # -----------------------------------------------------------------------
-    
-    def fork(self, last_n: int = 0, first_k: int = 1) -> 'Dialog':
+
+    def fork(self, last_n: int = 0, first_k: int = 1) -> "Dialog":
         """
         Create a child dialog branching from this one.
 
@@ -463,7 +488,7 @@ class Dialog:
                         (useful for retrying from an earlier point).
                         The first system message is always preserved.
             first_k: if >0, ensure the first k messages from the parent dialog
-                        (useful for preserving the system prompt message). 
+                        (useful for preserving the system prompt message).
                         Should always be >=1 to at least preserve the system prompt message.
 
         The fork automatically:
@@ -517,21 +542,32 @@ class Dialog:
     # Display
     # -----------------------------------------------------------------------
 
-    def overview(self, remove_tail: bool = False, max_length: int = 100, 
-                 stream = None, divider: bool = False):
-        _overview = ''
+    def overview(
+        self,
+        remove_tail: bool = False,
+        max_length: int = 100,
+        stream=None,
+        divider: bool = False,
+    ):
+        _overview = ""
         for idx, message in enumerate(self.messages):
-            if remove_tail and idx == len(self.messages)-1:
+            if remove_tail and idx == len(self.messages) - 1:
                 break
-            content_preview = str(message.content)[:max_length] + '...' if len(str(message.content)) > max_length else str(message.content)
-            _overview += f'[{idx}. {message.name} ({message.role.msg_value})]: {content_preview}\n\n'
-        
+            content_preview = (
+                str(message.content)[:max_length] + "..."
+                if len(str(message.content)) > max_length
+                else str(message.content)
+            )
+            _overview += f"[{idx}. {message.name} ({message.role.msg_value})]: {content_preview}\n\n"
+
         _overview = _overview.strip()
         cost = self.tail.cost if self.messages else InvokeCost()
         if stream is not None:
             if divider:
                 stream.divider()
-            stream.write(U.html_collapse(f'Context overview', _overview), unsafe_allow_html=True)
+            stream.write(
+                U.html_collapse(f"Context overview", _overview), unsafe_allow_html=True
+            )
             stream.write(str(cost))
         return _overview
 
@@ -540,26 +576,30 @@ class Dialog:
         Recursively print the dialog tree structure from this node.
         Useful for debugging multi-fork scenarios.
         """
-        prefix = '  ' * indent
-        branch = '└─ ' if indent > 0 else ''
+        prefix = "  " * indent
+        branch = "└─ " if indent > 0 else ""
         line = (
             f"{prefix}{branch}[{self.dialog_id[:8]}] "
             f"owner={self.owner} msgs={len(self._messages)} "
             f"split@{self.tree_node.split_point}"
         )
         if self.tree_node.last_n is not None and self.tree_node.last_n > 0:
-            line += f" (last_n={self.tree_node.last_n}, first_k={self.tree_node.first_k})"
+            line += (
+                f" (last_n={self.tree_node.last_n}, first_k={self.tree_node.first_k})"
+            )
         lines = [line]
         for child in self._children_dialogs:
             lines.append(child.tree_overview(indent + 1))
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
     @property
-    def tail(self): # last message in the dialog, use it to get last response from the LLM
+    def tail(
+        self,
+    ):  # last message in the dialog, use it to get last response from the LLM
         return self._messages[-1] if self._messages else None
-    
+
     @property
-    def head(self): # usually the system prompt message
+    def head(self):  # usually the system prompt message
         return self._messages[0] if self._messages else None
 
     @property
@@ -573,18 +613,15 @@ class Dialog:
             reasoning_tokens=sum(c.reasoning_tokens for c in costs),
             audio_prompt_tokens=sum(c.audio_prompt_tokens for c in costs),
             audio_completion_tokens=sum(c.audio_completion_tokens for c in costs),
-            
             # We don't aggregate token rates for the whole dialog
             input_cost_per_token=0.0,
             output_cost_per_token=0.0,
             cache_read_input_token_cost=0.0,
-            
             # Aggregate absolute dollar values
             prompt_cost=sum(c.prompt_cost for c in costs),
             completion_cost=sum(c.completion_cost for c in costs),
-            cost=sum(c.cost for c in costs)
+            cost=sum(c.cost for c in costs),
         )
-
 
 
 # ---------------------------------------------------------------------------
@@ -620,7 +657,7 @@ class ContextManager(ABC):
         class SummaryCompressor(ContextManager):
             name = "summary"   # <-- required; used as the config type key
 
-            def __init__(self, model_name: str, max_tokens: int = None):
+            def __init__(self, model_name: str, max_tokens: Optional[int] = None):
                 self.model_name = model_name
                 self._max_tokens = max_tokens
 
@@ -741,6 +778,7 @@ class DefaultContextManager(ContextManager):
             return self._max_tokens
         try:
             from litellm import get_max_tokens
+
             val = get_max_tokens(self.model_name)
             return int(val) if val else 4096
         except Exception:
@@ -755,6 +793,7 @@ class DefaultContextManager(ContextManager):
 
     def _count(self, raw_msgs: list) -> int:
         from litellm import token_counter
+
         return token_counter(model=self.model_name, messages=raw_msgs)
 
     # ------------------------------------------------------------------
@@ -794,9 +833,13 @@ class DefaultContextManager(ContextManager):
                     content = raw["content"]
                     # Approximate character count via token ratio (0.85 headroom)
                     ratio = budget / t
-                    truncated_content = content[:max(1, int(len(content) * ratio * 0.85))]
+                    truncated_content = content[
+                        : max(1, int(len(content) * ratio * 0.85))
+                    ]
                     border = copy.deepcopy(orig)
-                    border.content = "[...earlier content truncated...]\n" + truncated_content
+                    border.content = (
+                        "[...earlier content truncated...]\n" + truncated_content
+                    )
                     kept.insert(0, border)
                 break
 
@@ -819,6 +862,3 @@ class DefaultContextManager(ContextManager):
         child._parent_dialog = dialog
         dialog._children_dialogs.append(child)
         return child
-
-
-

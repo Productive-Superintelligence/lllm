@@ -7,7 +7,6 @@ from lllm.core.const import APITypes, InvokeResult
 from lllm.core.dialog import Dialog
 
 
-
 class BaseStreamHandler(ABC):
     @abstractmethod
     def handle_chunk(self, chunk_content: str, chunk_response: Any):
@@ -38,10 +37,12 @@ class BaseInvoker(ABC):
         model: str,
         model_args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
-        responder: str = 'assistant',
-        metadata: Optional[Dict[str, Any]] = None, # only for tracking additional information, such as frontend replay info
+        responder: str = "assistant",
+        metadata: Optional[
+            Dict[str, Any]
+        ] = None,  # only for tracking additional information, such as frontend replay info
         api_type: APITypes = APITypes.COMPLETION,
-        stream_handler: BaseStreamHandler = None,
+        stream_handler: Optional[BaseStreamHandler] = None,
     ) -> InvokeResult:
         """
         Call the LLM and return the invocation result.

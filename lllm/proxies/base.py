@@ -1,8 +1,9 @@
-import inspect
-import functools as ft
 import datetime as dt
+import functools as ft
+import inspect
 import logging
-from typing import Dict, Any, List, Optional, Callable
+from typing import Any, Callable, Dict, List, Optional
+
 from lllm.core.runtime import Runtime, get_default_runtime
 
 logger = logging.getLogger(__name__)
@@ -18,7 +19,7 @@ class BaseProxy:
         cutoff_date: Optional[dt.datetime] = None,
         deploy_mode: bool = False,
         use_cache: bool = True,
-        runtime: Runtime = None,
+        runtime: Optional[Runtime] = None,
         **kwargs,
     ):
         self._runtime = runtime or get_default_runtime()
@@ -36,24 +37,35 @@ class BaseProxy:
                 self.cutoff_date = None
 
     @staticmethod
-    def endpoint(category: str, endpoint: str, description: str, params: dict, response: list,
-                 name: str = None, sub_category: str = None, remove_keys: list = None,
-                 dt_cutoff: tuple = None, method: str = 'GET'):
+    def endpoint(
+        category: str,
+        endpoint: str,
+        description: str,
+        params: dict,
+        response: list,
+        name: Optional[str] = None,
+        sub_category: Optional[str] = None,
+        remove_keys: Optional[list] = None,
+        dt_cutoff: Optional[tuple] = None,
+        method: str = "GET",
+    ):
         """Decorator that records metadata about an API endpoint."""
+
         def decorator(func):
             func.endpoint_info = {
-                'category': category,
-                'endpoint': endpoint,
-                'name': name,
-                'description': description,
-                'sub_category': sub_category,
-                'remove_keys': remove_keys,
-                'params': params,
-                'response': response,
-                'dt_cutoff': dt_cutoff,
-                'method': method
+                "category": category,
+                "endpoint": endpoint,
+                "name": name,
+                "description": description,
+                "sub_category": sub_category,
+                "remove_keys": remove_keys,
+                "params": params,
+                "response": response,
+                "dt_cutoff": dt_cutoff,
+                "method": method,
             }
             return func
+
         return decorator
 
     @staticmethod
@@ -66,10 +78,10 @@ class BaseProxy:
         tactic_url: str,
         *,
         config: Any = None,
-        endpoint: str = None,
+        endpoint: Optional[str] = None,
         category: str = "tactics",
-        name: str = None,
-        description: str = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
         response: Any = None,
         method: str = "TACTIC",
     ):
@@ -157,7 +169,9 @@ class BaseProxy:
         func = getattr(method, "__func__", None)
         return getattr(func, attr, default)
 
-    def _materialize_endpoint_info(self, attr_name: str, method, info: Dict[str, Any]) -> Dict[str, Any]:
+    def _materialize_endpoint_info(
+        self, attr_name: str, method, info: Dict[str, Any]
+    ) -> Dict[str, Any]:
         tactic_meta = self._callable_attr(method, "_lllm_tactic_endpoint")
         if not tactic_meta:
             return info
@@ -198,7 +212,9 @@ class BaseProxy:
             entry["callable"] = name
             entry["docstring"] = inspect.getdoc(method)
             directory.append(entry)
-        directory.sort(key=lambda item: ((item.get("category") or ""), item.get("endpoint") or ""))
+        directory.sort(
+            key=lambda item: ((item.get("category") or ""), item.get("endpoint") or "")
+        )
         return directory
 
     def api_directory(self) -> Dict[str, Any]:
@@ -230,6 +246,7 @@ class BaseProxy:
             results[entry["callable"]] = {"status": status, "issues": issues}
         return results
 
+
 class ProxyManager:
     """
     Runtime registry that instantiates every discovered proxy and forwards calls.
@@ -253,15 +270,15 @@ class ProxyManager:
         self.proxies = {}
         self._load_registered_proxies()
 
-
     def _load_registered_proxies(self):
         for qk, node in self._runtime.iter_items("proxy"):
             proxy_cls = node.value
             if self.activate_proxies:
                 # Match against qualified key, bare key, or _proxy_path
                 matched = any(
-                    act == qk or act == node.key
-                    or act == getattr(proxy_cls, '_proxy_path', None)
+                    act == qk
+                    or act == node.key
+                    or act == getattr(proxy_cls, "_proxy_path", None)
                     for act in self.activate_proxies
                 )
                 if not matched:
@@ -284,7 +301,9 @@ class ProxyManager:
     def register(self, name: str, proxy_cls: Any):
         """Register (or override) a proxy implementation at runtime."""
         if name in self.proxies:
-            logger.warning("Proxy '%s' already instantiated, overwriting instance", name)
+            logger.warning(
+                "Proxy '%s' already instantiated, overwriting instance", name
+            )
         try:
             instance = proxy_cls(
                 cutoff_date=self.cutoff_date,
@@ -293,7 +312,9 @@ class ProxyManager:
                 runtime=self._runtime,
             )
         except TypeError:
-            instance = proxy_cls(self.activate_proxies, self.cutoff_date, self.deploy_mode)
+            instance = proxy_cls(
+                self.activate_proxies, self.cutoff_date, self.deploy_mode
+            )
         instance._runtime = self._runtime
         instance._qualified_key = getattr(proxy_cls, "_qualified_key", None)
         instance._resource_namespace = getattr(proxy_cls, "_resource_namespace", None)
@@ -349,44 +370,58 @@ class ProxyManager:
                         else:
                             type_hint = None
                             example = spec
-                        type_name = getattr(type_hint, "__name__", str(type_hint)) if type_hint else "Any"
+                        type_name = (
+                            getattr(type_hint, "__name__", str(type_hint))
+                            if type_hint
+                            else "Any"
+                        )
                         if isinstance(example, (list, dict)):
                             example_preview = str(example)[:60]
                         else:
                             example_preview = example
-                        lines.append(f"    - `{param_name}` ({type_name}) e.g. {example_preview}")
+                        lines.append(
+                            f"    - `{param_name}` ({type_name}) e.g. {example_preview}"
+                        )
             sections.append("\n".join(lines).strip())
         return "\n\n".join(sections).strip()
 
     def _resolve(self, endpoint: str) -> tuple[str, str]:
-        if '.' in endpoint:
-            parts = endpoint.split('.', 1)
+        if "." in endpoint:
+            parts = endpoint.split(".", 1)
             return parts[0], parts[1]
-        path_parts = endpoint.split('/')
+        path_parts = endpoint.split("/")
         if len(path_parts) < 2:
-            raise ValueError(f"Invalid endpoint '{endpoint}'. Use '<proxy>.<method>' or '<proxy>/<method>'.")
-        return '/'.join(path_parts[:-1]), path_parts[-1]
+            raise ValueError(
+                f"Invalid endpoint '{endpoint}'. Use '<proxy>.<method>' or '<proxy>/<method>'."
+            )
+        return "/".join(path_parts[:-1]), path_parts[-1]
 
     def __call__(self, endpoint: str, *args, **kwargs):
         """Dispatch ``proxy_path.endpoint_name`` or ``proxy_path/endpoint`` to the proxy."""
         proxy_name, func_name = self._resolve(endpoint)
         if proxy_name not in self.proxies:
-            raise KeyError(f"Proxy '{proxy_name}' not registered. Available: {list(self.proxies.keys())}")
+            raise KeyError(
+                f"Proxy '{proxy_name}' not registered. Available: {list(self.proxies.keys())}"
+            )
         proxy = self.proxies[proxy_name]
         if not hasattr(proxy, func_name):
             raise AttributeError(f"Proxy '{proxy_name}' has no endpoint '{func_name}'")
         handler = getattr(proxy, func_name)
         return handler(*args, **kwargs)
 
+
 def ProxyRegistrator(path: str, name: str, description: str, runtime: Runtime = None):
     runtime = runtime or get_default_runtime()
+
     def decorator(cls):
         cls._proxy_path = path
         cls._proxy_name = name
         cls._proxy_description = description
         runtime.register_proxy(path, cls, overwrite=True)
         return cls
+
     return decorator
+
 
 def register_proxy(name: str, proxy_cls, overwrite: bool = False):
     get_default_runtime().register_proxy(name, proxy_cls, overwrite)
