@@ -1,4 +1,3 @@
-import datetime as dt
 import functools as ft
 import hashlib
 import json
@@ -7,12 +6,12 @@ import re
 import shutil
 from itertools import islice
 from pathlib import Path
-from typing import Any, Dict
+from typing import Dict, Optional
 
 import requests
 from filelock import FileLock
 
-from lllm.core.const import ParseError
+from ..core.const import ParseError
 
 pjoin = os.path.join
 psplit = os.path.split
@@ -20,9 +19,7 @@ pexists = os.path.exists
 mkdirs = ft.partial(os.makedirs, exist_ok=True)
 rmtree = ft.partial(shutil.rmtree, ignore_errors=True)
 
-TMP_DIR = os.getenv("TMP_DIR")
-if TMP_DIR is None:
-    TMP_DIR = pjoin(os.path.expanduser("~"), ".lllm")
+TMP_DIR = os.getenv("TMP_DIR") or pjoin(os.path.expanduser("~"), ".lllm")
 
 CACHE_DIR = pjoin(TMP_DIR, ".cache")
 mkdirs(CACHE_DIR)
@@ -193,7 +190,7 @@ def load_cache_by_key(cache_name: str, cache_key: str):
     if pexists(cache_file):
         try:
             return load_json(cache_file)
-        except:
+        except Exception:
             return None
     return None
 

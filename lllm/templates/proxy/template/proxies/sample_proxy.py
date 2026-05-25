@@ -1,4 +1,4 @@
-from lllm.proxies.base import BaseProxy
+from ....proxies.base import BaseProxy
 
 
 class SampleDataProxy(BaseProxy):

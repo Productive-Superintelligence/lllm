@@ -6,12 +6,12 @@ from typing import Any, Dict, Literal, Optional, Union, overload
 
 logger = logging.getLogger(__name__)
 
-import lllm.utils as U
-from lllm.core.const import APITypes, Roles
-from lllm.core.dialog import ContextManager, Dialog, Message
-from lllm.core.prompt import AgentCallSession, AgentException, Prompt
-from lllm.core.runtime import Runtime, get_default_runtime
-from lllm.invokers.base import BaseInvoker, BaseStreamHandler
+from .. import utils as U
+from ..invokers.base import BaseInvoker, BaseStreamHandler
+from .const import APITypes, Roles
+from .dialog import ContextManager, Dialog, Message
+from .prompt import AgentCallSession, AgentException, Prompt
+from .runtime import Runtime, get_default_runtime
 
 
 @dataclass

@@ -3,8 +3,8 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Optional
 
-from lllm.core.const import APITypes, InvokeResult
-from lllm.core.dialog import Dialog
+from ..core.const import APITypes, InvokeResult
+from ..core.dialog import Dialog
 
 
 class BaseStreamHandler(ABC):

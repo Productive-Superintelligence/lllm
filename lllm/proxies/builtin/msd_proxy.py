@@ -1,20 +1,19 @@
 # Main Street Data Proxy
-# MSD API https://mainstreetdata.com/home 
+# MSD API https://mainstreetdata.com/home
 # https://api.mainstreetdata.com/docs/#/
 
 
 import os
-from lllm.proxies.base import BaseProxy, ProxyRegistrator
 
-
+from ..base import BaseProxy, ProxyRegistrator
 
 
 @ProxyRegistrator(
-    path='msd', 
-    name='Main Street Data API', 
+    path="msd",
+    name="Main Street Data API",
     description=(
         "The Main Street Data API is an invaluable resource. The team behind this innovative product has meticulously compiled over thousands of metrics related to 2,500 US companies, offering unparalleled insights into businesses beyond standard financial statements. These KPIs provide a direct measure of business quality, giving investors a significant advantage by offering rare, hard-to-source data."
-    )
+    ),
 )
 class MSDProxy(BaseProxy):
     """
@@ -38,8 +37,8 @@ class MSDProxy(BaseProxy):
      - HIMS Subscriptions
      - ABNB Gross Booking Value
      - SHOP Monthly Recurring Revenue
-     - … 
-    
+     - …
+
     TSLA metrics example:
      - Vehicles Delivered by Model
      - Energy Storage Deployed
@@ -55,75 +54,71 @@ class MSDProxy(BaseProxy):
      - Gross Margin by Segment
      - Operating Expense Breakdown
     """
+
     def __init__(self, cutoff_date: str = None, cache: bool = True, **kwargs):
         super().__init__(cutoff_date=cutoff_date, use_cache=cache, **kwargs)
-        self.api_key_name = "*x-api-key" # * means it's a header
+        self.api_key_name = "*x-api-key"  # * means it's a header
         self.api_key = os.getenv("MSD_API_KEY")
         self.base_url = "https://api.mainstreetdata.com/api/v1"
         self.enums = {}
-
 
     ########################################
     ### Companies Endpoints
     ########################################
 
     @BaseProxy.endpoint(
-        category='Companies',
-        endpoint='companies/{ticker}',
-        name='Company Data',
-        description='Retrieve company data and its associated metrics.',
+        category="Companies",
+        endpoint="companies/{ticker}",
+        name="Company Data",
+        description="Retrieve company data and its associated metrics.",
         params={
-            "$ticker*": (str, "AAPL"), # $ means path parameter
+            "$ticker*": (str, "AAPL"),  # $ means path parameter
             "freq": (str, "quarterly"),
-            "metricName": (str, 'aapl_americas_msd'),
-            "startDate": (str, '2023-01-01'),
-            "endDate": (str, '2023-12-31'),
+            "metricName": (str, "aapl_americas_msd"),
+            "startDate": (str, "2023-01-01"),
+            "endDate": (str, "2023-12-31"),
             "yoy": (bool, False),
             "percentRevenue": (bool, False),
         },
         response={
-            "company": {
-                "ticker": "AAPL",
-                "name": "Apple",
-                "totalMetrics": 1
-            },
+            "company": {"ticker": "AAPL", "name": "Apple", "totalMetrics": 1},
             "metrics": [
                 {
-                "name": "Americas Revenue",
-                "type": "cumulative",
-                "category": "Revenue by Geography",
-                "values": [
-                    {
-                        "x": "2023-03-31T00:00:00.000Z",
-                        "y": 37874000000,
-                        "valueType": "CURRENCY"
-                    },
-                    {
-                        "x": "2023-06-30T00:00:00.000Z",
-                        "y": 35383000000,
-                        "valueType": "CURRENCY"
-                    },
-                    {
-                        "x": "2023-09-30T00:00:00.000Z",
-                        "y": 40115000000,
-                        "valueType": "CURRENCY"
-                    },
-                    {
-                        "x": "2023-12-31T00:00:00.000Z",
-                        "y": 50430000000,
-                        "valueType": "CURRENCY"
-                    }
-                ]
+                    "name": "Americas Revenue",
+                    "type": "cumulative",
+                    "category": "Revenue by Geography",
+                    "values": [
+                        {
+                            "x": "2023-03-31T00:00:00.000Z",
+                            "y": 37874000000,
+                            "valueType": "CURRENCY",
+                        },
+                        {
+                            "x": "2023-06-30T00:00:00.000Z",
+                            "y": 35383000000,
+                            "valueType": "CURRENCY",
+                        },
+                        {
+                            "x": "2023-09-30T00:00:00.000Z",
+                            "y": 40115000000,
+                            "valueType": "CURRENCY",
+                        },
+                        {
+                            "x": "2023-12-31T00:00:00.000Z",
+                            "y": 50430000000,
+                            "valueType": "CURRENCY",
+                        },
+                    ],
                 }
-            ]
-        }
+            ],
+        },
     )
     def companies_ticker(self, params: dict):
         """
         Fetch the details of a specific company, including its metrics and data points, based on the provided ticker symbol.
 
         Parameters:
-            - ticker: The stock ticker symbol of the company (e.g., AAPL, MSFT, SOFI). 
+            - ticker: The stock ticker symbol of the company (e.g., AAPL, MSFT, SOFI).
                 - string, required.
             - freq: freq can take 1 of the following values (annual, quarterly, ttm) and defaults to quarterly. NOTE: There are some metrics that are only reported annually.
                 - string, optional.
@@ -140,14 +135,12 @@ class MSDProxy(BaseProxy):
                 - boolean, optional.
         """
         return params
-    
-
 
     @BaseProxy.endpoint(
-        category='Companies',
-        endpoint='companies',
-        name='Company List',
-        description='Retrieve all available companies.',
+        category="Companies",
+        endpoint="companies",
+        name="Company List",
+        description="Retrieve all available companies.",
         params={},
         response=[
             "SOFI",
@@ -162,34 +155,33 @@ class MSDProxy(BaseProxy):
         """
         return params
 
-
     @BaseProxy.endpoint(
-        category='Companies',
-        endpoint='companies/{ticker}/kpi',
-        name='KPI',
-        description='Retrieve all available metric names for a specific company.',
+        category="Companies",
+        endpoint="companies/{ticker}/kpi",
+        name="KPI",
+        description="Retrieve all available metric names for a specific company.",
         params={
-            "$ticker*": (str, "AAPL"), 
+            "$ticker*": (str, "AAPL"),
         },
         response=[
             {
                 "label": "Global Active Devices",
                 "columnName": "aapl_total_active_devices_msd",
                 "onlyAnnual": True,
-                "category": "Operating Metrics"
+                "category": "Operating Metrics",
             },
             {
                 "label": "iPhone",
                 "columnName": "aapl_iphone_msd",
                 "onlyAnnual": False,
-                "category": "Revenue by Segment"
+                "category": "Revenue by Segment",
             },
             {
                 "label": "Americas",
                 "columnName": "aapl_americas_msd",
                 "onlyAnnual": False,
-                "category": "Revenue by Geography"
-            }
+                "category": "Revenue by Geography",
+            },
         ],
     )
     def kpi(self, params: dict):
@@ -197,7 +189,7 @@ class MSDProxy(BaseProxy):
         Fetch a list of all relevant information for the KPI metrics of a specific company based on the provided ticker symbol. This includes the metric label, column name, category, and whether the metric is only reported annually.
 
         Parameters:
-            - ticker: The stock ticker symbol of the company (e.g., AAPL, MSFT). 
+            - ticker: The stock ticker symbol of the company (e.g., AAPL, MSFT).
                 - string, required.
 
         Errors:
@@ -210,13 +202,13 @@ class MSDProxy(BaseProxy):
         return params
 
     @BaseProxy.endpoint(
-        category='Companies',
-        endpoint='companies', 
-        method='POST',
-        name='Multiple Companies Data',
-        description='Retrieve company data for multiple tickers and their associated metrics.',
+        category="Companies",
+        endpoint="companies",
+        method="POST",
+        name="Multiple Companies Data",
+        description="Retrieve company data for multiple tickers and their associated metrics.",
         params={
-            "#tickers*": (list, ["AAPL", "MSFT"]), # # means post request body item
+            "#tickers*": (list, ["AAPL", "MSFT"]),  # # means post request body item
             "metrics": (list, ["aapl_iphone_msd", "msft_total_active_devices_msd"]),
             "startDate": (str, "2023-01-01"),
             "endDate": (str, "2023-12-31"),
@@ -224,10 +216,7 @@ class MSDProxy(BaseProxy):
         response={
             "companies": [
                 {
-                    "company": {
-                        "ticker": "AAPL",
-                        "name": "Apple Inc."
-                    },
+                    "company": {"ticker": "AAPL", "name": "Apple Inc."},
                     "metrics": [
                         {
                             "name": "Research and Development",
@@ -237,14 +226,14 @@ class MSDProxy(BaseProxy):
                                 {
                                     "x": "2023-09-30",
                                     "y": 50000000,
-                                    "valueType": "CURRENCY"
+                                    "valueType": "CURRENCY",
                                 }
-                            ]
+                            ],
                         }
-                    ]
+                    ],
                 }
             ]
-        }
+        },
     )
     def multiple_companies_data(self, params: dict):
         """

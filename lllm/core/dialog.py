@@ -14,14 +14,14 @@ from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-import lllm.utils as U
-from lllm.core.const import APITypes, FunctionCall, InvokeCost, Modalities, Roles
-from lllm.core.runtime import Runtime, get_default_runtime
+from .. import utils as U
+from .const import APITypes, FunctionCall, InvokeCost, Modalities, Roles
+from .runtime import Runtime, get_default_runtime
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    from lllm.core.prompt import Prompt
+    from .prompt import Prompt
 
 
 def _is_pil_image(obj: Any) -> bool:
@@ -432,7 +432,7 @@ class Dialog:
         metadata: Optional[Dict[str, Any]] = None,
         role: Roles = Roles.USER,
     ) -> Message:
-        from lllm.core.prompt import Prompt  # lazy import to avoid circular dependency
+        from .prompt import Prompt  # lazy import to avoid circular dependency
 
         metadata = dict(metadata) if metadata else {}
         # create a temporary prompt for the text to reset parsers and other state
@@ -690,7 +690,7 @@ class ContextManager(ABC):
 
     **Programmatic usage** (without config)::
 
-        from lllm.core.dialog import DefaultContextManager
+        from .dialog import DefaultContextManager
 
         cm = DefaultContextManager("gpt-4o")
         agent = Agent(..., context_manager=cm)
@@ -725,8 +725,8 @@ class DefaultContextManager(ContextManager):
 
     **Quickstart**::
 
-        from lllm.core.dialog import DefaultContextManager
-        from lllm.core.agent import Agent
+        from .dialog import DefaultContextManager
+        from .agent import Agent
 
         cm = DefaultContextManager("gpt-4o")          # auto-detects window size
         cm = DefaultContextManager("gpt-4o", max_tokens=32000)  # manual cap

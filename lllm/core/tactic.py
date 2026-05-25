@@ -40,13 +40,14 @@ from typing import (
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from lllm.core.agent import Agent, AgentCallSession
-from lllm.core.config import parse_agent_configs
-from lllm.core.dialog import Message
-from lllm.core.prompt import InvokeCost, Prompt
-from lllm.core.runtime import Runtime, get_default_runtime
-from lllm.invokers import build_invoker
-from lllm.logging import LogStore
+from ..invokers import build_invoker
+from ..logging import LogStore
+from .agent import Agent, AgentCallSession
+from .config import parse_agent_configs
+from .dialog import Message
+from .prompt import InvokeCost, Prompt
+from .runtime import Runtime, get_default_runtime
+from .tactic_tool import tactictool
 
 logger = logging.getLogger(__name__)
 

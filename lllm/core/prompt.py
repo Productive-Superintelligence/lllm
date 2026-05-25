@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import hashlib
 import inspect
+import logging as _logging
 import string
+from abc import ABC, abstractmethod
 from typing import (
     Any,
     Callable,
@@ -16,22 +18,18 @@ from typing import (
 
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, field_validator
 
-from lllm.core.const import (
+from .. import utils as U
+from .const import (
+    FunctionCall,
     InvokeCost,
     InvokeResult,
     Invokers,
     ParseError,
-    FunctionCall,
 )
-from lllm.core.dialog import Message
-from lllm.core.runtime import Runtime, get_default_runtime
-import lllm.utils as U
-import logging as _logging
-
-from abc import ABC, abstractmethod
+from .dialog import Message
+from .runtime import Runtime, get_default_runtime
 
 _logger = _logging.getLogger(__name__)
-
 
 
 class AgentException(Exception):
@@ -49,18 +47,31 @@ class AgentCallSession(BaseModel):
 
     It can be helpful for debugging, analysis, and writing custom handlers. Like error-wise hints, interrupt-wise hints, etc.
     """
+
     agent_name: str
     max_exception_retry: int
     max_interrupt_steps: int
     max_llm_recall: int
 
-    exception_retries: Dict[str, List[Exception]] = Field(default_factory=dict) # records the exceptions during the agent call at each interrupt step
-    interrupts: Dict[str, List[FunctionCall]] = Field(default_factory=dict) # records the function calls during the agent call at each interrupt step
-    llm_recalls: Dict[str, List[Exception]] = Field(default_factory=dict) # records the LLM recalls during the agent call at each interrupt step
-    invoke_traces: Dict[str, List[InvokeResult]] = Field(default_factory=dict) # all InvokeResult traces at each interrupt step (including failed retries and the final successful one)
+    exception_retries: Dict[str, List[Exception]] = Field(
+        default_factory=dict
+    )  # records the exceptions during the agent call at each interrupt step
+    interrupts: Dict[str, List[FunctionCall]] = Field(
+        default_factory=dict
+    )  # records the function calls during the agent call at each interrupt step
+    llm_recalls: Dict[str, List[Exception]] = Field(
+        default_factory=dict
+    )  # records the LLM recalls during the agent call at each interrupt step
+    invoke_traces: Dict[str, List[InvokeResult]] = Field(
+        default_factory=dict
+    )  # all InvokeResult traces at each interrupt step (including failed retries and the final successful one)
 
-    delivery: Optional[Message] = None # the delivered message to the user after *successful* call
-    state: Literal["initial", "exception", "interrupt", "llm_recall", "success", "failure"] = "initial"
+    delivery: Optional[Message] = (
+        None  # the delivered message to the user after *successful* call
+    )
+    state: Literal[
+        "initial", "exception", "interrupt", "llm_recall", "success", "failure"
+    ] = "initial"
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -84,7 +95,9 @@ class AgentCallSession(BaseModel):
     def reach_max_interrupt_steps(self) -> bool:
         return len(self.interrupts) >= self.max_interrupt_steps
 
-    def new_invoke_trace(self, invoke_result: InvokeResult, interrupt_step: int) -> None:
+    def new_invoke_trace(
+        self, invoke_result: InvokeResult, interrupt_step: int
+    ) -> None:
         if interrupt_step not in self.invoke_traces:
             self.invoke_traces[interrupt_step] = []
         self.invoke_traces[interrupt_step].append(invoke_result)
@@ -92,22 +105,33 @@ class AgentCallSession(BaseModel):
     def exception(self, exception: Exception, interrupt_step: int) -> None:
         _logger.warning(
             "[%s] Handling exception (retry %d/%d): %s",
-            self.agent_name, self.exception_retries_count, self.max_exception_retry, exception,
+            self.agent_name,
+            self.exception_retries_count,
+            self.max_exception_retry,
+            exception,
         )
         if interrupt_step not in self.exception_retries:
             self.exception_retries[interrupt_step] = []
         self.exception_retries[interrupt_step].append(exception)
         self.state = "exception"
 
-    def interrupt(self, function_calls: List[FunctionCall], interrupt_step: int) -> None:
+    def interrupt(
+        self, function_calls: List[FunctionCall], interrupt_step: int
+    ) -> None:
         fc_names = [fc.name for fc in function_calls]
         _logger.debug(
             "[%s] Tool calls at step %d/%d: %s",
-            self.agent_name, interrupt_step + 1, self.max_interrupt_steps, fc_names,
+            self.agent_name,
+            interrupt_step + 1,
+            self.max_interrupt_steps,
+            fc_names,
         )
         for fc in function_calls:
             _logger.debug(
-                "[%s] Calling %s with args: %s", self.agent_name, fc.name, fc.arguments,
+                "[%s] Calling %s with args: %s",
+                self.agent_name,
+                fc.name,
+                fc.arguments,
             )
         if interrupt_step not in self.interrupts:
             self.interrupts[interrupt_step] = []
@@ -116,7 +140,10 @@ class AgentCallSession(BaseModel):
 
     def llm_recall(self, exception: Exception, interrupt_step: int) -> None:
         _logger.warning(
-            "[%s] LLM recall at step %d: %s", self.agent_name, interrupt_step, exception,
+            "[%s] LLM recall at step %d: %s",
+            self.agent_name,
+            interrupt_step,
+            exception,
         )
         if interrupt_step not in self.llm_recalls:
             self.llm_recalls[interrupt_step] = []
@@ -126,7 +153,8 @@ class AgentCallSession(BaseModel):
     def success(self, message: Message) -> None:
         _logger.debug(
             "[%s] Agent call succeeded after %d interrupt steps",
-            self.agent_name, len(self.interrupts),
+            self.agent_name,
+            len(self.interrupts),
         )
         self.state = "success"
         self.delivery = message
@@ -142,6 +170,7 @@ class AgentCallSession(BaseModel):
             for invoke_result in invoke_trace:
                 _cost += invoke_result.cost
         return _cost
+
 
 AgentCallSession.model_rebuild()
 
@@ -160,11 +189,13 @@ _PY_TYPE_TO_JSON: Dict[type, str] = {
     dict: "object",
 }
 
+
 def _default_function_call_processor(result: Any, function_call: FunctionCall) -> str:
     return (
         f"Return of calling function {function_call.name} "
         f"with arguments {function_call.arguments}:\n---\n{result}\n---\n"
     )
+
 
 class Function(BaseModel):
     """
@@ -201,7 +232,7 @@ class Function(BaseModel):
             result = self.function(**function_call.arguments)
         except Exception as e:
             function_call.error_message = str(e)
-            function_call.result_str = f'Error: {e}'
+            function_call.result_str = f"Error: {e}"
             return function_call
         function_call.result = result
         function_call.result_str = self.processor(result, function_call)
@@ -221,10 +252,12 @@ class Function(BaseModel):
                         "required": self.required,
                         "additionalProperties": self.additional_properties,
                     },
-                    "strict": self.strict
-                }
+                    "strict": self.strict,
+                },
             }
-        raise NotImplementedError(f"Invoker {invoker} not supported for tool conversion yet")
+        raise NotImplementedError(
+            f"Invoker {invoker} not supported for tool conversion yet"
+        )
 
     @classmethod
     def from_callable(
@@ -303,9 +336,12 @@ class Function(BaseModel):
             processor=processor,
         )
 
+
 def tool(
     description: Optional[str] = None,
-    prop_desc: Optional[Dict[str, str]] = None, # description of the properties, if not provided, it will use default
+    prop_desc: Optional[
+        Dict[str, str]
+    ] = None,  # description of the properties, if not provided, it will use default
     *,
     name: Optional[str] = None,
     strict: bool = True,
@@ -365,8 +401,6 @@ class MCP(BaseModel):
         return None
 
 
-
-
 # ---------------------------------------------------------------------------
 # Prompt
 # ---------------------------------------------------------------------------
@@ -378,6 +412,7 @@ class BaseParser(ABC):
 
     A parser should have a parse method that takes the str content and returns a dictionary of the parsed result.
     """
+
     @abstractmethod
     def parse(self, content: str, **runtime_args: Any) -> Dict[str, Any]:
         pass
@@ -452,21 +487,25 @@ class DefaultTagParser(BaseParser, BaseModel):
         for tag in self.xml_tags:
             matches = U.find_xml_blocks(content, tag)
             if len(matches) == 0:
-                errors.append(f"No {tag} tags found, it should be provided as <{tag}>...</{tag}>")
+                errors.append(
+                    f"No {tag} tags found, it should be provided as <{tag}>...</{tag}>"
+                )
             xml_tag_blocks[tag] = matches
         for tag in self.md_tags:
             matches = U.find_md_blocks(content, tag)
             if len(matches) == 0:
-                errors.append(f"No {tag} tags found, it should be provided as ```{tag} ... ```")
+                errors.append(
+                    f"No {tag} tags found, it should be provided as ```{tag} ... ```"
+                )
             md_tag_blocks[tag] = matches
         parsed = {
-            'raw': content,
-            'xml_tags': xml_tag_blocks,
-            'md_tags': md_tag_blocks,
-            'signal_tags': {k: f'<{k}>' in content for k in self.signal_tags}
+            "raw": content,
+            "xml_tags": xml_tag_blocks,
+            "md_tags": md_tag_blocks,
+            "signal_tags": {k: f"<{k}>" in content for k in self.signal_tags},
         }
-        xml_blocks = parsed.get('xml_tags', {})
-        md_blocks = parsed.get('md_tags', {})
+        xml_blocks = parsed.get("xml_tags", {})
+        md_blocks = parsed.get("md_tags", {})
         for tag in self.required_xml_tags:
             if tag not in xml_blocks:
                 errors.append(f"Missing required XML tag: <{tag}>")
@@ -486,6 +525,7 @@ class BaseRenderer(ABC):
     By default we just use python string formatter for simplicity,
     but you can use more complex renderers like jinja2, or other template engines.
     """
+
     @abstractmethod
     def render(self, prompt: str, **kwargs: Any) -> str:
         pass
@@ -495,6 +535,7 @@ class StringFormatterRenderer(BaseRenderer):
     """
     Default python string formatter renderer for the prompt.
     """
+
     def render(self, prompt: str, **kwargs: Any) -> str:
         if not kwargs:
             return prompt
@@ -508,6 +549,7 @@ class BaseHandler(ABC):
     You may use call_state to build more complex handlers, like rule-based,
     event-driven, or even an agentic handler like bug fixing agent.
     """
+
     @abstractmethod
     def on_exception(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         pass
@@ -521,10 +563,12 @@ class BaseHandler(ABC):
         pass
 
 
-
 _DEFAULT_EXCEPTION_MSG = "Error: {error_message}. Please fix."
 _DEFAULT_INTERRUPT_MSG = "{call_results}"
-_DEFAULT_INTERRUPT_FINAL_MSG = "You are reaching the limit of tool calls. Provide the final response."
+_DEFAULT_INTERRUPT_FINAL_MSG = (
+    "You are reaching the limit of tool calls. Provide the final response."
+)
+
 
 class DefaultSimpleHandler(BaseHandler, BaseModel):
     """
@@ -532,10 +576,10 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
 
     User may override the exception message, interrupt message, and interrupt final message to build a more complex handler.
     """
+
     exception_msg: str = _DEFAULT_EXCEPTION_MSG
     interrupt_msg: str = _DEFAULT_INTERRUPT_MSG
     interrupt_final_msg: str = _DEFAULT_INTERRUPT_FINAL_MSG
-
 
     def on_exception(self, prompt: Prompt, session: AgentCallSession) -> Prompt:
         return self._resolve_handler(
@@ -579,7 +623,6 @@ class DefaultSimpleHandler(BaseHandler, BaseModel):
         )
 
 
-
 class Prompt(BaseModel):
     """
     A Prompt is a complete behaviour definition for one agent turn.
@@ -604,13 +647,18 @@ class Prompt(BaseModel):
     The ``__call__`` method uses ``str.format`` by default, so literal braces
     in the template must be doubled: ``{{`` and ``}}``.
     """
+
     path: str
     prompt: str
-    metadata: Dict[str, Any] = Field(default_factory=dict) # record additional info, like version, etc.
+    metadata: Dict[str, Any] = Field(
+        default_factory=dict
+    )  # record additional info, like version, etc.
 
     # -- Output contract --------------------------------------------------
     parser: Optional[BaseParser] = None
-    format: Optional[Any] = None # Structured output (Pydantic model class or JSON schema dict)
+    format: Optional[Any] = (
+        None  # Structured output (Pydantic model class or JSON schema dict)
+    )
 
     # -- Tools ------------------------------------------------------------
     function_list: List[Union[Function, str]] = Field(default_factory=list)
@@ -634,14 +682,13 @@ class Prompt(BaseModel):
 
     def model_post_init(self, __context):
         self._functions = {
-            f.name: f for f in self.function_list
-            if isinstance(f, Function)
+            f.name: f for f in self.function_list if isinstance(f, Function)
         }
         self._mcp_servers = {m.server_label: m for m in self.mcp_servers_list}
 
         _parser = string.Formatter()
         self._template_vars = {
-            field_name.split('.')[0].split('[')[0]
+            field_name.split(".")[0].split("[")[0]
             for _, field_name, _, _ in _parser.parse(self.prompt)
             if field_name is not None
         }
@@ -651,13 +698,9 @@ class Prompt(BaseModel):
         # ``model_copy(update={"function_list": ...})`` does not rebuild
         # private attrs in pydantic v2. Rebuild lazily so copied prompts and
         # resolved tactic refs expose the correct tool map.
-        functions = {
-            f.name: f for f in self.function_list
-            if isinstance(f, Function)
-        }
-        if (
-            set(functions) != set(self._functions)
-            or any(self._functions.get(k) is not v for k, v in functions.items())
+        functions = {f.name: f for f in self.function_list if isinstance(f, Function)}
+        if set(functions) != set(self._functions) or any(
+            self._functions.get(k) is not v for k, v in functions.items()
         ):
             self._functions = functions
         return self._functions
@@ -665,7 +708,6 @@ class Prompt(BaseModel):
     @property
     def mcp_servers(self) -> Dict[str, MCP]:
         return self._mcp_servers
-
 
     @property
     def template_vars(self) -> set[str]:
@@ -676,7 +718,6 @@ class Prompt(BaseModel):
         """Return list of missing required template variables for the prompt."""
         return [v for v in self.template_vars if v not in prompt_args]
 
-
     # -- Rendering --------------------------------------------------------
 
     def __call__(self, **kwargs: Any) -> str:
@@ -685,18 +726,19 @@ class Prompt(BaseModel):
             return self.prompt
         missing_args = self.validate_args(kwargs)
         if missing_args:
-            raise ValueError(f"Missing required template variables: {missing_args} for prompt {self.path}, please provide: {self.template_vars}")
+            raise ValueError(
+                f"Missing required template variables: {missing_args} for prompt {self.path}, please provide: {self.template_vars}"
+            )
         return self.renderer.render(self.prompt, **kwargs)
-
 
     def parse(self, content: str, **runtime_args: Any) -> Dict[str, Any]:
         if self.parser is not None:
             parsed = self.parser.parse(content, **runtime_args)
-            if 'raw' not in parsed:
-                parsed['raw'] = content
+            if "raw" not in parsed:
+                parsed["raw"] = content
             return parsed
         return {
-            'raw': content,
+            "raw": content,
         }
 
     # -- Tool management --------------------------------------------------
@@ -732,21 +774,19 @@ class Prompt(BaseModel):
         if not needs_resolution:
             # Still force a lazy rebuild for prompts produced by model_copy.
             self._functions = {
-                f.name: f for f in self.function_list
-                if isinstance(f, Function)
+                f.name: f for f in self.function_list if isinstance(f, Function)
             }
             return self
 
-        from lllm.core.tactic_tool import (
+        from .tactic_tool import (
             bind_function_declaration,
             build_prompt_function_ref,
             namespace_from_qualified_key,
         )
 
-        base_namespace = (
-            getattr(self, "_resource_namespace", None)
-            or namespace_from_qualified_key(getattr(self, "_qualified_key", None))
-        )
+        base_namespace = getattr(
+            self, "_resource_namespace", None
+        ) or namespace_from_qualified_key(getattr(self, "_qualified_key", None))
 
         resolved: List[Function] = []
         seen: set[str] = set()
@@ -790,7 +830,6 @@ class Prompt(BaseModel):
         if resource_namespace is not None:
             prompt._resource_namespace = resource_namespace  # type: ignore[attr-defined]
         return prompt
-
 
     # -- Handler management -----------------------------------------------
 
@@ -850,8 +889,7 @@ class Prompt(BaseModel):
             "prompt_hash": hashlib.sha256(self.prompt.encode()).hexdigest()[:12],
             "metadata": self.metadata,
             "functions": [
-                f.name if isinstance(f, Function) else f
-                for f in self.function_list
+                f.name if isinstance(f, Function) else f for f in self.function_list
             ],
             "mcp_servers": [m.server_label for m in self.mcp_servers_list],
             "addon_args": self.addon_args,
@@ -859,9 +897,11 @@ class Prompt(BaseModel):
             "has_format": self.format is not None,
         }
 
+
 # ---------------------------------------------------------------------------
 # Module-level convenience
 # ---------------------------------------------------------------------------
+
 
 def register_prompt(prompt: Prompt, overwrite: bool = True) -> None:
     """Register a prompt into the default runtime."""

@@ -8,19 +8,20 @@ namespace-aware: bare keys are resolved via the default namespace.
 
 Named runtimes are supported for parallel experiments.
 """
+
 from __future__ import annotations
 
 import difflib
 import logging
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Type, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, Iterator, List, Optional, Set, Type
 
-from lllm.core.resource import ResourceNode, PackageInfo
+from .resource import PackageInfo, ResourceNode
 
 if TYPE_CHECKING:
-    from lllm.core.prompt import Function, Prompt
-    from lllm.proxies.base import BaseProxy
+    from ..proxies.base import BaseProxy
+    from .prompt import Function, Prompt
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +60,9 @@ class Runtime:
                 raise ValueError(f"Resource '{qk}' already registered")
             existing = self._resources[qk]
             if existing is not node:
-                logger.debug("Resource '%s' overwritten (type=%s)", qk, node.resource_type)
+                logger.debug(
+                    "Resource '%s' overwritten (type=%s)", qk, node.resource_type
+                )
 
         self._resources[qk] = node
 
@@ -113,7 +116,11 @@ class Runtime:
 
         all_keys = sorted(self._resources.keys())
         close = difflib.get_close_matches(key, all_keys, n=5, cutoff=0.4)
-        hint = f" Did you mean: {close}?" if close else f" Registered ({len(all_keys)}): {all_keys[:20]}"
+        hint = (
+            f" Did you mean: {close}?"
+            if close
+            else f" Registered ({len(all_keys)}): {all_keys[:20]}"
+        )
         raise KeyError(f"Resource '{key}' not found.{hint}")
 
     def has(self, key: str) -> bool:
@@ -168,7 +175,9 @@ class Runtime:
                 return
             logger.warning(
                 "Package '%s' already registered (from %s), overwriting with %s",
-                eff, existing.base_dir, pkg.base_dir,
+                eff,
+                existing.base_dir,
+                pkg.base_dir,
             )
         self.packages[eff] = pkg
 
@@ -176,10 +185,12 @@ class Runtime:
     # Typed convenience — Prompts
     # ==================================================================
 
-    def register_prompt(self, prompt: "Prompt", overwrite: bool = True,
-                        namespace: str = "") -> None:
-        node = ResourceNode.eager(prompt.path, prompt,
-                                  namespace=namespace, resource_type="prompt")
+    def register_prompt(
+        self, prompt: "Prompt", overwrite: bool = True, namespace: str = ""
+    ) -> None:
+        node = ResourceNode.eager(
+            prompt.path, prompt, namespace=namespace, resource_type="prompt"
+        )
         self.register(node, overwrite=overwrite)
         prompt._qualified_key = node.qualified_key  # type: ignore[attr-defined]
         prompt._resource_namespace = node.namespace  # type: ignore[attr-defined]
@@ -191,16 +202,16 @@ class Runtime:
     # Typed convenience — Tools
     # ==================================================================
 
-    def register_tool(self, name: str, tool: "Function",
-                      overwrite: bool = True, namespace: str = "") -> None:
+    def register_tool(
+        self, name: str, tool: "Function", overwrite: bool = True, namespace: str = ""
+    ) -> None:
         resource_leaf = str(name).rstrip("/").rsplit("/", 1)[-1]
         if resource_leaf != tool.name:
             raise ValueError(
                 f"Tool resource key '{name}' does not match tool name "
                 f"'{tool.name}'. Register tools under their exact name."
             )
-        node = ResourceNode.eager(name, tool,
-                                  namespace=namespace, resource_type="tool")
+        node = ResourceNode.eager(name, tool, namespace=namespace, resource_type="tool")
         self.register(node, overwrite=overwrite)
         tool._qualified_key = node.qualified_key  # type: ignore[attr-defined]
         tool._resource_namespace = node.namespace  # type: ignore[attr-defined]
@@ -212,10 +223,16 @@ class Runtime:
     # Typed convenience — Proxies
     # ==================================================================
 
-    def register_proxy(self, name: str, proxy_cls: Type["BaseProxy"],
-                       overwrite: bool = False, namespace: str = "") -> None:
-        node = ResourceNode.eager(name, proxy_cls,
-                                  namespace=namespace, resource_type="proxy")
+    def register_proxy(
+        self,
+        name: str,
+        proxy_cls: Type["BaseProxy"],
+        overwrite: bool = False,
+        namespace: str = "",
+    ) -> None:
+        node = ResourceNode.eager(
+            name, proxy_cls, namespace=namespace, resource_type="proxy"
+        )
         self.register(node, overwrite=overwrite)
         proxy_cls._qualified_key = node.qualified_key  # type: ignore[attr-defined]
         proxy_cls._resource_namespace = node.namespace  # type: ignore[attr-defined]
@@ -227,10 +244,16 @@ class Runtime:
     # Typed convenience — Tactics
     # ==================================================================
 
-    def register_tactic(self, tactic_type: str, tactic_cls: Type,
-                        overwrite: bool = False, namespace: str = "") -> None:
-        node = ResourceNode.eager(tactic_type, tactic_cls,
-                                  namespace=namespace, resource_type="tactic")
+    def register_tactic(
+        self,
+        tactic_type: str,
+        tactic_cls: Type,
+        overwrite: bool = False,
+        namespace: str = "",
+    ) -> None:
+        node = ResourceNode.eager(
+            tactic_type, tactic_cls, namespace=namespace, resource_type="tactic"
+        )
         self.register(node, overwrite=overwrite)
         tactic_cls._qualified_key = node.qualified_key  # type: ignore[attr-defined]
         tactic_cls._resource_namespace = node.namespace  # type: ignore[attr-defined]
@@ -242,15 +265,22 @@ class Runtime:
     # Typed convenience — Configs
     # ==================================================================
 
-    def register_config(self, name: str, config_data: Any = None,
-                        overwrite: bool = True, namespace: str = "",
-                        loader: Any = None) -> None:
+    def register_config(
+        self,
+        name: str,
+        config_data: Any = None,
+        overwrite: bool = True,
+        namespace: str = "",
+        loader: Any = None,
+    ) -> None:
         if loader is not None:
-            node = ResourceNode.lazy(name, loader,
-                                     namespace=namespace, resource_type="config")
+            node = ResourceNode.lazy(
+                name, loader, namespace=namespace, resource_type="config"
+            )
         else:
-            node = ResourceNode.eager(name, config_data,
-                                      namespace=namespace, resource_type="config")
+            node = ResourceNode.eager(
+                name, config_data, namespace=namespace, resource_type="config"
+            )
         self.register(node, overwrite=overwrite)
 
     def get_config(self, path: str) -> Any:
@@ -260,8 +290,9 @@ class Runtime:
     # Typed convenience — Context Managers
     # ==================================================================
 
-    def register_context_manager(self, cm_cls: Type,
-                                  overwrite: bool = True, namespace: str = "") -> None:
+    def register_context_manager(
+        self, cm_cls: Type, overwrite: bool = True, namespace: str = ""
+    ) -> None:
         """Register a :class:`~lllm.core.dialog.ContextManager` subclass.
 
         The registry key is taken from ``cm_cls.name``, which every concrete
@@ -286,8 +317,9 @@ class Runtime:
             raise ValueError(
                 f"Cannot register {cm_cls.__name__}: it must define a 'name' class attribute."
             )
-        node = ResourceNode.eager(cm_name, cm_cls,
-                                  namespace=namespace, resource_type="context_manager")
+        node = ResourceNode.eager(
+            cm_name, cm_cls, namespace=namespace, resource_type="context_manager"
+        )
         self.register(node, overwrite=overwrite)
 
     def get_context_manager(self, name: str) -> Type:
@@ -353,7 +385,8 @@ def _load_shared_packages(rt: "Runtime") -> None:
     ``lllm.toml``.  If no ``lllm.toml`` is found, ``cwd`` is used instead.
     """
     from pathlib import Path
-    from lllm.core.config import load_package, find_config_file
+
+    from .config import find_config_file, load_package
 
     project_toml = find_config_file()
     project_root = project_toml.parent if project_toml else Path.cwd()
@@ -406,7 +439,7 @@ def load_runtime(
         locations. Set to ``False`` when the caller wants full control over
         which packages enter the runtime.
     """
-    from lllm.core.config import load_package, find_config_file
+    from .config import find_config_file, load_package
 
     rt = Runtime()
     if toml_path is not None:
@@ -416,7 +449,8 @@ def load_runtime(
         if found:
             load_package(str(found), runtime=rt)
         elif discover_cwd:
-            from lllm.core.config import load_cwd_fallback
+            from .config import load_cwd_fallback
+
             if load_cwd_fallback(rt):
                 warnings.warn(
                     "No lllm.toml found — auto-discovered resource folders in the current "
@@ -426,9 +460,13 @@ def load_runtime(
                     stacklevel=3,
                 )
             else:
-                logger.debug("No lllm.toml found. Running with empty runtime (fast mode).")
+                logger.debug(
+                    "No lllm.toml found. Running with empty runtime (fast mode)."
+                )
         else:
-            logger.debug("No lllm.toml found. Running with empty runtime (strict mode).")
+            logger.debug(
+                "No lllm.toml found. Running with empty runtime (strict mode)."
+            )
 
     # Always scan lllm_packages/ directories regardless of how the main package
     # was loaded — shared packages layer on top of the project package.
@@ -447,6 +485,7 @@ def load_runtime(
 # ---------------------------------------------------------------------------
 # Package install / export
 # ---------------------------------------------------------------------------
+
 
 def install_package(
     zip_path: "str | Path",
@@ -520,8 +559,9 @@ def install_package(
     import re
     import shutil
     import tempfile
-    import tomllib
     import zipfile as _zipfile
+
+    import tomllib
 
     zip_path = Path(zip_path)
     if not zip_path.is_file():
@@ -531,7 +571,8 @@ def install_package(
     if scope == "user":
         install_root = Path.home() / ".lllm" / "packages"
     elif scope == "project":
-        from lllm.core.config import find_config_file
+        from .config import find_config_file
+
         project_toml = find_config_file()
         project_root = project_toml.parent if project_toml else Path.cwd()
         install_root = project_root / _SHARED_PACKAGES_DIR
@@ -551,8 +592,7 @@ def install_package(
             pkg_dir = tmp
         else:
             candidates = sorted(
-                p for p in tmp.iterdir()
-                if p.is_dir() and (p / "lllm.toml").is_file()
+                p for p in tmp.iterdir() if p.is_dir() and (p / "lllm.toml").is_file()
             )
             if len(candidates) == 1:
                 pkg_dir = candidates[0]
@@ -621,7 +661,8 @@ def install_package(
         logger.info("Installed package '%s' to %s", final_name, dest)
 
     if load:
-        from lllm.core.config import load_package
+        from .config import load_package
+
         rt = runtime or get_default_runtime()
         load_package(str(dest / "lllm.toml"), runtime=rt)
         logger.info("Loaded package '%s' into runtime", final_name)
@@ -793,14 +834,17 @@ def _collect_package_deps(
         if match is None:
             logger.warning(
                 "Dependency path '%s' (from '%s') not found in runtime — skipping.",
-                path_part, package_name,
+                path_part,
+                package_name,
             )
             continue
         dep_name, dep_dir = match
         if dep_name in _seen:
             continue
         if not dep_dir.is_dir():
-            logger.warning("Dependency '%s' directory missing at %s — skipping.", dep_name, dep_dir)
+            logger.warning(
+                "Dependency '%s' directory missing at %s — skipping.", dep_name, dep_dir
+            )
             continue
         collected[dep_name] = dep_dir
         # Recurse into transitive deps
@@ -815,6 +859,7 @@ def _collect_package_deps(
 # ---------------------------------------------------------------------------
 # list_packages / remove_package
 # ---------------------------------------------------------------------------
+
 
 def list_packages(
     scope: Optional[str] = None,
@@ -846,7 +891,7 @@ def list_packages(
     """
     import tomllib
 
-    from lllm.core.config import find_config_file
+    from .config import find_config_file
 
     project_toml = find_config_file()
     project_root = project_toml.parent if project_toml else Path.cwd()
@@ -871,13 +916,15 @@ def list_packages(
                 with toml_file.open("rb") as fh:
                     data = tomllib.load(fh)
                 pkg_section = data.get("package", {})
-                results.append({
-                    "name": pkg_section.get("name", pkg_dir.name),
-                    "version": pkg_section.get("version", ""),
-                    "description": pkg_section.get("description", ""),
-                    "scope": scope_name,
-                    "path": str(pkg_dir),
-                })
+                results.append(
+                    {
+                        "name": pkg_section.get("name", pkg_dir.name),
+                        "version": pkg_section.get("version", ""),
+                        "description": pkg_section.get("description", ""),
+                        "scope": scope_name,
+                        "path": str(pkg_dir),
+                    }
+                )
             except Exception as exc:
                 logger.warning("Could not read package at %s: %s", pkg_dir, exc)
 
@@ -888,13 +935,15 @@ def list_packages(
     for pkg_info in rt.packages.values():
         pkg_dir_str = str(Path(pkg_info.base_dir).resolve())
         if pkg_dir_str not in seen_paths:
-            results.append({
-                "name": pkg_info.effective_name,
-                "version": pkg_info.version,
-                "description": pkg_info.description,
-                "scope": "unknown",
-                "path": pkg_info.base_dir,
-            })
+            results.append(
+                {
+                    "name": pkg_info.effective_name,
+                    "version": pkg_info.version,
+                    "description": pkg_info.description,
+                    "scope": "unknown",
+                    "path": pkg_info.base_dir,
+                }
+            )
 
     return results
 
@@ -943,9 +992,10 @@ def remove_package(
         remove_package("acme-pack", scope="project")
     """
     import shutil
+
     import tomllib
 
-    from lllm.core.config import find_config_file
+    from .config import find_config_file
 
     project_toml = find_config_file()
     project_root = project_toml.parent if project_toml else Path.cwd()
@@ -1001,9 +1051,10 @@ def remove_package(
         # Remove all resources from this package (by base_dir prefix)
         pkg_dir_str = str(pkg_dir)
         keys_to_remove = [
-            k for k, node in rt._resources.items()
-            if getattr(node, "source_path", None) and
-            str(node.source_path).startswith(pkg_dir_str)
+            k
+            for k, node in rt._resources.items()
+            if getattr(node, "source_path", None)
+            and str(node.source_path).startswith(pkg_dir_str)
         ]
         for k in keys_to_remove:
             del rt._resources[k]

@@ -4,7 +4,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from lllm.core.templates import (
+from .core.templates import (
     DEFAULT_TEMPLATE,
     list_builtin_template_names,
     normalize_package_name,
@@ -22,7 +22,9 @@ def main(argv: list[str] | None = None) -> None:
     subparsers = parser.add_subparsers(dest="command")
 
     # ── create ──────────────────────────────────────────────────────────────
-    create_parser = subparsers.add_parser("create", help="Create a new LLLM project scaffold.")
+    create_parser = subparsers.add_parser(
+        "create", help="Create a new LLLM project scaffold."
+    )
     create_parser.add_argument("project_name", help="Project folder to create.")
     create_parser.add_argument(
         "--template",
@@ -43,7 +45,9 @@ def main(argv: list[str] | None = None) -> None:
     pkg_parser = subparsers.add_parser("pkg", help="Package management commands.")
     pkg_sub = pkg_parser.add_subparsers(dest="pkg_command")
 
-    install_parser = pkg_sub.add_parser("install", help="Install a package from a .zip file.")
+    install_parser = pkg_sub.add_parser(
+        "install", help="Install a package from a .zip file."
+    )
     install_parser.add_argument("zip_path", help="Path to the package .zip file.")
     install_parser.add_argument(
         "--alias",
@@ -82,7 +86,9 @@ def main(argv: list[str] | None = None) -> None:
     )
 
     # ── pkg export ──────────────────────────────────────────────────────────
-    export_parser = pkg_sub.add_parser("export", help="Export a package to a .zip file.")
+    export_parser = pkg_sub.add_parser(
+        "export", help="Export a package to a .zip file."
+    )
     export_parser.add_argument("name", help="Package name to export.")
     export_parser.add_argument("output", help="Output path for the .zip file.")
     export_parser.add_argument(
@@ -95,7 +101,9 @@ def main(argv: list[str] | None = None) -> None:
 
     if args.command == "create":
         try:
-            create_project(args.project_name, template_ref=args.template, model=args.model)
+            create_project(
+                args.project_name, template_ref=args.template, model=args.model
+            )
         except Exception as exc:  # pragma: no cover
             print(f"Error: {exc}", file=sys.stderr)
             sys.exit(1)
@@ -129,6 +137,7 @@ def _handle_pkg(args: argparse.Namespace) -> None:
 
 def _cmd_install(args: argparse.Namespace) -> None:
     from lllm import install_package
+
     dest = install_package(
         args.zip_path,
         alias=args.alias,
@@ -141,12 +150,14 @@ def _cmd_install(args: argparse.Namespace) -> None:
 
 def _cmd_remove(args: argparse.Namespace) -> None:
     from lllm import remove_package
+
     removed = remove_package(args.name, scope=args.scope)
     print(f"Removed '{args.name}' from {removed}")
 
 
 def _cmd_list(args: argparse.Namespace) -> None:
     from lllm import list_packages
+
     packages = list_packages(scope=args.scope)
     if not packages:
         print("No packages installed.")
@@ -155,15 +166,20 @@ def _cmd_list(args: argparse.Namespace) -> None:
     col_name = max(len(p["name"]) for p in packages)
     col_ver = max(len(p["version"]) for p in packages) or 7
     col_scope = max(len(p["scope"]) for p in packages)
-    header = f"{'NAME':<{col_name}}  {'VERSION':<{col_ver}}  {'SCOPE':<{col_scope}}  PATH"
+    header = (
+        f"{'NAME':<{col_name}}  {'VERSION':<{col_ver}}  {'SCOPE':<{col_scope}}  PATH"
+    )
     print(header)
     print("-" * len(header))
     for p in packages:
-        print(f"{p['name']:<{col_name}}  {p['version']:<{col_ver}}  {p['scope']:<{col_scope}}  {p['path']}")
+        print(
+            f"{p['name']:<{col_name}}  {p['version']:<{col_ver}}  {p['scope']:<{col_scope}}  {p['path']}"
+        )
 
 
 def _cmd_export(args: argparse.Namespace) -> None:
     from lllm import export_package, load_runtime
+
     # Ensure a runtime is loaded so the package is discoverable
     load_runtime()
     out = export_package(args.name, args.output, bundle_deps=args.bundle_deps)

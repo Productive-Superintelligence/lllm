@@ -3,7 +3,7 @@ import inspect
 import logging
 from typing import Any, Dict, List, Optional
 
-from lllm.core.runtime import Runtime, get_default_runtime
+from ..core.runtime import Runtime, get_default_runtime
 
 logger = logging.getLogger(__name__)
 
@@ -85,12 +85,12 @@ class BaseProxy:
         method: str = "TACTIC",
     ):
         """Create a proxy endpoint backed by a tactic resource URL."""
-        from lllm.core.tactic_tool import sanitize_tool_name
+        from ..core.tactic_tool import sanitize_tool_name
 
         endpoint_name = endpoint or sanitize_tool_name(tactic_url)
 
         def _call_tactic_endpoint(self, params: Any = None, **kwargs):
-            from lllm.core.tactic_tool import call_tactic_proxy_endpoint
+            from ..core.tactic_tool import call_tactic_proxy_endpoint
 
             return call_tactic_proxy_endpoint(
                 tactic_url,
@@ -140,7 +140,7 @@ class BaseProxy:
         method: str = "TACTIC",
     ):
         """Imperatively add a tactic-backed endpoint to this proxy class."""
-        from lllm.core.tactic_tool import sanitize_tool_name
+        from ..core.tactic_tool import sanitize_tool_name
 
         attr_name = sanitize_tool_name(endpoint or name or tactic_url)
         method_fn = BaseProxy.tactic_endpoint(
@@ -175,7 +175,7 @@ class BaseProxy:
         if not tactic_meta:
             return info
 
-        from lllm.core.tactic_tool import build_tactic_endpoint_info
+        from ..core.tactic_tool import build_tactic_endpoint_info
 
         return build_tactic_endpoint_info(
             tactic_meta["tactic_url"],

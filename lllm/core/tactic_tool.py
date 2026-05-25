@@ -5,6 +5,7 @@ This module is intentionally narrow: it does not redefine the tool system.
 It resolves tactic resource URLs and builds the existing ``Function`` objects
 or proxy endpoint callables around them.
 """
+
 from __future__ import annotations
 
 import copy
@@ -13,15 +14,25 @@ import re
 import types
 import warnings
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, List, Optional, Type, Union, get_args, get_origin, get_type_hints
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Type,
+    Union,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
 from pydantic import BaseModel
 
-from lllm.core.config import resolve_config
-from lllm.core.prompt import Function
-from lllm.core.resource import ResourceNode
-from lllm.core.runtime import Runtime, get_default_runtime
-
+from .config import resolve_config
+from .prompt import Function
+from .resource import ResourceNode
+from .runtime import Runtime, get_default_runtime
 
 _RESOURCE_SECTIONS = {
     "prompt": "prompts",
@@ -161,7 +172,9 @@ def split_tactic_tool_ref(ref: str) -> tuple[str, Optional[str]]:
     if not tactic_ref:
         raise ValueError(f"Invalid tactic tool ref {ref!r}: missing tactic URL")
     if sep and not selector:
-        raise ValueError(f"Invalid tactic tool ref {ref!r}: missing tool selector after '#'")
+        raise ValueError(
+            f"Invalid tactic tool ref {ref!r}: missing tool selector after '#'"
+        )
     return tactic_ref, selector or None
 
 
@@ -277,10 +290,12 @@ def bind_function_declaration(
             "Use @tool to define the callable implementation."
         )
 
-    return declaration.model_copy(update={
-        "function": implementation.function,
-        "processor": implementation.processor,
-    })
+    return declaration.model_copy(
+        update={
+            "function": implementation.function,
+            "processor": implementation.processor,
+        }
+    )
 
 
 def build_registered_function(
@@ -451,13 +466,18 @@ def _signature_params(method: Callable) -> list[inspect.Parameter]:
     for param in inspect.signature(method).parameters.values():
         if param.name in ("self", "cls"):
             continue
-        if param.kind in (inspect.Parameter.VAR_POSITIONAL, inspect.Parameter.VAR_KEYWORD):
+        if param.kind in (
+            inspect.Parameter.VAR_POSITIONAL,
+            inspect.Parameter.VAR_KEYWORD,
+        ):
             continue
         params.append(param)
     return params
 
 
-def _infer_input_model(method: Callable, meta: TacticToolMeta) -> Optional[Type[BaseModel]]:
+def _infer_input_model(
+    method: Callable, meta: TacticToolMeta
+) -> Optional[Type[BaseModel]]:
     explicit = meta.input_model
     if explicit is not None:
         model = _safe_basemodel_subclass(explicit)
@@ -475,7 +495,9 @@ def _infer_input_model(method: Callable, meta: TacticToolMeta) -> Optional[Type[
     return None
 
 
-def _infer_output_model(method: Callable, meta: TacticToolMeta) -> Optional[Type[BaseModel]]:
+def _infer_output_model(
+    method: Callable, meta: TacticToolMeta
+) -> Optional[Type[BaseModel]]:
     explicit = meta.output_model
     if explicit is not None:
         model = _safe_basemodel_subclass(explicit)
@@ -551,14 +573,20 @@ def _decorated_tactic_tools(tactic_cls: Type) -> Dict[str, TacticToolMeta]:
     tools: Dict[str, TacticToolMeta] = {}
     for base in reversed(tactic_cls.__mro__):
         for attr_name, value in vars(base).items():
-            method = value.__func__ if isinstance(value, (staticmethod, classmethod)) else value
+            method = (
+                value.__func__
+                if isinstance(value, (staticmethod, classmethod))
+                else value
+            )
             meta = getattr(method, "_lllm_tactic_tool", None)
             if meta is not None:
                 tools[attr_name] = meta
     return tools
 
 
-def _select_tactic_tool(tactic_cls: Type, selector: Optional[str]) -> tuple[str, TacticToolMeta, bool]:
+def _select_tactic_tool(
+    tactic_cls: Type, selector: Optional[str]
+) -> tuple[str, TacticToolMeta, bool]:
     tools = _decorated_tactic_tools(tactic_cls)
 
     if selector is not None:
@@ -570,10 +598,7 @@ def _select_tactic_tool(tactic_cls: Type, selector: Optional[str]) -> tuple[str,
                 return method_name, meta, False
         if not tools and selector in {"call", "root"}:
             return "call", TacticToolMeta(name="root"), True
-        available = sorted(
-            meta.name
-            for method_name, meta in tools.items()
-        )
+        available = sorted(meta.name for method_name, meta in tools.items())
         raise KeyError(
             f"Tactic {tactic_cls.__name__} has no exposed tactic tool {selector!r}. "
             f"Available: {available}"
@@ -585,10 +610,7 @@ def _select_tactic_tool(tactic_cls: Type, selector: Optional[str]) -> tuple[str,
         method_name, meta = next(iter(tools.items()))
         return method_name, meta, False
     if len(tools) > 1:
-        available = sorted(
-            meta.name
-            for method_name, meta in tools.items()
-        )
+        available = sorted(meta.name for method_name, meta in tools.items())
         raise ValueError(
             f"Tactic {tactic_cls.__name__} exposes multiple tactic tools {available}. "
             "Use a URL fragment such as 'pkg.tactics:name#tool_name'."
@@ -601,17 +623,27 @@ def _select_tactic_tool(tactic_cls: Type, selector: Optional[str]) -> tuple[str,
         RuntimeWarning,
         stacklevel=3,
     )
-    return "call", TacticToolMeta(name=getattr(tactic_cls, "name", None) or "root"), True
+    return (
+        "call",
+        TacticToolMeta(name=getattr(tactic_cls, "name", None) or "root"),
+        True,
+    )
 
 
 def _tool_display_name(meta: TacticToolMeta) -> str:
     return meta.name
 
 
-def _tool_description(tactic_cls: Type, method: Callable, method_name: str, meta: TacticToolMeta) -> str:
+def _tool_description(
+    tactic_cls: Type, method: Callable, method_name: str, meta: TacticToolMeta
+) -> str:
     description = (
         meta.description
-        or (inspect.cleandoc(method.__doc__) if getattr(method, "__doc__", None) else None)
+        or (
+            inspect.cleandoc(method.__doc__)
+            if getattr(method, "__doc__", None)
+            else None
+        )
         or (inspect.cleandoc(tactic_cls.__doc__) if tactic_cls.__doc__ else None)
     )
     if description:
@@ -628,7 +660,9 @@ def _tool_description(tactic_cls: Type, method: Callable, method_name: str, meta
     return generated
 
 
-def _arguments_for_method(spec: TacticToolSpec, kwargs: Dict[str, Any]) -> tuple[list[Any], Dict[str, Any]]:
+def _arguments_for_method(
+    spec: TacticToolSpec, kwargs: Dict[str, Any]
+) -> tuple[list[Any], Dict[str, Any]]:
     if spec.input_model is not None:
         return [spec.input_model(**kwargs)], {}
 
@@ -662,7 +696,9 @@ def get_tactic_tool_spec(
     raw_name = name or _tool_display_name(meta)
     tool_name = sanitize_tool_name(raw_name)
 
-    tool_description = description or _tool_description(tactic_cls, method, method_name, meta)
+    tool_description = description or _tool_description(
+        tactic_cls, method, method_name, meta
+    )
     input_model = _infer_input_model(method, meta)
     output_model = _infer_output_model(method, meta)
     properties, required = _schema_from_method(
@@ -712,7 +748,9 @@ def _materialize_config(
     if isinstance(binding, dict):
         return copy.deepcopy(binding)
     if isinstance(binding, str):
-        config_base = base_namespace if explicit_config is not None else spec.node.namespace
+        config_base = (
+            base_namespace if explicit_config is not None else spec.node.namespace
+        )
         node = resolve_resource_node(
             binding,
             runtime=runtime,
@@ -773,14 +811,16 @@ def _call_tactic_tool_spec(
     )
     args, kwargs = _arguments_for_method(spec, dict(arguments or {}))
 
-    from lllm.core.tactic import _stable_tactic_id
-    from lllm.logging import noop_store
+    from ..logging import noop_store
+    from .tactic import _stable_tactic_id
 
     tactic = spec.tactic_cls(
         tactic_config,
         log_store=noop_store(partition="tactic_tool", runtime=runtime),
         runtime=runtime,
-        tactic_path=_stable_tactic_id(spec.node.namespace, getattr(spec.tactic_cls, "name", spec.node.key)),
+        tactic_path=_stable_tactic_id(
+            spec.node.namespace, getattr(spec.tactic_cls, "name", spec.node.key)
+        ),
     )
     method = getattr(tactic, spec.method_name)
     return _format_tactic_result(method(*args, **kwargs))
@@ -867,7 +907,11 @@ def build_tactic_endpoint_info(
         params[param_name] = (py_type, _example_for_property(prop))
 
     if response is None:
-        response = spec.output_model.model_json_schema() if spec.output_model is not None else "str"
+        response = (
+            spec.output_model.model_json_schema()
+            if spec.output_model is not None
+            else "str"
+        )
 
     return {
         "category": category,

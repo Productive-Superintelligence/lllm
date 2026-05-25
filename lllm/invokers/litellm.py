@@ -1,16 +1,22 @@
-import os
 import json
 import logging
+import os
 from typing import Any, Dict, List, Optional
 
-from lllm.core.prompt import Prompt, FunctionCall
-from lllm.core.const import Roles, Modalities, APITypes, Invokers, InvokeResult
-from lllm.invokers.base import BaseInvoker, BaseStreamHandler
-from lllm.core.dialog import Dialog, Message, TokenLogprob
+from litellm import (
+    completion as completion_api,
+)
+from litellm import (
+    responses as responses_api,
+)
+from litellm import (
+    stream_chunk_builder,
+)
 
-from litellm import stream_chunk_builder
-from litellm import completion as completion_api
-from litellm import responses as responses_api
+from ..core.const import APITypes, InvokeResult, Invokers, Modalities, Roles
+from ..core.dialog import Dialog, Message, TokenLogprob
+from ..core.prompt import FunctionCall, Prompt
+from .base import BaseInvoker, BaseStreamHandler
 
 logger = logging.getLogger(__name__)
 
@@ -51,9 +57,12 @@ ALL_ENV_VARS = [
 def _check_required_env_vars(required_env_vars: List[str], tag):
     if any(env_var in os.environ for env_var in required_env_vars):
         if not all(env_var in os.environ for env_var in required_env_vars):
-            raise ValueError(f"Missing required environment variables for {tag}: {required_env_vars}")
+            raise ValueError(
+                f"Missing required environment variables for {tag}: {required_env_vars}"
+            )
         return True
     return False
+
 
 def _check_env_vars():
     _check_required_env_vars(VERTEXAI_REQUIRED_ENV_VARS, "VERTEXAI")
@@ -61,15 +70,15 @@ def _check_env_vars():
     _check_required_env_vars(AZURE_REQUIRED_ENV_VARS, "AZURE")
 
     if all(env_var not in os.environ for env_var in ALL_ENV_VARS):
-        logger.warning("No environment variables found for any provider. Ignore if you are using Ollama provider.")
+        logger.warning(
+            "No environment variables found for any provider. Ignore if you are using Ollama provider."
+        )
+
 
 _check_env_vars()
 
 
-
-
 class LiteLLMInvoker(BaseInvoker):
-    
     def _convert_dialog(self, dialog: Dialog) -> List[Dict[str, str]]:
         """Convert internal Dialog state into OpenAI-compatible messages."""
         messages: List[Dict[str, str]] = []
@@ -79,7 +88,12 @@ class LiteLLMInvoker(BaseInvoker):
                     "role": "assistant",
                     "content": message.content,
                 }
-                if message.name and message.name not in ("assistant", "user", "system", "internal"):
+                if message.name and message.name not in (
+                    "assistant",
+                    "user",
+                    "system",
+                    "internal",
+                ):
                     assistant_entry["name"] = message.sanitized_name
                 if message.function_calls:
                     assistant_entry["tool_calls"] = [
@@ -108,7 +122,12 @@ class LiteLLMInvoker(BaseInvoker):
                     "content": message.content,
                     "tool_call_id": tool_call_id,
                 }
-                if message.name and message.name not in ("assistant", "user", "system", "internal"):
+                if message.name and message.name not in (
+                    "assistant",
+                    "user",
+                    "system",
+                    "internal",
+                ):
                     tool_entry["name"] = message.sanitized_name
                 messages.append(tool_entry)
                 continue
@@ -116,15 +135,34 @@ class LiteLLMInvoker(BaseInvoker):
             if message.modality == Modalities.IMAGE:
                 content_parts = []
                 if "caption" in message.metadata:
-                    content_parts.append({"type": "text", "text": message.metadata["caption"]})
+                    content_parts.append(
+                        {"type": "text", "text": message.metadata["caption"]}
+                    )
                 content_parts.append(
-                    {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{message.content}"}}
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/jpeg;base64,{message.content}"
+                        },
+                    }
                 )
-                messages.append({"role": message.role.msg_value, "content": content_parts, "name": message.sanitized_name})
+                messages.append(
+                    {
+                        "role": message.role.msg_value,
+                        "content": content_parts,
+                        "name": message.sanitized_name,
+                    }
+                )
                 continue
 
             if message.modality == Modalities.TEXT:
-                messages.append({"role": message.role.msg_value, "content": message.content, "name": message.sanitized_name})
+                messages.append(
+                    {
+                        "role": message.role.msg_value,
+                        "content": message.content,
+                        "name": message.sanitized_name,
+                    }
+                )
                 continue
 
             raise ValueError(f"Unsupported modality: {message.modality}")
@@ -143,20 +181,23 @@ class LiteLLMInvoker(BaseInvoker):
                 tools.append(tool)
         return tools
 
-
     def _build_usage(self, usage_dict: dict, response_obj: Any, model: str) -> dict:
         import litellm
-        
+
         # 1. Extract total cost directly from the response object
-        usage_dict["response_cost"] = getattr(response_obj, "_hidden_params", {}).get("response_cost", 0.0)
-        
-        p_tokens = usage_dict.get('prompt_tokens', 0)
-        c_tokens = usage_dict.get('completion_tokens', 0)
-        
+        usage_dict["response_cost"] = getattr(response_obj, "_hidden_params", {}).get(
+            "response_cost", 0.0
+        )
+
+        p_tokens = usage_dict.get("prompt_tokens", 0)
+        c_tokens = usage_dict.get("completion_tokens", 0)
+
         # 2. Fetch granular dollar costs
         try:
             # litellm returns a tuple: (prompt_cost, completion_cost)
-            p_cost, c_cost = litellm.cost_per_token(model=model, prompt_tokens=p_tokens, completion_tokens=c_tokens)
+            p_cost, c_cost = litellm.cost_per_token(
+                model=model, prompt_tokens=p_tokens, completion_tokens=c_tokens
+            )
             usage_dict["prompt_cost"] = p_cost
             usage_dict["completion_cost"] = c_cost
         except Exception:
@@ -166,24 +207,34 @@ class LiteLLMInvoker(BaseInvoker):
         # 3. Fetch specific token rates for the record
         try:
             model_info = litellm.get_model_info(model)
-            usage_dict["input_cost_per_token"] = model_info.get("input_cost_per_token", 0.0)
-            usage_dict["output_cost_per_token"] = model_info.get("output_cost_per_token", 0.0)
-            usage_dict["cache_read_input_token_cost"] = model_info.get("cache_read_input_token_cost", 0.0)
+            usage_dict["input_cost_per_token"] = model_info.get(
+                "input_cost_per_token", 0.0
+            )
+            usage_dict["output_cost_per_token"] = model_info.get(
+                "output_cost_per_token", 0.0
+            )
+            usage_dict["cache_read_input_token_cost"] = model_info.get(
+                "cache_read_input_token_cost", 0.0
+            )
         except Exception:
             usage_dict["input_cost_per_token"] = 0.0
             usage_dict["output_cost_per_token"] = 0.0
             usage_dict["cache_read_input_token_cost"] = 0.0
-            
+
         # Sanitize None values for integer fields (some providers omit them)
-        for key in ("audio_prompt_tokens", "audio_completion_tokens",
-                    "cached_prompt_tokens", "reasoning_tokens",
-                    "prompt_tokens", "completion_tokens", "total_tokens"):
+        for key in (
+            "audio_prompt_tokens",
+            "audio_completion_tokens",
+            "cached_prompt_tokens",
+            "reasoning_tokens",
+            "prompt_tokens",
+            "completion_tokens",
+            "total_tokens",
+        ):
             if usage_dict.get(key) is None:
                 usage_dict[key] = 0
 
         return usage_dict
-
-
 
     def _call_chat_api(
         self,
@@ -193,7 +244,7 @@ class LiteLLMInvoker(BaseInvoker):
         parser_args: Dict[str, Any],
         responder: str,
         metadata: Dict[str, Any],
-        stream_handler: BaseStreamHandler = None, 
+        stream_handler: BaseStreamHandler = None,
     ) -> InvokeResult:
         prompt = dialog.top_prompt
         tools = self._build_tools(prompt)
@@ -202,10 +253,10 @@ class LiteLLMInvoker(BaseInvoker):
         streaming = stream_handler is not None
 
         if prompt.format is not None:
-            if hasattr(prompt.format, "model_json_schema"): # Pydantic model
-                call_args['response_format'] = prompt.format
-            else: # dict/schema
-                call_args['response_format'] = {"type": "json_object"}
+            if hasattr(prompt.format, "model_json_schema"):  # Pydantic model
+                call_args["response_format"] = prompt.format
+            else:  # dict/schema
+                call_args["response_format"] = {"type": "json_object"}
 
         # if is_reasoning:
         #     call_args['temperature'] = call_args.get('temperature', 1)
@@ -223,10 +274,14 @@ class LiteLLMInvoker(BaseInvoker):
                 chunks.append(chunk)
                 if chunk.choices and len(chunk.choices) > 0:
                     delta = chunk.choices[0].delta
-                    if hasattr(delta, 'content') and delta.content:
+                    if hasattr(delta, "content") and delta.content:
                         stream_handler.handle_chunk(delta.content, chunk)
-            completion = stream_chunk_builder(chunks, messages=self._convert_dialog(dialog))
-        return self._parse_chat_response(completion, prompt, model, call_args, parser_args, responder, metadata)
+            completion = stream_chunk_builder(
+                chunks, messages=self._convert_dialog(dialog)
+            )
+        return self._parse_chat_response(
+            completion, prompt, model, call_args, parser_args, responder, metadata
+        )
 
     def _parse_chat_response(
         self, completion, prompt, model, call_args, parser_args, responder, metadata
@@ -235,10 +290,14 @@ class LiteLLMInvoker(BaseInvoker):
         choice = completion.choices[0]
         usage = {}
         if getattr(completion, "usage", None):
-            usage = completion.usage.model_dump() if hasattr(completion.usage, "model_dump") else dict(completion.usage)
+            usage = (
+                completion.usage.model_dump()
+                if hasattr(completion.usage, "model_dump")
+                else dict(completion.usage)
+            )
         usage = self._build_usage(usage, completion, model)
 
-        if choice.finish_reason == 'tool_calls':
+        if choice.finish_reason == "tool_calls":
             role = Roles.TOOL_CALL
             logprobs = None
             parsed = None
@@ -255,14 +314,16 @@ class LiteLLMInvoker(BaseInvoker):
                         )
                     )
                     arguments = {}
-                function_calls.append(FunctionCall(
-                    id=tool_call.id,
-                    name=tool_call.function.name,
-                    arguments=arguments,
-                ))
-            content = 'Tool calls:\n\n' + '\n'.join(
+                function_calls.append(
+                    FunctionCall(
+                        id=tool_call.id,
+                        name=tool_call.function.name,
+                        arguments=arguments,
+                    )
+                )
+            content = "Tool calls:\n\n" + "\n".join(
                 [
-                    f'{idx}. {tool_call.function.name}: {tool_call.function.arguments}'
+                    f"{idx}. {tool_call.function.name}: {tool_call.function.arguments}"
                     for idx, tool_call in enumerate(choice.message.tool_calls)
                 ]
             )
@@ -273,27 +334,35 @@ class LiteLLMInvoker(BaseInvoker):
             content = choice.message.content
 
             if prompt.format is None:
-                _lp = getattr(choice, 'logprobs', None)
+                _lp = getattr(choice, "logprobs", None)
                 raw_logprobs = _lp.content if _lp is not None else None
                 if raw_logprobs is not None:
                     converted = []
                     for logprob in raw_logprobs:
-                        payload = logprob.model_dump() if hasattr(logprob, "model_dump") else logprob
+                        payload = (
+                            logprob.model_dump()
+                            if hasattr(logprob, "model_dump")
+                            else logprob
+                        )
                         converted.append(TokenLogprob.model_validate(payload))
                     logprobs = converted
                 else:
                     logprobs = None
                 try:
-                    parsed = prompt.parse(content, **parser_args) if prompt.parser is not None else None
+                    parsed = (
+                        prompt.parse(content, **parser_args)
+                        if prompt.parser is not None
+                        else None
+                    )
                 except Exception as exc:
                     errors.append(exc)
-                    parsed = {'raw': content}
+                    parsed = {"raw": content}
             else:
                 try:
                     parsed = json.loads(content)
                 except Exception as exc:
                     errors.append(exc)
-                    parsed = {'raw': content}
+                    parsed = {"raw": content}
                 logprobs = None
 
         message = Message(
@@ -331,7 +400,9 @@ class LiteLLMInvoker(BaseInvoker):
         prompt = dialog.top_prompt
         streaming = stream_handler is not None
         if prompt.format is not None:
-            raise ValueError("Response API does not support structured output. Remove 'format' or use the completion API.")
+            raise ValueError(
+                "Response API does not support structured output. Remove 'format' or use the completion API."
+            )
 
         tools = self._build_tools(prompt)
         if prompt.allow_web_search:
@@ -349,9 +420,11 @@ class LiteLLMInvoker(BaseInvoker):
 
         call_args = dict(payload_args)
 
-        max_output_tokens = call_args.pop('max_output_tokens', call_args.pop('max_completion_tokens', 32000))
-        truncation = call_args.pop('truncation', 'auto')
-        tool_choice = call_args.pop('tool_choice', 'auto')
+        max_output_tokens = call_args.pop(
+            "max_output_tokens", call_args.pop("max_completion_tokens", 32000)
+        )
+        truncation = call_args.pop("truncation", "auto")
+        tool_choice = call_args.pop("tool_choice", "auto")
 
         response = responses_api(
             model=model,
@@ -374,10 +447,14 @@ class LiteLLMInvoker(BaseInvoker):
                     full_response = getattr(event, "response", None)
 
             if full_response is None:
-                 raise ValueError("Streaming finished but no 'response.completed' payload was captured.")
+                raise ValueError(
+                    "Streaming finished but no 'response.completed' payload was captured."
+                )
             response = full_response
 
-        return self._parse_responses_api_response(response, prompt, model, call_args, parser_args, responder, metadata)
+        return self._parse_responses_api_response(
+            response, prompt, model, call_args, parser_args, responder, metadata
+        )
 
     def _parse_responses_api_response(
         self, response, prompt, model, call_args, parser_args, responder, metadata
@@ -385,7 +462,11 @@ class LiteLLMInvoker(BaseInvoker):
 
         usage = {}
         if getattr(response, "usage", None):
-            usage = response.usage.model_dump() if hasattr(response.usage, "model_dump") else dict(response.usage)
+            usage = (
+                response.usage.model_dump()
+                if hasattr(response.usage, "model_dump")
+                else dict(response.usage)
+            )
         usage = self._build_usage(usage, response, model)
         outputs = getattr(response, "output", []) or []
         function_calls: List[FunctionCall] = []
@@ -410,8 +491,11 @@ class LiteLLMInvoker(BaseInvoker):
         if function_calls:
             role = Roles.TOOL_CALL
             parsed = None
-            content = 'Tool calls:\n\n' + '\n'.join(
-                [f'{idx}. {call.name}: {json.dumps(call.arguments)}' for idx, call in enumerate(function_calls)]
+            content = "Tool calls:\n\n" + "\n".join(
+                [
+                    f"{idx}. {call.name}: {json.dumps(call.arguments)}"
+                    for idx, call in enumerate(function_calls)
+                ]
             )
         else:
             role = Roles.ASSISTANT
@@ -423,21 +507,25 @@ class LiteLLMInvoker(BaseInvoker):
                         chunk = getattr(item, "text", None)
                         if chunk:
                             text_chunks.append(chunk)
-                content = '\n'.join(text_chunks).strip()
+                content = "\n".join(text_chunks).strip()
             try:
-                parsed = prompt.parse(content, **parser_args) if prompt.parser is not None else None
+                parsed = (
+                    prompt.parse(content, **parser_args)
+                    if prompt.parser is not None
+                    else None
+                )
             except Exception as exc:
                 errors.append(exc)
-                parsed = {'raw': content}
+                parsed = {"raw": content}
 
         metadata_payload = dict(metadata)
         reasoning = getattr(response, "reasoning", None)
         if reasoning is not None:
             try:
-                metadata_payload['reasoning'] = reasoning.model_dump_json()
+                metadata_payload["reasoning"] = reasoning.model_dump_json()
             except Exception:
-                metadata_payload['reasoning'] = str(reasoning)
-        metadata_payload.setdefault('api_type', APITypes.RESPONSE.value)
+                metadata_payload["reasoning"] = str(reasoning)
+        metadata_payload.setdefault("api_type", APITypes.RESPONSE.value)
 
         message = Message(
             role=role,
@@ -467,7 +555,7 @@ class LiteLLMInvoker(BaseInvoker):
         model: str,
         model_args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
-        responder: str = 'assistant',
+        responder: str = "assistant",
         metadata: Optional[Dict[str, Any]] = None,
         api_type: APITypes = APITypes.COMPLETION,
         stream_handler: BaseStreamHandler = None,
@@ -487,7 +575,7 @@ class LiteLLMInvoker(BaseInvoker):
         class MyStreamHandler(BaseStreamHandler):
             def handle_chunk(self, chunk_content: str, chunk_response: Any):
                 print(chunk_content)
-        invoke_result = invoker.call(dialog, stream_handler=MyStreamHandler()) 
+        invoke_result = invoker.call(dialog, stream_handler=MyStreamHandler())
         ```
         """
         payload_args = dict(model_args) if model_args else {}

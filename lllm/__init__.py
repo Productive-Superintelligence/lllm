@@ -1,25 +1,48 @@
 # lllm/__init__.py
 import os
 
-from lllm.core.runtime import (
-    Runtime, get_default_runtime, set_default_runtime,
-    get_runtime, load_runtime,
-    install_package, export_package, list_packages, remove_package,
+from .core.agent import Agent
+from .core.config import (
+    AgentSpec,
+    find_config_file,
+    load_cwd_fallback,
+    load_package,
+    parse_agent_configs,
+    resolve_config,
 )
-from lllm.core.resource import (
-    ResourceNode, PackageInfo,
-    load_prompt, load_tool, load_tactic, load_proxy, load_config, load_resource,
+from .core.dialog import Dialog, Message
+from .core.prompt import MCP, Function, FunctionCall, Prompt, tool
+from .core.resource import (
+    PackageInfo,
+    ResourceNode,
+    load_config,
+    load_prompt,
+    load_proxy,
+    load_resource,
+    load_tactic,
+    load_tool,
 )
-from lllm.core.config import (
-    load_package, find_config_file, load_cwd_fallback,
-    resolve_config, AgentSpec, parse_agent_configs,
+from .core.runtime import (
+    Runtime,
+    export_package,
+    get_default_runtime,
+    get_runtime,
+    install_package,
+    list_packages,
+    load_runtime,
+    remove_package,
+    set_default_runtime,
 )
-from lllm.core.prompt import Function, FunctionCall, MCP, Prompt, tool
-from lllm.core.dialog import Message, Dialog
-from lllm.core.agent import Agent
-from lllm.core.tactic import Tactic, build_tactic, register_tactic_class, tactictool
-from lllm.proxies import BaseProxy, ProxyManager, register_proxy, ProxyRegistrator
-from lllm.logging import LogStore, LocalFileBackend, SQLiteBackend, NoOpBackend, setup_logging
+from .core.tactic import Tactic, build_tactic, register_tactic_class
+from .core.tactic_tool import tactictool
+from .logging import (
+    LocalFileBackend,
+    LogStore,
+    NoOpBackend,
+    SQLiteBackend,
+    setup_logging,
+)
+from .proxies import BaseProxy, ProxyManager, ProxyRegistrator, register_proxy
 
 __version__ = "0.1.1"
 
@@ -44,5 +67,6 @@ def _auto_init():
             default=True,
         ),
     )
+
 
 _auto_init()

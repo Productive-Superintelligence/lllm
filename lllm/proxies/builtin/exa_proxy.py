@@ -1,21 +1,21 @@
 # Exa Search Proxy
-# https://docs.exa.ai/reference/getting-started 
+# https://docs.exa.ai/reference/getting-started
 
 
-import os
 import datetime as dt
-import lllm.utils as U
-from lllm.proxies.base import BaseProxy, ProxyRegistrator
-from exa_py import Exa
+import os
 from dataclasses import asdict
 
+from exa_py import Exa
 
+from ... import utils as U
+from ..base import BaseProxy, ProxyRegistrator
 
 
 @ProxyRegistrator(
-    path='exa', 
-    name='Exa Search API', 
-    description='Exa is a search engine made for AIs. Exa finds the exact content you’re looking for on the web, with three core functionalities: /SEARCH -> Find webpages using Exa’s embeddings-based or Google-style keyword search. /CONTENTS -> Obtain clean, up-to-date, parsed HTML from Exa search results. /FINDSIMILAR -> Based on a link, find and return pages that are similar in meaning.'
+    path="exa",
+    name="Exa Search API",
+    description="Exa is a search engine made for AIs. Exa finds the exact content you’re looking for on the web, with three core functionalities: /SEARCH -> Find webpages using Exa’s embeddings-based or Google-style keyword search. /CONTENTS -> Obtain clean, up-to-date, parsed HTML from Exa search results. /FINDSIMILAR -> Based on a link, find and return pages that are similar in meaning.",
 )
 class ExaProxy(BaseProxy):
     """
@@ -34,100 +34,107 @@ class ExaProxy(BaseProxy):
     /FINDSIMILAR ->
     Based on a link, find and return pages that are similar in meaning.
     """
+
     def __init__(self, cutoff_date: str = None, use_cache: bool = True, **kwargs):
         super().__init__(cutoff_date=cutoff_date, use_cache=use_cache, **kwargs)
         self.api_key_name = "apikey"
         self.api_key = os.getenv("EXA_API_KEY")
         self.exa = Exa(self.api_key)
-        self.cache_name = 'EXA_API'
+        self.cache_name = "EXA_API"
 
-
-    def _call_api(self, url: str, params: dict, endpoint_info: dict, headers: dict) -> dict:
-        cache_key = U.create_cache_key(endpoint_info['endpoint'], params)
+    def _call_api(
+        self, url: str, params: dict, endpoint_info: dict, headers: dict
+    ) -> dict:
+        cache_key = U.create_cache_key(endpoint_info["endpoint"], params)
         cached_response = U.load_cache_by_key(self.cache_name, cache_key)
         if cached_response is not None and self.use_cache:
             return cached_response
 
         if self.cutoff_date is not None:
-            for keyword in ['CrawlDate', 'PublishedDate']:
+            for keyword in ["CrawlDate", "PublishedDate"]:
                 shift = None
-                endkey = f'end{keyword}'
-                startkey = f'start{keyword}'
+                endkey = f"end{keyword}"
+                startkey = f"start{keyword}"
                 if endkey in params:
-                    end_date = dt.datetime.strptime(params[endkey], '%Y-%m-%dT%H:%M:%S.%fZ')
-                    if end_date > self.cutoff_date:   
-                        params[endkey] = self.cutoff_date.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                    end_date = dt.datetime.strptime(
+                        params[endkey], "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
+                    if end_date > self.cutoff_date:
+                        params[endkey] = self.cutoff_date.strftime(
+                            "%Y-%m-%dT%H:%M:%S.%fZ"
+                        )
                         shift = end_date - self.cutoff_date
                 else:
                     end_date = self.cutoff_date
                 if startkey in params:
-                    start_date = dt.datetime.strptime(params[startkey], '%Y-%m-%dT%H:%M:%S.%fZ')
+                    start_date = dt.datetime.strptime(
+                        params[startkey], "%Y-%m-%dT%H:%M:%S.%fZ"
+                    )
                     if shift is not None:
-                        params[startkey] = (start_date - shift).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+                        params[startkey] = (start_date - shift).strftime(
+                            "%Y-%m-%dT%H:%M:%S.%fZ"
+                        )
                     if start_date >= end_date:
-                        params[startkey] = (end_date - dt.timedelta(days=30)).strftime('%Y-%m-%dT%H:%M:%S.%fZ')
-            
-        endpoint = endpoint_info['endpoint']
-        if endpoint == 'search':
+                        params[startkey] = (end_date - dt.timedelta(days=30)).strftime(
+                            "%Y-%m-%dT%H:%M:%S.%fZ"
+                        )
+
+        endpoint = endpoint_info["endpoint"]
+        if endpoint == "search":
             response = self.exa.search_and_contents(
-                params['query'],
-                type=params['type'],
-                category=params['category'],
-                num_results=params['numResults'],
+                params["query"],
+                type=params["type"],
+                category=params["category"],
+                num_results=params["numResults"],
                 text=True,
-                summary={
-                    "query": "Main developments"
-                },
+                summary={"query": "Main developments"},
                 subpages=1,
                 subpage_target="sources",
-                extras={
-                    "links": 1,
-                    "image_links": 1
-                },
-                start_crawl_date=params['startCrawlDate'],
-                end_crawl_date=params['endCrawlDate'],
-                start_published_date=params['startPublishedDate'],
-                end_published_date=params['endPublishedDate'],
+                extras={"links": 1, "image_links": 1},
+                start_crawl_date=params["startCrawlDate"],
+                end_crawl_date=params["endCrawlDate"],
+                start_published_date=params["startPublishedDate"],
+                end_published_date=params["endPublishedDate"],
             )
-        elif endpoint == 'findSimilar':
+        elif endpoint == "findSimilar":
             response = self.exa.find_similar_and_contents(
-                url=params['url'],
+                url=params["url"],
                 text=True,
-                start_crawl_date=params['startCrawlDate'],
-                end_crawl_date=params['endCrawlDate'],
-                start_published_date=params['startPublishedDate'],
-                end_published_date=params['endPublishedDate'],
+                start_crawl_date=params["startCrawlDate"],
+                end_crawl_date=params["endCrawlDate"],
+                start_published_date=params["startPublishedDate"],
+                end_published_date=params["endPublishedDate"],
             )
-        
-        elif endpoint == 'contents':
+
+        elif endpoint == "contents":
             response = self.exa.get_contents(
-                urls=params['urls'],
+                urls=params["urls"],
                 text=True,
             )
 
         response_json = {}
-        response_json['results'] = [asdict(r) for r in response.results]
-        response_json['autopromptString'] = response.autoprompt_string
-        response_json['resolvedSearchType'] = response.resolved_search_type
-        response_json['autoDate'] = response.auto_date
-        response_json['costDollars'] = asdict(response.cost_dollars) if response.cost_dollars else None
-        
+        response_json["results"] = [asdict(r) for r in response.results]
+        response_json["autopromptString"] = response.autoprompt_string
+        response_json["resolvedSearchType"] = response.resolved_search_type
+        response_json["autoDate"] = response.auto_date
+        response_json["costDollars"] = (
+            asdict(response.cost_dollars) if response.cost_dollars else None
+        )
+
         U.save_cache_by_key(self.cache_name, cache_key, response_json)
         return response_json
-        
 
     ########################################
     ### Search Endpoints
     ########################################
 
-
     @BaseProxy.endpoint(
-        category='Search',
-        endpoint='search', 
-        name='Search API',
+        category="Search",
+        endpoint="search",
+        name="Search API",
         description=(
-            'The search endpoint lets you intelligently search the web and extract contents from the results. '
-            'By default, it automatically chooses between traditional keyword search and Exa’s embeddings-based model, to find the most relevant results for your query.'
+            "The search endpoint lets you intelligently search the web and extract contents from the results. "
+            "By default, it automatically chooses between traditional keyword search and Exa’s embeddings-based model, to find the most relevant results for your query."
         ),
         params={
             "query": (str, "AAPL"),
@@ -162,12 +169,8 @@ class ExaProxy(BaseProxy):
                     "image": "https://arxiv.org/pdf/2307.06435.pdf/page_1.png",
                     "favicon": "https://arxiv.org/favicon.ico",
                     "text": "Abstract Large Language Models (LLMs) have recently demonstrated remarkable capabilities...",
-                    "highlights": [
-                        "Such requirements have limited their adoption..."
-                    ],
-                    "highlightScores": [
-                        0.4600165784358978
-                    ],
+                    "highlights": ["Such requirements have limited their adoption..."],
+                    "highlightScores": [0.4600165784358978],
                     "summary": "This overview paper on Large Language Models (LLMs) highlights key developments...",
                     "subpages": [
                         {
@@ -181,14 +184,10 @@ class ExaProxy(BaseProxy):
                             "highlights": [
                                 "2) Recently, some researchers started to investigate the integration of using tools or models in LLMs  ."
                             ],
-                            "highlightScores": [
-                                0.32679107785224915
-                            ]
+                            "highlightScores": [0.32679107785224915],
                         }
                     ],
-                    "extras": {
-                        "links": []
-                    }
+                    "extras": {"links": []},
                 }
             ],
             # "searchType": "auto",
@@ -203,8 +202,8 @@ class ExaProxy(BaseProxy):
                             "neuralSearch": 0.005,
                             "contentText": 0,
                             "contentHighlight": 0,
-                            "contentSummary": 0
-                        }
+                            "contentSummary": 0,
+                        },
                     }
                 ],
                 "perRequestPrices": {
@@ -212,32 +211,32 @@ class ExaProxy(BaseProxy):
                     "neuralSearch_26_100_results": 0.025,
                     "neuralSearch_100_plus_results": 1,
                     "keywordSearch_1_100_results": 0.0025,
-                    "keywordSearch_100_plus_results": 3
+                    "keywordSearch_100_plus_results": 3,
                 },
                 "perPagePrices": {
                     "contentText": 0.001,
                     "contentHighlight": 0.001,
-                    "contentSummary": 0.001
-                }
-            }
-        }
+                    "contentSummary": 0.001,
+                },
+            },
+        },
     )
     def search(self, params: dict) -> dict:
-        '''
+        """
         Parameters:
             - query: The query string for the search.
-                - string, required 
+                - string, required
                 - Example: "Latest developments in LLM capabilities"
             - useAutoprompt: Autoprompt converts your query to an Exa-style query. Enabled by default for auto search, optional for neural search, and not available for keyword search.
                 - boolean, optional, default:true
                 - Example: true
             - type: The type of search. Neural uses an embeddings-based model, keyword is google-like SERP. Default is auto, which automatically decides between keyword and neural.
                 - enum<string>, optional, default:auto
-                - Available options: keyword, neural, auto 
+                - Available options: keyword, neural, auto
                 - Example: "auto"
             - category: A data category to focus on.
                 - enum<string>, optional
-                - Available options: company, research paper, news, pdf, github, tweet, personal site, linkedin profile, financial report 
+                - Available options: company, research paper, news, pdf, github, tweet, personal site, linkedin profile, financial report
                 - Example: "research paper"
             - numResults: Number of results to return (up to thousands of results available for custom plans)
                 - integer, optional, default:10
@@ -272,15 +271,14 @@ class ExaProxy(BaseProxy):
             - summaryQuery: Custom query for the LLM-generated summary.
                 - string, optional
                 - Example: "Main developments"
-        '''
+        """
         return params
 
-
     @BaseProxy.endpoint(
-        category='Search',
-        endpoint='findSimilar', 
-        name='Find Similar Links API',
-        description='Find similar links to the link provided and optionally return the contents of the pages.',
+        category="Search",
+        endpoint="findSimilar",
+        name="Find Similar Links API",
+        description="Find similar links to the link provided and optionally return the contents of the pages.",
         params={
             "url*": (str, "https://arxiv.org/abs/2307.06435"),
             "numResults": (int, 10),
@@ -308,12 +306,8 @@ class ExaProxy(BaseProxy):
                     "image": "https://arxiv.org/pdf/2307.06435.pdf/page_1.png",
                     "favicon": "https://arxiv.org/favicon.ico",
                     "text": "Abstract Large Language Models (LLMs) have recently demonstrated remarkable capabilities...",
-                    "highlights": [
-                        "Such requirements have limited their adoption..."
-                    ],
-                    "highlightScores": [
-                        0.4600165784358978
-                    ],
+                    "highlights": ["Such requirements have limited their adoption..."],
+                    "highlightScores": [0.4600165784358978],
                     "summary": "This overview paper on Large Language Models (LLMs) highlights key developments...",
                     "subpages": [
                         {
@@ -327,14 +321,10 @@ class ExaProxy(BaseProxy):
                             "highlights": [
                                 "2) Recently, some researchers started to investigate the integration of using tools or models in LLMs  ."
                             ],
-                            "highlightScores": [
-                                0.32679107785224915
-                            ]
+                            "highlightScores": [0.32679107785224915],
                         }
                     ],
-                    "extras": {
-                        "links": []
-                    }
+                    "extras": {"links": []},
                 }
             ],
             "costDollars": {
@@ -344,12 +334,12 @@ class ExaProxy(BaseProxy):
                         "search": 0.005,
                         "contents": 0,
                         "breakdown": {
-                        "keywordSearch": 0,
-                        "neuralSearch": 0.005,
-                        "contentText": 0,
-                        "contentHighlight": 0,
-                        "contentSummary": 0
-                        }
+                            "keywordSearch": 0,
+                            "neuralSearch": 0.005,
+                            "contentText": 0,
+                            "contentHighlight": 0,
+                            "contentSummary": 0,
+                        },
                     }
                 ],
                 "perRequestPrices": {
@@ -357,18 +347,18 @@ class ExaProxy(BaseProxy):
                     "neuralSearch_26_100_results": 0.025,
                     "neuralSearch_100_plus_results": 1,
                     "keywordSearch_1_100_results": 0.0025,
-                    "keywordSearch_100_plus_results": 3
+                    "keywordSearch_100_plus_results": 3,
                 },
                 "perPagePrices": {
                     "contentText": 0.001,
                     "contentHighlight": 0.001,
-                    "contentSummary": 0.001
-                }
-            }
-        }
+                    "contentSummary": 0.001,
+                },
+            },
+        },
     )
     def find_similar(self, params: dict) -> dict:
-        '''
+        """
         Parameters:
             - url: The url for which you would like to find similar links.
                 - string, required
@@ -406,20 +396,19 @@ class ExaProxy(BaseProxy):
             - summaryQuery: Custom query for the LLM-generated summary.
                 - string, optional
                 - Example: "Main developments"
-        '''
+        """
         return params
 
-
     @BaseProxy.endpoint(
-        category='Search',
-        endpoint='contents', 
-        name='Get contents',
-        description='Get the full page contents, summaries, and metadata for a list of URLs. Returns instant results from our cache, with automatic live crawling as fallback for uncached pages.',
+        category="Search",
+        endpoint="contents",
+        name="Get contents",
+        description="Get the full page contents, summaries, and metadata for a list of URLs. Returns instant results from our cache, with automatic live crawling as fallback for uncached pages.",
         params={
             "urls*": (list, ["https://arxiv.org/abs/2307.06435"]),
             "highlightsQuery": (str, "Key advancements"),
             "summaryQuery": (str, "Main developments"),
-        },  
+        },
         response={
             # "requestId": "e492118ccdedcba5088bfc4357a8a125",
             "results": [
@@ -433,12 +422,8 @@ class ExaProxy(BaseProxy):
                     "image": "https://arxiv.org/pdf/2307.06435.pdf/page_1.png",
                     "favicon": "https://arxiv.org/favicon.ico",
                     "text": "Abstract Large Language Models (LLMs) have recently demonstrated remarkable capabilities...",
-                    "highlights": [
-                        "Such requirements have limited their adoption..."
-                    ],
-                    "highlightScores": [
-                        0.4600165784358978
-                    ],
+                    "highlights": ["Such requirements have limited their adoption..."],
+                    "highlightScores": [0.4600165784358978],
                     "summary": "This overview paper on Large Language Models (LLMs) highlights key developments...",
                     "subpages": [
                         {
@@ -452,14 +437,10 @@ class ExaProxy(BaseProxy):
                             "highlights": [
                                 "2) Recently, some researchers started to investigate the integration of using tools or models in LLMs  ."
                             ],
-                            "highlightScores": [
-                                0.32679107785224915
-                            ]
+                            "highlightScores": [0.32679107785224915],
                         }
                     ],
-                    "extras": {
-                        "links": []
-                    }
+                    "extras": {"links": []},
                 }
             ],
             "costDollars": {
@@ -473,8 +454,8 @@ class ExaProxy(BaseProxy):
                             "neuralSearch": 0.005,
                             "contentText": 0,
                             "contentHighlight": 0,
-                            "contentSummary": 0
-                        }
+                            "contentSummary": 0,
+                        },
                     }
                 ],
                 "perRequestPrices": {
@@ -482,18 +463,18 @@ class ExaProxy(BaseProxy):
                     "neuralSearch_26_100_results": 0.025,
                     "neuralSearch_100_plus_results": 1,
                     "keywordSearch_1_100_results": 0.0025,
-                    "keywordSearch_100_plus_results": 3
+                    "keywordSearch_100_plus_results": 3,
                 },
                 "perPagePrices": {
                     "contentText": 0.001,
                     "contentHighlight": 0.001,
-                    "contentSummary": 0.001
-                }
-            }
-        }
+                    "contentSummary": 0.001,
+                },
+            },
+        },
     )
     def contents(self, params: dict) -> dict:
-        ''' 
+        """
         Parameters:
             - urls: Array of URLs to crawl (backwards compatible with 'ids' parameter).
                 - string[], required
@@ -504,5 +485,5 @@ class ExaProxy(BaseProxy):
             - summaryQuery: Custom query for the LLM-generated summary.
                 - string, optional
                 - Example: "Main developments"
-        '''
+        """
         return params

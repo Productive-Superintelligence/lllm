@@ -2,19 +2,18 @@
 # https://products.wolframalpha.com/llm-api/documentation
 
 
-
 import os
-import lllm.utils as U
-from lllm.proxies.base import BaseProxy, ProxyRegistrator
 
+from ... import utils as U
+from ..base import BaseProxy, ProxyRegistrator
 
-cur_dir = os.path.dirname(os.path.abspath(__file__)) # this file's directory
-doc_path = U.pjoin(cur_dir, 'wa_using_assumptions.md')
+cur_dir = os.path.dirname(os.path.abspath(__file__))  # this file's directory
+doc_path = U.pjoin(cur_dir, "wa_using_assumptions.md")
 
-with open(doc_path, 'r', encoding='utf-8') as f:
+with open(doc_path, "r", encoding="utf-8") as f:
     USE_ASSUMPTIONS = f.read()
 
-WA_SAMPLE_PROMPT = '''
+WA_SAMPLE_PROMPT = """
 - WolframAlpha understands natural language queries about entities in chemistry, physics, geography, history, art, astronomy, and more.
 - WolframAlpha performs mathematical calculations, date and unit conversions, formula solving, etc.
 - Convert inputs to simplified keyword queries whenever possible (e.g. convert "how many people live in France" to "France population").
@@ -34,8 +33,7 @@ WA_SAMPLE_PROMPT = '''
  -- Re-send the exact same 'input' with NO modifications, and add the 'assumption' parameter, formatted as a list, with the relevant values.
  -- ONLY simplify or rephrase the initial query if a more relevant 'Assumption' or other input suggestions are not provided.
  -- Do not explain each step unless user input is needed. Proceed directly to making a better API call based on the available assumptions.
-'''
-
+"""
 
 
 # https://products.wolframalpha.com/api/documentation?scrollTo=using-assumptions
@@ -43,12 +41,13 @@ WA_SAMPLE_PROMPT = '''
 
 # wa has a lot of image based responses, hard to use now
 
+
 @ProxyRegistrator(
-    path='wa',
-    name='Wolfram Alpha API',
+    path="wa",
+    name="Wolfram Alpha API",
     description=(
         "Query the Wolfram Alpha. WolframAlpha is an answer engine developed by Wolfram Research. It is offered as an online service that answers factual queries by computing answers from externally sourced data."
-    )
+    ),
 )
 class WAProxy(BaseProxy):
     def __init__(self, cutoff_date: str = None, cache: bool = True, **kwargs):
@@ -56,29 +55,29 @@ class WAProxy(BaseProxy):
         self.api_key = os.getenv("WA_API_DEV")
         self.api_key_name = "appid"
         self.base_url = "https://www.wolframalpha.com/api/v1"
-        self.additional_docs = {
-            'Use Assumptions': USE_ASSUMPTIONS
-        }
+        self.additional_docs = {"Use Assumptions": USE_ASSUMPTIONS}
 
-    def _call_api(self, url: str, params: dict, endpoint_info: dict, headers: dict) -> dict:
+    def _call_api(
+        self, url: str, params: dict, endpoint_info: dict, headers: dict
+    ) -> dict:
         """
         Helper method to call the API using the requests library.
         """
         response = U.call_api(url, params, headers, self.use_cache, json_response=False)
-        return {'response': response.text}
+        return {"response": response.text}
 
     @BaseProxy.endpoint(
-        category='Query',
-        endpoint='llm-api',
-        name='Wolfram Alpha LLM API',
-        description='An LLM-based Wolfram Alpha service.',
+        category="Query",
+        endpoint="llm-api",
+        name="Wolfram Alpha LLM API",
+        description="An LLM-based Wolfram Alpha service.",
         params={
             "input*": (str, "10 densest elemental metals"),
-            'assumption': (str, None),
+            "assumption": (str, None),
             # 'units': (str, "metric"),
         },
         response={
-            'response': '''
+            "response": """
                 Query:
                 "10 densest elemental metals"
 
@@ -94,22 +93,22 @@ class WAProxy(BaseProxy):
 
                 Wolfram|Alpha website result for "10 densest elemental metals":
                 https://www.wolframalpha.com/input?i=10+densest+elemental+metals
-            '''
-        }
+            """
+        },
     )
-    def query(self, params: dict) -> dict: 
-        '''
+    def query(self, params: dict) -> dict:
+        """
         Query Wolfram Alpha API
-        
+
         input (required):
             - Function: The input to the query
             - Sample values: "10 densest elemental metals"
 
         assumption (optional):
-            - Function: Specifies an assumption, such as the meaning of a word or the value of a formula variable	
-            - Sample values: "*C.pi-_*Movie", "DateOrder_**Day.Month.Year--"	
-            - Default values: Assumptions made implicitly by the API	
+            - Function: Specifies an assumption, such as the meaning of a word or the value of a formula variable
+            - Sample values: "*C.pi-_*Movie", "DateOrder_**Day.Month.Year--"
+            - Default values: Assumptions made implicitly by the API
             - Notes: Values for this parameter are given by the input properties of <value> subelements of <assumption> elements in XML results
             - See: the documentation for the # Use Assumptions section
-        '''
+        """
         return params

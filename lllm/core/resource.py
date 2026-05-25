@@ -5,14 +5,16 @@ Resource registry primitives.
 ``ResourceNode`` wraps anything stored in a Runtime registry.
 ``PackageInfo`` captures the identity of a loaded LLLM package.
 """
+
 from __future__ import annotations
-from dataclasses import dataclass, field
-from typing import Any, Callable, Dict, Optional, TYPE_CHECKING
+
 import logging
+from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional
 
 if TYPE_CHECKING:
-    from lllm.core.prompt import Prompt
-    from lllm.core.runtime import Runtime
+    from .prompt import Prompt
+    from .runtime import Runtime
 
 logger = logging.getLogger(__name__)
 
@@ -20,6 +22,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PackageInfo:
     """Metadata for one loaded LLLM package."""
+
     name: str
     version: str = ""
     description: str = ""
@@ -40,6 +43,7 @@ class ResourceNode:
     Access the wrapped object via ``.value`` — triggers the loader on
     first access if one was provided.
     """
+
     key: str
     namespace: str = ""
     resource_type: str = "generic"
@@ -62,8 +66,9 @@ class ResourceNode:
                 try:
                     self._value = self._loader()
                 except Exception as exc:
-                    logger.error("Failed to load resource '%s': %s",
-                                 self.qualified_key, exc)
+                    logger.error(
+                        "Failed to load resource '%s': %s", self.qualified_key, exc
+                    )
                     raise
             self._loaded = True
         return self._value
@@ -80,52 +85,71 @@ class ResourceNode:
 
     @classmethod
     def eager(cls, key, value, namespace="", resource_type="generic", **meta):
-        return cls(key=key, namespace=namespace, resource_type=resource_type,
-                   metadata=meta, _value=value, _loaded=True)
+        return cls(
+            key=key,
+            namespace=namespace,
+            resource_type=resource_type,
+            metadata=meta,
+            _value=value,
+            _loaded=True,
+        )
 
     @classmethod
     def lazy(cls, key, loader, namespace="", resource_type="generic", **meta):
-        return cls(key=key, namespace=namespace, resource_type=resource_type,
-                   metadata=meta, _loader=loader, _loaded=False)
+        return cls(
+            key=key,
+            namespace=namespace,
+            resource_type=resource_type,
+            metadata=meta,
+            _loader=loader,
+            _loaded=False,
+        )
 
     def __repr__(self):
         tag = "loaded" if self._loaded else "lazy"
-        return f"ResourceNode({self.qualified_key!r}, type={self.resource_type!r}, {tag})"
-
+        return (
+            f"ResourceNode({self.qualified_key!r}, type={self.resource_type!r}, {tag})"
+        )
 
 
 # ---------------------------------------------------------------------------
 # Public convenience loaders
 # ---------------------------------------------------------------------------
 
+
 def load_prompt(path: str, runtime: "Optional[Runtime]" = None) -> "Prompt":
     """Load a prompt.  Accepts ``"resource"``, ``"pkg:resource"``,
     or ``"pkg.prompts:resource"``."""
-    from lllm.core.runtime import get_default_runtime
+    from .runtime import get_default_runtime
+
     return (runtime or get_default_runtime()).get_prompt(path)
 
 
 def load_tactic(path: str, runtime: "Optional[Runtime]" = None):
     """Load a tactic class."""
-    from lllm.core.runtime import get_default_runtime
+    from .runtime import get_default_runtime
+
     return (runtime or get_default_runtime()).get_tactic(path)
 
 
 def load_proxy(path: str, runtime: "Optional[Runtime]" = None):
     """Load a proxy class."""
-    from lllm.core.runtime import get_default_runtime
+    from .runtime import get_default_runtime
+
     return (runtime or get_default_runtime()).get_proxy(path)
 
 
 def load_tool(path: str, runtime: "Optional[Runtime]" = None):
     """Load a registered Function tool."""
-    from lllm.core.runtime import get_default_runtime
+    from .runtime import get_default_runtime
+
     return (runtime or get_default_runtime()).get_tool(path)
 
 
 def load_config(path: str, runtime: "Optional[Runtime]" = None) -> Any:
     """Load a config dict (triggers lazy file read if needed)."""
-    from lllm.core.runtime import get_default_runtime
+    from .runtime import get_default_runtime
+
     return (runtime or get_default_runtime()).get_config(path)
 
 
@@ -135,7 +159,7 @@ def load_resource(path: str, runtime: "Optional[Runtime]" = None) -> Any:
 
     Raises ``ValueError`` if no ``:`` in path.
     """
-    from lllm.core.runtime import get_default_runtime
+    from .runtime import get_default_runtime
 
     if ":" not in path:
         raise ValueError(

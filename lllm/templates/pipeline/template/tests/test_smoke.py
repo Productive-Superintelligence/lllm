@@ -1,12 +1,12 @@
 from pathlib import Path
 
 from lllm import build_tactic, resolve_config
-from lllm.core.config import load_package
-from lllm.core.const import APITypes
-from lllm.core.dialog import Dialog
-from lllm.core.runtime import Runtime
-from lllm.invokers import register_invoker
-from lllm.invokers.base import BaseInvoker
+from .....core.config import load_package
+from .....core.const import APITypes
+from .....core.dialog import Dialog
+from .....core.runtime import Runtime
+from .....invokers import register_invoker
+from .....invokers.base import BaseInvoker
 
 
 class DummyInvoker(BaseInvoker):
