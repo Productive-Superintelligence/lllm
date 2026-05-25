@@ -47,7 +47,7 @@ from .config import parse_agent_configs
 from .dialog import Message
 from .prompt import InvokeCost, Prompt
 from .runtime import Runtime, get_default_runtime
-from .tactic_tool import tactictool
+from .tactic_tool import tactictool as tactictool
 
 logger = logging.getLogger(__name__)
 
