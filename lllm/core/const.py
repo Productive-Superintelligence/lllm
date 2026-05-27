@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from dataclasses import dataclass, field
 from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from pydantic import BaseModel
-from dataclasses import dataclass, field
 
 if TYPE_CHECKING:
-    from lllm.core.dialog import Message
+    from .dialog import Message
 
 
 @dataclass
@@ -21,10 +21,13 @@ class InvokeResult:
         execution_errors: Parse/validation errors encountered during this invocation.
         message: The message object returned by the invoker.
     """
+
     raw_response: Any = None
     model_args: Dict[str, Any] = field(default_factory=dict)
     execution_errors: List[Exception] = field(default_factory=list)
-    message: Optional[Message] = None  # always set by invoker, None is just the dataclass default
+    message: Optional[Message] = (
+        None  # always set by invoker, None is just the dataclass default
+    )
 
     @property
     def has_errors(self) -> bool:
@@ -36,7 +39,7 @@ class InvokeResult:
 
     @property
     def error_message(self) -> str:
-        return '\n'.join(str(e) for e in self.execution_errors)
+        return "\n".join(str(e) for e in self.execution_errors)
 
 
 class FunctionCall(BaseModel):
@@ -54,9 +57,9 @@ class FunctionCall(BaseModel):
         return self.error_message is None and self.result_str is not None
 
     def __str__(self):
-        _str = f'Calling function: {self.name} with arguments: {self.arguments}\n'
+        _str = f"Calling function: {self.name} with arguments: {self.arguments}\n"
         if self.success:
-            _str += f'Return:\n---\n{self.result_str}\n---\n'
+            _str += f"Return:\n---\n{self.result_str}\n---\n"
         return _str
 
     def equals(self, other: FunctionCall) -> bool:
@@ -79,31 +82,36 @@ class ParseError(Exception):
         self.detail = detail
         super().__init__(self.message)
 
+
 class Roles(str, Enum):
-    SYSTEM = 'system'
-    ASSISTANT = 'assistant'
-    USER = 'user'
-    TOOL = 'tool' # only use tool role, not function role
-    TOOL_CALL = 'tool_call'
+    SYSTEM = "system"
+    ASSISTANT = "assistant"
+    USER = "user"
+    TOOL = "tool"  # only use tool role, not function role
+    TOOL_CALL = "tool_call"
 
     @property
     def msg_value(self):
         if self == Roles.SYSTEM:
-            return 'developer'
+            return "developer"
         return self.value
 
+
 class Invokers(str, Enum):
-    LITELLM = 'litellm'
+    LITELLM = "litellm"
+
 
 class Modalities(str, Enum):
-    TEXT = 'text'
-    IMAGE = 'image'
-    AUDIO = 'audio'
-    FUNCTION_CALL = 'function_call'
+    TEXT = "text"
+    IMAGE = "image"
+    AUDIO = "audio"
+    FUNCTION_CALL = "function_call"
+
 
 class APITypes(str, Enum):
-    COMPLETION = 'completion'
-    RESPONSE = 'response'
+    COMPLETION = "completion"
+    RESPONSE = "response"
+
 
 LLM_SIDE_ROLES = [Roles.ASSISTANT, Roles.TOOL_CALL]
 
@@ -130,18 +138,22 @@ class InvokeCost(BaseModel):
 
     def __str__(self):
         rates = []
-        if self.input_cost_per_token: rates.append(f"In: ${self.input_cost_per_token:.7f}/tok")
-        if self.output_cost_per_token: rates.append(f"Out: ${self.output_cost_per_token:.7f}/tok")
+        if self.input_cost_per_token:
+            rates.append(f"In: ${self.input_cost_per_token:.7f}/tok")
+        if self.output_cost_per_token:
+            rates.append(f"Out: ${self.output_cost_per_token:.7f}/tok")
         rates_str = f" | Rates: [{', '.join(rates)}]" if rates else ""
 
-        return (f"Tokens: {self.total_tokens} (Prompt: {self.prompt_tokens} "
-                f"[Cached: {self.cached_prompt_tokens}], "
-                f"Completion: {self.completion_tokens} "
-                f"[Reasoning: {self.reasoning_tokens}]){rates_str}\n"
-                f"Cost Breakdown: Prompt: ${self.prompt_cost:.6f}, Completion: ${self.completion_cost:.6f} | "
-                f"Total Cost: ${self.cost:.6f}")
+        return (
+            f"Tokens: {self.total_tokens} (Prompt: {self.prompt_tokens} "
+            f"[Cached: {self.cached_prompt_tokens}], "
+            f"Completion: {self.completion_tokens} "
+            f"[Reasoning: {self.reasoning_tokens}]){rates_str}\n"
+            f"Cost Breakdown: Prompt: ${self.prompt_cost:.6f}, Completion: ${self.completion_cost:.6f} | "
+            f"Total Cost: ${self.cost:.6f}"
+        )
 
-    def __add__(self, other: 'InvokeCost') -> 'InvokeCost':
+    def __add__(self, other: "InvokeCost") -> "InvokeCost":
         return InvokeCost(
             # Token counts — additive
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
@@ -150,7 +162,8 @@ class InvokeCost(BaseModel):
             cached_prompt_tokens=self.cached_prompt_tokens + other.cached_prompt_tokens,
             reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
             audio_prompt_tokens=self.audio_prompt_tokens + other.audio_prompt_tokens,
-            audio_completion_tokens=self.audio_completion_tokens + other.audio_completion_tokens,
+            audio_completion_tokens=self.audio_completion_tokens
+            + other.audio_completion_tokens,
             # Rates — NOT additive, zero them out in aggregates
             input_cost_per_token=0.0,
             output_cost_per_token=0.0,

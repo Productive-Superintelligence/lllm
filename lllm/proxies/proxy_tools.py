@@ -8,15 +8,16 @@ agent's system prompt when proxy config is present.
 These are auto-injected at agent build time; users can override them by
 modifying ``function_list`` on the prompt directly.
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from lllm.core.prompt import Function
+from ..core.prompt import Function
 
 if TYPE_CHECKING:
-    from lllm.proxies.base import ProxyManager
-    from lllm.proxies.interpreter import AgentInterpreter
+    from .base import ProxyManager
+    from .interpreter import AgentInterpreter
 
 
 def make_query_api_doc_tool(proxy_manager: "ProxyManager") -> Function:
@@ -34,10 +35,7 @@ def make_query_api_doc_tool(proxy_manager: "ProxyManager") -> Function:
             return proxy_manager.retrieve_api_docs(proxy_name)
         except KeyError:
             available = proxy_manager.available()
-            return (
-                f"Proxy '{proxy_name}' not found. "
-                f"Available proxies: {available}"
-            )
+            return f"Proxy '{proxy_name}' not found. Available proxies: {available}"
 
     return Function.from_callable(
         query_api_doc,

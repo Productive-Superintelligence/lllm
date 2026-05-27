@@ -9,15 +9,16 @@ Demonstrates:
 Prerequisites:
     export OPENAI_API_KEY=sk-...   # or ANTHROPIC_API_KEY, etc.
 """
+
 import math
 
-from lllm import Tactic, Prompt
+from lllm import Prompt, Tactic
 from lllm.core.prompt import tool
-
 
 # ---------------------------------------------------------------------------
 # Define tools — @tool turns a plain function into a Function object
 # ---------------------------------------------------------------------------
+
 
 @tool(
     description="Compute the square root of a non-negative number.",
@@ -77,6 +78,7 @@ agent.receive(
 # return_session=True gives back the full AgentCallSession with diagnostics
 agent_session = agent.respond(return_session=True)
 response = agent_session.delivery
+assert response is not None
 
 print(response.content)
 

@@ -2,13 +2,13 @@ from __future__ import annotations
 
 from typing import Callable, Dict
 
-from lllm.invokers.base import BaseInvoker
+from .base import BaseInvoker
 
 InvokerBuilder = Callable[[Dict], BaseInvoker]
 
 
 def _build_litellm_invoker(config: Dict) -> BaseInvoker:
-    from lllm.invokers.litellm import LiteLLMInvoker
+    from .litellm import LiteLLMInvoker
 
     return LiteLLMInvoker(config)
 
@@ -18,7 +18,9 @@ _PROVIDER_BUILDERS: Dict[str, InvokerBuilder] = {
 }
 
 
-def register_invoker(name: str, builder: InvokerBuilder, *, overwrite: bool = False) -> None:
+def register_invoker(
+    name: str, builder: InvokerBuilder, *, overwrite: bool = False
+) -> None:
     name = name.lower()
     if name in _PROVIDER_BUILDERS and not overwrite:
         raise ValueError(f"Invoker '{name}' already registered")

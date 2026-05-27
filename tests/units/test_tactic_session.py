@@ -5,7 +5,7 @@ Covers: TacticCallSession, _TrackedAgent, _normalize_name, _stable_tactic_id,
 """
 import unittest
 from enum import Enum
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 # tactic.py uses `from __future__ import annotations`; rebuild Pydantic models
 # so all forward references (Message, AgentCallSession, TacticCallSession) are
@@ -96,8 +96,7 @@ def _make_agent_session(**kwargs):
 
 def _make_agent_session_with_cost(tokens):
     """Create an AgentCallSession with a trace that has a given token count."""
-    from lllm.core.const import InvokeResult, InvokeCost
-    from lllm.core.dialog import Message
+    from lllm.core.const import InvokeResult
     from lllm.core.const import Roles
     session = _make_agent_session()
     msg = Message(
@@ -305,7 +304,6 @@ class TestTrackedAgent(unittest.TestCase):
     def test_respond_records_session(self):
         from lllm.core.tactic import _TrackedAgent, TacticCallSession
         from lllm.core.const import Roles
-        from lllm.core.dialog import Message
 
         # Create a mock agent whose respond() returns an AgentCallSession
         agent_session = _make_agent_session()
@@ -334,7 +332,6 @@ class TestTrackedAgent(unittest.TestCase):
     def test_respond_return_session_true(self):
         from lllm.core.tactic import _TrackedAgent, TacticCallSession
         from lllm.core.const import Roles
-        from lllm.core.dialog import Message
 
         agent_session = _make_agent_session()
         msg = Message(role=Roles.ASSISTANT, content="hi", name="agent")

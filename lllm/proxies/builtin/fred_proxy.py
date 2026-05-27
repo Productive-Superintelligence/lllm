@@ -2,14 +2,13 @@
 # https://fred.stlouisfed.org/docs/api/fred/
 
 
-import os
 import datetime as dt
-import lllm.utils as U
-from lllm.proxies.base import BaseProxy, ProxyRegistrator
-import requests
+import os
 
+from ... import utils as U
+from ..base import BaseProxy, ProxyRegistrator
 
-REALTIME_PERIODS = '''
+REALTIME_PERIODS = """
 - Real-Time Periods
 
 The real-time period marks when facts were true or when information was known until it changed. Economic data sources, releases, series, and observations are all assigned a real-time period. Sources, releases, and series can change their names, and observation data values can be revised.
@@ -45,16 +44,15 @@ Notes:
         - Weekly,52
     - 'ln' represents the natural logarithm.
     - '**' represents to the power of.
-'''
-
+"""
 
 
 @ProxyRegistrator(
-    path='fred',
-    name='Federal Reserve Economic Data',
+    path="fred",
+    name="Federal Reserve Economic Data",
     description=(
         "The FRED® API is a web service that allows developers to write programs and build applications that retrieve economic data from the FRED® and ALFRED® websites hosted by the Economic Research Division of the Federal Reserve Bank of St. Louis. Requests can be customized according to data source, release, category, series, and other preferences."
-    )
+    ),
 )
 class FREDProxy(BaseProxy):
     """
@@ -63,17 +61,18 @@ class FREDProxy(BaseProxy):
     The Economic Research Division of the Federal Reserve Bank of St. Louis has enhanced the economic data services it provides by constructing an API (application programming interface), which allows users to create programs that retrieve data from our servers connected to the Internet.
     With our FRED® API, users may query our Federal Reserve Economic Data (FRED®) and Archival Federal Reserve Economic Data (ALFRED®) databases to retrieve the specific data desired (according to source, release, category and series among other preferences).
     """
+
     def __init__(self, cutoff_date: str = None, cache: bool = True, **kwargs):
         super().__init__(cutoff_date=cutoff_date, use_cache=cache, **kwargs)
         self.api_key_name = "api_key"
         self.api_key = os.getenv("FRED_API_KEY")
         self.base_url = "https://api.stlouisfed.org/fred"
         self.enums = {}
-        self.additional_docs = {
-            'Real-Time Periods': REALTIME_PERIODS
-        }
+        self.additional_docs = {"Real-Time Periods": REALTIME_PERIODS}
 
-    def _call_api(self, url: str, params: dict, endpoint_info: dict, headers: dict) -> dict:
+    def _call_api(
+        self, url: str, params: dict, endpoint_info: dict, headers: dict
+    ) -> dict:
         """
         Helper method to call the API using the requests library and remove specified keys.
 
@@ -85,47 +84,44 @@ class FREDProxy(BaseProxy):
         Returns:
             dict: The filtered JSON response.
         """
-        params['file_type'] = 'json'
+        params["file_type"] = "json"
 
         if self.cutoff_date is not None:
-            if 'realtime_end' in params: 
-                realtime_end = dt.datetime.strptime(params['realtime_end'], '%Y-%m-%d')
+            if "realtime_end" in params:
+                realtime_end = dt.datetime.strptime(params["realtime_end"], "%Y-%m-%d")
                 if realtime_end > self.cutoff_date:
-                    realtime_start = dt.datetime.strptime(params['realtime_start'], '%Y-%m-%d')
+                    realtime_start = dt.datetime.strptime(
+                        params["realtime_start"], "%Y-%m-%d"
+                    )
                     time_diff = realtime_end - realtime_start
-                    params['realtime_end'] = self.cutoff_date.strftime('%Y-%m-%d')
-                    params['realtime_start'] = (self.cutoff_date - time_diff).strftime('%Y-%m-%d')
+                    params["realtime_end"] = self.cutoff_date.strftime("%Y-%m-%d")
+                    params["realtime_start"] = (self.cutoff_date - time_diff).strftime(
+                        "%Y-%m-%d"
+                    )
 
             # set default realtime start and end
-            if 'realtime_start' not in params:
-                params['realtime_start'] = self.cutoff_date.strftime('%Y-%m-%d')
-            if 'realtime_end' not in params:
-                params['realtime_end'] = self.cutoff_date.strftime('%Y-%m-%d')
+            if "realtime_start" not in params:
+                params["realtime_start"] = self.cutoff_date.strftime("%Y-%m-%d")
+            if "realtime_end" not in params:
+                params["realtime_end"] = self.cutoff_date.strftime("%Y-%m-%d")
 
         response_json = U.call_api(url, params, headers, self.use_cache)
         return response_json
-    
 
     ########################################
     ### Categories Endpoints
     ########################################
 
     @BaseProxy.endpoint(
-        category='Categories',
-        endpoint='category',
-        description='Get a category.',
+        category="Categories",
+        endpoint="category",
+        description="Get a category.",
         params={
             "category_id*": (int, 125),
         },
         response={
-            "categories": [
-                {
-                    "id": 125,
-                    "name": "Trade Balance",
-                    "parent_id": 13
-                }
-            ]
-        }
+            "categories": [{"id": 125, "name": "Trade Balance", "parent_id": 13}]
+        },
     )
     def category(self, params: dict) -> dict:
         """
@@ -134,11 +130,11 @@ class FREDProxy(BaseProxy):
             - integer, default: 0 (root category)
         """
         return params
-    
+
     @BaseProxy.endpoint(
-        category='Categories',
-        endpoint='category/children',
-        description='Get the child categories for a specified parent category.',
+        category="Categories",
+        endpoint="category/children",
+        description="Get the child categories for a specified parent category.",
         params={
             "category_id*": (int, 13),
             "realtime_start": (str, "2013-08-14"),
@@ -146,33 +142,13 @@ class FREDProxy(BaseProxy):
         },
         response={
             "categories": [
-                {
-                    "id": 16,
-                    "name": "Exports",
-                    "parent_id": 13
-                },
-                {
-                    "id": 17,
-                    "name": "Imports",
-                    "parent_id": 13
-                },
-                {
-                    "id": 3000,
-                    "name": "Income Payments & Receipts",
-                    "parent_id": 13
-                },
-                {
-                    "id": 125,
-                    "name": "Trade Balance",
-                    "parent_id": 13
-                },
-                {
-                    "id": 127,
-                    "name": "U.S. International Finance",
-                    "parent_id": 13
-                }
+                {"id": 16, "name": "Exports", "parent_id": 13},
+                {"id": 17, "name": "Imports", "parent_id": 13},
+                {"id": 3000, "name": "Income Payments & Receipts", "parent_id": 13},
+                {"id": 125, "name": "Trade Balance", "parent_id": 13},
+                {"id": 127, "name": "U.S. International Finance", "parent_id": 13},
             ]
-        }
+        },
     )
     def category_children(self, params: dict) -> dict:
         """
@@ -187,9 +163,9 @@ class FREDProxy(BaseProxy):
         return params
 
     @BaseProxy.endpoint(
-        category='Categories',
-        endpoint='category/related',
-        description='Get the related categories for a category. A related category is a one-way relation between 2 categories that is not part of a parent-child category hierarchy. Most categories do not have related categories.',
+        category="Categories",
+        endpoint="category/related",
+        description="Get the related categories for a category. A related category is a one-way relation between 2 categories that is not part of a parent-child category hierarchy. Most categories do not have related categories.",
         params={
             "category_id*": (int, 32073),
             "realtime_start": (str, "2013-08-14"),
@@ -197,43 +173,15 @@ class FREDProxy(BaseProxy):
         },
         response={
             "categories": [
-                {
-                    "id": 149,
-                    "name": "Arkansas",
-                    "parent_id": 27281
-                },
-                {
-                    "id": 150,
-                    "name": "Illinois",
-                    "parent_id": 27281
-                },
-                {
-                    "id": 151,
-                    "name": "Indiana",
-                    "parent_id": 27281
-                },
-                {
-                    "id": 152,
-                    "name": "Kentucky",
-                    "parent_id": 27281
-                },
-                {
-                    "id": 153,
-                    "name": "Mississippi",
-                    "parent_id": 27281
-                },
-                {
-                    "id": 154,
-                    "name": "Missouri",
-                    "parent_id": 27281
-                },
-                {
-                    "id": 193,
-                    "name": "Tennessee",
-                    "parent_id": 27281
-                }
+                {"id": 149, "name": "Arkansas", "parent_id": 27281},
+                {"id": 150, "name": "Illinois", "parent_id": 27281},
+                {"id": 151, "name": "Indiana", "parent_id": 27281},
+                {"id": 152, "name": "Kentucky", "parent_id": 27281},
+                {"id": 153, "name": "Mississippi", "parent_id": 27281},
+                {"id": 154, "name": "Missouri", "parent_id": 27281},
+                {"id": 193, "name": "Tennessee", "parent_id": 27281},
             ]
-        }
+        },
     )
     def category_related(self, params: dict) -> dict:
         """
@@ -248,9 +196,9 @@ class FREDProxy(BaseProxy):
         return params
 
     @BaseProxy.endpoint(
-        category='Categories',
-        endpoint='category/series',
-        description='Get the series for a category.',
+        category="Categories",
+        endpoint="category/series",
+        description="Get the series for a category.",
         params={
             "category_id*": (int, 125),
             "realtime_start": (str, "2013-08-14"),
@@ -289,10 +237,10 @@ class FREDProxy(BaseProxy):
                     "last_updated": "2014-06-18 08:41:28-05",
                     "popularity": 32,
                     "group_popularity": 34,
-                    "notes": "This series has been discontinued as a result of the comprehensive restructuring of the international economic accounts (http://www.bea.gov/international/modern.htm). For a crosswalk of the old and new series in FRED see: http://research.stlouisfed.org/CompRevisionReleaseID49.xlsx."
+                    "notes": "This series has been discontinued as a result of the comprehensive restructuring of the international economic accounts (http://www.bea.gov/international/modern.htm). For a crosswalk of the old and new series in FRED see: http://research.stlouisfed.org/CompRevisionReleaseID49.xlsx.",
                 },
-            ]
-        }
+            ],
+        },
     )
     def category_series(self, params: dict) -> dict:
         """
@@ -324,14 +272,14 @@ class FREDProxy(BaseProxy):
         - exclude_tag_names: A semicolon delimited list of tag names that series match none of.
             - String, optional, no filtering by tags by default.
             - Example value: 'discontinued;annual'. Filter results to series having neither tag 'discontinued' nor tag 'annual'.
-            - Parameter exclude_tag_names requires that parameter tag_names also be set to limit the number of matching series.        
+            - Parameter exclude_tag_names requires that parameter tag_names also be set to limit the number of matching series.
         """
         return params
-    
+
     @BaseProxy.endpoint(
-        category='Categories',
-        endpoint='category/tags',
-        description='Get the FRED tags for a category. Optionally, filter results by tag name, tag group, or search. Series are assigned tags and categories. Indirectly through series, it is possible to get the tags for a category. No tags exist for a category that does not have series. See the related request category/related_tags.',
+        category="Categories",
+        endpoint="category/tags",
+        description="Get the FRED tags for a category. Optionally, filter results by tag name, tag group, or search. Series are assigned tags and categories. Indirectly through series, it is possible to get the tags for a category. No tags exist for a category that does not have series. See the related request category/related_tags.",
         params={
             "category_id*": (int, 125),
             "realtime_start": (str, "2013-08-14"),
@@ -359,10 +307,10 @@ class FREDProxy(BaseProxy):
                     "notes": "U.S. Department of Commerce: Bureau of Economic Analysis",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 87,
-                    "series_count": 24
+                    "series_count": 24,
                 },
-            ]
-        }
+            ],
+        },
     )
     def category_tags(self, params: dict) -> dict:
         """
@@ -399,14 +347,14 @@ class FREDProxy(BaseProxy):
             - optional, default: asc
         """
         return params
-    
+
     @BaseProxy.endpoint(
-        category='Categories',
-        endpoint='category/related_tags',
+        category="Categories",
+        endpoint="category/related_tags",
         description=(
-            'Get the related FRED tags for one or more FRED tags within a category. Optionally, filter results by tag group or search. '
-            'FRED tags are attributes assigned to series. For this request, related FRED tags are the tags assigned to series that match all tags in the tag_names parameter, no tags in the exclude_tag_names parameter, and the category set by the category_id parameter. See the related request category/tags. '
-            'Series are assigned tags and categories. Indirectly through series, it is possible to get the tags for a category. No tags exist for a category that does not have series.'
+            "Get the related FRED tags for one or more FRED tags within a category. Optionally, filter results by tag group or search. "
+            "FRED tags are attributes assigned to series. For this request, related FRED tags are the tags assigned to series that match all tags in the tag_names parameter, no tags in the exclude_tag_names parameter, and the category set by the category_id parameter. See the related request category/tags. "
+            "Series are assigned tags and categories. Indirectly through series, it is possible to get the tags for a category. No tags exist for a category that does not have series."
         ),
         params={
             "category_id*": (int, 125),
@@ -436,10 +384,10 @@ class FREDProxy(BaseProxy):
                     "notes": "",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 65,
-                    "series_count": 4
+                    "series_count": 4,
                 },
-            ]
-        }
+            ],
+        },
     )
     def category_related_tags(self, params: dict) -> dict:
         """
@@ -458,7 +406,7 @@ class FREDProxy(BaseProxy):
             - Example value: 'goods;sa'. Find the related tags for series having neither tag 'goods' nor tag 'sa'.
         - tag_group_id: A tag group id to filter tags by type.
             - String, optional, no filtering by tag group by default.
-            - One of the following: 'freq', 'gen', 'geo', 'geot', 'rls', 'seas', 'src'. 
+            - One of the following: 'freq', 'gen', 'geo', 'geot', 'rls', 'seas', 'src'.
                 - freq = Frequency
                 - gen = General or Concept
                 - geo = Geography
@@ -471,23 +419,23 @@ class FREDProxy(BaseProxy):
         - limit: The maximum number of results to return.
             - integer between 1 and 1000, optional, default: 1000
         - offset: non-negative integer, optional, default: 0
-        - order_by: Order results by values of the specified attribute. 
+        - order_by: Order results by values of the specified attribute.
             - One of the following strings: 'series_count', 'popularity', 'created', 'name', 'group_id'.
             - optional, default: series_count
         - sort_order: Sort results is ascending or descending order for attribute values specified by order_by.
             - One of the following strings: 'asc', 'desc'.
             - optional, default: asc
         """
-        return params   
-    
+        return params
+
     ########################################
     ### Series Endpoints
     ########################################
 
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series',
-        description='Get an economic data series.',
+        category="Series",
+        endpoint="series",
+        description="Get an economic data series.",
         params={
             "series_id*": (str, "GNPCA"),
             "realtime_start": (str, "2013-08-14"),
@@ -512,10 +460,10 @@ class FREDProxy(BaseProxy):
                     "seasonal_adjustment_short": "NSA",
                     "last_updated": "2013-07-31 09:26:16-05",
                     "popularity": 39,
-                    "notes": "BEA Account Code: A001RX1"
+                    "notes": "BEA Account Code: A001RX1",
                 }
-            ]
-        }
+            ],
+        },
     )
     def series(self, params: dict) -> dict:
         """
@@ -528,12 +476,11 @@ class FREDProxy(BaseProxy):
             - YYYY-MM-DD formatted string, optional, default: today's date
         """
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series/categories',
-        description='Get the categories for an economic data series.',
+        category="Series",
+        endpoint="series/categories",
+        description="Get the categories for an economic data series.",
         params={
             "series_id*": (str, "EXJPUS"),
             "realtime_start": (str, "2013-08-14"),
@@ -541,18 +488,10 @@ class FREDProxy(BaseProxy):
         },
         response={
             "categories": [
-                {
-                    "id": 95,
-                    "name": "Monthly Rates",
-                    "parent_id": 15
-                },
-                {
-                    "id": 275,
-                    "name": "Japan",
-                    "parent_id": 158
-                }
+                {"id": 95, "name": "Monthly Rates", "parent_id": 15},
+                {"id": 275, "name": "Japan", "parent_id": 158},
             ]
-        }
+        },
     )
     def series_categories(self, params: dict) -> dict:
         """
@@ -565,12 +504,11 @@ class FREDProxy(BaseProxy):
             - YYYY-MM-DD formatted string, optional, default: today's date
         """
         return params
-    
-    
+
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series/observations',
-        description='Get the observations for an economic data series.',
+        category="Series",
+        endpoint="series/observations",
+        description="Get the observations for an economic data series.",
         params={
             "series_id*": (str, "EXJPUS"),
             "realtime_start": (str, "2013-08-14"),
@@ -602,10 +540,10 @@ class FREDProxy(BaseProxy):
                     "realtime_start": "2013-08-14",
                     "realtime_end": "2013-08-14",
                     "date": "1929-01-01",
-                    "value": "1065.9"
+                    "value": "1065.9",
                 },
-            ]
-        }
+            ],
+        },
     )
     def series_observations(self, params: dict) -> dict:
         """
@@ -676,14 +614,13 @@ class FREDProxy(BaseProxy):
                 - sum = Sum
                 - eop = End of Period
         """
-        params['output_type'] = 1
+        params["output_type"] = 1
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series/search',
-        description='Get economic data series that match search text.',
+        category="Series",
+        endpoint="series/search",
+        description="Get economic data series that match search text.",
         params={
             "search_text*": (str, "monetary+service+index"),
             "search_type": (str, "full_text"),
@@ -708,43 +645,43 @@ class FREDProxy(BaseProxy):
             "limit": 1000,
             "seriess": [
                 {
-                "id": "MSIM2",
-                "realtime_start": "2017-08-01",
-                "realtime_end": "2017-08-01",
-                "title": "Monetary Services Index: M2 (preferred)",
-                "observation_start": "1967-01-01",
-                "observation_end": "2013-12-01",
-                "frequency": "Monthly",
-                "frequency_short": "M",
-                "units": "Billions of Dollars",
-                "units_short": "Bil. of $",
-                "seasonal_adjustment": "Seasonally Adjusted",
-                "seasonal_adjustment_short": "SA",
-                "last_updated": "2014-01-17 07:16:44-06",
-                "popularity": 34,
-                "group_popularity": 33,
-                "notes": "The MSI measure the flow of monetary services received each period by households and firms from their holdings of monetary assets (levels of the indexes are sometimes referred to as Divisia monetary aggregates).\nPreferred benchmark rate equals 100 basis points plus the largest rate in the set of rates.\nAlternative benchmark rate equals the larger of the preferred benchmark rate and the Baa corporate bond yield.\nMore information about the new MSI can be found at\nhttp://research.stlouisfed.org/msi/index.html."
+                    "id": "MSIM2",
+                    "realtime_start": "2017-08-01",
+                    "realtime_end": "2017-08-01",
+                    "title": "Monetary Services Index: M2 (preferred)",
+                    "observation_start": "1967-01-01",
+                    "observation_end": "2013-12-01",
+                    "frequency": "Monthly",
+                    "frequency_short": "M",
+                    "units": "Billions of Dollars",
+                    "units_short": "Bil. of $",
+                    "seasonal_adjustment": "Seasonally Adjusted",
+                    "seasonal_adjustment_short": "SA",
+                    "last_updated": "2014-01-17 07:16:44-06",
+                    "popularity": 34,
+                    "group_popularity": 33,
+                    "notes": "The MSI measure the flow of monetary services received each period by households and firms from their holdings of monetary assets (levels of the indexes are sometimes referred to as Divisia monetary aggregates).\nPreferred benchmark rate equals 100 basis points plus the largest rate in the set of rates.\nAlternative benchmark rate equals the larger of the preferred benchmark rate and the Baa corporate bond yield.\nMore information about the new MSI can be found at\nhttp://research.stlouisfed.org/msi/index.html.",
                 },
                 {
-                "id": "MSIM1P",
-                "realtime_start": "2017-08-01",
-                "realtime_end": "2017-08-01",
-                "title": "Monetary Services Index: M1 (preferred)",
-                "observation_start": "1967-01-01",
-                "observation_end": "2013-12-01",
-                "frequency": "Monthly",
-                "frequency_short": "M",
-                "units": "Billions of Dollars",
-                "units_short": "Bil. of $",
-                "seasonal_adjustment": "Seasonally Adjusted",
-                "seasonal_adjustment_short": "SA",
-                "last_updated": "2014-01-17 07:16:45-06",
-                "popularity": 26,
-                "group_popularity": 26,
-                "notes": "The MSI measure the flow of monetary services received each period by households and firms from their holdings of monetary assets (levels of the indexes are sometimes referred to as Divisia monetary aggregates)."
+                    "id": "MSIM1P",
+                    "realtime_start": "2017-08-01",
+                    "realtime_end": "2017-08-01",
+                    "title": "Monetary Services Index: M1 (preferred)",
+                    "observation_start": "1967-01-01",
+                    "observation_end": "2013-12-01",
+                    "frequency": "Monthly",
+                    "frequency_short": "M",
+                    "units": "Billions of Dollars",
+                    "units_short": "Bil. of $",
+                    "seasonal_adjustment": "Seasonally Adjusted",
+                    "seasonal_adjustment_short": "SA",
+                    "last_updated": "2014-01-17 07:16:45-06",
+                    "popularity": 26,
+                    "group_popularity": 26,
+                    "notes": "The MSI measure the flow of monetary services received each period by households and firms from their holdings of monetary assets (levels of the indexes are sometimes referred to as Divisia monetary aggregates).",
                 },
-            ]
-        }
+            ],
+        },
     )
     def series_search(self, params: dict) -> dict:
         """
@@ -766,7 +703,7 @@ class FREDProxy(BaseProxy):
         - order_by: Order results by values of the specified attribute.
             - One of the following strings: 'search_rank', 'series_id', 'title', 'units', 'frequency', 'seasonal_adjustment', 'realtime_start', 'realtime_end', 'last_updated', 'observation_start', 'observation_end', 'popularity', 'group_popularity'.
             - optional, default: If the value of search_type is 'full_text' then the default value of order_by is 'search_rank'. If the value of search_type is 'series_id' then the default value of order_by is 'series_id'.
-        - sort_order: Sort results is ascending or descending order for attribute values specified by order_by. 
+        - sort_order: Sort results is ascending or descending order for attribute values specified by order_by.
             - One of the following strings: 'asc', 'desc'.
             - optional, default: If order_by is equal to 'search_rank' or 'popularity', then the default value of sort_order is 'desc'. Otherwise, the default sort order is 'asc'.
         - filter_variable: The attribute to filter results by.
@@ -784,12 +721,11 @@ class FREDProxy(BaseProxy):
             - Parameter exclude_tag_names requires that parameter tag_names also be set to limit the number of matching series.
         """
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series/search/tags',
-        description='Get the FRED tags for a series search. Optionally, filter results by tag name, tag group, or tag search. See the related request series/search/related_tags.',
+        category="Series",
+        endpoint="series/search/tags",
+        description="Get the FRED tags for a series search. Optionally, filter results by tag name, tag group, or tag search. See the related request series/search/related_tags.",
         params={
             "series_search_text*": (str, "monetary service index"),
             "realtime_start": (str, "2013-08-14"),
@@ -817,7 +753,7 @@ class FREDProxy(BaseProxy):
                     "notes": "Time series data created mainly by academia to address growing demand in understanding specific concerns in the economy that are not well modeled by ordinary statistical agencies.",
                     "created": "2012-08-29 10:22:19-05",
                     "popularity": 62,
-                    "series_count": 25
+                    "series_count": 25,
                 },
                 {
                     "name": "anderson & jones",
@@ -825,10 +761,10 @@ class FREDProxy(BaseProxy):
                     "notes": "Richard Anderson and Barry Jones",
                     "created": "2013-06-21 10:22:49-05",
                     "popularity": 46,
-                    "series_count": 25
+                    "series_count": 25,
                 },
-            ]
-        }
+            ],
+        },
     )
     def series_search_tags(self, params: dict) -> dict:
         """
@@ -865,14 +801,13 @@ class FREDProxy(BaseProxy):
             - optional, default: asc
         """
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series/search/related_tags',
+        category="Series",
+        endpoint="series/search/related_tags",
         description=(
-            'Get the related FRED tags for one or more FRED tags matching a series search. Optionally, filter results by tag group or tag search. '
-            'FRED tags are attributes assigned to series. For this request, related FRED tags are the tags assigned to series that match all tags in the tag_names parameter, no tags in the exclude_tag_names parameter, and the search words set by the series_search_text parameter. See the related request series/search/tags.',
+            "Get the related FRED tags for one or more FRED tags matching a series search. Optionally, filter results by tag group or tag search. "
+            "FRED tags are attributes assigned to series. For this request, related FRED tags are the tags assigned to series that match all tags in the tag_names parameter, no tags in the exclude_tag_names parameter, and the search words set by the series_search_text parameter. See the related request series/search/tags.",
         ),
         params={
             "series_search_text*": (str, "mortgage rate"),
@@ -881,7 +816,7 @@ class FREDProxy(BaseProxy):
             "tag_names*": (str, "30-year"),
             "exclude_tag_names": (str, ""),
             "tag_group_id": (str, ""),
-            "tag_search_text": (str, ""),   
+            "tag_search_text": (str, ""),
             "limit": (int, 1000),
             "offset": (int, 0),
             "order_by": (str, "series_count"),
@@ -902,7 +837,7 @@ class FREDProxy(BaseProxy):
                     "notes": "",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 63,
-                    "series_count": 3
+                    "series_count": 3,
                 },
                 {
                     "name": "h15",
@@ -910,10 +845,10 @@ class FREDProxy(BaseProxy):
                     "notes": "H.15 Selected Interest Rates",
                     "created": "2012-08-16 15:21:17-05",
                     "popularity": 84,
-                    "series_count": 3
+                    "series_count": 3,
                 },
-            ]
-        }
+            ],
+        },
     )
     def series_search_related_tags(self, params: dict) -> dict:
         """
@@ -953,12 +888,11 @@ class FREDProxy(BaseProxy):
             - optional, default: asc
         """
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Series',
-        endpoint='series/tags',
-        description='Get the FRED tags for a series.',
+        category="Series",
+        endpoint="series/tags",
+        description="Get the FRED tags for a series.",
         params={
             "series_id*": (str, "STLFSI"),
             "realtime_start": (str, "2013-08-14"),
@@ -981,7 +915,7 @@ class FREDProxy(BaseProxy):
                     "notes": "Country Level",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 100,
-                    "series_count": 105200
+                    "series_count": 105200,
                 },
                 {
                     "name": "nsa",
@@ -989,10 +923,10 @@ class FREDProxy(BaseProxy):
                     "notes": "Not seasonally adjusted",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 96,
-                    "series_count": 100468
+                    "series_count": 100468,
                 },
-            ]
-        }
+            ],
+        },
     )
     def series_tags(self, params: dict) -> dict:
         """
@@ -1011,16 +945,15 @@ class FREDProxy(BaseProxy):
             - optional, default: asc
         """
         return params
-    
-    ########################################
-    ### Tags Endpoints  
-    ########################################
 
+    ########################################
+    ### Tags Endpoints
+    ########################################
 
     @BaseProxy.endpoint(
-        category='Tags',
-        endpoint='tags',
-        description='Get FRED tags. Optionally, filter results by tag name, tag group, or search. FRED tags are attributes assigned to series. See the related request related_tags.',
+        category="Tags",
+        endpoint="tags",
+        description="Get FRED tags. Optionally, filter results by tag name, tag group, or search. FRED tags are attributes assigned to series. See the related request related_tags.",
         params={
             "realtime_start": (str, "2013-08-14"),
             "realtime_end": (str, "2013-08-14"),
@@ -1047,7 +980,7 @@ class FREDProxy(BaseProxy):
                     "notes": "Country Level",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 100,
-                    "series_count": 105200
+                    "series_count": 105200,
                 },
                 {
                     "name": "nsa",
@@ -1055,10 +988,10 @@ class FREDProxy(BaseProxy):
                     "notes": "Not seasonally adjusted",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 96,
-                    "series_count": 100468
+                    "series_count": 100468,
                 },
-            ]
-        }
+            ],
+        },
     )
     def tags(self, params: dict) -> dict:
         """
@@ -1094,14 +1027,13 @@ class FREDProxy(BaseProxy):
             - optional, default: asc
         """
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Tags',
-        endpoint='related_tags',
+        category="Tags",
+        endpoint="related_tags",
         description=(
-            'Get the related FRED tags for one or more FRED tags. Optionally, filter results by tag group or search.',
-            'FRED tags are attributes assigned to series. Related FRED tags are the tags assigned to series that match all tags in the tag_names parameter and no tags in the exclude_tag_names parameter. See the related request tags.'
+            "Get the related FRED tags for one or more FRED tags. Optionally, filter results by tag group or search.",
+            "FRED tags are attributes assigned to series. Related FRED tags are the tags assigned to series that match all tags in the tag_names parameter and no tags in the exclude_tag_names parameter. See the related request tags.",
         ),
         params={
             "tag_names*": (str, "monetary aggregates;weekly"),
@@ -1130,7 +1062,7 @@ class FREDProxy(BaseProxy):
                     "notes": "Country Level",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 100,
-                    "series_count": 12
+                    "series_count": 12,
                 },
                 {
                     "name": "usa",
@@ -1138,10 +1070,10 @@ class FREDProxy(BaseProxy):
                     "notes": "United States of America",
                     "created": "2012-02-27 10:18:19-06",
                     "popularity": 100,
-                    "series_count": 12
+                    "series_count": 12,
                 },
-            ]
-        }
+            ],
+        },
     )
     def related_tags(self, params: dict) -> dict:
         """
@@ -1179,12 +1111,11 @@ class FREDProxy(BaseProxy):
             - optional, default: asc
         """
         return params
-    
 
     @BaseProxy.endpoint(
-        category='Tags',
-        endpoint='tags/series',
-        description='Get the series matching all tags in the tag_names parameter and no tags in the exclude_tag_names parameter.',
+        category="Tags",
+        endpoint="tags/series",
+        description="Get the series matching all tags in the tag_names parameter and no tags in the exclude_tag_names parameter.",
         params={
             "tag_names*": (str, "slovenia;food;oecd"),
             "exclude_tag_names": (str, ""),
@@ -1220,7 +1151,7 @@ class FREDProxy(BaseProxy):
                     "last_updated": "2017-04-20 00:48:35-05",
                     "popularity": 0,
                     "group_popularity": 0,
-                    "notes": "OECD descriptor ID: CPGDFD02\nOECD unit ID: GP\nOECD country ID: SVN\n\nAll OECD data should be cited as follows: OECD, \"Main Economic Indicators - complete database\", Main Economic Indicators (database),http://dx.doi.org/10.1787/data-00052-en (Accessed on date)\nCopyright, 2016, OECD. Reprinted with permission."
+                    "notes": 'OECD descriptor ID: CPGDFD02\nOECD unit ID: GP\nOECD country ID: SVN\n\nAll OECD data should be cited as follows: OECD, "Main Economic Indicators - complete database", Main Economic Indicators (database),http://dx.doi.org/10.1787/data-00052-en (Accessed on date)\nCopyright, 2016, OECD. Reprinted with permission.',
                 },
                 {
                     "id": "CPGDFD02SIA659N",
@@ -1238,10 +1169,10 @@ class FREDProxy(BaseProxy):
                     "last_updated": "2017-04-20 00:48:35-05",
                     "popularity": 0,
                     "group_popularity": 0,
-                    "notes": "OECD descriptor ID: CPGDFD02\nOECD unit ID: GY\nOECD country ID: SVN\n\nAll OECD data should be cited as follows: OECD, \"Main Economic Indicators - complete database\", Main Economic Indicators (database),http://dx.doi.org/10.1787/data-00052-en (Accessed on date)\nCopyright, 2016, OECD. Reprinted with permission."
+                    "notes": 'OECD descriptor ID: CPGDFD02\nOECD unit ID: GY\nOECD country ID: SVN\n\nAll OECD data should be cited as follows: OECD, "Main Economic Indicators - complete database", Main Economic Indicators (database),http://dx.doi.org/10.1787/data-00052-en (Accessed on date)\nCopyright, 2016, OECD. Reprinted with permission.',
                 },
-            ]
-        }
+            ],
+        },
     )
     def tags_series(self, params: dict) -> dict:
         """

@@ -17,37 +17,37 @@ Core capabilities:
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
-import copy
-import hashlib
-import datetime as dt
 import asyncio
 import concurrent.futures
+import copy
+import datetime as dt
+import hashlib
+import logging
 import traceback as tb
 import warnings
+from abc import ABC, abstractmethod
+from enum import Enum
 from typing import (
     Any,
-    AsyncGenerator,
     Dict,
     List,
+    Literal,
     Optional,
     Tuple,
-    Type,
     Union,
+    overload,
 )
-from enum import Enum
-from pydantic import BaseModel, Field, ConfigDict
-import logging
 
-from lllm.core.agent import Agent, AgentCallSession
-from lllm.core.prompt import Prompt, InvokeCost
-from lllm.core.dialog import Message
-from lllm.core.runtime import Runtime, get_default_runtime
-from lllm.core.const import APITypes
-from lllm.core.config import AgentSpec, parse_agent_configs
-from lllm.logging import LogStore
-from lllm.invokers import build_invoker
-from lllm.core.tactic_tool import tactictool
+from pydantic import BaseModel, ConfigDict, Field
+
+from ..invokers import build_invoker
+from ..logging import LogStore
+from .agent import Agent, AgentCallSession
+from .config import parse_agent_configs
+from .dialog import Message
+from .prompt import InvokeCost, Prompt
+from .runtime import Runtime, get_default_runtime
+from .tactic_tool import tactictool as tactictool
 
 logger = logging.getLogger(__name__)
 
@@ -72,9 +72,29 @@ class _TrackedAgent:
         object.__setattr__(self, "_session", session)
         object.__setattr__(self, "_name", name)
 
+    @overload
     def respond(
         self,
-        alias: str = None,
+        alias: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        args: Optional[Dict[str, Any]] = None,
+        parser_args: Optional[Dict[str, Any]] = None,
+        return_session: Literal[False] = False,
+    ) -> Message: ...
+
+    @overload
+    def respond(
+        self,
+        alias: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        args: Optional[Dict[str, Any]] = None,
+        parser_args: Optional[Dict[str, Any]] = None,
+        return_session: Literal[True] = True,
+    ) -> AgentCallSession: ...
+
+    def respond(
+        self,
+        alias: Optional[str] = None,
         metadata: Optional[Dict[str, Any]] = None,
         args: Optional[Dict[str, Any]] = None,
         parser_args: Optional[Dict[str, Any]] = None,
@@ -120,12 +140,16 @@ class TacticCallSession(BaseModel):
     """
 
     tactic_name: str
-    tactic_path: Optional[str] = None  # stable ID: "{package_name}::{tactic_name}", e.g. "my_pkg::researcher"
+    tactic_path: Optional[str] = (
+        None  # stable ID: "{package_name}::{tactic_name}", e.g. "my_pkg::researcher"
+    )
 
     state: str = "initial"
 
     agent_sessions: Dict[str, List[AgentCallSession]] = Field(default_factory=dict)
-    sub_tactic_sessions: Dict[str, List["TacticCallSession"]] = Field(default_factory=dict)
+    sub_tactic_sessions: Dict[str, List["TacticCallSession"]] = Field(
+        default_factory=dict
+    )
 
     delivery: Optional[Any] = None
     error: Optional[str] = None
@@ -138,7 +162,9 @@ class TacticCallSession(BaseModel):
             self.agent_sessions[agent_name] = []
         self.agent_sessions[agent_name].append(session)
 
-    def record_sub_tactic_call(self, tactic_name: str, session: "TacticCallSession") -> None:
+    def record_sub_tactic_call(
+        self, tactic_name: str, session: "TacticCallSession"
+    ) -> None:
         if tactic_name not in self.sub_tactic_sessions:
             self.sub_tactic_sessions[tactic_name] = []
         self.sub_tactic_sessions[tactic_name].append(session)
@@ -195,6 +221,7 @@ class TacticCallSession(BaseModel):
 # Registration helpers
 # ---------------------------------------------------------------------------
 
+
 def _normalize_name(name: Any) -> str:
     if isinstance(name, Enum) or (isinstance(name, type) and issubclass(name, Enum)):
         return name.value
@@ -212,6 +239,7 @@ def register_tactic_class(tactic_cls, runtime=None):
     )
     runtime.register_tactic(name, tactic_cls, overwrite=True)
     return tactic_cls
+
 
 def get_tactic_class(name, runtime=None):
     runtime = runtime or get_default_runtime()
@@ -247,8 +275,8 @@ def _stable_tactic_id(namespace: str, tactic_name: str) -> str:
 def build_tactic(
     config: Dict[str, Any],
     log_store: Optional[LogStore] = None,
-    name: str = None,
-    runtime: Runtime = None,
+    name: Optional[str] = None,
+    runtime: Optional[Runtime] = None,
     **kwargs,
 ) -> "Tactic":
     """Build a Tactic from a config dict.
@@ -274,7 +302,8 @@ def build_tactic(
 
     return tactic_cls(
         config,
-        log_store=log_store, runtime=rt,
+        log_store=log_store,
+        runtime=rt,
         tactic_path=tactic_path,
         **kwargs,
     )
@@ -311,12 +340,14 @@ class Tactic(ABC):
     ``agent_configs`` is a list; each entry must have a ``name``.
     """
 
-    name: str = None
-    agent_group: List[str] = None
+    name: Optional[str] = None
+    agent_group: Optional[List[str]] = None
 
     # -- Auto-registration ------------------------------------------------
 
-    def __init_subclass__(cls, register: bool = True, runtime: Optional[Runtime] = None, **kwargs):
+    def __init_subclass__(
+        cls, register: bool = True, runtime: Optional[Runtime] = None, **kwargs
+    ):
         super().__init_subclass__(**kwargs)
         if register and getattr(cls, "name", None):
             register_tactic_class(cls, runtime=runtime or get_default_runtime())
@@ -345,14 +376,14 @@ class Tactic(ABC):
         assert self.agent_group is not None, (
             f"agent_group not set for tactic '{self.name}'"
         )
-        self._agent_specs = parse_agent_configs(
-            config, self.agent_group, self.name
-        )
+        self._agent_specs = parse_agent_configs(config, self.agent_group, self.name)
 
         self._max_workers: int = config.get("max_workers", 4)
 
         # Per-call state — set by _execute on the copy, created here for convenience and checking
-        self.agents: Dict[str, Union[Agent, _TrackedAgent]] = self._create_fresh_agents()
+        self.agents: Dict[str, Union[Agent, _TrackedAgent]] = (
+            self._create_fresh_agents()
+        )
         self._session: Optional[TacticCallSession] = None
 
     # -- Sub-tactic composition -------------------------------------------
@@ -394,8 +425,7 @@ class Tactic(ABC):
             task_str = task if isinstance(task, str) else task.model_dump_json()
             task_hash = hashlib.md5(task_str.encode()).hexdigest()[:8]
             session_name = (
-                f"{self.name}_{task_hash}"
-                f"_{dt.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                f"{self.name}_{task_hash}_{dt.datetime.now().strftime('%Y%m%d_%H%M%S')}"
             )
 
         ctx = copy.copy(self)
@@ -411,14 +441,15 @@ class Tactic(ABC):
             except (KeyError, AttributeError):
                 self._tactic_path = self.name  # not in package system
 
-        session = TacticCallSession(tactic_name=self.name, tactic_path=self._tactic_path)
+        session = TacticCallSession(
+            tactic_name=self.name, tactic_path=self._tactic_path
+        )
         session.state = "running"
         ctx._session = session
 
         raw_agents = ctx._create_fresh_agents()
         ctx.agents = {
-            n: _TrackedAgent(agent, session, n)
-            for n, agent in raw_agents.items()
+            n: _TrackedAgent(agent, session, n) for n, agent in raw_agents.items()
         }
 
         logger.info("Tactic '%s' started — session_name=%s", self.name, session_name)
@@ -435,7 +466,9 @@ class Tactic(ABC):
             session.failure(e)
             logger.error(
                 "Tactic '%s' failed: %s",
-                self.name, e, exc_info=True,
+                self.name,
+                e,
+                exc_info=True,
             )
             raise
         finally:
@@ -448,7 +481,8 @@ class Tactic(ABC):
                 except Exception:
                     logger.warning(
                         "LogStore failed to save session for tactic '%s'",
-                        self.name, exc_info=True,
+                        self.name,
+                        exc_info=True,
                     )
             elif not self._log_store_warned:
                 self._log_store_warned = True
@@ -462,21 +496,61 @@ class Tactic(ABC):
 
         return session if return_session else result
 
-    def __call__(self, task, session_name=None, tags=None, metadata=None,  return_session=False, **kwargs):
-        return self._execute(task, session_name, tags=tags, metadata=metadata, return_session=return_session, **kwargs)
+    def __call__(
+        self,
+        task,
+        session_name=None,
+        tags=None,
+        metadata=None,
+        return_session=False,
+        **kwargs,
+    ):
+        return self._execute(
+            task,
+            session_name,
+            tags=tags,
+            metadata=metadata,
+            return_session=return_session,
+            **kwargs,
+        )
 
-    async def acall(self, task, tags=None, metadata=None, return_session=False, **kwargs):
+    async def acall(
+        self, task, tags=None, metadata=None, return_session=False, **kwargs
+    ):
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(
             None,
-            lambda: self._execute(task, tags=tags, metadata=metadata, return_session=return_session, **kwargs),
+            lambda: self._execute(
+                task,
+                tags=tags,
+                metadata=metadata,
+                return_session=return_session,
+                **kwargs,
+            ),
         )
 
-    def bcall(self, tasks, max_workers=None, fail_fast=True, tags=None, metadata=None, return_sessions=False, **kwargs):
+    def bcall(
+        self,
+        tasks,
+        max_workers=None,
+        fail_fast=True,
+        tags=None,
+        metadata=None,
+        return_sessions=False,
+        **kwargs,
+    ):
         workers = max_workers or self._max_workers
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [
-                pool.submit(self._execute, t, None, tags, metadata, return_session=return_sessions, **kwargs)
+                pool.submit(
+                    self._execute,
+                    t,
+                    None,
+                    tags,
+                    metadata,
+                    return_session=return_sessions,
+                    **kwargs,
+                )
                 for t in tasks
             ]
             if fail_fast:
@@ -489,26 +563,78 @@ class Tactic(ABC):
                     results.append(e)
             return results
 
-    async def ccall(self, tasks, max_workers=None, tags=None, metadata=None, return_sessions=False, **kwargs):
+    async def ccall(
+        self,
+        tasks,
+        max_workers=None,
+        tags=None,
+        metadata=None,
+        return_sessions=False,
+        **kwargs,
+    ):
         workers = max_workers or self._max_workers
         loop = asyncio.get_running_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
+
             def _run(idx, t):
-                return idx, self._execute(t, tags=tags, metadata=metadata, return_session=return_sessions, **kwargs)
-            futures = [loop.run_in_executor(pool, _run, i, t) for i, t in enumerate(tasks)]
+                return idx, self._execute(
+                    t,
+                    tags=tags,
+                    metadata=metadata,
+                    return_session=return_sessions,
+                    **kwargs,
+                )
+
+            futures = [
+                loop.run_in_executor(pool, _run, i, t) for i, t in enumerate(tasks)
+            ]
             for coro in asyncio.as_completed(futures):
                 idx, result = await coro
                 yield idx, result
 
     # -- Quick constructor ------------------------------------------------
 
+    @overload
     @classmethod
-    def quick(cls, 
-        query: Optional[str] = None, 
-        system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.", 
-        model: str = "gpt-4o", 
+    def quick(
+        cls,
+        query: None = None,
+        system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
+        model: str = "gpt-4o",
         return_agent: bool = False,
-        **model_args: Any
+        **model_args: Any,
+    ) -> Agent: ...
+
+    @overload
+    @classmethod
+    def quick(
+        cls,
+        query: str,
+        system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
+        model: str = "gpt-4o",
+        return_agent: Literal[False] = False,
+        **model_args: Any,
+    ) -> Message: ...
+
+    @overload
+    @classmethod
+    def quick(
+        cls,
+        query: str,
+        system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
+        model: str = "gpt-4o",
+        return_agent: Literal[True] = True,
+        **model_args: Any,
+    ) -> Tuple[Message, Agent]: ...
+
+    @classmethod
+    def quick(
+        cls,
+        query: Optional[str] = None,
+        system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
+        model: str = "gpt-4o",
+        return_agent: bool = False,
+        **model_args: Any,
     ) -> Union[Message, Agent, Tuple[Message, Agent]]:
         """
         Quick constructor for a single-agent chat.

@@ -3,11 +3,7 @@ Tests for lllm/core/dialog.py
 Covers: TokenLogprob, Message, DialogTreeNode, Dialog, ContextManager.
 """
 import base64
-import copy
-import io
 import unittest
-from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 
 def _make_message(role=None, content="hello", name="user", **kwargs):

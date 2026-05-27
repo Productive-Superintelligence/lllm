@@ -18,15 +18,15 @@ Convenience factories:
     noop_store(partition)          — NoOpBackend-backed LogStore (dry run)
 """
 
-from lllm.logging.backend import (
-    LogBackend,
+from .backend import (
     LocalFileBackend,
-    SQLiteBackend,
+    LogBackend,
     NoOpBackend,
+    SQLiteBackend,
 )
-from lllm.logging.store import LogStore
-from lllm.logging.models import SessionRecord, SessionSummary
-from lllm.logging.formatter import ColoredFormatter, setup_logging
+from .formatter import ColoredFormatter, setup_logging
+from .models import SessionRecord, SessionSummary
+from .store import LogStore
 
 
 def local_store(
@@ -51,6 +51,7 @@ def local_store(
         store = local_store("/data/runs", partition="exp-42", runtime=rt)
     """
     import os
+
     return LogStore(
         LocalFileBackend(os.path.expanduser(path)),
         partition=partition,
@@ -80,6 +81,7 @@ def sqlite_store(
         store = sqlite_store(":memory:", partition="test")
     """
     import os
+
     return LogStore(
         SQLiteBackend(os.path.expanduser(path)),
         partition=partition,

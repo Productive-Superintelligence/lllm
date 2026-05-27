@@ -1,12 +1,10 @@
 """
 Tests for the LLLM package system.
 """
-import os
 import sys
 import textwrap
 import tempfile
 import unittest
-import logging
 from pathlib import Path
 
 sys.path.insert(0, "/home/claude")

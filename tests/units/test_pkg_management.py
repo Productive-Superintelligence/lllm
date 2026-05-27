@@ -9,7 +9,6 @@ from __future__ import annotations
 
 import io
 import sys
-import textwrap
 import unittest
 import zipfile
 from pathlib import Path
@@ -351,7 +350,8 @@ class TestListPackages(unittest.TestCase):
 class TestRemovePackage(unittest.TestCase):
 
     def setUp(self):
-        import shutil, tempfile
+        import shutil
+        import tempfile
         self._tmp = tempfile.TemporaryDirectory()
         self.tmp = Path(self._tmp.name)
         self.home = self.tmp / "home"
@@ -551,7 +551,6 @@ class TestCollectPackageDeps(unittest.TestCase):
 
 def _run_cli(*args):
     """Invoke cli.main() with the given args, return (stdout, stderr, exit_code)."""
-    import io
     from lllm.cli import main
     old_argv = sys.argv
     sys.argv = ["lllm"] + list(args)

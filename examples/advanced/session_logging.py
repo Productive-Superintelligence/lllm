@@ -101,7 +101,7 @@ for s in summaries:
 # Load the last session for detailed inspection
 if summaries:
     last = store.load_session_record(summaries[-1].session_id)
-    print(f"\nLast session detail:")
+    print("\nLast session detail:")
     print(f"  Total cost : {last.session.total_cost}")
     print(f"  Agent calls: {last.session.agent_call_count}")
     print(f"  Delivery   : {str(last.session.delivery)[:80]}...")

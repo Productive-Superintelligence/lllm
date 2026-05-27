@@ -88,7 +88,6 @@ MODEL = _detect_model()
 # load_runtime() honours LLLM_CONFIG, so it finds our package's lllm.toml
 # and auto-registers all prompts, tactics, and configs inside it.
 
-import lllm  # noqa: E402  (must come after env-var setup above)
 from lllm import build_tactic
 from lllm.core.config import resolve_config
 from lllm.logging import sqlite_store

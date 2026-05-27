@@ -19,10 +19,7 @@ Run:
     pytest tests/integration/test_live_proxy.py -v -m live
     pytest tests/integration/test_live_proxy.py -v           # unit tests only
 """
-import io
-import math
 import unittest
-from unittest.mock import MagicMock
 
 import pytest
 
@@ -406,7 +403,6 @@ class TestProxyConfig(unittest.TestCase):
 
 def _build_proxy_agent(model: str, runtime):
     """Build a live Agent with interpreter mode + Stats proxy."""
-    from lllm.core.agent import Agent
     from lllm.core.config import AgentSpec, ProxyConfig
     from lllm.core.prompt import Prompt
     from lllm.invokers.litellm import LiteLLMInvoker

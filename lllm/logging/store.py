@@ -10,6 +10,7 @@ Sits on top of a LogBackend (raw KV storage) and handles:
     - Cost aggregation
     - Export helpers
 """
+
 from __future__ import annotations
 
 import datetime as dt
@@ -19,8 +20,8 @@ import traceback as tb
 import uuid
 from typing import Any, Dict, List, Optional
 
-from lllm.logging.backend import LogBackend
-from lllm.logging.models import SessionRecord, SessionSummary
+from .backend import LogBackend
+from .models import SessionRecord, SessionSummary
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Serialisation helpers
 # ---------------------------------------------------------------------------
+
 
 def _make_json_safe(obj: Any) -> Any:
     """Recursively convert non-JSON-serialisable values to strings."""
@@ -61,7 +63,8 @@ def _serialize_session(session: Any) -> bytes:
 def _deserialize_session(data: bytes) -> Any:
     """Deserialise a TacticCallSession from JSON bytes."""
     # Import here to avoid circular imports at module load time
-    from lllm.core.tactic import TacticCallSession
+    from ..core.tactic import TacticCallSession
+
     raw = json.loads(data.decode())
     return TacticCallSession.model_validate(raw)
 
@@ -69,6 +72,7 @@ def _deserialize_session(data: bytes) -> Any:
 # ---------------------------------------------------------------------------
 # LogStore
 # ---------------------------------------------------------------------------
+
 
 class LogStore:
     """
@@ -87,7 +91,12 @@ class LogStore:
                    canonical stable key (e.g. ``"my_pkg::researcher"``).
     """
 
-    def __init__(self, backend: LogBackend, partition: str = "default", runtime: Optional[Any] = None):
+    def __init__(
+        self,
+        backend: LogBackend,
+        partition: str = "default",
+        runtime: Optional[Any] = None,
+    ):
         self._backend = backend
         self._ns = partition.strip("/")
         self._runtime = runtime  # optional Runtime for alias resolution
@@ -187,8 +196,8 @@ class LogStore:
 
         index_entry = {
             "session_id": session_id,
-            "tactic_name": tactic_name,           # kept for backward compat
-            "tactic_path": tactic_path,            # absolute qualified key
+            "tactic_name": tactic_name,  # kept for backward compat
+            "tactic_path": tactic_path,  # absolute qualified key
             "state": getattr(session, "state", "unknown"),
             "total_cost": total_cost,
             "agent_call_count": agent_call_count,
@@ -206,7 +215,9 @@ class LogStore:
                 json.dumps(index_entry).encode(),
             )
         except Exception as e:
-            logger.error("LogStore failed to save session %s: %s", session_id, e, exc_info=True)
+            logger.error(
+                "LogStore failed to save session %s: %s", session_id, e, exc_info=True
+            )
             raise
 
         logger.debug(
@@ -249,7 +260,9 @@ class LogStore:
         """Deserialise and return the full TacticCallSession object."""
         data = self._backend.get(self._session_key(session_id))
         if data is None:
-            raise KeyError(f"Session '{session_id}' not found in LogStore (partition={self._ns!r})")
+            raise KeyError(
+                f"Session '{session_id}' not found in LogStore (partition={self._ns!r})"
+            )
         return _deserialize_session(data)
 
     def load_session_record(self, session_id: str) -> SessionRecord:
@@ -350,7 +363,8 @@ class LogStore:
                 SessionSummary(
                     session_id=entry["session_id"],
                     tactic_name=entry.get("tactic_name", "unknown"),
-                    tactic_path=entry.get("tactic_path") or entry.get("tactic_name", "unknown"),
+                    tactic_path=entry.get("tactic_path")
+                    or entry.get("tactic_name", "unknown"),
                     state=entry.get("state", "unknown"),
                     total_cost=entry.get("total_cost", 0.0),
                     agent_call_count=entry.get("agent_call_count", 0),
@@ -384,8 +398,11 @@ class LogStore:
     ) -> Dict[str, Any]:
         """Aggregate cost data across matching sessions."""
         summaries = self.list_sessions(
-            tags=tags, after=after, before=before,
-            tactic_path=tactic_path, limit=10_000,
+            tags=tags,
+            after=after,
+            before=before,
+            tactic_path=tactic_path,
+            limit=10_000,
         )
         total_cost = sum(s.total_cost for s in summaries)
         return {
