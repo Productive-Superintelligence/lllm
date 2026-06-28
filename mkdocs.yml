@@ -1,0 +1,70 @@
+site_name: LLLM
+site_description: Protocol-first tactic services.
+site_url: https://lllm.one/
+repo_name: Productive-Superintelligence/lllm
+repo_url: https://github.com/Productive-Superintelligence/lllm
+edit_uri: edit/v2/docs/
+
+theme:
+  name: material
+  logo: assets/logo.svg
+  favicon: assets/logo.svg
+  palette:
+    - scheme: default
+      primary: black
+      accent: black
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.instant
+    - navigation.top
+    - toc.follow
+    - content.code.copy
+    - content.tabs.link
+
+nav:
+  - Overview: index.md
+  - Getting Started: getting-started.md
+  - Concepts:
+      - Tactics: concepts/tactics.md
+      - Services: concepts/services.md
+      - Packages: concepts/packages.md
+      - Runtime Boundary: concepts/runtime-boundary.md
+  - Guides:
+      - Pydantic AI: guides/pydantic-ai.md
+      - Native Runtime: guides/native-runtime.md
+      - Composition: guides/composition.md
+  - Tutorials:
+      - Protocol Level:
+          - First Tactic: tutorials/first-tactic.md
+          - Proxies: tutorials/proxies.md
+          - Sandboxes: tutorials/sandboxes.md
+      - Native Runtime:
+          - Native Core: tutorials/native-core.md
+          - Parsers: tutorials/parsers.md
+      - Pydantic Runtime:
+          - Pydantic AI Compatibility: tutorials/pydantic-ai-compat.md
+  - Reference:
+      - Protocol API: reference/protocol.md
+      - Service API: reference/service-api.md
+      - CLI: reference/cli.md
+      - PsiHub Metadata: reference/psihub-metadata.md
+
+extra:
+  generator: false
+  homepage: https://lllm.one/
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/Productive-Superintelligence/lllm
+
+extra_css:
+  - stylesheets/custom.css
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true

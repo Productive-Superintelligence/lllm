@@ -1,0 +1,52 @@
+:root {
+  --md-primary-fg-color: #050505;
+  --md-accent-fg-color: #050505;
+}
+
+.md-header,
+.md-tabs {
+  box-shadow: none;
+}
+
+.md-typeset h1,
+.md-typeset h2 {
+  font-weight: 720;
+}
+
+.psi-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+}
+
+.psi-tile {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.35rem;
+  padding: 0.85rem;
+}
+
+.psi-tile strong {
+  display: block;
+  margin-bottom: 0.35rem;
+}
+
+.psi-flow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr));
+  gap: 0.5rem;
+  margin: 1.25rem 0;
+}
+
+.psi-flow > div {
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.35rem;
+  padding: 0.75rem;
+  background: var(--md-default-bg-color);
+}
+
+.psi-domain {
+  display: inline-block;
+  margin: 0.25rem 0 1rem;
+  font-weight: 700;
+}
