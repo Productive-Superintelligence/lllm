@@ -5,7 +5,64 @@
 
 .md-header,
 .md-tabs {
+  background: #ffffff;
+  background-color: #ffffff;
   box-shadow: none;
+  color: #050505;
+}
+
+[data-md-color-primary="black"] .md-header,
+[data-md-color-primary="black"] .md-tabs {
+  background-color: #ffffff;
+  color: #050505;
+}
+
+html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__drawer"],
+[data-md-color-primary="black"] .md-nav__source {
+  background-color: #ffffff;
+  color: #050505;
+}
+
+.md-header {
+  border-bottom: 1px solid rgba(5, 5, 5, 0.08);
+}
+
+.md-tabs {
+  border-bottom: 1px solid rgba(5, 5, 5, 0.08);
+}
+
+.md-header__button,
+.md-header__title,
+.md-header__topic,
+.md-header__source,
+.md-source,
+.md-tabs__link {
+  color: #050505;
+}
+
+.md-header__button:hover,
+.md-header__button:focus,
+.md-header__source:hover,
+.md-header__source:focus,
+.md-tabs__link:hover,
+.md-tabs__link:focus,
+.md-tabs__item--active .md-tabs__link {
+  color: #050505;
+  opacity: 1;
+}
+
+.md-search__form {
+  background-color: #f7f7f7;
+  border: 1px solid rgba(5, 5, 5, 0.1);
+}
+
+.md-search__input,
+.md-search__icon {
+  color: #050505;
+}
+
+.md-search__input::placeholder {
+  color: rgba(5, 5, 5, 0.55);
 }
 
 .md-typeset h1,
