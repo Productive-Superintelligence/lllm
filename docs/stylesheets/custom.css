@@ -103,6 +103,9 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-footer,
 .md-footer-meta {
+  --md-footer-fg-color: var(--psi-ink);
+  --md-footer-fg-color--light: var(--psi-ink);
+  --md-footer-fg-color--lighter: rgba(5, 5, 5, 0.62);
   background: #ffffff;
   background-color: #ffffff;
   color: var(--psi-ink);
@@ -143,12 +146,27 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 .psi-footer-brand {
   display: inline-flex;
   align-items: center;
+  gap: 0.4rem;
+  color: var(--psi-ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  line-height: 1;
 }
 
-.psi-footer-brand img {
-  display: block;
-  width: auto;
+.psi-footer-mark {
+  display: inline-block;
+  width: 1.45rem;
   height: 1.45rem;
+  background-image: url("../assets/logo.svg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: contain;
+  flex: 0 0 auto;
+}
+
+.psi-footer-text {
+  display: inline-block;
 }
 
 .md-typeset h1,
@@ -212,6 +230,13 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
   display: inline-block;
   height: auto;
   max-width: 100%;
+}
+
+@media screen and (max-width: 44.984rem) {
+  .md-typeset .mermaid svg {
+    min-width: 34rem;
+    max-width: none;
+  }
 }
 
 .psi-domain {
