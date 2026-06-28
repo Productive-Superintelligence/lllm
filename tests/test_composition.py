@@ -401,6 +401,12 @@ def test_resolver_loads_url_bindings_from_local_config(tmp_path):
         f"""
 [refs."{REF}"]
 url = "http://127.0.0.1:8000/tactics/echo"
+
+[refs."psi://demo/echo/services/api"]
+url = "http://127.0.0.1:8000"
+
+[refs."psi://demo/echo/channels/events"]
+store = ".sssn"
 """.lstrip(),
         encoding="utf-8",
     )
@@ -410,3 +416,19 @@ url = "http://127.0.0.1:8000/tactics/echo"
 
     assert isinstance(tactic, RemoteTactic)
     assert tactic.url == "http://127.0.0.1:8000/tactics/echo/run"
+    assert resolver.refs() == (REF,)
+
+
+def test_resolver_rejects_malformed_url_bindings_from_local_config(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        """
+[refs."not-a-ref"]
+url = "http://127.0.0.1:8000/tactics/echo"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TacticRefError, match="psi://"):
+        TacticResolver.from_config(tmp_path)

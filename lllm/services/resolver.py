@@ -4,9 +4,23 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 from ..protocol import CallContext, Tactic, TacticRef, TacticRefError
 from .client import RemoteTactic
+
+
+_NON_TACTIC_CONFIG_REF_SECTIONS = {
+    "schemas",
+    "services",
+    "channels",
+    "snapshots",
+    "runs",
+    "configs",
+    "docs",
+    "examples",
+    "assets",
+}
 
 
 class TacticResolver:
@@ -29,6 +43,8 @@ class TacticResolver:
                 raise TacticRefError(f"Ref binding must be a table: {raw_ref}")
             url = data.get("url")
             if url:
+                if not _is_tactic_config_ref(raw_ref):
+                    continue
                 resolver.bind_url(raw_ref, str(url))
         return resolver
 
@@ -95,3 +111,11 @@ def _load_toml(path: str | Path) -> dict[str, Any]:
         import tomli as tomllib  # type: ignore[no-redef]
     with target.open("rb") as handle:
         return tomllib.load(handle)
+
+
+def _is_tactic_config_ref(ref: str) -> bool:
+    parsed = urlparse(str(ref))
+    parts = [part for part in parsed.path.split("/") if part]
+    if len(parts) == 3 and parts[1] in _NON_TACTIC_CONFIG_REF_SECTIONS:
+        return False
+    return True
