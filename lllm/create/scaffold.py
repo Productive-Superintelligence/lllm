@@ -373,7 +373,7 @@ def _tutorial(project_slug: str, package_name: str) -> str:
 
 def _slug(value: str) -> str:
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip()).strip(".-")
-    if not slug:
+    if not slug or not re.search(r"[A-Za-z0-9]", slug):
         raise ValueError("Project name must contain at least one letter or number.")
     return slug.lower()
 

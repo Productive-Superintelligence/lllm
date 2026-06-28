@@ -99,6 +99,11 @@ def test_create_refuses_non_empty_project_without_force(tmp_path):
         create_project("plain", "demo", directory=tmp_path)
 
 
+def test_create_rejects_names_without_letters_or_numbers(tmp_path):
+    with pytest.raises(ValueError, match="letter or number"):
+        create_project("plain", "___", directory=tmp_path)
+
+
 def test_cli_create_project(tmp_path, capsys):
     code = main(["create", "plain", "cli-demo", "--directory", str(tmp_path)])
 
