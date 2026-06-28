@@ -360,6 +360,6 @@ def _name_from_url(url: str) -> str:
     parts = [part for part in url.rstrip("/").split("/") if part]
     if not parts:
         return "remote"
-    if parts[-1] in {"run", "stream"} and len(parts) > 1:
+    if parts[-1] in {"run", "stream", "info"} and len(parts) > 1:
         return parts[-2]
     return parts[-1]

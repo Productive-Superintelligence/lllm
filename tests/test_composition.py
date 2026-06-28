@@ -14,7 +14,7 @@ from lllm import (
     TacticRefError,
     TacticResolver,
 )
-from lllm.services import create_tactic_app
+from lllm.services import create_service_app, create_tactic_app
 
 
 REF = "psi://demo/echo/tactics/echo"
@@ -144,6 +144,37 @@ def test_remote_tactic_async_fetches_service_info():
 
     assert info.name == "echo"
     assert "stream" not in info.capabilities
+
+
+def test_remote_tactic_normalizes_direct_info_urls():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert request.url.path == "/tactics/echo/info"
+        return httpx.Response(200, json=EchoTactic().info().model_dump(mode="json"))
+
+    remote = RemoteTactic(
+        "http://testserver/tactics/echo/info",
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert remote.tactic_name == "echo"
+    assert remote.url == "http://testserver/tactics/echo/run"
+    assert remote.stream_url == "http://testserver/tactics/echo/stream"
+    assert remote.info_url == "http://testserver/tactics/echo/info"
+    assert remote.fetch_info().name == "echo"
+
+
+def test_remote_tactic_fetches_multi_tactic_service_info():
+    app = create_service_app({"echo": EchoTactic(), "streamer": StreamTactic()})
+    remote = RemoteTactic(
+        "http://testserver/tactics/echo/run",
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    info = asyncio.run(remote.afetch_info())
+
+    assert info.name == "echo"
+    assert remote.info_url == "http://testserver/tactics/echo/info"
 
 
 def test_remote_tactic_preserves_structured_service_errors():
