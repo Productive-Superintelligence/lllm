@@ -85,6 +85,9 @@ def test_tactic_ref_rejects_non_tactic_refs():
         "psi://demo:bad/echo/tactics/echo",
         "psi://demo/echo:bad/tactics/echo",
         r"psi://demo/echo/tactics/echo\bad",
+        "psi://../echo/tactics/echo",
+        "psi://demo/./tactics/echo",
+        "psi://demo/echo/tactics/..",
     ],
 )
 def test_tactic_ref_rejects_non_resource_url_parts(value):

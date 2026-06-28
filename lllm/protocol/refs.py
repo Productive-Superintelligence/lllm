@@ -38,7 +38,7 @@ class TacticRef:
         if not org or not package or not name:
             raise TacticRefError(f"Tactic ref contains an empty segment: {self.value}")
         for segment in (org, package, name):
-            if any(ch in segment for ch in ":\\"):
+            if segment in {".", ".."} or any(ch in segment for ch in ":\\"):
                 raise TacticRefError(
                     f"Tactic ref contains an invalid segment: {self.value}"
                 )
