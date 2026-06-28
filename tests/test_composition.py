@@ -313,6 +313,62 @@ def test_remote_tactic_sync_streams_sse_events():
     assert list(remote.stream("hello")) == ["hello", "HELLO"]
 
 
+def test_remote_tactic_preserves_raw_json_object_stream_chunks():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/stream"
+        assert request.read()
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            content=b'data: {"kind": "raw", "text": "hello"}\n\n',
+        )
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="streamer",
+        input_type=str,
+        output_type=dict,
+        transport=httpx.MockTransport(handler),
+    )
+
+    assert list(remote.stream("hello")) == [{"kind": "raw", "text": "hello"}]
+
+
+def test_remote_tactic_reports_invalid_sse_event_envelopes():
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/stream"
+        assert await request.aread()
+        return httpx.Response(
+            200,
+            headers={"content-type": "text/event-stream"},
+            content=(
+                b'data: {"kind": "message", "data": "hello", '
+                b'"timestamp": "not-a-number"}\n\n'
+            ),
+        )
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="streamer",
+        input_type=str,
+        output_type=str,
+        async_transport=httpx.MockTransport(handler),
+    )
+
+    async def collect():
+        return [event async for event in remote.aevents("hello")]
+
+    events = asyncio.run(collect())
+
+    assert len(events) == 1
+    assert events[0].kind == "error"
+    assert events[0].data == {"message": "Invalid SSE event envelope."}
+    assert events[0].metadata["payload"]["data"] == "hello"
+    assert events[0].metadata["errors"]
+
+
 def test_resolver_calls_bound_http_tactic():
     app = create_tactic_app(EchoTactic())
     resolver = TacticResolver()

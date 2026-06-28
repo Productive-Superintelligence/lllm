@@ -308,11 +308,28 @@ def _sse_event(data_lines: list[str]) -> TacticEvent:
     except json.JSONDecodeError:
         value = payload
     if isinstance(value, dict):
-        try:
-            return TacticEvent.model_validate(value)
-        except Exception:
-            pass
+        if _is_tactic_event_payload(value):
+            try:
+                return TacticEvent.model_validate(value)
+            except Exception as exc:
+                return TacticEvent.error(
+                    "Invalid SSE event envelope.",
+                    payload=value,
+                    errors=_validation_errors(exc),
+                )
+        return TacticEvent(data=value)
     return TacticEvent(data=value)
+
+
+def _is_tactic_event_payload(value: dict[str, Any]) -> bool:
+    return "kind" in value and "data" in value
+
+
+def _validation_errors(exc: Exception) -> Any:
+    errors = getattr(exc, "errors", None)
+    if callable(errors):
+        return errors()
+    return str(exc)
 
 
 def _sse_data(line: Any) -> str | None:
