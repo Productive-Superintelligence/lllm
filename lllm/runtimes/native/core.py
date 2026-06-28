@@ -437,12 +437,13 @@ class Dialog:
             "owner": self.owner,
             "tree_node": self.tree_node.to_dict(),
             "top_prompt": self.top_prompt.to_dict() if self.top_prompt else None,
+            "children": [child.to_dict() for child in self._children_dialogs],
         }
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Dialog":
         top_prompt_data = data.get("top_prompt")
-        return cls(
+        dialog = cls(
             _messages=[Message.from_dict(message) for message in data.get("messages", [])],
             session_name=data.get("session_name"),
             owner=data.get("owner"),
@@ -451,6 +452,14 @@ class Dialog:
             else None,
             top_prompt=Prompt.from_dict(top_prompt_data) if top_prompt_data else None,
         )
+        assert dialog.tree_node is not None
+        for child_data in data.get("children", []):
+            child = cls.from_dict(child_data)
+            assert child.tree_node is not None
+            child._parent_dialog = dialog
+            dialog.tree_node.add_child(child.tree_node)
+            dialog._children_dialogs.append(child)
+        return dialog
 
 
 _PY_TYPE_TO_JSON: dict[Any, str] = {

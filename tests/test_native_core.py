@@ -64,6 +64,12 @@ def test_dialog_put_prompt_fork_and_roundtrip_lineage():
     assert restored.owner == "agent"
     assert restored.head.content == "You are careful."
     assert restored.tail.content == "hello"
+    assert len(restored.children) == 1
+    restored_child = restored.children[0]
+    assert restored_child.parent is restored
+    assert restored_child.depth == 1
+    assert restored_child.tree_node.parent_id == restored.dialog_id
+    assert restored_child.messages[-1].content == "hello"
 
 
 def test_default_tag_parser_extracts_prompt_outputs():
