@@ -83,6 +83,22 @@ parsed = parser.parse("<answer>Hello</answer>")
 Native prompts can use the same parser objects, and plain Python or Pydantic AI
 wrappers can call them directly around tactic output.
 
+## Proxies
+
+Proxy utilities live at the `Tactic` boundary, so they can wrap any runtime:
+
+```python
+from lllm import InMemoryProxyLog, ProxyTactic
+
+log = InMemoryProxyLog()
+proxy = ProxyTactic(EchoTactic(), sink=log.append)
+assert proxy.run({"text": "hello"}).text == "HELLO"
+```
+
+Use proxy hooks for small call-boundary transforms, observability, or local
+guardrails. Payload capture is opt-in with `capture_inputs` and
+`capture_outputs`.
+
 ## Native Prompt/Dialog Core
 
 The native namespace preserves prompt and dialog primitives without letting them

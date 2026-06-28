@@ -25,6 +25,7 @@ from .parsers import (
     find_md_blocks,
     find_xml_blocks,
 )
+from .proxy import InMemoryProxyLog, ProxyRecord, ProxyTactic, proxy_tactic
 from .runtimes import CallableTactic, NativeTacticAdapter, PydanticAITactic, as_tactic, tactic_as_tool
 from .services import (
     EndpointSpec,
@@ -46,10 +47,13 @@ __all__ = [
     "DefaultTagParser",
     "EndpointSpec",
     "LLLMError",
+    "InMemoryProxyLog",
     "NativeTacticAdapter",
     "ParseError",
     "ProtocolError",
     "PydanticAITactic",
+    "ProxyRecord",
+    "ProxyTactic",
     "RemoteTactic",
     "SchemaError",
     "Tactic",
@@ -70,5 +74,6 @@ __all__ = [
     "endpoint",
     "find_md_blocks",
     "find_xml_blocks",
+    "proxy_tactic",
     "tactic_as_tool",
 ]
