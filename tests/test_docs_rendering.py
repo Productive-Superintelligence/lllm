@@ -33,13 +33,26 @@ def build_docs(tmp_path: Path) -> Path:
 
 def test_docs_render_mermaid_as_diagram_containers(tmp_path):
     site_dir = build_docs(tmp_path)
-    index_html = (site_dir / "index.html").read_text(encoding="utf-8")
+    html_pages = [
+        (path, path.read_text(encoding="utf-8"))
+        for path in sorted(site_dir.rglob("*.html"))
+    ]
+    diagram_pages = [
+        path for path, html in html_pages if 'class="mermaid"' in html
+    ]
+    highlighted_pages = [
+        path
+        for path, html in html_pages
+        if "language-mermaid" in html or "highlight-mermaid" in html
+    ]
 
-    assert 'class="mermaid"' in index_html
-    assert "language-mermaid" not in index_html
-    assert "highlight-mermaid" not in index_html
-    assert "javascripts/mermaid.js" in index_html
-    assert "mermaid.min.js" in index_html
+    assert diagram_pages
+    assert not highlighted_pages
+
+    for path in diagram_pages:
+        html = path.read_text(encoding="utf-8")
+        assert "javascripts/mermaid.js" in html
+        assert "mermaid.min.js" in html
 
 
 def test_docs_keep_light_brand_styles(tmp_path):
