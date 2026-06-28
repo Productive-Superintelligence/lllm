@@ -1,4 +1,5 @@
 import importlib.util
+import re
 from pathlib import Path
 
 from lllm import CallContext
@@ -13,6 +14,20 @@ def load_module(path: Path, name: str):
     assert spec.loader is not None
     spec.loader.exec_module(module)
     return module
+
+
+def test_tutorial_example_paths_exist():
+    docs_dir = ROOT / "docs" / "tutorials"
+    pattern = re.compile(r"`(examples/[^`]+)`")
+
+    missing = []
+    for path in sorted(docs_dir.glob("*.md")):
+        for match in pattern.finditer(path.read_text(encoding="utf-8")):
+            example_path = ROOT / match.group(1)
+            if not example_path.exists():
+                missing.append(f"{path.relative_to(ROOT)} -> {match.group(1)}")
+
+    assert missing == []
 
 
 def test_echo_service_example_builds_tactic():

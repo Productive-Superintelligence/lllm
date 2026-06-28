@@ -3,6 +3,10 @@
 Goal: keep Pydantic AI as the runtime owner while exposing its agent through
 the LLLM `Tactic` boundary.
 
+Executable offline examples live in
+`examples/pydantic_ai_tactic/structured_agent.py` and
+`examples/pydantic_ai_tactic/surrounding_features.py`.
+
 ```python
 from pydantic import BaseModel
 from lllm.runtimes import PydanticAITactic

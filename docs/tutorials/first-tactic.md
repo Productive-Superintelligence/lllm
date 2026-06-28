@@ -2,6 +2,9 @@
 
 Goal: wrap a typed Python class as a tactic and serve it over HTTP.
 
+The same tactic shape is available as an executable example at
+`examples/echo_service/tactics.py`.
+
 Create a tactic:
 
 ```python

@@ -3,6 +3,9 @@
 Goal: use native prompt and dialog primitives without coupling callers to a
 model provider or agent loop.
 
+The same native dialog shape is available as an executable example at
+`examples/native_dialog/demo.py`.
+
 ```python
 from lllm.runtimes.native import Dialog, Prompt, Role
 
