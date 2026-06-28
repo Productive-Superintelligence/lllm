@@ -97,6 +97,12 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
   color: var(--psi-ink);
 }
 
+.md-search__form .md-icon svg,
+.md-header .md-icon svg,
+.md-tabs .md-icon svg {
+  fill: currentcolor;
+}
+
 .md-search__input::placeholder {
   color: rgba(5, 5, 5, 0.55);
 }
@@ -228,8 +234,13 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-typeset .mermaid svg {
   display: inline-block;
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
   height: auto;
   max-width: 100%;
+}
+
+.md-typeset .mermaid svg * {
+  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
 }
 
 @media screen and (max-width: 44.984rem) {

@@ -10,6 +10,7 @@
     window.mermaid.initialize({
       startOnLoad: false,
       theme: "base",
+      fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif",
       securityLevel: "strict",
       flowchart: {
         htmlLabels: true,
@@ -22,7 +23,8 @@
         lineColor: "#050505",
         secondaryColor: "#f7f7f7",
         tertiaryColor: "#ffffff",
-        fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+        fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif",
+        altFontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
       }
     });
     initialized = true;

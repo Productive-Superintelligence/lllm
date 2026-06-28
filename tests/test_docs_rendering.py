@@ -80,6 +80,8 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert ".md-header__button.md-logo" in custom_css
     assert "width: 1.45rem;" in custom_css
+    assert ".md-search__form .md-icon svg" in custom_css
+    assert "fill: currentcolor;" in custom_css
     assert ".md-nav__button.md-logo" in custom_css
     assert ".psi-footer-mark" in custom_css
     assert 'background-image: url("../assets/logo.svg");' in custom_css
@@ -91,6 +93,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "max-width: 100%;" in custom_css
     assert "min-width: 34rem;" in custom_css
     assert 'fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"' in mermaid_js
+    assert 'altFontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"' in mermaid_js
     assert "window.mermaid.startOnLoad = false" in mermaid_js
     assert 'securityLevel: "strict"' in mermaid_js
     assert "flowchart:" in mermaid_js
