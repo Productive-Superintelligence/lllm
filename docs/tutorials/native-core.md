@@ -42,5 +42,27 @@ call = add(FunctionCall(name="add", arguments={"left": 2, "right": 3}))
 assert call.result == 5
 ```
 
+Prompts can also carry small parser objects. The default tag parser extracts
+XML blocks, fenced markdown blocks, and signal tags without depending on a
+model provider:
+
+```python
+from lllm.runtimes.native import DefaultTagParser, Prompt
+
+
+prompt = Prompt(
+    path="agent/parse",
+    prompt="Return <answer>...</answer> and a ```json block.",
+    parser=DefaultTagParser(
+        required_xml_tags=["answer"],
+        required_md_tags=["json"],
+        signal_tags=["DONE"],
+    ),
+)
+
+parsed = prompt.parse("<answer>Hello</answer>\n```json\n{}\n```\n<DONE>")
+assert parsed["signal_tags"]["DONE"] is True
+```
+
 When native objects need to be reused outside this runtime, expose them through
 `NativeTacticAdapter` so remote callers only depend on the `Tactic` protocol.

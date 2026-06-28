@@ -1,4 +1,16 @@
-from lllm.runtimes.native import Dialog, FunctionCall, Prompt, Role, tool
+import pytest
+
+from lllm.runtimes.native import (
+    DefaultTagParser,
+    Dialog,
+    FunctionCall,
+    ParseError,
+    Prompt,
+    Role,
+    find_md_blocks,
+    find_xml_blocks,
+    tool,
+)
 
 
 def test_prompt_renders_extends_and_reports_metadata():
@@ -52,3 +64,38 @@ def test_dialog_put_prompt_fork_and_roundtrip_lineage():
     assert restored.owner == "agent"
     assert restored.head.content == "You are careful."
     assert restored.tail.content == "hello"
+
+
+def test_default_tag_parser_extracts_prompt_outputs():
+    parser = DefaultTagParser(
+        xml_tags=["answer"],
+        md_tags=["json"],
+        signal_tags=["DONE"],
+        required_xml_tags=["answer"],
+        required_md_tags=["json"],
+    )
+    prompt = Prompt(path="parse", prompt="Parse output.", parser=parser)
+    content = """
+<answer>Hello</answer>
+```json
+{"ok": true}
+```
+<DONE>
+""".strip()
+
+    parsed = prompt.parse(content)
+
+    assert parsed["xml_tags"]["answer"] == ["Hello"]
+    assert parsed["md_tags"]["json"] == ['{"ok": true}']
+    assert parsed["signal_tags"]["DONE"] is True
+    assert find_xml_blocks(content, "answer") == ["Hello"]
+    assert find_md_blocks(content, "json") == ['{"ok": true}']
+
+
+def test_default_tag_parser_reports_missing_required_blocks():
+    parser = DefaultTagParser(required_xml_tags=["answer"], required_md_tags=["json"])
+
+    with pytest.raises(ParseError) as exc_info:
+        parser.parse("<answer>Hello</answer>")
+
+    assert "Missing required markdown block" in str(exc_info.value)

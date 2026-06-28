@@ -14,6 +14,8 @@ from ...protocol import CallContext, Tactic
 from .core import (
     APITypes,
     APIType,
+    BaseParser,
+    DefaultTagParser,
     Dialog,
     DialogTreeNode,
     Function,
@@ -22,11 +24,14 @@ from .core import (
     Message,
     Modalities,
     Modality,
+    ParseError,
     Prompt,
     Role,
     Roles,
     StringFormatterRenderer,
     TokenLogprob,
+    find_md_blocks,
+    find_xml_blocks,
     tool,
 )
 
@@ -103,6 +108,8 @@ def _call_native(
 __all__ = [
     "APITypes",
     "APIType",
+    "BaseParser",
+    "DefaultTagParser",
     "Dialog",
     "DialogTreeNode",
     "Function",
@@ -112,10 +119,13 @@ __all__ = [
     "Modalities",
     "Modality",
     "NativeTacticAdapter",
+    "ParseError",
     "Prompt",
     "Role",
     "Roles",
     "StringFormatterRenderer",
     "TokenLogprob",
+    "find_md_blocks",
+    "find_xml_blocks",
     "tool",
 ]
