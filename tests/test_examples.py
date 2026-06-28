@@ -16,12 +16,13 @@ def load_module(path: Path, name: str):
     return module
 
 
-def test_tutorial_example_paths_exist():
-    docs_dir = ROOT / "docs" / "tutorials"
+def test_documented_example_paths_exist():
     pattern = re.compile(r"`(examples/[^`]+)`")
+    text_paths = [ROOT / "README.md"]
+    text_paths.extend((ROOT / "docs").rglob("*.md"))
 
     missing = []
-    for path in sorted(docs_dir.glob("*.md")):
+    for path in sorted(text_paths):
         for match in pattern.finditer(path.read_text(encoding="utf-8")):
             example_path = ROOT / match.group(1)
             if not example_path.exists():
