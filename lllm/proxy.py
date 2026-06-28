@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import inspect
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field
@@ -135,6 +135,62 @@ class ProxyTactic(Tactic[Any, Any]):
             raise
         self._record_success(started_at, context, proxied_input, output)
         return output
+
+    def stream(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> Iterator[Any]:
+        context = context or CallContext()
+        started_at = time.time()
+        proxied_input = input_value
+        chunks: list[Any] = []
+        try:
+            proxied_input = _call_value_hook(self.before, proxied_input, context)
+            for item in self.tactic.stream(proxied_input, context=context, **kwargs):
+                item = _call_value_hook(self.after, item, context)
+                if self.capture_outputs:
+                    chunks.append(item)
+                yield item
+        except Exception as exc:
+            _call_error_hook(self.on_error, exc, context)
+            self._record_failure(started_at, context, proxied_input, exc)
+            raise
+        self._record_success(started_at, context, proxied_input, chunks)
+
+    async def astream(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[Any]:
+        context = context or CallContext()
+        started_at = time.time()
+        proxied_input = input_value
+        chunks: list[Any] = []
+        try:
+            proxied_input = await _acall_value_hook(self.before, proxied_input, context)
+            async for item in self.tactic.astream(proxied_input, context=context, **kwargs):
+                item = await _acall_value_hook(self.after, item, context)
+                if self.capture_outputs:
+                    chunks.append(item)
+                yield item
+        except Exception as exc:
+            await _acall_error_hook(self.on_error, exc, context)
+            self._record_failure(started_at, context, proxied_input, exc)
+            raise
+        self._record_success(started_at, context, proxied_input, chunks)
+
+    def capabilities(self) -> set[str]:
+        supported = {"run", "arun"}
+        if self.tactic.supports("stream"):
+            supported.add("stream")
+        if self.tactic.supports("events"):
+            supported.add("events")
+        return supported
 
     def _record_success(
         self,

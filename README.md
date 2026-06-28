@@ -106,7 +106,8 @@ assert proxy.run({"text": "hello"}).text == "HELLO"
 
 Use proxy hooks for small call-boundary transforms, observability, or local
 guardrails. Payload capture is opt-in with `capture_inputs` and
-`capture_outputs`.
+`capture_outputs`. Proxies mirror wrapped tactic capabilities, including
+streaming, and record captured stream chunks after the stream is consumed.
 
 ## Sandboxes
 

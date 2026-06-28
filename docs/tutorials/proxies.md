@@ -42,3 +42,6 @@ proxy = ProxyTactic(tactic, before=before, after=after)
 Payload capture is opt-in. By default, proxy records include timing, state,
 request ID, tactic names, errors, and metadata without storing inputs or
 outputs.
+
+When the wrapped tactic supports streaming, the proxy mirrors that capability;
+captured outputs are recorded as the consumed stream chunks.

@@ -27,6 +27,19 @@ class EchoTactic(Tactic[EchoInput, EchoOutput]):
         return EchoOutput(text=input_value.text.upper())
 
 
+class StreamTactic(Tactic[str, str]):
+    name = "streamer"
+    input_type = str
+    output_type = str
+
+    def _run(self, input_value, *, context=None):
+        return input_value
+
+    def stream(self, input_value, *, context=None):
+        yield input_value
+        yield input_value.upper()
+
+
 @dataclass(frozen=True)
 class ResponseSnapshot:
     status_code: int
@@ -118,6 +131,57 @@ def test_proxy_tactic_records_failure_and_calls_error_hook():
     assert record.input_value == "nope"
     assert record.error_type == "ValueError"
     assert record.error == "bad nope"
+
+
+def test_proxy_tactic_streams_and_records_chunks():
+    log = InMemoryProxyLog()
+
+    def after(value, context):
+        return f"{value}!"
+
+    proxy = ProxyTactic(
+        StreamTactic(),
+        after=after,
+        sink=log.append,
+        capture_inputs=True,
+        capture_outputs=True,
+    )
+
+    output = list(proxy.stream("hi", context=CallContext(request_id="req-stream")))
+
+    assert output == ["hi!", "HI!"]
+    assert proxy.supports("stream")
+    assert not ProxyTactic(EchoTactic()).supports("stream")
+    assert len(log.records) == 1
+    record = log.records[0]
+    assert record.state == "success"
+    assert record.input_value == "hi"
+    assert record.output_value == ["hi!", "HI!"]
+
+
+def test_proxy_tactic_async_streams_and_records_chunks():
+    log = InMemoryProxyLog()
+
+    async def collect():
+        proxy = ProxyTactic(
+            StreamTactic(),
+            sink=log.append,
+            capture_outputs=True,
+        )
+        return [
+            item
+            async for item in proxy.astream(
+                "go",
+                context=CallContext(request_id="req-astream"),
+            )
+        ]
+
+    output = asyncio.run(collect())
+
+    assert output == ["go", "GO"]
+    assert len(log.records) == 1
+    assert log.records[0].request_id == "req-astream"
+    assert log.records[0].output_value == ["go", "GO"]
 
 
 def test_proxy_tactic_can_be_served_over_fastapi():
