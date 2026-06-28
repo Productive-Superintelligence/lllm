@@ -20,8 +20,12 @@ class CallableTactic(Tactic[Any, Any]):
         fn: Callable[..., Any],
         *,
         name: str | None = None,
+        description: str | None = None,
         input_type: Any = None,
         output_type: Any = None,
+        package_ref: str | None = None,
+        service_ref: str | None = None,
+        examples: list[dict[str, Any]] | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
         self.fn = fn
@@ -33,7 +37,12 @@ class CallableTactic(Tactic[Any, Any]):
         self._is_async = inspect.iscoroutinefunction(fn)
         super().__init__(
             name=name or getattr(fn, "__name__", None) or "callable",
-            description=inspect.getdoc(fn) or "",
+            description=(
+                description if description is not None else inspect.getdoc(fn) or ""
+            ),
+            package_ref=package_ref,
+            service_ref=service_ref,
+            examples=examples,
             metadata=metadata,
         )
 
@@ -75,8 +84,12 @@ def as_tactic(
     fn: Callable[..., Any],
     *,
     name: str | None = None,
+    description: str | None = None,
     input_type: Any = None,
     output_type: Any = None,
+    package_ref: str | None = None,
+    service_ref: str | None = None,
+    examples: list[dict[str, Any]] | None = None,
     metadata: Mapping[str, Any] | None = None,
 ) -> CallableTactic:
     """Return a tactic wrapper for a Python callable."""
@@ -84,8 +97,12 @@ def as_tactic(
     return CallableTactic(
         fn,
         name=name,
+        description=description,
         input_type=input_type,
         output_type=output_type,
+        package_ref=package_ref,
+        service_ref=service_ref,
+        examples=examples,
         metadata=metadata,
     )
 

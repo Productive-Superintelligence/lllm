@@ -7,7 +7,7 @@ adapter only supplies the typed tactic boundary and service-friendly metadata.
 from __future__ import annotations
 
 import inspect
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -33,6 +33,11 @@ class PydanticAITacticConfig(BaseModel):
     run_kwargs: dict[str, Any] = Field(default_factory=dict)
     input_mapper: Callable[[Any], Any] | None = None
     output_mapper: Callable[[Any], Any] | None = None
+    description: str | None = None
+    package_ref: str | None = None
+    service_ref: str | None = None
+    examples: list[dict[str, Any]] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class PydanticAITactic(Tactic[Any, Any]):
@@ -48,6 +53,10 @@ class PydanticAITactic(Tactic[Any, Any]):
         name: str | None = None,
         input_type: Any = None,
         output_type: Any = None,
+        description: str | None = None,
+        package_ref: str | None = None,
+        service_ref: str | None = None,
+        examples: list[dict[str, Any]] | None = None,
         input_mode: InputMode | None = None,
         result_mode: ResultMode | None = None,
         stream_mode: StreamMode | None = None,
@@ -55,7 +64,7 @@ class PydanticAITactic(Tactic[Any, Any]):
         run_kwargs: dict[str, Any] | None = None,
         input_mapper: Callable[[Any], Any] | None = None,
         output_mapper: Callable[[Any], Any] | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: Mapping[str, Any] | None = None,
     ) -> None:
         cfg = (
             config
@@ -76,7 +85,17 @@ class PydanticAITactic(Tactic[Any, Any]):
         self.output_mapper = output_mapper or cfg.output_mapper
         self.input_type = input_type or cfg.input_type or self.input_type
         self.output_type = output_type or cfg.output_type or getattr(agent, "output_type", None)
-        super().__init__(name=name or getattr(agent, "name", None), metadata=metadata)
+        agent_description = description if description is not None else cfg.description
+        if agent_description is None:
+            agent_description = getattr(agent, "description", None) or inspect.getdoc(agent) or ""
+        super().__init__(
+            name=name or getattr(agent, "name", None),
+            description=agent_description,
+            package_ref=package_ref if package_ref is not None else cfg.package_ref,
+            service_ref=service_ref if service_ref is not None else cfg.service_ref,
+            examples=examples if examples is not None else list(cfg.examples),
+            metadata=metadata if metadata is not None else cfg.metadata,
+        )
 
     @classmethod
     def from_agent(cls, agent: Any, **kwargs: Any) -> "PydanticAITactic":

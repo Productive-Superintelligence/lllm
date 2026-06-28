@@ -74,10 +74,16 @@ async def collect(iterator):
 
 def test_pydantic_ai_adapter_maps_result_output_and_context_metadata():
     agent = FakeAgent()
+    example = {"input": "hello", "output": "hello:ok"}
     tactic = PydanticAITactic.from_agent(
         agent,
         input_type=str,
         run_kwargs={"suffix": "ok"},
+        description="Fake package tactic.",
+        package_ref="psi://demo/fake/tactics/fake",
+        service_ref="psi://demo/fake/services/api",
+        examples=[example],
+        metadata={"owner": "tests"},
     )
 
     result = tactic.run(
@@ -95,8 +101,36 @@ def test_pydantic_ai_adapter_maps_result_output_and_context_metadata():
     assert agent.seen_kwargs["metadata"]["lllm_trace_id"] == "trace-1"
     assert agent.seen_kwargs["metadata"]["lllm_service_ref"] == "psi://demo/pkg/services/api"
     assert agent.seen_kwargs["metadata"]["lllm_endpoint"] == "run"
-    assert tactic.info().output_schema == {"type": "string", "title": "FakeOutput"}
+    info = tactic.info()
+    assert info.description == "Fake package tactic."
+    assert info.package_ref == "psi://demo/fake/tactics/fake"
+    assert info.service_ref == "psi://demo/fake/services/api"
+    assert info.examples == [example]
+    assert info.metadata == {"owner": "tests"}
+    assert info.output_schema == {"type": "string", "title": "FakeOutput"}
     assert tactic.capabilities() == {"run", "arun"}
+
+
+def test_pydantic_ai_adapter_accepts_package_metadata_from_config():
+    tactic = PydanticAITactic.from_agent(
+        FakeAgent(),
+        config={
+            "input_type": str,
+            "description": "Configured package tactic.",
+            "package_ref": "psi://demo/configured/tactics/fake",
+            "service_ref": "psi://demo/configured/services/api",
+            "examples": [{"input": "hi", "output": "hi:"}],
+            "metadata": {"source": "config"},
+        },
+    )
+
+    info = tactic.info()
+
+    assert info.description == "Configured package tactic."
+    assert info.package_ref == "psi://demo/configured/tactics/fake"
+    assert info.service_ref == "psi://demo/configured/services/api"
+    assert info.examples == [{"input": "hi", "output": "hi:"}]
+    assert info.metadata == {"source": "config"}
 
 
 def test_pydantic_ai_adapter_supports_async_streams():

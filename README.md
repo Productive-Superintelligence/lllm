@@ -229,3 +229,7 @@ package cards can show domain routes and concrete calls alongside the portable
 `/run` interface. Use `@endpoint.get`, `@endpoint.post`, `@endpoint.put`,
 `@endpoint.patch`, or `@endpoint.delete` to declare typed service routes without
 changing the tactic protocol.
+Runtime adapters such as `as_tactic`, `PydanticAITactic`, and
+`NativeTacticAdapter` accept package refs, service refs, descriptions, examples,
+and metadata so wrapper-created tactics can keep the same package-facing
+contract as subclassed tactics.

@@ -46,8 +46,12 @@ class NativeTacticAdapter(Tactic[Any, Any]):
         native: Any,
         *,
         name: str | None = None,
+        description: str | None = None,
         input_type: Any = None,
         output_type: Any = None,
+        package_ref: str | None = None,
+        service_ref: str | None = None,
+        examples: list[dict[str, Any]] | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self.native = native
@@ -59,7 +63,14 @@ class NativeTacticAdapter(Tactic[Any, Any]):
         self.output_type = output_type or getattr(native, "output_type", None)
         super().__init__(
             name=name or getattr(native, "name", None) or type(native).__name__,
-            description=inspect.getdoc(native) or "",
+            description=(
+                description
+                if description is not None
+                else inspect.getdoc(native) or ""
+            ),
+            package_ref=package_ref,
+            service_ref=service_ref,
+            examples=examples,
             metadata=metadata,
         )
 

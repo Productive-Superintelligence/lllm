@@ -56,7 +56,21 @@ def test_plain_callable_wraps_as_tactic_with_annotations():
         assert context.metadata["caller"] == "test"
         return text.upper()
 
-    tactic = as_tactic(shout)
+    example = {"input": "hello", "output": "HELLO"}
+    tactic = as_tactic(
+        shout,
+        description="Uppercase text.",
+        package_ref="psi://demo/echo/tactics/shout",
+        service_ref="psi://demo/echo/services/api",
+        examples=[example],
+        metadata={"owner": "tests"},
+    )
+    info = tactic.info()
 
-    assert tactic.info().input_schema["type"] == "string"
+    assert info.description == "Uppercase text."
+    assert info.package_ref == "psi://demo/echo/tactics/shout"
+    assert info.service_ref == "psi://demo/echo/services/api"
+    assert info.examples == [example]
+    assert info.metadata == {"owner": "tests"}
+    assert info.input_schema["type"] == "string"
     assert tactic.run("hello", context=CallContext(metadata={"caller": "test"})) == "HELLO"
