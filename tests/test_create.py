@@ -5,6 +5,7 @@ import sys
 import tomllib
 from pathlib import Path
 
+import httpx
 import pytest
 
 from lllm.cli import main
@@ -23,6 +24,7 @@ def test_create_plain_project_builds_runnable_tactic(tmp_path):
     assert (result.path / "tests" / "test_tactic.py").exists()
     assert not (result.path / "psi.toml").exists()
     assert _import_generated_client(result.path, result.package_name)
+    assert _run_generated_client(result.path, result.package_name) == "HELLO"
     assert _run_generated_tactic(result.path, result.package_name) == "HELLO"
 
 
@@ -69,6 +71,8 @@ def test_create_project_metadata_and_docs_match_server_flow(
     client = (result.path / "client.py").read_text()
     assert "RemoteTactic" in client
     assert "http://127.0.0.1:8000/run" in client
+    assert "def build_client(" in client
+    assert "def call(" in client
 
 
 def test_generated_project_pytest_suite_runs(tmp_path):
@@ -121,6 +125,33 @@ def _import_generated_client(project_path, package_name):
     try:
         module = importlib.import_module("client")
         return hasattr(module, "main")
+    finally:
+        sys.path.remove(str(project_path))
+        for name in list(sys.modules):
+            if (
+                name == "client"
+                or name == package_name
+                or name.startswith(f"{package_name}.")
+            ):
+                del sys.modules[name]
+
+
+def _run_generated_client(project_path, package_name):
+    sys.path.insert(0, str(project_path))
+    try:
+        module = importlib.import_module("client")
+
+        def handler(request):
+            assert request.method == "POST"
+            assert request.url.path == "/run"
+            return httpx.Response(200, json={"output": {"text": "HELLO"}})
+
+        result = module.call(
+            "hello",
+            url="http://testserver/run",
+            transport=httpx.MockTransport(handler),
+        )
+        return result.text
     finally:
         sys.path.remove(str(project_path))
         for name in list(sys.modules):

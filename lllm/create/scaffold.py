@@ -181,14 +181,25 @@ def _client(package_name: str) -> str:
         from {package_name}.tactics import EchoInput, EchoOutput
 
 
-        def main():
-            tactic = RemoteTactic(
-                "http://127.0.0.1:8000/run",
+        DEFAULT_URL = "http://127.0.0.1:8000/run"
+
+
+        def build_client(url=DEFAULT_URL, *, transport=None):
+            return RemoteTactic(
+                url,
                 name="echo",
                 input_type=EchoInput,
                 output_type=EchoOutput,
+                transport=transport,
             )
-            result = tactic.run({{"text": "hello"}})
+
+
+        def call(text="hello", *, url=DEFAULT_URL, transport=None):
+            return build_client(url, transport=transport).run({{"text": text}})
+
+
+        def main():
+            result = call()
             print(result.text)
 
 
