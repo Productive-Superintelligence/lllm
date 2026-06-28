@@ -30,20 +30,59 @@
     initialized = true;
   }
 
+  function normalizeDiagramNode(node) {
+    var container = node;
+    var source = node;
+
+    if (node.matches("code")) {
+      source = node;
+      container = node.closest("pre");
+      if (!container) {
+        return null;
+      }
+      container.classList.add("mermaid");
+    } else {
+      source =
+        node.matches("pre") || node.matches("div")
+          ? node.querySelector("code.language-mermaid, code.highlight-mermaid")
+          : null;
+    }
+
+    if (source) {
+      container.textContent = source.textContent;
+    }
+
+    return container;
+  }
+
   function diagramNodes() {
-    return Array.prototype.slice
-      .call(document.querySelectorAll("pre.mermaid, div.mermaid"))
+    var seen = [];
+    var nodes = Array.prototype.slice.call(
+      document.querySelectorAll(
+        ".mermaid, pre code.language-mermaid, pre code.highlight-mermaid"
+      )
+    );
+
+    return nodes
+      .map(normalizeDiagramNode)
       .filter(function (node) {
-        return node.getAttribute("data-processed") !== "true";
+        if (!node || seen.indexOf(node) !== -1) {
+          return false;
+        }
+        seen.push(node);
+        return (
+          node.getAttribute("data-processed") !== "true" &&
+          node.getAttribute("data-mermaid-error") !== "true"
+        );
       });
   }
 
   function renderMermaid(attempt) {
     if (!window.mermaid) {
-      if (attempt < 4) {
+      if (attempt < 30) {
         window.setTimeout(function () {
           renderMermaid(attempt + 1);
-        }, 100);
+        }, 200);
       } else {
         console.warn(
           "Mermaid runtime was not loaded; diagrams will remain as source blocks."
@@ -60,6 +99,10 @@
     }
 
     window.mermaid.run({ nodes: nodes }).catch(function (error) {
+      nodes.forEach(function (node) {
+        node.removeAttribute("data-processed");
+        node.setAttribute("data-mermaid-error", "true");
+      });
       console.error("Mermaid render failed", error);
     });
   }
@@ -75,6 +118,8 @@
   } else {
     document.addEventListener("DOMContentLoaded", scheduleRender);
   }
+
+  window.addEventListener("load", scheduleRender);
 
   initializeMermaid();
   scheduleRender();

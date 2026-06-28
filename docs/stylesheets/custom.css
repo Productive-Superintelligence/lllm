@@ -1,6 +1,8 @@
 :root {
   --md-primary-fg-color: #050505;
   --md-accent-fg-color: #050505;
+  --md-text-font: "Roboto";
+  --md-code-font: "Roboto Mono";
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
@@ -48,15 +50,15 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
   display: block;
-  width: 1.45rem;
-  height: 1.45rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .md-nav__button.md-logo img,
 .md-nav__button.md-logo svg {
   display: block;
-  width: 1.65rem;
-  height: 1.65rem;
+  width: 1.4rem;
+  height: 1.4rem;
 }
 
 .md-header__title {
@@ -162,8 +164,8 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .psi-footer-mark {
   display: inline-block;
-  width: 1.45rem;
-  height: 1.45rem;
+  width: 1.2rem;
+  height: 1.2rem;
   background-image: url("../assets/logo.svg");
   background-position: center;
   background-repeat: no-repeat;
@@ -181,14 +183,14 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 }
 
 .psi-brand {
-  margin: -0.25rem 0 1rem;
+  margin: -0.1rem 0 0.85rem;
 }
 
 .psi-brand img {
   display: block;
   width: auto;
-  height: clamp(2.65rem, 7vw, 3.25rem);
-  max-width: min(13rem, 100%);
+  height: clamp(1.85rem, 5vw, 2.35rem);
+  max-width: min(9.5rem, 100%);
   object-fit: contain;
 }
 
