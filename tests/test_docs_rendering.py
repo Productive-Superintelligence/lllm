@@ -1,6 +1,8 @@
+import re
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import unquote
 
 import pytest
 
@@ -152,3 +154,24 @@ def test_tutorials_keep_step_by_step_shape():
         text = path.read_text(encoding="utf-8")
         for marker in required:
             assert marker in text, f"{path.relative_to(ROOT)} missing {marker}"
+
+
+def test_readme_and_docs_local_links_resolve():
+    pattern = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
+    text_paths = [ROOT / "README.md"]
+    text_paths.extend((ROOT / "docs").rglob("*.md"))
+    skip_prefixes = ("http://", "https://", "mailto:", "#")
+
+    missing = []
+    for path in sorted(text_paths):
+        for match in pattern.finditer(path.read_text(encoding="utf-8")):
+            target = match.group(1).strip()
+            if not target or target.startswith(skip_prefixes) or "://" in target:
+                continue
+            target = target.split("#", 1)[0].split("?", 1)[0]
+            if not target:
+                continue
+            if not (path.parent / unquote(target)).resolve().exists():
+                missing.append(f"{path.relative_to(ROOT)} -> {match.group(1)}")
+
+    assert missing == []
