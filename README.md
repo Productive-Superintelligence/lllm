@@ -195,6 +195,10 @@ resolver = TacticResolver.from_config(".")
 tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 ```
 
+Remote service failures raise `RemoteTacticError` with `status_code`,
+`error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
+fields parsed from the service envelope.
+
 ## Package Metadata Helpers
 
 LLLM does not own `psi.toml`, but it can export tactic metadata for PsiHub:

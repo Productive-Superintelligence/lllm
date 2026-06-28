@@ -9,6 +9,35 @@ from pydantic import BaseModel
 from ..protocol import CallContext, Tactic, TacticServiceError
 
 
+class RemoteTacticError(TacticServiceError):
+    """Raised when a remote tactic service returns a structured error."""
+
+    def __init__(
+        self,
+        status_code: int,
+        *,
+        error_type: str | None = None,
+        message: str | None = None,
+        tactic: str | None = None,
+        endpoint: str | None = None,
+        request_id: str | None = None,
+        detail: Any = None,
+    ) -> None:
+        self.status_code = status_code
+        self.error_type = error_type
+        self.tactic = tactic
+        self.endpoint = endpoint
+        self.request_id = request_id
+        self.detail = detail
+        self.message = message or _detail_message(detail)
+        text = f"Remote tactic returned HTTP {status_code}"
+        if error_type:
+            text += f" ({error_type})"
+        if self.message:
+            text += f": {self.message}"
+        super().__init__(text)
+
+
 class RemoteTactic(Tactic[Any, Any]):
     """Call a tactic through its HTTP `/run` service endpoint."""
 
@@ -89,20 +118,52 @@ def _request_envelope(input_value: Any, context: CallContext | None) -> dict[str
 
 def _response_output(response: Any) -> Any:
     if response.status_code >= 400:
-        raise TacticServiceError(_error_message(response))
+        raise _remote_error(response)
     data = response.json()
     if isinstance(data, dict) and "output" in data:
         return data["output"]
     return data
 
 
-def _error_message(response: Any) -> str:
+def _remote_error(response: Any) -> RemoteTacticError:
     try:
         data = response.json()
     except Exception:
-        return f"Remote tactic returned HTTP {response.status_code}: {response.text}"
-    detail = data.get("detail") if isinstance(data, dict) else data
-    return f"Remote tactic returned HTTP {response.status_code}: {detail}"
+        return RemoteTacticError(
+            response.status_code,
+            message=response.text,
+            detail=response.text,
+        )
+    error = _error_detail(data)
+    return RemoteTacticError(
+        response.status_code,
+        error_type=error.get("type") if isinstance(error, dict) else None,
+        message=error.get("message") if isinstance(error, dict) else None,
+        tactic=error.get("tactic") if isinstance(error, dict) else None,
+        endpoint=error.get("endpoint") if isinstance(error, dict) else None,
+        request_id=error.get("request_id") if isinstance(error, dict) else None,
+        detail=data,
+    )
+
+
+def _error_detail(data: Any) -> Any:
+    if isinstance(data, dict):
+        detail = data.get("detail", data)
+        if isinstance(detail, dict) and "error" in detail:
+            return detail["error"]
+        if "error" in data:
+            return data["error"]
+    return data
+
+
+def _detail_message(detail: Any) -> str | None:
+    if isinstance(detail, str):
+        return detail
+    if isinstance(detail, dict):
+        error = _error_detail(detail)
+        if isinstance(error, dict) and isinstance(error.get("message"), str):
+            return error["message"]
+    return None
 
 
 def _run_url(url: str) -> str:

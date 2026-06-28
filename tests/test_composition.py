@@ -7,6 +7,7 @@ from pydantic import BaseModel
 from lllm import (
     CallContext,
     RemoteTactic,
+    RemoteTacticError,
     Tactic,
     TacticRef,
     TacticRefError,
@@ -36,6 +37,15 @@ class EchoTactic(Tactic[EchoInput, EchoOutput]):
         if context is not None:
             suffix = context.metadata.get("suffix", "")
         return {"text": input_value.text.upper() + suffix}
+
+
+class FailingTactic(Tactic[str, str]):
+    name = "fail"
+    input_type = str
+    output_type = str
+
+    def _run(self, input_value, *, context=None):
+        raise ValueError(f"cannot handle {input_value}")
 
 
 def test_tactic_ref_parses_psi_tactic_refs():
@@ -85,6 +95,32 @@ def test_remote_tactic_calls_fastapi_service():
     )
 
     assert result == EchoOutput(text="HELLO!")
+
+
+def test_remote_tactic_preserves_structured_service_errors():
+    app = create_tactic_app(FailingTactic())
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="fail",
+        input_type=str,
+        output_type=str,
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    with pytest.raises(RemoteTacticError) as exc_info:
+        asyncio.run(
+            remote.arun(
+                "boom",
+                context=CallContext(request_id="req-error"),
+            )
+        )
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.error_type == "ValueError"
+    assert exc_info.value.message == "cannot handle boom"
+    assert exc_info.value.tactic == "fail"
+    assert exc_info.value.endpoint == "run"
+    assert exc_info.value.request_id == "req-error"
 
 
 def test_resolver_calls_bound_http_tactic():

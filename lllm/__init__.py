@@ -38,6 +38,7 @@ from .sandbox import (
 from .services import (
     EndpointSpec,
     RemoteTactic,
+    RemoteTacticError,
     TacticResolver,
     create_service_app,
     create_tactic_app,
@@ -63,6 +64,7 @@ __all__ = [
     "ProxyRecord",
     "ProxyTactic",
     "RemoteTactic",
+    "RemoteTacticError",
     "SandboxError",
     "SandboxLimitError",
     "SandboxPolicy",
