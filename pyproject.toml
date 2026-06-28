@@ -50,3 +50,6 @@ lllm = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = [
+    "live: opt-in tests that contact external provider APIs",
+]

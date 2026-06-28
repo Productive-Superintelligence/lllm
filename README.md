@@ -81,6 +81,16 @@ input/output, streaming, and tool wrapping with an offline fake agent.
 runtime-owned kwargs such as model settings, deps, eval hooks, durable IDs,
 graph/workflow state, and tool approval pass through the wrapper.
 
+Live provider credentials can be smoke-checked without sending prompts:
+
+```bash
+LLLM_LIVE_PROVIDER_TESTS=1 pytest tests/test_live_providers.py
+```
+
+Those opt-in tests list models for OpenAI and Anthropic. Together is included as
+an expected-soft-failure check because some networks return an edge-level
+`403 error code: 1010` before API-key validation.
+
 ## Parsers
 
 Shared parser utilities live outside runtime adapters:
