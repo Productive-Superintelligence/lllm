@@ -18,6 +18,13 @@ from .protocol import (
     TacticUnsupportedError,
 )
 from .create import create_project
+from .parsers import (
+    BaseParser,
+    DefaultTagParser,
+    ParseError,
+    find_md_blocks,
+    find_xml_blocks,
+)
 from .runtimes import CallableTactic, NativeTacticAdapter, PydanticAITactic, as_tactic, tactic_as_tool
 from .services import (
     EndpointSpec,
@@ -35,9 +42,12 @@ __all__ = [
     "CallResult",
     "CallTrace",
     "CallableTactic",
+    "BaseParser",
+    "DefaultTagParser",
     "EndpointSpec",
     "LLLMError",
     "NativeTacticAdapter",
+    "ParseError",
     "ProtocolError",
     "PydanticAITactic",
     "RemoteTactic",
@@ -58,5 +68,7 @@ __all__ = [
     "create_service_app",
     "create_tactic_app",
     "endpoint",
+    "find_md_blocks",
+    "find_xml_blocks",
     "tactic_as_tool",
 ]

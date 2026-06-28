@@ -47,7 +47,8 @@ XML blocks, fenced markdown blocks, and signal tags without depending on a
 model provider:
 
 ```python
-from lllm.runtimes.native import DefaultTagParser, Prompt
+from lllm.parsers import DefaultTagParser
+from lllm.runtimes.native import Prompt
 
 
 prompt = Prompt(

@@ -69,6 +69,20 @@ LLLM forwards request metadata where the agent run method accepts `metadata`.
 `examples/pydantic_ai_tactic/structured_agent.py` shows structured
 input/output, streaming, and tool wrapping with an offline fake agent.
 
+## Parsers
+
+Shared parser utilities live outside runtime adapters:
+
+```python
+from lllm.parsers import DefaultTagParser
+
+parser = DefaultTagParser(required_xml_tags=["answer"])
+parsed = parser.parse("<answer>Hello</answer>")
+```
+
+Native prompts can use the same parser objects, and plain Python or Pydantic AI
+wrappers can call them directly around tactic output.
+
 ## Native Prompt/Dialog Core
 
 The native namespace preserves prompt and dialog primitives without letting them
