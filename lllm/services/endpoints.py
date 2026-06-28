@@ -63,6 +63,60 @@ class endpoint:
             tags=tags,
         )
 
+    @staticmethod
+    def put(
+        path: str,
+        *,
+        name: str | None = None,
+        mode: EndpointMode = "run",
+        description: str = "",
+        tags: Sequence[str] = (),
+    ) -> Callable[[F], F]:
+        return _attach_endpoint(
+            "PUT",
+            path,
+            name=name,
+            mode=mode,
+            description=description,
+            tags=tags,
+        )
+
+    @staticmethod
+    def patch(
+        path: str,
+        *,
+        name: str | None = None,
+        mode: EndpointMode = "run",
+        description: str = "",
+        tags: Sequence[str] = (),
+    ) -> Callable[[F], F]:
+        return _attach_endpoint(
+            "PATCH",
+            path,
+            name=name,
+            mode=mode,
+            description=description,
+            tags=tags,
+        )
+
+    @staticmethod
+    def delete(
+        path: str,
+        *,
+        name: str | None = None,
+        mode: EndpointMode = "run",
+        description: str = "",
+        tags: Sequence[str] = (),
+    ) -> Callable[[F], F]:
+        return _attach_endpoint(
+            "DELETE",
+            path,
+            name=name,
+            mode=mode,
+            description=description,
+            tags=tags,
+        )
+
 
 def custom_endpoints(obj: Any) -> list[tuple[EndpointSpec, Callable[..., Any]]]:
     """Return endpoint metadata declared on a tactic instance."""

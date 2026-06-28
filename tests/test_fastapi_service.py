@@ -29,6 +29,10 @@ class EchoTactic(Tactic[EchoInput, EchoOutput]):
     async def act(self, input_value, *, context=None):
         return {"acted": input_value.text, "endpoint": context.endpoint}
 
+    @endpoint.put("/state")
+    async def update_state(self, input_value, *, context=None):
+        return {"updated": input_value.text, "endpoint": context.endpoint}
+
 
 class StreamTactic(Tactic[str, str]):
     name = "streamer"
@@ -121,9 +125,12 @@ def test_stream_endpoint_returns_sse_events():
 def test_custom_endpoint_metadata_mounts_route():
     app = create_tactic_app(EchoTactic())
     response = request(app, "POST", "/act", json={"input": {"text": "go"}})
+    put_response = request(app, "PUT", "/state", json={"input": {"text": "ready"}})
 
     assert response.status_code == 200
     assert response.json() == {"acted": "go", "endpoint": "act"}
+    assert put_response.status_code == 200
+    assert put_response.json() == {"updated": "ready", "endpoint": "update_state"}
 
 
 def test_error_envelope_is_stable():
@@ -144,7 +151,9 @@ def test_single_tactic_openapi_includes_default_and_custom_routes():
     assert "/stream" in schema["paths"]
     assert "/info" in schema["paths"]
     assert "/act" in schema["paths"]
+    assert "/state" in schema["paths"]
     assert schema["paths"]["/act"]["post"]["summary"] == "Act"
+    assert schema["paths"]["/state"]["put"]["summary"] == "Update State"
 
 
 def test_multi_tactic_openapi_includes_portable_routes():

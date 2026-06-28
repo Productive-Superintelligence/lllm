@@ -24,6 +24,14 @@ class PolicyTactic(Tactic[ActInput, ActOutput]):
     async def act(self, input_value, *, context=None):
         return await self.arun(input_value, context=context)
 
+    @endpoint.patch("/policy", description="Patch policy state.", tags=("policy",))
+    async def patch_policy(self, input_value, *, context=None):
+        return await self.arun(input_value, context=context)
+
+    @endpoint.delete("/policy", tags=("policy",))
+    async def delete_policy(self, input_value, *, context=None):
+        return await self.arun(input_value, context=context)
+
 
 def test_tactic_resource_includes_custom_endpoint_metadata():
     resource = tactic_resource(PolicyTactic())
@@ -37,5 +45,21 @@ def test_tactic_resource_includes_custom_endpoint_metadata():
             "mode": "run",
             "description": "",
             "tags": ["policy"],
-        }
+        },
+        {
+            "name": "delete_policy",
+            "method": "DELETE",
+            "path": "/policy",
+            "mode": "run",
+            "description": "",
+            "tags": ["policy"],
+        },
+        {
+            "name": "patch_policy",
+            "method": "PATCH",
+            "path": "/policy",
+            "mode": "run",
+            "description": "Patch policy state.",
+            "tags": ["policy"],
+        },
     ]
