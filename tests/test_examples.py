@@ -74,3 +74,22 @@ def test_structured_pydantic_ai_example_runs_streams_and_builds_tool():
     tool_output = tool(topic="tactics", audience="runtime users")
 
     assert tool_output.title == "Tactics for runtime users"
+
+
+def test_pydantic_ai_surrounding_features_example_preserves_runtime_ownership():
+    module = load_module(
+        ROOT / "examples" / "pydantic_ai_tactic" / "surrounding_features.py",
+        "surrounding_features",
+    )
+
+    output, agent = module.run_demo()
+
+    assert output["model"] == "fake-provider:small"
+    assert output["trace_id"] == "trace-surrounding"
+    assert output["durable_run_id"] == "durable-1"
+    assert output["graph_node"] == "plan.step"
+    assert agent.seen["instrumented"] is True
+    assert agent.seen["kwargs"]["model_settings"] == {"temperature": 0}
+    assert agent.seen["kwargs"]["deps"] == {"vector_store": "fake"}
+    assert agent.seen["kwargs"]["eval_hook"] == "offline-score"
+    assert agent.seen["kwargs"]["tool_approval"] == "runtime-owned"

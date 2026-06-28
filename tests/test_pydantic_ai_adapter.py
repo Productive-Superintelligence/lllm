@@ -49,6 +49,25 @@ class FakeStreamAgent:
         return AsyncStream([task, kwargs["suffix"]])
 
 
+class FeatureAgent:
+    name = "features"
+    output_type = dict
+
+    def __init__(self):
+        self.seen_kwargs = {}
+
+    def run_sync(self, task, *, metadata=None, **kwargs):
+        self.seen_kwargs = {"metadata": metadata or {}, **kwargs}
+        return Result(
+            {
+                "task": task,
+                "durable_run_id": kwargs.get("durable_run_id"),
+                "graph_node": kwargs.get("graph_node"),
+                "temperature": kwargs.get("model_settings", {}).get("temperature"),
+            }
+        )
+
+
 async def collect(iterator):
     return [item async for item in iterator]
 
@@ -90,6 +109,53 @@ def test_pydantic_ai_adapter_supports_async_streams():
 
     assert tactic.supports("stream")
     assert asyncio.run(collect(tactic.astream("hello"))) == ["hello", "done"]
+
+
+def test_pydantic_ai_adapter_preserves_runtime_owned_kwargs():
+    agent = FeatureAgent()
+    tactic = PydanticAITactic.from_agent(
+        agent,
+        input_type=str,
+        output_type=dict,
+        run_kwargs={
+            "model_settings": {"temperature": 0},
+            "deps": {"db": "fake"},
+            "eval_hook": "offline",
+            "tool_approval": "runtime-owned",
+        },
+    )
+
+    output = tactic.run(
+        "hello",
+        context=CallContext(trace_id="trace-2", metadata={"caller": "test"}),
+        durable_run_id="durable-1",
+        graph_node="workflow.step",
+    )
+
+    assert output == {
+        "task": "hello",
+        "durable_run_id": "durable-1",
+        "graph_node": "workflow.step",
+        "temperature": 0,
+    }
+    assert agent.seen_kwargs["metadata"]["lllm_trace_id"] == "trace-2"
+    assert agent.seen_kwargs["metadata"]["caller"] == "test"
+    assert agent.seen_kwargs["deps"] == {"db": "fake"}
+    assert agent.seen_kwargs["eval_hook"] == "offline"
+    assert agent.seen_kwargs["tool_approval"] == "runtime-owned"
+
+
+def test_pydantic_ai_adapter_does_not_override_user_metadata():
+    agent = FakeAgent()
+    tactic = PydanticAITactic.from_agent(agent, input_type=str)
+
+    tactic.run(
+        "hello",
+        context=CallContext(trace_id="trace-owned", metadata={"caller": "lllm"}),
+        metadata={"runtime": "owned"},
+    )
+
+    assert agent.seen_kwargs["metadata"] == {"runtime": "owned"}
 
 
 def test_tactic_as_tool_is_plain_callable():

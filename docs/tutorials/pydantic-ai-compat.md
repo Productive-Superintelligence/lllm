@@ -38,6 +38,31 @@ result = tactic.run(
 )
 ```
 
+Runtime-owned features stay runtime-owned. Configure model/provider settings,
+instrumentation, eval hooks, durable execution IDs, graph/workflow state, tool
+approval, and dependencies on the agent or pass them as normal run kwargs:
+
+```python
+tactic = PydanticAITactic(
+    agent,
+    input_type=BriefInput,
+    output_type=BriefOutput,
+    run_kwargs={
+        "model_settings": {"temperature": 0},
+        "eval_hook": "offline-score",
+    },
+)
+
+result = tactic.run(
+    {"topic": "refs"},
+    durable_run_id="run-1",
+    graph_node="planner.step",
+)
+```
+
+If you pass `metadata=` yourself, LLLM does not overwrite it with context
+metadata.
+
 Any LLLM tactic can also become a runtime-owned tool:
 
 ```python
@@ -47,6 +72,7 @@ tool = tactic_as_tool(tactic, parameter_mode="kwargs")
 output = tool(topic="refs")
 ```
 
-See `examples/pydantic_ai_tactic/structured_agent.py` for a fully offline fake
-agent that demonstrates structured input/output, streaming, metadata, and tool
-wrapping.
+See `examples/pydantic_ai_tactic/structured_agent.py` and
+`examples/pydantic_ai_tactic/surrounding_features.py` for fully offline fake
+agents that demonstrate structured input/output, streaming, metadata, tool
+wrapping, and runtime-owned surrounding features.

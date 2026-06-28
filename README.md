@@ -68,6 +68,9 @@ tactic = PydanticAITactic(agent, input_type=str, output_type=str)
 LLLM forwards request metadata where the agent run method accepts `metadata`.
 `examples/pydantic_ai_tactic/structured_agent.py` shows structured
 input/output, streaming, and tool wrapping with an offline fake agent.
+`examples/pydantic_ai_tactic/surrounding_features.py` shows that normal
+runtime-owned kwargs such as model settings, deps, eval hooks, durable IDs,
+graph/workflow state, and tool approval pass through the wrapper.
 
 ## Parsers
 
