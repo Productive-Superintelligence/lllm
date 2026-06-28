@@ -1,4 +1,8 @@
 import ast
+import os
+import subprocess
+import sys
+import textwrap
 from pathlib import Path
 
 import pytest
@@ -105,6 +109,14 @@ def test_protocol_layer_has_no_runtime_or_service_imports():
     assert leaks == []
 
 
+def test_top_level_import_does_not_require_optional_runtime_dependencies(tmp_path):
+    _assert_import_while_blocking(
+        tmp_path,
+        "lllm",
+        ("fastapi", "httpx", "pydantic_ai", "uvicorn"),
+    )
+
+
 def _source_imports(tree: ast.AST) -> list[str]:
     modules: list[str] = []
     for node in ast.walk(tree):
@@ -125,3 +137,47 @@ def _resolve_import_from(node: ast.ImportFrom) -> str:
     if node.level == 2:
         return f"lllm.{node.module}" if node.module else "lllm"
     return f"<outside-lllm>.{node.module}" if node.module else "<outside-lllm>"
+
+
+def _assert_import_while_blocking(
+    tmp_path: Path,
+    package: str,
+    optional_modules: tuple[str, ...],
+) -> None:
+    code = textwrap.dedent(
+        f"""
+        import importlib
+        import importlib.abc
+        import sys
+
+        blocked = {optional_modules!r}
+
+        class BlockOptional(importlib.abc.MetaPathFinder):
+            def find_spec(self, fullname, path=None, target=None):
+                if fullname.split(".", 1)[0] in blocked:
+                    raise ModuleNotFoundError(
+                        f"blocked optional dependency: {{fullname}}"
+                    )
+                return None
+
+        sys.meta_path.insert(0, BlockOptional())
+        module = importlib.import_module({package!r})
+        print(module.__version__)
+        """
+    )
+    env = os.environ.copy()
+    env["PYTHONPATH"] = (
+        str(ROOT)
+        if not env.get("PYTHONPATH")
+        else f"{ROOT}{os.pathsep}{env['PYTHONPATH']}"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        cwd=tmp_path,
+        env=env,
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
