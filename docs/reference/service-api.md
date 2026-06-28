@@ -13,11 +13,14 @@ Error envelopes are stable across protocol and runtime failures.
 ```json
 {
   "detail": {
-    "type": "TacticInputError",
-    "message": "Invalid input.",
-    "tactic": "echo",
-    "endpoint": "run",
-    "request_id": "..."
+    "error": {
+      "type": "SchemaError",
+      "message": "Invalid input.",
+      "tactic": "echo",
+      "endpoint": "run",
+      "request_id": "...",
+      "metadata": {}
+    }
   }
 }
 ```

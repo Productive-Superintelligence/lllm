@@ -98,3 +98,15 @@ def test_docs_keep_light_brand_styles(tmp_path):
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert '<img src="assets/lllm-logo-text-dark.png" alt="LLLM" height="56">' in readme
+
+
+def test_service_api_reference_matches_error_envelope():
+    reference = (ROOT / "docs" / "reference" / "service-api.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert '"detail": {' in reference
+    assert '"error": {' in reference
+    assert '"type": "SchemaError"' in reference
+    assert '"metadata": {}' in reference
+    assert '"type": "TacticInputError"' not in reference
