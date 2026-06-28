@@ -8,6 +8,7 @@ copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="ps
 
 theme:
   name: material
+  custom_dir: docs/overrides
   logo: assets/logo.svg
   favicon: assets/logo.svg
   palette:

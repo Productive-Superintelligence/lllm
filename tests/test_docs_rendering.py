@@ -119,6 +119,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "assets/lllm-logo-text-dark.png" in index_html
     assert "psi-footer-mark" in index_html
     assert "<div class=\"md-source__repository\">\n    GitHub\n  </div>" in index_html
+    assert 'data-md-component="source"' not in index_html
     assert 'src="/assets/lllm-logo-text-dark.png"' not in index_html
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
