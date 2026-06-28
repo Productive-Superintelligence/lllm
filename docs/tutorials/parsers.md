@@ -2,6 +2,23 @@
 
 Goal: parse structured model or tactic output without depending on a runtime.
 
+## Prerequisites
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+## Files Used
+
+```text
+lllm/
+  parsers.py
+tests/
+  test_parsers.py
+```
+
+## Parse
+
 ```python
 from lllm.parsers import DefaultTagParser
 
@@ -56,3 +73,18 @@ class ParseAnswerTactic(Tactic[str, dict[str, object]]):
 parsed = ParseAnswerTactic().run("<answer>Hello</answer><DONE>")
 assert parsed["xml_tags"]["answer"] == ["Hello"]
 ```
+
+## Verify
+
+```bash
+python -m pytest tests/test_parsers.py -q
+```
+
+Expected output:
+
+```text
+4 passed
+```
+
+Next, attach the parser to a native prompt or wrap Pydantic AI output before
+returning through a `Tactic`.

@@ -2,6 +2,23 @@
 
 Goal: add small application-level guardrails around tactic calls.
 
+## Prerequisites
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+## Files Used
+
+```text
+lllm/
+  sandbox.py
+tests/
+  test_sandbox.py
+```
+
+## Policy
+
 ```python
 from lllm import SandboxPolicy, SandboxedTactic
 
@@ -30,3 +47,18 @@ deadlines with `asyncio.wait_for`.
 This is not OS-level isolation. Use containers, separate processes, or a real
 security sandbox for untrusted code. The LLLM sandbox wrapper is for reusable
 service guardrails and predictable error types.
+
+## Verify
+
+```bash
+python -m pytest tests/test_sandbox.py -q
+```
+
+Expected output:
+
+```text
+... passed
+```
+
+Next, serve the sandboxed tactic so timeout and limit errors travel through the
+normal service error envelope.

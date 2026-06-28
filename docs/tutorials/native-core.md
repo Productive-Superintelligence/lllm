@@ -3,8 +3,26 @@
 Goal: use native prompt and dialog primitives without coupling callers to a
 model provider or agent loop.
 
+## Prerequisites
+
+```bash
+python -m pip install -e ".[dev]"
+```
+
+## Files Used
+
+```text
+examples/native_dialog/
+  demo.py
+tests/
+  test_native_core.py
+  test_native_adapter.py
+```
+
 The same native dialog shape is available as an executable example at
 `examples/native_dialog/demo.py`.
+
+## Dialog
 
 ```python
 from lllm.runtimes.native import Dialog, Prompt, Role
@@ -30,6 +48,8 @@ assert retry.depth == 1
 assert retry.tree_node.parent_id == dialog.dialog_id
 ```
 
+## Tools
+
 Tools are schema records with optional local Python implementations:
 
 ```python
@@ -44,6 +64,8 @@ def add(left: int, right: int) -> int:
 call = add(FunctionCall(name="add", arguments={"left": 2, "right": 3}))
 assert call.result == 5
 ```
+
+## Parser
 
 Prompts can also carry small parser objects. The default tag parser extracts
 XML blocks, fenced markdown blocks, and signal tags without depending on a
@@ -70,3 +92,18 @@ assert parsed["signal_tags"]["DONE"] is True
 
 When native objects need to be reused outside this runtime, expose them through
 `NativeTacticAdapter` so remote callers only depend on the `Tactic` protocol.
+
+## Verify
+
+```bash
+python -m pytest tests/test_native_core.py tests/test_native_adapter.py -q
+```
+
+Expected output:
+
+```text
+... passed
+```
+
+Next, use `NativeTacticAdapter` when a prompt/dialog workflow needs the normal
+LLLM service or package boundary.
