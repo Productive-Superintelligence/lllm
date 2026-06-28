@@ -62,7 +62,7 @@ extra_css:
   - stylesheets/custom.css
 
 extra_javascript:
-  - https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js
+  - javascripts/vendor/mermaid.min.js
   - javascripts/mermaid.js
 
 markdown_extensions:

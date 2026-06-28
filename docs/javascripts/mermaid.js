@@ -1,5 +1,6 @@
 function renderMermaid() {
   if (!window.mermaid) {
+    console.warn("Mermaid runtime was not loaded; diagrams will remain as source blocks.");
     return;
   }
 
@@ -15,6 +16,7 @@ function renderMermaid() {
   window.mermaid.initialize({
     startOnLoad: false,
     theme: "base",
+    securityLevel: "strict",
     themeVariables: {
       primaryColor: "#ffffff",
       primaryTextColor: "#050505",

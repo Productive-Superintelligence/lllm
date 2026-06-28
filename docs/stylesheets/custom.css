@@ -27,6 +27,22 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
   border-bottom: 1px solid rgba(5, 5, 5, 0.08);
 }
 
+.md-header__button.md-logo {
+  margin: 0.15rem 0.45rem 0.15rem 0;
+  padding: 0.35rem;
+}
+
+.md-header__button.md-logo img,
+.md-header__button.md-logo svg {
+  display: block;
+  width: 1.45rem;
+  height: 1.45rem;
+}
+
+.md-header__title {
+  font-weight: 700;
+}
+
 .md-tabs {
   border-bottom: 1px solid rgba(5, 5, 5, 0.08);
 }
@@ -77,7 +93,8 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 }
 
 .md-footer-meta__inner {
-  min-height: 3rem;
+  align-items: center;
+  min-height: 3.35rem;
 }
 
 .md-footer a,
@@ -105,7 +122,7 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 .psi-footer-brand img {
   display: block;
   width: auto;
-  height: 1.35rem;
+  height: 1.45rem;
 }
 
 .md-typeset h1,
@@ -119,8 +136,10 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .psi-brand img {
   display: block;
-  width: min(10.5rem, 58vw);
+  width: clamp(9rem, 28vw, 11rem);
   height: auto;
+  max-height: 3.5rem;
+  object-fit: contain;
 }
 
 .psi-tiles {
@@ -158,7 +177,15 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 .md-typeset .mermaid {
   background: transparent;
   color: #050505;
+  margin: 1.25rem 0;
+  overflow-x: auto;
   text-align: center;
+}
+
+.md-typeset .mermaid svg {
+  display: inline-block;
+  height: auto;
+  max-width: 100%;
 }
 
 .psi-domain {

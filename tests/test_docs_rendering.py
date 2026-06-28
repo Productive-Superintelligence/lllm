@@ -51,8 +51,15 @@ def test_docs_render_mermaid_as_diagram_containers(tmp_path):
 
     for path in diagram_pages:
         html = path.read_text(encoding="utf-8")
+        assert "javascripts/vendor/mermaid.min.js" in html
         assert "javascripts/mermaid.js" in html
-        assert "mermaid.min.js" in html
+        assert "cdn.jsdelivr" not in html
+        assert "unpkg" not in html
+
+    vendor_js = site_dir / "javascripts" / "vendor" / "mermaid.min.js"
+    vendor_license = site_dir / "javascripts" / "vendor" / "mermaid-LICENSE.txt"
+    assert vendor_js.exists()
+    assert vendor_license.exists()
 
 
 def test_docs_keep_light_brand_styles(tmp_path):
@@ -68,10 +75,15 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-header," in custom_css
     assert ".md-tabs {" in custom_css
     assert "background-color: #ffffff;" in custom_css
+    assert ".md-header__button.md-logo" in custom_css
+    assert "width: 1.45rem;" in custom_css
     assert ".psi-footer-brand img" in custom_css
-    assert "height: 1.35rem;" in custom_css
+    assert "height: 1.45rem;" in custom_css
     assert ".psi-brand img" in custom_css
-    assert "width: min(10.5rem, 58vw);" in custom_css
+    assert "width: clamp(9rem, 28vw, 11rem);" in custom_css
+    assert ".md-typeset .mermaid svg" in custom_css
+    assert "max-width: 100%;" in custom_css
     assert 'fontFamily: "Roboto, sans-serif"' in mermaid_js
+    assert 'securityLevel: "strict"' in mermaid_js
     assert "assets/logo.svg" in index_html
     assert "assets/lllm-logo-text-dark.png" in index_html
