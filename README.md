@@ -224,8 +224,8 @@ from lllm.integrations import tactic_resource
 resource = tactic_resource(EchoTactic())
 ```
 
-Custom endpoint decorators are included in that metadata so package cards can
-show domain routes alongside the portable `/run` interface. Use
-`@endpoint.get`, `@endpoint.post`, `@endpoint.put`, `@endpoint.patch`, or
-`@endpoint.delete` to declare typed service routes without changing the tactic
-protocol.
+Custom endpoint decorators and tactic examples are included in that metadata so
+package cards can show domain routes and concrete calls alongside the portable
+`/run` interface. Use `@endpoint.get`, `@endpoint.post`, `@endpoint.put`,
+`@endpoint.patch`, or `@endpoint.delete` to declare typed service routes without
+changing the tactic protocol.

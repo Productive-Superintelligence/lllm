@@ -36,5 +36,6 @@ def tactic_resource(tactic: Tactic[Any, Any]) -> dict[str, Any]:
         "output_schema": info.output_schema,
         "package_ref": info.package_ref,
         "service_ref": info.service_ref,
+        "examples": list(info.examples),
         "metadata": dict(info.metadata),
     }
