@@ -1,6 +1,8 @@
 import asyncio
 
-from lllm import CallContext
+from pydantic import BaseModel
+
+from lllm import CallContext, Tactic
 from lllm.runtimes import PydanticAITactic, tactic_as_tool
 
 
@@ -96,3 +98,25 @@ def test_tactic_as_tool_is_plain_callable():
 
     assert tool.__name__ == "answer_tool"
     assert tool("hi") == "hi:"
+
+
+class AddInput(BaseModel):
+    left: int
+    right: int
+
+
+class AddTactic(Tactic[AddInput, int]):
+    name = "add numbers"
+    input_type = AddInput
+    output_type = int
+
+    def _run(self, input_value, *, context=None):
+        return input_value.left + input_value.right
+
+
+def test_tactic_as_tool_supports_kwargs_for_pydantic_inputs():
+    tool = tactic_as_tool(AddTactic(), parameter_mode="kwargs")
+
+    assert tool.__name__ == "add_numbers"
+    assert tool(left=2, right=3) == 5
+    assert "left" in tool.__signature__.parameters

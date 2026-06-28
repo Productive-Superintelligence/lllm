@@ -227,13 +227,38 @@ def tactic_as_tool(
     *,
     name: str | None = None,
     description: str | None = None,
-) -> Callable[[Any], Any]:
+    parameter_mode: Literal["task", "kwargs"] = "task",
+) -> Callable[..., Any]:
     """Expose any LLLM tactic as a plain callable for runtime-owned tool APIs."""
 
+    if parameter_mode not in {"task", "kwargs"}:
+        raise ValueError("parameter_mode must be 'task' or 'kwargs'.")
     tool_name = _safe_name(name or tactic.tactic_name)
+    input_schema = getattr(tactic, "input_type", None)
+    output_schema = getattr(tactic, "output_type", None)
 
-    def tool(task: Any) -> Any:
-        return tactic.run(task)
+    if parameter_mode == "kwargs":
+
+        def tool(**kwargs: Any) -> Any:
+            return tactic.run(_kwargs_to_task(input_schema, kwargs))
+
+        if _is_basemodel_type(input_schema):
+            tool.__signature__ = _signature_from_model(input_schema, output_schema)  # type: ignore[attr-defined]
+    else:
+
+        def tool(task: Any) -> Any:
+            return tactic.run(task)
+
+        tool.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
+            parameters=[
+                inspect.Parameter(
+                    "task",
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                    annotation=input_schema or Any,
+                )
+            ],
+            return_annotation=output_schema or Any,
+        )
 
     tool.__name__ = tool_name
     tool.__qualname__ = tool_name
@@ -313,6 +338,34 @@ def _agent_output_json_schema(agent: Any) -> dict[str, Any] | None:
     except Exception:
         return None
     return schema if isinstance(schema, dict) else None
+
+
+def _kwargs_to_task(input_schema: Any, kwargs: dict[str, Any]) -> Any:
+    if _is_basemodel_type(input_schema):
+        return input_schema.model_validate(kwargs)
+    return kwargs
+
+
+def _signature_from_model(model: type[BaseModel], output_schema: Any) -> inspect.Signature:
+    parameters: list[inspect.Parameter] = []
+    for field_name, field in model.model_fields.items():
+        default = inspect.Parameter.empty if field.is_required() else field.default
+        parameters.append(
+            inspect.Parameter(
+                field_name,
+                inspect.Parameter.KEYWORD_ONLY,
+                default=default,
+                annotation=field.annotation or Any,
+            )
+        )
+    return inspect.Signature(
+        parameters=parameters,
+        return_annotation=output_schema or Any,
+    )
+
+
+def _is_basemodel_type(value: Any) -> bool:
+    return isinstance(value, type) and issubclass(value, BaseModel)
 
 
 def _context_metadata(context: CallContext) -> dict[str, Any]:
