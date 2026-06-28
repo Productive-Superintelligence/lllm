@@ -6,7 +6,15 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
-from lllm import CallContext, InMemoryProxyLog, ProxyTactic, Tactic, as_tactic, proxy_tactic
+from lllm import (
+    CallContext,
+    InMemoryProxyLog,
+    ProxyTactic,
+    Tactic,
+    TacticEvent,
+    as_tactic,
+    proxy_tactic,
+)
 from lllm.services import create_tactic_app
 
 
@@ -38,6 +46,19 @@ class StreamTactic(Tactic[str, str]):
     def stream(self, input_value, *, context=None):
         yield input_value
         yield input_value.upper()
+
+
+class EventTactic(Tactic[str, str]):
+    name = "events"
+    input_type = str
+    output_type = str
+
+    def _run(self, input_value, *, context=None):
+        return input_value
+
+    async def aevents(self, input_value, *, context=None):
+        yield TacticEvent(kind="progress", data=input_value)
+        yield TacticEvent.result(input_value.upper())
 
 
 @dataclass(frozen=True)
@@ -182,6 +203,37 @@ def test_proxy_tactic_async_streams_and_records_chunks():
     assert len(log.records) == 1
     assert log.records[0].request_id == "req-astream"
     assert log.records[0].output_value == ["go", "GO"]
+
+
+def test_proxy_tactic_preserves_event_only_tactics():
+    log = InMemoryProxyLog()
+
+    async def collect():
+        proxy = ProxyTactic(
+            EventTactic(),
+            sink=log.append,
+            capture_outputs=True,
+        )
+        assert proxy.supports("events")
+        assert not proxy.supports("stream")
+        return [
+            event
+            async for event in proxy.aevents(
+                "go",
+                context=CallContext(request_id="req-events"),
+            )
+        ]
+
+    events = asyncio.run(collect())
+
+    assert [event.kind for event in events] == ["progress", "result"]
+    assert [event.data for event in events] == ["go", "GO"]
+    assert len(log.records) == 1
+    assert log.records[0].request_id == "req-events"
+    assert [event["kind"] for event in log.records[0].output_value] == [
+        "progress",
+        "result",
+    ]
 
 
 def test_proxy_tactic_can_be_served_over_fastapi():

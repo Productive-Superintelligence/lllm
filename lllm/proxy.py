@@ -9,7 +9,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
-from .protocol import CallContext, Tactic, TacticUnsupportedError
+from .protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
 
 ValueHook = Callable[[Any, CallContext], Any]
 ErrorHook = Callable[[BaseException, CallContext], Any]
@@ -184,6 +184,37 @@ class ProxyTactic(Tactic[Any, Any]):
             raise
         self._record_success(started_at, context, proxied_input, chunks)
 
+    async def aevents(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[TacticEvent]:
+        if not self.tactic.supports("events"):
+            async for event in super().aevents(input_value, context=context, **kwargs):
+                yield event
+            return
+
+        context = context or CallContext()
+        started_at = time.time()
+        proxied_input = input_value
+        events: list[Any] = []
+        try:
+            proxied_input = await _acall_value_hook(self.before, proxied_input, context)
+            async for event in self.tactic.aevents(proxied_input, context=context, **kwargs):
+                event = await _acall_value_hook(self.after, event, context)
+                if not isinstance(event, TacticEvent):
+                    event = TacticEvent(data=event)
+                if self.capture_outputs:
+                    events.append(event)
+                yield event
+        except Exception as exc:
+            await _acall_error_hook(self.on_error, exc, context)
+            self._record_failure(started_at, context, proxied_input, exc)
+            raise
+        self._record_success(started_at, context, proxied_input, events)
+
     def capabilities(self) -> set[str]:
         supported = {"run", "arun"}
         if self.tactic.supports("stream"):
@@ -317,6 +348,10 @@ async def _acall_error_hook(
 def _portable(value: Any) -> Any:
     if isinstance(value, BaseModel):
         return value.model_dump(mode="json")
+    if isinstance(value, (list, tuple)):
+        return [_portable(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _portable(item) for key, item in value.items()}
     return value
 
 
