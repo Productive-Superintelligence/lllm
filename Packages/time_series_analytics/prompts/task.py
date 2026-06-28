@@ -63,13 +63,17 @@ profile = Prompt(
 forecast = Prompt(
     path="forecast",
     prompt=(
-        "Generate a forecast plan and numeric outlook.\n"
+        "Interpret the statistical forecast below. Do NOT recompute or change any numbers.\n"
         "Objective: {objective}\n"
         "Horizon: {horizon}\n"
         "Frequency: {frequency}\n\n"
         "Profiler findings:\n{profile_report}\n\n"
-        "Data sample:\n{series_data}\n\n"
-        "Produce a concise forecast rationale plus horizon-wise estimates."
+        "Forecasting method used: {forecast_method}\n\n"
+        "Model diagnostics:\n{diagnostics}\n\n"
+        "Forecast (computed by the statistical model):\n{statistical_forecast}\n\n"
+        "Anomalies (computed by the statistical detector):\n{detected_anomalies}\n\n"
+        "Explain what this forecast implies, how reliable it is, the assumptions and\n"
+        "failure modes, and how the anomalies relate to it. Numbers are fixed."
     ),
     metadata={"stage": "forecast"},
 )
@@ -77,13 +81,21 @@ forecast = Prompt(
 synthesize = Prompt(
     path="synthesize",
     prompt=(
-        "Create the final time-series analysis output.\n"
+        "Create the final time-series analysis output as JSON matching the schema.\n"
         "Objective: {objective}\n"
         "Horizon: {horizon}\n"
         "Frequency: {frequency}\n\n"
         "Profiler report:\n{profile_report}\n\n"
-        "Forecaster report:\n{forecast_report}\n\n"
-        "Return JSON that matches the required schema."
+        "Forecast interpretation:\n{forecast_report}\n\n"
+        "Forecasting method: {forecast_method}\n"
+        "Model diagnostics:\n{diagnostics}\n\n"
+        "Authoritative forecast points (use these EXACTLY in the 'forecast' field):\n"
+        "{statistical_forecast}\n\n"
+        "Authoritative anomalies (use these EXACTLY in the 'anomalies' field):\n"
+        "{detected_anomalies}\n\n"
+        "Do not alter the forecast numbers or anomaly windows. Write the narrative\n"
+        "fields (summary, key_patterns, data_quality_issues, recommendations,\n"
+        "confidence_note) grounded in the profiler findings and the interpretation."
     ),
     format=TimeSeriesAnalysisResult,
     metadata={"stage": "synthesize"},

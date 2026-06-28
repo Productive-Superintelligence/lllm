@@ -19,20 +19,31 @@ profiler = Prompt(
 forecaster = Prompt(
     path="forecaster",
     prompt=(
-        "You are a forecasting specialist for business and scientific time series.\n"
-        "Use the provided profile notes and data excerpt to build a practical forecast.\n"
-        "State assumptions, expected uncertainty, and potential failure modes.\n"
-        "Do not hallucinate unavailable context."
+        "You are a forecasting analyst who interprets the output of a statistical\n"
+        "forecasting model (Holt-Winters / exponential smoothing with residual-based\n"
+        "prediction intervals) and a robust anomaly detector.\n"
+        "The numeric forecast, prediction intervals, detected anomalies, and model\n"
+        "diagnostics are computed for you and provided as input.\n"
+        "Your job is to EXPLAIN them, not to recompute or change them:\n"
+        "1) describe what the model implies (level, trend, seasonality),\n"
+        "2) judge how reliable the forecast is given the diagnostics and data size,\n"
+        "3) state assumptions and likely failure modes,\n"
+        "4) relate the detected anomalies to the forecast.\n"
+        "Never invent or alter numbers. If the model looks unreliable, say so plainly."
     ),
-    metadata={"role": "forecaster", "domain": "time-series"},
+    metadata={"role": "forecast-interpreter", "domain": "time-series"},
 )
 
 synthesizer = Prompt(
     path="synthesizer",
     prompt=(
         "You are a senior time-series analytics reviewer.\n"
-        "Combine profiler and forecaster outputs into a single actionable report.\n"
-        "Output must follow the required JSON schema exactly."
+        "Combine the profiler findings and the forecast interpretation into a single\n"
+        "actionable report that follows the required JSON schema exactly.\n"
+        "The 'forecast' points and 'anomalies' are produced by a statistical model and\n"
+        "are provided to you; copy them faithfully and never fabricate or modify the\n"
+        "numbers. Focus your effort on the narrative fields: summary, key_patterns,\n"
+        "data_quality_issues, recommendations, and a calibrated confidence_note."
     ),
     metadata={"role": "synthesizer", "domain": "time-series"},
 )

@@ -1,6 +1,8 @@
 base: time_series_analytics:default
 
 global:
-  model_name: gpt-4o
+  # Higher-quality Amazon Bedrock model (cross-region inference profile).
+  # Adjust per account/region; list options with `aws bedrock list-inference-profiles`.
+  model_name: bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0
   model_args:
     temperature: 0.1

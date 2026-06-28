@@ -1,0 +1,16 @@
+# Local virtualenv (also covered by the repo-root .gitignore, explicit here)
+.venv/
+
+# Python caches
+__pycache__/
+*.py[cod]
+
+# Generated demo / analysis outputs
+Test_Resultfiles/
+demo_run_*.csv
+
+# Stray nested output dir created by running the notebook from this folder
+Packages/
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
