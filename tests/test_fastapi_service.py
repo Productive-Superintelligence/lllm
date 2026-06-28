@@ -134,3 +134,24 @@ def test_error_envelope_is_stable():
     detail = response.json()["detail"]["error"]
     assert detail["type"] == "SchemaError"
     assert detail["tactic"] == "echo"
+
+
+def test_single_tactic_openapi_includes_default_and_custom_routes():
+    app = create_tactic_app(EchoTactic())
+    schema = app.openapi()
+
+    assert "/run" in schema["paths"]
+    assert "/stream" in schema["paths"]
+    assert "/info" in schema["paths"]
+    assert "/act" in schema["paths"]
+    assert schema["paths"]["/act"]["post"]["summary"] == "Act"
+
+
+def test_multi_tactic_openapi_includes_portable_routes():
+    app = create_service_app([EchoTactic(), StreamTactic()])
+    schema = app.openapi()
+
+    assert "/tactics" in schema["paths"]
+    assert "/tactics/{name}/info" in schema["paths"]
+    assert "/tactics/{name}/run" in schema["paths"]
+    assert "/tactics/{name}/stream" in schema["paths"]
