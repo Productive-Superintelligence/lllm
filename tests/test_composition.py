@@ -9,6 +9,7 @@ from lllm import (
     RemoteTactic,
     RemoteTacticError,
     Tactic,
+    TacticEvent,
     TacticRef,
     TacticRefError,
     TacticResolver,
@@ -46,6 +47,19 @@ class FailingTactic(Tactic[str, str]):
 
     def _run(self, input_value, *, context=None):
         raise ValueError(f"cannot handle {input_value}")
+
+
+class StreamTactic(Tactic[str, str]):
+    name = "streamer"
+    input_type = str
+    output_type = str
+
+    def _run(self, input_value, *, context=None):
+        return input_value
+
+    def stream(self, input_value, *, context=None):
+        yield input_value
+        yield input_value.upper()
 
 
 def test_tactic_ref_parses_psi_tactic_refs():
@@ -143,6 +157,54 @@ def test_remote_tactic_preserves_protocol_error_status():
     assert exc_info.value.error_type == "SchemaError"
     assert exc_info.value.tactic == "echo"
     assert exc_info.value.request_id == "req-schema"
+
+
+def test_remote_tactic_streams_fastapi_sse_events():
+    app = create_tactic_app(StreamTactic())
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="streamer",
+        input_type=str,
+        output_type=str,
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    async def collect():
+        return [
+            item
+            async for item in remote.astream(
+                "hello",
+                context=CallContext(request_id="req-stream"),
+            )
+        ]
+
+    assert asyncio.run(collect()) == ["hello", "HELLO"]
+
+
+def test_remote_tactic_preserves_stream_events():
+    app = create_tactic_app(StreamTactic())
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="streamer",
+        input_type=str,
+        output_type=str,
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    async def collect():
+        return [
+            event
+            async for event in remote.aevents(
+                "hello",
+                context=CallContext(request_id="req-event-stream"),
+            )
+        ]
+
+    events = asyncio.run(collect())
+
+    assert [event.data for event in events] == ["hello", "HELLO"]
+    assert all(isinstance(event, TacticEvent) for event in events)
+    assert all(event.kind == "message" for event in events)
 
 
 def test_resolver_calls_bound_http_tactic():

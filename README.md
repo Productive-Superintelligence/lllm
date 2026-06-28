@@ -54,6 +54,12 @@ curl -X POST http://127.0.0.1:8000/run \
   -d '{"input":{"text":"hello"}}'
 ```
 
+Remote clients normalize base service URLs into `/run` and `/stream`
+endpoints. `RemoteTactic.arun()` calls the JSON run endpoint, while
+`RemoteTactic.astream()` consumes the service-sent event stream and yields the
+same raw data items as local `Tactic.astream()`. Use
+`RemoteTactic.aevents()` when you need the full `TacticEvent` envelopes.
+
 ## Pydantic AI
 
 Pydantic AI remains the runtime owner. Configure the agent normally, then wrap

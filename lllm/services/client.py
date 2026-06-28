@@ -2,11 +2,13 @@
 
 from __future__ import annotations
 
+import json
+from collections.abc import AsyncIterator, Iterable, Iterator
 from typing import Any
 
 from pydantic import BaseModel
 
-from ..protocol import CallContext, Tactic, TacticServiceError
+from ..protocol import CallContext, Tactic, TacticEvent, TacticServiceError
 
 
 class RemoteTacticError(TacticServiceError):
@@ -39,7 +41,7 @@ class RemoteTacticError(TacticServiceError):
 
 
 class RemoteTactic(Tactic[Any, Any]):
-    """Call a tactic through its HTTP `/run` service endpoint."""
+    """Call a tactic through its HTTP service endpoints."""
 
     runtime_kind = "http"
 
@@ -56,6 +58,7 @@ class RemoteTactic(Tactic[Any, Any]):
         metadata: dict[str, Any] | None = None,
     ) -> None:
         self.url = _run_url(url)
+        self.stream_url = _stream_url(url)
         self.timeout = timeout
         self.transport = transport
         self.async_transport = async_transport
@@ -83,6 +86,66 @@ class RemoteTactic(Tactic[Any, Any]):
         with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
             response = client.post(self.url, json=envelope, **kwargs)
         return _response_output(response)
+
+    def stream(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> Iterator[Any]:
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("Install httpx or lllm[client] to stream remote tactics.") from exc
+
+        envelope = _request_envelope(input_value, context)
+        with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
+            with client.stream("POST", self.stream_url, json=envelope, **kwargs) as response:
+                if response.status_code >= 400:
+                    response.read()
+                    raise _remote_error(response)
+                for event in _iter_sse_events(response.iter_lines()):
+                    yield event.data
+
+    async def astream(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[Any]:
+        async for event in self.aevents(input_value, context=context, **kwargs):
+            yield event.data
+
+    async def aevents(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> AsyncIterator[TacticEvent]:
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError("Install httpx or lllm[client] to stream remote tactics.") from exc
+
+        envelope = _request_envelope(input_value, context)
+        async with httpx.AsyncClient(
+            transport=self.async_transport,
+            timeout=self.timeout,
+        ) as client:
+            async with client.stream(
+                "POST",
+                self.stream_url,
+                json=envelope,
+                **kwargs,
+            ) as response:
+                if response.status_code >= 400:
+                    await response.aread()
+                    raise _remote_error(response)
+                async for event in _aiter_sse_events(response.aiter_lines()):
+                    yield event
 
     async def _arun(
         self,
@@ -166,17 +229,87 @@ def _detail_message(detail: Any) -> str | None:
     return None
 
 
+def _iter_sse_events(lines: Iterable[Any]) -> Iterator[TacticEvent]:
+    buffer: list[str] = []
+    for line in lines:
+        if _sse_line(line) == "":
+            if buffer:
+                yield _sse_event(buffer)
+                buffer = []
+            continue
+        data = _sse_data(line)
+        if data is not None:
+            buffer.append(data)
+    if buffer:
+        yield _sse_event(buffer)
+
+
+async def _aiter_sse_events(lines: AsyncIterator[Any]) -> AsyncIterator[TacticEvent]:
+    buffer: list[str] = []
+    async for line in lines:
+        if _sse_line(line) == "":
+            if buffer:
+                yield _sse_event(buffer)
+                buffer = []
+            continue
+        data = _sse_data(line)
+        if data is not None:
+            buffer.append(data)
+    if buffer:
+        yield _sse_event(buffer)
+
+
+def _sse_event(data_lines: list[str]) -> TacticEvent:
+    payload = "\n".join(data_lines)
+    try:
+        value = json.loads(payload)
+    except json.JSONDecodeError:
+        value = payload
+    if isinstance(value, dict):
+        try:
+            return TacticEvent.model_validate(value)
+        except Exception:
+            pass
+    return TacticEvent(data=value)
+
+
+def _sse_data(line: Any) -> str | None:
+    text = _sse_line(line)
+    if not text.startswith("data:"):
+        return None
+    value = text[5:]
+    if value.startswith(" "):
+        value = value[1:]
+    return value
+
+
+def _sse_line(line: Any) -> str:
+    if isinstance(line, bytes):
+        return line.decode("utf-8")
+    return str(line)
+
+
 def _run_url(url: str) -> str:
+    return _endpoint_url(url, "run")
+
+
+def _stream_url(url: str) -> str:
+    return _endpoint_url(url, "stream")
+
+
+def _endpoint_url(url: str, endpoint: str) -> str:
     value = url.rstrip("/")
-    if value.endswith("/run"):
+    if value.endswith("/run") or value.endswith("/stream"):
+        return f"{value.rsplit('/', 1)[0]}/{endpoint}"
+    if value.endswith(f"/{endpoint}"):
         return value
-    return f"{value}/run"
+    return f"{value}/{endpoint}"
 
 
 def _name_from_url(url: str) -> str:
     parts = [part for part in url.rstrip("/").split("/") if part]
     if not parts:
         return "remote"
-    if parts[-1] == "run" and len(parts) > 1:
+    if parts[-1] in {"run", "stream"} and len(parts) > 1:
         return parts[-2]
     return parts[-1]
