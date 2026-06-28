@@ -12,10 +12,20 @@ from .protocol import (
     TacticEvent,
     TacticInfo,
     TacticLoadError,
+    TacticRef,
+    TacticRefError,
+    TacticServiceError,
     TacticUnsupportedError,
 )
 from .runtimes import CallableTactic, NativeTacticAdapter, PydanticAITactic, as_tactic, tactic_as_tool
-from .services import EndpointSpec, create_service_app, create_tactic_app, endpoint
+from .services import (
+    EndpointSpec,
+    RemoteTactic,
+    TacticResolver,
+    create_service_app,
+    create_tactic_app,
+    endpoint,
+)
 
 __version__ = "0.1.0"
 
@@ -29,12 +39,17 @@ __all__ = [
     "NativeTacticAdapter",
     "ProtocolError",
     "PydanticAITactic",
+    "RemoteTactic",
     "SchemaError",
     "Tactic",
     "TacticError",
     "TacticEvent",
     "TacticInfo",
     "TacticLoadError",
+    "TacticRef",
+    "TacticRefError",
+    "TacticResolver",
+    "TacticServiceError",
     "TacticUnsupportedError",
     "__version__",
     "as_tactic",

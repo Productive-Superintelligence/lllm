@@ -7,9 +7,12 @@ from .errors import (
     SchemaError,
     TacticError,
     TacticLoadError,
+    TacticRefError,
+    TacticServiceError,
     TacticUnsupportedError,
 )
 from .events import TacticEvent
+from .refs import TacticRef
 from .schema import SchemaRef, export_json_schema, type_name, validate_with_schema
 from .tactic import CallResult, CallTrace, Tactic, TacticInfo
 
@@ -26,6 +29,9 @@ __all__ = [
     "TacticEvent",
     "TacticInfo",
     "TacticLoadError",
+    "TacticRef",
+    "TacticRefError",
+    "TacticServiceError",
     "TacticUnsupportedError",
     "export_json_schema",
     "type_name",

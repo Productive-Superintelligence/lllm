@@ -25,3 +25,11 @@ class TacticUnsupportedError(TacticError):
 
 class TacticLoadError(TacticError):
     """Raised when a tactic entrypoint cannot be loaded."""
+
+
+class TacticRefError(TacticError):
+    """Raised when a tactic reference cannot be parsed or resolved."""
+
+
+class TacticServiceError(TacticError):
+    """Raised when a remote tactic service returns an error."""

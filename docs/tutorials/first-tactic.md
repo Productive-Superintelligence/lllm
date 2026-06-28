@@ -53,3 +53,17 @@ Expected response:
   "tactic": "echo"
 }
 ```
+
+Bind a package-style ref to the same local tactic:
+
+```python
+from lllm import TacticResolver
+
+resolver = TacticResolver()
+resolver.register("psi://demo/echo/tactics/echo", EchoTactic())
+
+assert resolver.run("psi://demo/echo/tactics/echo", {"text": "hi"}).text == "HI"
+```
+
+The same ref can later resolve to a service URL from `.psi/config.toml` without
+changing callers.

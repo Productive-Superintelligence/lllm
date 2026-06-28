@@ -74,3 +74,32 @@ LLLM forwards request metadata where the agent run method accepts `metadata`.
   downloads, and config templates.
 - Native runtime ideas live under `lllm.runtimes.native` and do not shape the
   protocol layer.
+
+## Compose Tactics
+
+One tactic can call another directly or through an HTTP service. LLLM keeps this
+as ref resolution, not service launching:
+
+```python
+from lllm import TacticResolver
+
+resolver = TacticResolver()
+resolver.register("psi://demo/echo/tactics/echo", EchoTactic())
+
+result = resolver.run(
+    "psi://demo/echo/tactics/echo",
+    {"text": "hello"},
+)
+```
+
+Local config can bind the same ref to a running service:
+
+```toml
+[refs."psi://demo/echo/tactics/echo"]
+url = "http://127.0.0.1:8000/tactics/echo"
+```
+
+```python
+resolver = TacticResolver.from_config(".")
+tactic = resolver.resolve("psi://demo/echo/tactics/echo")
+```
