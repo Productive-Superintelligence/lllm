@@ -116,3 +116,18 @@ def test_service_api_reference_matches_error_envelope():
     assert '"type": "SchemaError"' in reference
     assert '"metadata": {}' in reference
     assert '"type": "TacticInputError"' not in reference
+
+
+def test_public_text_does_not_use_staging_name():
+    text_paths = [ROOT / "README.md"]
+    text_paths.extend((ROOT / "docs").rglob("*.md"))
+    text_paths.extend(
+        path
+        for path in (ROOT / "examples").rglob("*")
+        if path.suffix in {".md", ".py", ".toml", ".yaml", ".yml"}
+    )
+
+    for path in text_paths:
+        text = path.read_text(encoding="utf-8")
+        assert "LLLM v2" not in text, path
+        assert "lllmv2" not in text, path

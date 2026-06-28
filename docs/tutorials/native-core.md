@@ -15,7 +15,7 @@ task = Prompt(path="agent/task", prompt="Plan the next checkpoint for {project}.
 
 dialog = Dialog(owner="agent")
 dialog.put_prompt(system, prompt_args={"style": "careful"}, role=Role.SYSTEM)
-dialog.put_prompt(task, prompt_args={"project": "LLLM v2"})
+dialog.put_prompt(task, prompt_args={"project": "LLLM"})
 
 retry = dialog.fork(last_n=1, first_k=1)
 ```

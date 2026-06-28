@@ -27,7 +27,7 @@ def build_dialog() -> Dialog:
     )
     dialog.put_prompt(
         TASK_PROMPT,
-        prompt_args={"project": "LLLM v2"},
+        prompt_args={"project": "LLLM"},
         name="operator",
     )
 
