@@ -123,3 +123,16 @@ url = "http://127.0.0.1:8000/tactics/echo"
 resolver = TacticResolver.from_config(".")
 tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 ```
+
+## Package Metadata Helpers
+
+LLLM does not own `psi.toml`, but it can export tactic metadata for PsiHub:
+
+```python
+from lllm.integrations import tactic_resource
+
+resource = tactic_resource(EchoTactic())
+```
+
+Custom endpoint decorators are included in that metadata so package cards can
+show domain routes alongside the portable `/run` interface.

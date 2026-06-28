@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..protocol import Tactic
+from ..services.endpoints import custom_endpoints
 
 
 def tactic_resource(tactic: Tactic[Any, Any]) -> dict[str, Any]:
@@ -20,6 +21,17 @@ def tactic_resource(tactic: Tactic[Any, Any]) -> dict[str, Any]:
         "description": info.description,
         "runtime": info.runtime_kind,
         "capabilities": list(info.capabilities),
+        "endpoints": [
+            {
+                "name": spec.name,
+                "method": spec.method,
+                "path": spec.path,
+                "mode": spec.mode,
+                "description": spec.description,
+                "tags": list(spec.tags),
+            }
+            for spec, _method in custom_endpoints(tactic)
+        ],
         "input_schema": info.input_schema,
         "output_schema": info.output_schema,
         "package_ref": info.package_ref,
