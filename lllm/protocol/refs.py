@@ -22,6 +22,11 @@ class TacticRef:
         parsed = urlparse(self.value)
         if parsed.scheme != "psi":
             raise TacticRefError(f"Tactic ref must use psi:// scheme: {self.value}")
+        if parsed.params or parsed.query or parsed.fragment:
+            raise TacticRefError(
+                "Tactic ref must not include params, query, or fragment: "
+                f"{self.value}"
+            )
         org = parsed.netloc.strip()
         parts = [part for part in parsed.path.split("/") if part]
         if len(parts) != 3:
@@ -32,6 +37,11 @@ class TacticRef:
         package, resource_kind, name = parts
         if not org or not package or not name:
             raise TacticRefError(f"Tactic ref contains an empty segment: {self.value}")
+        for segment in (org, package, name):
+            if any(ch in segment for ch in ":\\"):
+                raise TacticRefError(
+                    f"Tactic ref contains an invalid segment: {self.value}"
+                )
         if resource_kind != "tactics":
             raise TacticRefError(
                 f"Tactic ref must point at /tactics/, got /{resource_kind}/: {self.value}"

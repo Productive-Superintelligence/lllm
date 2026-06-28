@@ -205,6 +205,9 @@ resolver = TacticResolver.from_config(".")
 tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 ```
 
+Tactic refs are strict package resource identifiers:
+`psi://org/package/tactics/name` with no query string or fragment.
+
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
 fields parsed from the service envelope.

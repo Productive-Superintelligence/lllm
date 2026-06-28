@@ -77,6 +77,21 @@ def test_tactic_ref_rejects_non_tactic_refs():
         TacticRef("psi://demo/echo/channels/events")
 
 
+@pytest.mark.parametrize(
+    "value",
+    [
+        "psi://demo/echo/tactics/echo?env=dev",
+        "psi://demo/echo/tactics/echo#fragment",
+        "psi://demo:bad/echo/tactics/echo",
+        "psi://demo/echo:bad/tactics/echo",
+        r"psi://demo/echo/tactics/echo\bad",
+    ],
+)
+def test_tactic_ref_rejects_non_resource_url_parts(value):
+    with pytest.raises(TacticRefError):
+        TacticRef(value)
+
+
 def test_resolver_calls_in_process_tactic():
     resolver = TacticResolver()
     resolver.register(REF, EchoTactic())
