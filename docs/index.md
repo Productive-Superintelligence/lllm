@@ -68,10 +68,10 @@ assert EchoTactic().run({"text": "hello"}).text == "HELLO"
 
 ```mermaid
 flowchart LR
-  A[App or coding agent] --> B[LLLM service]
-  B --> C[Tactic]
-  C --> D[Pydantic AI, native, or Python]
-  C --> E[PsiHub refs and cards]
+  A["App or coding agent"] --> B["LLLM service"]
+  B --> C["Tactic"]
+  C --> D["Pydantic AI / native / Python"]
+  C --> E["PsiHub refs and cards"]
 ```
 
 ## Next

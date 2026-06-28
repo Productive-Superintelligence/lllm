@@ -16,9 +16,9 @@ keeps the service/package boundary stable.
 
 ```mermaid
 flowchart TD
-  T[Tactic protocol] --> P[Pydantic AI adapter]
-  T --> N[Native adapter]
-  T --> C[Callable adapter]
-  P --> R1[Runtime-owned model/tool/eval behavior]
-  N --> R2[Runtime-owned prompt/dialog behavior]
+  T["Tactic protocol"] --> P["Pydantic AI adapter"]
+  T --> N["Native adapter"]
+  T --> C["Callable adapter"]
+  P --> R1["Runtime-owned model/tool/eval behavior"]
+  N --> R2["Runtime-owned prompt/dialog behavior"]
 ```

@@ -114,12 +114,12 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 }
 
 .psi-brand {
-  margin: 0 0 1.25rem;
+  margin: -0.25rem 0 1rem;
 }
 
 .psi-brand img {
   display: block;
-  width: min(16rem, 72vw);
+  width: min(10.5rem, 58vw);
   height: auto;
 }
 
@@ -153,6 +153,12 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
   border-radius: 0.35rem;
   padding: 0.75rem;
   background: var(--md-default-bg-color);
+}
+
+.md-typeset .mermaid {
+  background: transparent;
+  color: #050505;
+  text-align: center;
 }
 
 .psi-domain {
