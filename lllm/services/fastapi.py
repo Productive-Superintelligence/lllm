@@ -1,0 +1,427 @@
+"""FastAPI service adapter for tactics."""
+
+import inspect
+import json
+import re
+from collections.abc import AsyncIterator, Mapping, Sequence
+from typing import Any
+
+from pydantic import BaseModel, Field
+
+from ..protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
+from .endpoints import EndpointSpec, custom_endpoints
+
+
+class RunRequest(BaseModel):
+    """Canonical request envelope for tactic calls."""
+
+    input: Any = None
+    task: Any = None
+    context: dict[str, Any] | None = None
+
+    @property
+    def value(self) -> Any:
+        return self.input if self.input is not None else self.task
+
+
+class RunResponse(BaseModel):
+    """Canonical response envelope for successful tactic calls."""
+
+    output: Any = None
+    request_id: str
+    tactic: str
+
+
+class ErrorDetail(BaseModel):
+    """Stable service error body."""
+
+    type: str
+    message: str
+    tactic: str | None = None
+    endpoint: str | None = None
+    request_id: str | None = None
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class ErrorResponse(BaseModel):
+    error: ErrorDetail
+
+
+def create_tactic_app(
+    tactic: Tactic[Any, Any],
+    *,
+    title: str | None = None,
+    description: str | None = None,
+):
+    """Create a FastAPI app for one tactic."""
+
+    return create_service_app(
+        {tactic.tactic_name: tactic},
+        title=title or tactic.info().name,
+        description=description or tactic.info().description,
+        expose_single_tactic_routes=True,
+    )
+
+
+def create_service_app(
+    tactics: Mapping[str, Tactic[Any, Any]] | Sequence[Tactic[Any, Any]],
+    *,
+    title: str = "LLLM Tactic Service",
+    description: str = "",
+    expose_single_tactic_routes: bool = False,
+):
+    """Create a FastAPI app exposing one or more tactics."""
+
+    try:
+        from fastapi import FastAPI, HTTPException, Request
+        from fastapi.responses import StreamingResponse
+        from fastapi.encoders import jsonable_encoder
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
+
+    tactic_map = _normalize_tactics(tactics)
+    app = FastAPI(title=title, description=description, version="0.1.0")
+    app.state.lllm_tactics = tactic_map
+
+    @app.get("/health")
+    async def health() -> dict[str, Any]:
+        return {"ok": True, "tactics": sorted(tactic_map)}
+
+    @app.get("/tactics")
+    async def list_tactics() -> list[dict[str, Any]]:
+        return [jsonable_encoder(tactic.info()) for tactic in tactic_map.values()]
+
+    @app.get("/tactics/{name}/info")
+    async def tactic_info(name: str) -> dict[str, Any]:
+        tactic = _get_tactic(name, tactic_map)
+        return jsonable_encoder(tactic.info())
+
+    @app.post("/tactics/{name}/run", response_model=RunResponse)
+    async def run_tactic(name: str, request: Request) -> RunResponse:
+        tactic = _get_tactic(name, tactic_map)
+        input_value, context = await _input_and_context_from_request(
+            request,
+            tactic=tactic,
+            endpoint="run",
+        )
+        try:
+            output = await tactic.arun(input_value, context=context)
+        except Exception as exc:
+            raise _http_error(exc, tactic=tactic, endpoint="run", context=context) from exc
+        return RunResponse(
+            output=jsonable_encoder(output),
+            request_id=context.request_id,
+            tactic=tactic.tactic_name,
+        )
+
+    @app.post("/tactics/{name}/stream")
+    async def stream_tactic(name: str, request: Request):
+        tactic = _get_tactic(name, tactic_map)
+        input_value, context = await _input_and_context_from_request(
+            request,
+            tactic=tactic,
+            endpoint="stream",
+        )
+        if not tactic.supports("stream") and not tactic.supports("events"):
+            raise _http_error(
+                TacticUnsupportedError(f"Tactic '{name}' does not support streaming."),
+                tactic=tactic,
+                endpoint="stream",
+                context=context,
+                status_code=400,
+            )
+        try:
+            result = tactic.aevents(input_value, context=context)
+            return StreamingResponse(_event_chunks(result), media_type="text/event-stream")
+        except Exception as exc:
+            raise _http_error(exc, tactic=tactic, endpoint="stream", context=context) from exc
+
+    if len(tactic_map) == 1 and expose_single_tactic_routes:
+        only = next(iter(tactic_map.values()))
+
+        @app.get("/info")
+        async def single_info() -> dict[str, Any]:
+            return jsonable_encoder(only.info())
+
+        @app.post("/run", response_model=RunResponse)
+        async def single_run(request: Request) -> RunResponse:
+            input_value, context = await _input_and_context_from_request(
+                request,
+                tactic=only,
+                endpoint="run",
+            )
+            try:
+                output = await only.arun(input_value, context=context)
+            except Exception as exc:
+                raise _http_error(exc, tactic=only, endpoint="run", context=context) from exc
+            return RunResponse(
+                output=jsonable_encoder(output),
+                request_id=context.request_id,
+                tactic=only.tactic_name,
+            )
+
+        @app.post("/stream")
+        async def single_stream(request: Request):
+            input_value, context = await _input_and_context_from_request(
+                request,
+                tactic=only,
+                endpoint="stream",
+            )
+            if not only.supports("stream") and not only.supports("events"):
+                raise _http_error(
+                    TacticUnsupportedError(
+                        f"Tactic '{only.tactic_name}' does not support streaming."
+                    ),
+                    tactic=only,
+                    endpoint="stream",
+                    context=context,
+                    status_code=400,
+                )
+            result = only.aevents(input_value, context=context)
+            return StreamingResponse(_event_chunks(result), media_type="text/event-stream")
+
+    for tactic in tactic_map.values():
+        _mount_custom_endpoints(app, tactic)
+
+    return app
+
+
+def _mount_custom_endpoints(app: Any, tactic: Tactic[Any, Any]) -> None:
+    try:
+        from fastapi.responses import StreamingResponse
+        from fastapi.encoders import jsonable_encoder
+    except ImportError as exc:  # pragma: no cover
+        raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
+
+    for spec, method in custom_endpoints(tactic):
+        route = _make_custom_route(
+            tactic=tactic,
+            spec=spec,
+            method=method,
+            jsonable_encoder=jsonable_encoder,
+            streaming_response=StreamingResponse,
+        )
+        route.__name__ = _route_name(f"{tactic.tactic_name}_{spec.name}")
+        route.__doc__ = spec.description
+        app.add_api_route(
+            spec.path,
+            route,
+            methods=[spec.method],
+            summary=spec.name.replace("_", " ").title(),
+            description=spec.description,
+            tags=list(spec.tags),
+        )
+
+
+def _make_custom_route(
+    *,
+    tactic: Tactic[Any, Any],
+    spec: EndpointSpec,
+    method: Any,
+    jsonable_encoder: Any,
+    streaming_response: Any,
+):
+    from fastapi import Request
+
+    async def route(request: Request):
+        input_value, context = await _input_and_context_from_request(
+            request,
+            tactic=tactic,
+            endpoint=spec.name,
+        )
+        try:
+            input_value = tactic.validate_input(input_value)
+            if spec.mode in {"stream", "events"}:
+                result = _invoke_custom(method, input_value, context=context)
+                return streaming_response(
+                    _event_chunks(_aiter_custom_result(result)),
+                    media_type="text/event-stream",
+                )
+            result = _invoke_custom(method, input_value, context=context)
+            if inspect.isawaitable(result):
+                result = await result
+            return jsonable_encoder(result)
+        except Exception as exc:
+            raise _http_error(exc, tactic=tactic, endpoint=spec.name, context=context) from exc
+
+    return route
+
+
+def _normalize_tactics(
+    tactics: Mapping[str, Tactic[Any, Any]] | Sequence[Tactic[Any, Any]],
+) -> dict[str, Tactic[Any, Any]]:
+    if isinstance(tactics, Mapping):
+        return {str(name): tactic for name, tactic in tactics.items()}
+    return {tactic.tactic_name: tactic for tactic in tactics}
+
+
+def _get_tactic(name: str, tactics: Mapping[str, Tactic[Any, Any]]) -> Tactic[Any, Any]:
+    try:
+        return tactics[name]
+    except KeyError as exc:
+        from fastapi import HTTPException
+
+        raise HTTPException(
+            status_code=404,
+            detail=ErrorResponse(
+                error=ErrorDetail(
+                    type="TacticNotFound",
+                    message=f"Tactic not found: {name}",
+                    tactic=name,
+                )
+            ).model_dump(mode="json"),
+        ) from exc
+
+
+async def _input_and_context_from_request(
+    request: Any,
+    *,
+    tactic: Tactic[Any, Any],
+    endpoint: str,
+) -> tuple[Any, CallContext]:
+    try:
+        body = await request.json()
+    except Exception:
+        raw = await request.body()
+        body = _body_from_raw(raw, request.headers.get("content-type", ""))
+
+    value = body
+    context_data: Mapping[str, Any] | None = None
+    if isinstance(body, Mapping) and _is_protocol_envelope(body):
+        request_model = RunRequest.model_validate(body)
+        value = request_model.value
+        context_data = request_model.context
+
+    context = _context_from_data(
+        context_data,
+        tactic=tactic,
+        endpoint=endpoint,
+    )
+    return value, context
+
+
+def _body_from_raw(raw: bytes, content_type: str) -> Any:
+    if not raw:
+        return None
+    normalized = content_type.split(";", 1)[0].strip().lower()
+    if normalized.startswith("text/") or normalized in {
+        "application/x-ndjson",
+        "application/octet-stream",
+    }:
+        try:
+            return raw.decode("utf-8")
+        except UnicodeDecodeError:
+            return raw
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw
+
+
+def _is_protocol_envelope(body: Mapping[str, Any]) -> bool:
+    keys = set(body)
+    return bool(keys & {"input", "task"}) and keys <= {"input", "task", "context"}
+
+
+def _context_from_data(
+    context_data: Mapping[str, Any] | None,
+    *,
+    tactic: Tactic[Any, Any],
+    endpoint: str,
+) -> CallContext:
+    data = context_data or {}
+    return CallContext(
+        request_id=str(data.get("request_id") or data.get("call_id") or CallContext().request_id),
+        caller=data.get("caller"),
+        trace_id=data.get("trace_id"),
+        span_id=data.get("span_id"),
+        package_ref=data.get("package_ref"),
+        service_ref=data.get("service_ref"),
+        tactic_ref=data.get("tactic_ref") or tactic.package_ref,
+        endpoint=endpoint,
+        metadata=dict(data.get("metadata") or {}),
+        tags=dict(data.get("tags") or {}),
+    )
+
+
+async def _event_chunks(result: Any):
+    async for item in _aiter_custom_result(result):
+        if isinstance(item, TacticEvent):
+            payload = item.model_dump(mode="json")
+        elif isinstance(item, BaseModel):
+            payload = item.model_dump(mode="json")
+        else:
+            payload = item
+        yield f"data: {json.dumps(payload, default=str)}\n\n"
+
+
+async def _aiter_custom_result(result: Any) -> AsyncIterator[Any]:
+    if inspect.isawaitable(result):
+        result = await result
+    if hasattr(result, "__aenter__"):
+        async with result as stream:
+            async for item in _aiter_custom_result(stream):
+                yield item
+        return
+    if hasattr(result, "__aiter__"):
+        async for item in result:
+            yield item
+        return
+    if _is_iterable(result):
+        for item in result:
+            yield item
+        return
+    yield result
+
+
+def _is_iterable(value: Any) -> bool:
+    if isinstance(value, (str, bytes, bytearray, Mapping, BaseModel)):
+        return False
+    return hasattr(value, "__iter__")
+
+
+def _invoke_custom(method: Any, input_value: Any, *, context: CallContext) -> Any:
+    try:
+        signature = inspect.signature(method)
+    except (TypeError, ValueError):
+        return method(input_value)
+    kwargs: dict[str, Any] = {}
+    if "context" in signature.parameters or any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    ):
+        kwargs["context"] = context
+    return method(input_value, **kwargs)
+
+
+def _http_error(
+    exc: Exception,
+    *,
+    tactic: Tactic[Any, Any],
+    endpoint: str,
+    context: CallContext,
+    status_code: int = 500,
+):
+    from fastapi import HTTPException
+
+    return HTTPException(
+        status_code=status_code,
+        detail=ErrorResponse(
+            error=ErrorDetail(
+                type=type(exc).__name__,
+                message=str(exc),
+                tactic=tactic.tactic_name,
+                endpoint=endpoint,
+                request_id=context.request_id,
+            )
+        ).model_dump(mode="json"),
+    )
+
+
+def _route_name(name: str) -> str:
+    value = re.sub(r"\W+", "_", name).strip("_")
+    if not value:
+        return "lllm_endpoint"
+    if value[0].isdigit():
+        return f"endpoint_{value}"
+    return value

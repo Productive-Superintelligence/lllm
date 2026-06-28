@@ -1,0 +1,45 @@
+"""LLLM: protocol-first service infrastructure for agentic tactics."""
+
+from .protocol import (
+    CallContext,
+    CallResult,
+    CallTrace,
+    LLLMError,
+    ProtocolError,
+    SchemaError,
+    Tactic,
+    TacticError,
+    TacticEvent,
+    TacticInfo,
+    TacticLoadError,
+    TacticUnsupportedError,
+)
+from .runtimes import CallableTactic, NativeTacticAdapter, PydanticAITactic, as_tactic, tactic_as_tool
+from .services import EndpointSpec, create_service_app, create_tactic_app, endpoint
+
+__version__ = "0.1.0"
+
+__all__ = [
+    "CallContext",
+    "CallResult",
+    "CallTrace",
+    "CallableTactic",
+    "EndpointSpec",
+    "LLLMError",
+    "NativeTacticAdapter",
+    "ProtocolError",
+    "PydanticAITactic",
+    "SchemaError",
+    "Tactic",
+    "TacticError",
+    "TacticEvent",
+    "TacticInfo",
+    "TacticLoadError",
+    "TacticUnsupportedError",
+    "__version__",
+    "as_tactic",
+    "create_service_app",
+    "create_tactic_app",
+    "endpoint",
+    "tactic_as_tool",
+]

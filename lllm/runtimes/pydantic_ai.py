@@ -1,0 +1,358 @@
+"""Pydantic AI runtime adapter.
+
+LLLM delegates agent behavior to the user-provided Pydantic AI object. The
+adapter only supplies the typed tactic boundary and service-friendly metadata.
+"""
+
+from __future__ import annotations
+
+import inspect
+from collections.abc import Callable
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field
+
+from ..protocol import CallContext, Tactic, TacticInfo
+
+InputMode = Literal["auto", "json", "dict", "python", "text"]
+ResultMode = Literal["output", "result"]
+StreamMode = Literal["output", "text", "response", "raw"]
+
+
+class PydanticAITacticConfig(BaseModel):
+    """Adapter options. Extra fields are left for application code."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="allow")
+
+    input_mode: InputMode = "auto"
+    result_mode: ResultMode = "output"
+    input_type: Any = None
+    output_type: Any = None
+    stream_mode: StreamMode = "output"
+    include_context_metadata: bool = True
+    run_kwargs: dict[str, Any] = Field(default_factory=dict)
+    input_mapper: Callable[[Any], Any] | None = None
+    output_mapper: Callable[[Any], Any] | None = None
+
+
+class PydanticAITactic(Tactic[Any, Any]):
+    """Expose a Pydantic AI agent as an LLLM tactic."""
+
+    runtime_kind = "pydantic-ai"
+
+    def __init__(
+        self,
+        agent: Any,
+        config: Any = None,
+        *,
+        name: str | None = None,
+        input_type: Any = None,
+        output_type: Any = None,
+        input_mode: InputMode | None = None,
+        result_mode: ResultMode | None = None,
+        stream_mode: StreamMode | None = None,
+        include_context_metadata: bool | None = None,
+        run_kwargs: dict[str, Any] | None = None,
+        input_mapper: Callable[[Any], Any] | None = None,
+        output_mapper: Callable[[Any], Any] | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> None:
+        cfg = (
+            config
+            if isinstance(config, PydanticAITacticConfig)
+            else PydanticAITacticConfig.model_validate(config or {})
+        )
+        self.agent = agent
+        self.input_mode = input_mode or cfg.input_mode
+        self.result_mode = result_mode or cfg.result_mode
+        self.stream_mode = stream_mode or cfg.stream_mode
+        self.include_context_metadata = (
+            cfg.include_context_metadata
+            if include_context_metadata is None
+            else include_context_metadata
+        )
+        self.run_kwargs = dict(cfg.run_kwargs if run_kwargs is None else run_kwargs)
+        self.input_mapper = input_mapper or cfg.input_mapper
+        self.output_mapper = output_mapper or cfg.output_mapper
+        self.input_type = input_type or cfg.input_type or self.input_type
+        self.output_type = output_type or cfg.output_type or getattr(agent, "output_type", None)
+        super().__init__(name=name or getattr(agent, "name", None), metadata=metadata)
+
+    @classmethod
+    def from_agent(cls, agent: Any, **kwargs: Any) -> "PydanticAITactic":
+        return cls(agent, **kwargs)
+
+    def _run(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        method = getattr(self.agent, "run_sync", None)
+        if method is None:
+            raise TypeError("Pydantic AI agent must define run_sync() for sync calls.")
+        task = self._map_input(input_value)
+        result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
+        return self._map_output(result)
+
+    async def _arun(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ) -> Any:
+        method = getattr(self.agent, "run", None)
+        if method is None:
+            return await super()._arun(input_value, context=context, **kwargs)
+        task = self._map_input(input_value)
+        result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
+        if inspect.isawaitable(result):
+            result = await result
+        return self._map_output(result)
+
+    def stream(self, input_value: Any, *, context: CallContext | None = None, **kwargs: Any):
+        method = getattr(self.agent, "run_stream_sync", None)
+        if method is None:
+            return super().stream(input_value, context=context, **kwargs)
+        task = self._map_input(input_value)
+        result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
+        return _iter_stream_result(result, mode=self.stream_mode)
+
+    async def astream(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ):
+        method = getattr(self.agent, "run_stream", None)
+        if method is not None:
+            task = self._map_input(input_value)
+            result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
+            if inspect.isawaitable(result):
+                result = await result
+            async for item in _aiter_stream_result(result, mode=self.stream_mode):
+                yield item
+            return
+        sync_method = getattr(self.agent, "run_stream_sync", None)
+        if sync_method is not None:
+            task = self._map_input(input_value)
+            result = sync_method(
+                task,
+                **self._merged_kwargs(kwargs, context=context, method=sync_method),
+            )
+            async for item in _aiter_stream_result(result, mode=self.stream_mode):
+                yield item
+            return
+        async for item in super().astream(input_value, context=context, **kwargs):
+            yield item
+
+    async def aevents(self, input_value: Any, *, context: CallContext | None = None, **kwargs: Any):
+        method = getattr(self.agent, "run_stream_events", None)
+        if method is None:
+            async for event in super().aevents(input_value, context=context, **kwargs):
+                yield event
+            return
+        task = self._map_input(input_value)
+        result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
+        if inspect.isawaitable(result):
+            result = await result
+        async for item in _aiter_any(result):
+            yield item
+
+    def info(self) -> TacticInfo:
+        info = super().info()
+        output_schema = _agent_output_json_schema(self.agent)
+        if output_schema is not None:
+            info.output_schema = output_schema
+        return info
+
+    def capabilities(self) -> set[str]:
+        supported = {"run", "arun"}
+        if hasattr(self.agent, "run_stream") or hasattr(self.agent, "run_stream_sync"):
+            supported.add("stream")
+        if hasattr(self.agent, "run_stream_events"):
+            supported.add("events")
+        return supported
+
+    def _merged_kwargs(
+        self,
+        kwargs: dict[str, Any],
+        *,
+        context: CallContext | None,
+        method: Callable[..., Any],
+    ) -> dict[str, Any]:
+        merged = dict(self.run_kwargs)
+        merged.update(kwargs)
+        if (
+            self.include_context_metadata
+            and context is not None
+            and "metadata" not in merged
+            and _accepts_keyword(method, "metadata")
+        ):
+            merged["metadata"] = _context_metadata(context)
+        return merged
+
+    def _map_input(self, value: Any) -> Any:
+        if self.input_mapper is not None:
+            return self.input_mapper(value)
+        if isinstance(value, BaseModel):
+            if self.input_mode in {"auto", "json"}:
+                return value.model_dump_json()
+            if self.input_mode == "dict":
+                return value.model_dump(mode="json")
+            if self.input_mode == "python":
+                return value
+            if self.input_mode == "text":
+                return str(value)
+        if self.input_mode == "text":
+            return value if isinstance(value, str) else str(value)
+        return value
+
+    def _map_output(self, result: Any) -> Any:
+        if self.output_mapper is not None:
+            return self.output_mapper(result)
+        if self.result_mode == "result":
+            return result
+        for attr in ("output", "data"):
+            if hasattr(result, attr):
+                return getattr(result, attr)
+        return result
+
+
+def tactic_as_tool(
+    tactic: Tactic[Any, Any],
+    *,
+    name: str | None = None,
+    description: str | None = None,
+) -> Callable[[Any], Any]:
+    """Expose any LLLM tactic as a plain callable for runtime-owned tool APIs."""
+
+    tool_name = _safe_name(name or tactic.tactic_name)
+
+    def tool(task: Any) -> Any:
+        return tactic.run(task)
+
+    tool.__name__ = tool_name
+    tool.__qualname__ = tool_name
+    tool.__doc__ = description or tactic.info().description or f"Run {tactic.tactic_name}."
+    return tool
+
+
+async def _aiter_any(value: Any):
+    if hasattr(value, "__aenter__"):
+        async with value as stream:
+            async for item in _aiter_any(stream):
+                yield item
+        return
+    if hasattr(value, "__aiter__"):
+        async for item in value:
+            yield item
+        return
+    if hasattr(value, "__iter__") and not isinstance(value, (str, bytes, bytearray, dict)):
+        for item in value:
+            yield item
+        return
+    yield value
+
+
+def _iter_stream_result(value: Any, *, mode: StreamMode):
+    if mode == "raw":
+        yield value
+        return
+    stream = _select_stream(value, mode)
+    if stream is not None:
+        yield from stream
+        return
+    if hasattr(value, "__iter__") and not isinstance(value, (str, bytes, bytearray, dict)):
+        yield from value
+        return
+    yield value
+
+
+async def _aiter_stream_result(value: Any, *, mode: StreamMode):
+    if mode == "raw":
+        yield value
+        return
+    if hasattr(value, "__aenter__"):
+        async with value as stream:
+            if stream is value and hasattr(stream, "__aiter__"):
+                async for item in stream:
+                    yield item
+            else:
+                async for item in _aiter_stream_result(stream, mode=mode):
+                    yield item
+        return
+    stream = _select_stream(value, mode)
+    if stream is not None:
+        async for item in _aiter_any(stream):
+            yield item
+        return
+    async for item in _aiter_any(value):
+        yield item
+
+
+def _select_stream(value: Any, mode: StreamMode):
+    if mode == "text" and hasattr(value, "stream_text"):
+        return value.stream_text()
+    if mode == "response" and hasattr(value, "stream_response"):
+        return value.stream_response()
+    if hasattr(value, "stream_output"):
+        return value.stream_output()
+    return None
+
+
+def _agent_output_json_schema(agent: Any) -> dict[str, Any] | None:
+    method = getattr(agent, "output_json_schema", None)
+    if not callable(method):
+        return None
+    try:
+        schema = method()
+    except Exception:
+        return None
+    return schema if isinstance(schema, dict) else None
+
+
+def _context_metadata(context: CallContext) -> dict[str, Any]:
+    metadata = dict(context.metadata)
+    metadata.setdefault("lllm_request_id", context.request_id)
+    if context.trace_id is not None:
+        metadata.setdefault("lllm_trace_id", context.trace_id)
+    if context.span_id is not None:
+        metadata.setdefault("lllm_span_id", context.span_id)
+    if context.package_ref is not None:
+        metadata.setdefault("lllm_package_ref", context.package_ref)
+    if context.service_ref is not None:
+        metadata.setdefault("lllm_service_ref", context.service_ref)
+    if context.tactic_ref is not None:
+        metadata.setdefault("lllm_tactic_ref", context.tactic_ref)
+    if context.endpoint is not None:
+        metadata.setdefault("lllm_endpoint", context.endpoint)
+    if context.tags:
+        metadata.setdefault("lllm_tags", dict(context.tags))
+    return metadata
+
+
+def _accepts_keyword(method: Callable[..., Any], name: str) -> bool:
+    try:
+        signature = inspect.signature(method)
+    except (TypeError, ValueError):
+        return False
+    if name in signature.parameters:
+        return True
+    return any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in signature.parameters.values()
+    )
+
+
+def _safe_name(value: str) -> str:
+    candidate = "".join(ch if ch.isalnum() or ch == "_" else "_" for ch in value)
+    candidate = candidate.strip("_")
+    if not candidate:
+        return "lllm_tool"
+    if candidate[0].isdigit():
+        return f"tool_{candidate}"
+    return candidate
