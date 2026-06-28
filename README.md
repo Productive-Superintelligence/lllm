@@ -99,6 +99,22 @@ Use proxy hooks for small call-boundary transforms, observability, or local
 guardrails. Payload capture is opt-in with `capture_inputs` and
 `capture_outputs`.
 
+## Sandboxes
+
+Sandbox utilities provide application-level guardrails around a tactic:
+
+```python
+from lllm import SandboxPolicy, SandboxedTactic
+
+sandboxed = SandboxedTactic(
+    EchoTactic(),
+    policy=SandboxPolicy(max_input_bytes=4096, timeout_seconds=2.0),
+)
+```
+
+Use them for payload budgets, request-metadata allowlists, and async/service
+deadlines. They are not OS-level isolation for untrusted code.
+
 ## Native Prompt/Dialog Core
 
 The native namespace preserves prompt and dialog primitives without letting them

@@ -27,6 +27,14 @@ from .parsers import (
 )
 from .proxy import InMemoryProxyLog, ProxyRecord, ProxyTactic, proxy_tactic
 from .runtimes import CallableTactic, NativeTacticAdapter, PydanticAITactic, as_tactic, tactic_as_tool
+from .sandbox import (
+    SandboxError,
+    SandboxLimitError,
+    SandboxPolicy,
+    SandboxTimeoutError,
+    SandboxedTactic,
+    sandbox_tactic,
+)
 from .services import (
     EndpointSpec,
     RemoteTactic,
@@ -55,6 +63,11 @@ __all__ = [
     "ProxyRecord",
     "ProxyTactic",
     "RemoteTactic",
+    "SandboxError",
+    "SandboxLimitError",
+    "SandboxPolicy",
+    "SandboxTimeoutError",
+    "SandboxedTactic",
     "SchemaError",
     "Tactic",
     "TacticError",
@@ -75,5 +88,6 @@ __all__ = [
     "find_md_blocks",
     "find_xml_blocks",
     "proxy_tactic",
+    "sandbox_tactic",
     "tactic_as_tool",
 ]
