@@ -59,6 +59,9 @@ endpoints. `RemoteTactic.arun()` calls the JSON run endpoint, while
 `RemoteTactic.astream()` consumes the service-sent event stream and yields the
 same raw data items as local `Tactic.astream()`. Use
 `RemoteTactic.aevents()` when you need the full `TacticEvent` envelopes.
+`RemoteTactic.fetch_info()` and `RemoteTactic.afetch_info()` retrieve the
+service-advertised `TacticInfo` from `/info` without making local `info()` do
+network I/O.
 
 ## Pydantic AI
 

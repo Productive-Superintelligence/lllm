@@ -111,6 +111,41 @@ def test_remote_tactic_calls_fastapi_service():
     assert result == EchoOutput(text="HELLO!")
 
 
+def test_remote_tactic_fetches_service_info():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert request.url.path == "/info"
+        return httpx.Response(
+            200,
+            json=EchoTactic().info().model_dump(mode="json"),
+        )
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        transport=httpx.MockTransport(handler),
+    )
+
+    info = remote.fetch_info()
+
+    assert info.name == "echo"
+    assert info.output_schema is not None
+
+
+def test_remote_tactic_async_fetches_service_info():
+    app = create_tactic_app(EchoTactic())
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    info = asyncio.run(remote.afetch_info())
+
+    assert info.name == "echo"
+    assert "stream" not in info.capabilities
+
+
 def test_remote_tactic_preserves_structured_service_errors():
     app = create_tactic_app(FailingTactic())
     remote = RemoteTactic(

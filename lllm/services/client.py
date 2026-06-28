@@ -8,7 +8,13 @@ from typing import Any
 
 from pydantic import BaseModel
 
-from ..protocol import CallContext, Tactic, TacticEvent, TacticServiceError
+from ..protocol import (
+    CallContext,
+    Tactic,
+    TacticEvent,
+    TacticInfo,
+    TacticServiceError,
+)
 
 
 class RemoteTacticError(TacticServiceError):
@@ -59,6 +65,7 @@ class RemoteTactic(Tactic[Any, Any]):
     ) -> None:
         self.url = _run_url(url)
         self.stream_url = _stream_url(url)
+        self.info_url = _info_url(url)
         self.timeout = timeout
         self.transport = transport
         self.async_transport = async_transport
@@ -69,6 +76,41 @@ class RemoteTactic(Tactic[Any, Any]):
             service_ref=url,
             metadata={"url": self.url, **dict(metadata or {})},
         )
+
+    def fetch_info(self, **kwargs: Any) -> TacticInfo:
+        """Fetch the service-advertised tactic contract."""
+
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError(
+                "Install httpx or lllm[client] to inspect remote tactics."
+            ) from exc
+
+        with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
+            response = client.get(self.info_url, **kwargs)
+        if response.status_code >= 400:
+            raise _remote_error(response)
+        return TacticInfo.model_validate(response.json())
+
+    async def afetch_info(self, **kwargs: Any) -> TacticInfo:
+        """Fetch the service-advertised tactic contract asynchronously."""
+
+        try:
+            import httpx
+        except ImportError as exc:  # pragma: no cover
+            raise RuntimeError(
+                "Install httpx or lllm[client] to inspect remote tactics."
+            ) from exc
+
+        async with httpx.AsyncClient(
+            transport=self.async_transport,
+            timeout=self.timeout,
+        ) as client:
+            response = await client.get(self.info_url, **kwargs)
+        if response.status_code >= 400:
+            raise _remote_error(response)
+        return TacticInfo.model_validate(response.json())
 
     def _run(
         self,
@@ -297,9 +339,17 @@ def _stream_url(url: str) -> str:
     return _endpoint_url(url, "stream")
 
 
+def _info_url(url: str) -> str:
+    return _endpoint_url(url, "info")
+
+
 def _endpoint_url(url: str, endpoint: str) -> str:
     value = url.rstrip("/")
-    if value.endswith("/run") or value.endswith("/stream"):
+    if (
+        value.endswith("/run")
+        or value.endswith("/stream")
+        or value.endswith("/info")
+    ):
         return f"{value.rsplit('/', 1)[0]}/{endpoint}"
     if value.endswith(f"/{endpoint}"):
         return value
