@@ -11,6 +11,24 @@ import inspect
 from typing import Any
 
 from ...protocol import CallContext, Tactic
+from .core import (
+    APITypes,
+    APIType,
+    Dialog,
+    DialogTreeNode,
+    Function,
+    FunctionCall,
+    InvokeCost,
+    Message,
+    Modalities,
+    Modality,
+    Prompt,
+    Role,
+    Roles,
+    StringFormatterRenderer,
+    TokenLogprob,
+    tool,
+)
 
 
 class NativeTacticAdapter(Tactic[Any, Any]):
@@ -80,3 +98,24 @@ def _call_native(
     if context is not None and "context" in signature.parameters:
         call_kwargs.setdefault("context", context)
     return method(input_value, **call_kwargs)
+
+
+__all__ = [
+    "APITypes",
+    "APIType",
+    "Dialog",
+    "DialogTreeNode",
+    "Function",
+    "FunctionCall",
+    "InvokeCost",
+    "Message",
+    "Modalities",
+    "Modality",
+    "NativeTacticAdapter",
+    "Prompt",
+    "Role",
+    "Roles",
+    "StringFormatterRenderer",
+    "TokenLogprob",
+    "tool",
+]

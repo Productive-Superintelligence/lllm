@@ -1,0 +1,711 @@
+"""Small native runtime primitives.
+
+These classes preserve the useful prompt/dialog vocabulary from the original
+native runtime without making the public protocol depend on a particular agent
+engine or model provider.
+"""
+
+from __future__ import annotations
+
+import copy
+import datetime as dt
+import hashlib
+import inspect
+import re
+import string
+import types
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Any, Callable, Optional, Union, get_args, get_origin, get_type_hints
+
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+
+
+class Role(str, Enum):
+    """Message roles used by native dialogs."""
+
+    SYSTEM = "system"
+    ASSISTANT = "assistant"
+    USER = "user"
+    TOOL = "tool"
+    TOOL_CALL = "tool_call"
+
+    @property
+    def msg_value(self) -> str:
+        if self == Role.SYSTEM:
+            return "developer"
+        return self.value
+
+
+Roles = Role
+
+
+class Modality(str, Enum):
+    """Message modality markers."""
+
+    TEXT = "text"
+    IMAGE = "image"
+    AUDIO = "audio"
+    FUNCTION_CALL = "function_call"
+
+
+Modalities = Modality
+
+
+class APIType(str, Enum):
+    """Provider API families a native invoker may record."""
+
+    COMPLETION = "completion"
+    RESPONSE = "response"
+
+
+APITypes = APIType
+
+
+class InvokeCost(BaseModel):
+    """Token and cost accounting for a message or dialog."""
+
+    prompt_tokens: int = 0
+    completion_tokens: int = 0
+    total_tokens: int = 0
+    cached_prompt_tokens: int = 0
+    reasoning_tokens: int = 0
+    audio_prompt_tokens: int = 0
+    audio_completion_tokens: int = 0
+    input_cost_per_token: float = 0.0
+    output_cost_per_token: float = 0.0
+    cache_read_input_token_cost: float = 0.0
+    prompt_cost: float = 0.0
+    completion_cost: float = 0.0
+    cost: float = 0.0
+
+    def __add__(self, other: "InvokeCost") -> "InvokeCost":
+        return InvokeCost(
+            prompt_tokens=self.prompt_tokens + other.prompt_tokens,
+            completion_tokens=self.completion_tokens + other.completion_tokens,
+            total_tokens=self.total_tokens + other.total_tokens,
+            cached_prompt_tokens=self.cached_prompt_tokens + other.cached_prompt_tokens,
+            reasoning_tokens=self.reasoning_tokens + other.reasoning_tokens,
+            audio_prompt_tokens=self.audio_prompt_tokens + other.audio_prompt_tokens,
+            audio_completion_tokens=self.audio_completion_tokens
+            + other.audio_completion_tokens,
+            prompt_cost=self.prompt_cost + other.prompt_cost,
+            completion_cost=self.completion_cost + other.completion_cost,
+            cost=self.cost + other.cost,
+        )
+
+
+class FunctionCall(BaseModel):
+    """One invocation of a native tool, including its result once executed."""
+
+    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
+    name: str
+    arguments: dict[str, Any] = Field(default_factory=dict)
+    result: Any = None
+    result_str: str | None = None
+    error_message: str | None = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @property
+    def success(self) -> bool:
+        return self.error_message is None and self.result_str is not None
+
+    def equals(self, other: "FunctionCall") -> bool:
+        return self.name == other.name and self.arguments == other.arguments
+
+    def is_repeated(self, function_calls: list["FunctionCall"]) -> bool:
+        return any(self.equals(function_call) for function_call in function_calls)
+
+    def __str__(self) -> str:
+        result = f"Calling function: {self.name} with arguments: {self.arguments}\n"
+        if self.success:
+            result += f"Return:\n---\n{self.result_str}\n---\n"
+        if self.error_message:
+            result += f"Error: {self.error_message}\n"
+        return result
+
+
+class TokenLogprob(BaseModel):
+    """Provider logprob data attached to a token."""
+
+    token: str | None = None
+    logprob: float | None = None
+    bytes: list[int] | None = None
+    top_logprobs: list["TokenLogprob"] = Field(default_factory=list)
+
+    model_config = ConfigDict(extra="allow")
+
+
+class Message(BaseModel):
+    """A native dialog message with provider-neutral metadata."""
+
+    role: Role
+    content: str | list[dict[str, Any]]
+    name: str
+    function_calls: list[FunctionCall] = Field(default_factory=list)
+    modality: Modality = Modality.TEXT
+    logprobs: list[TokenLogprob] = Field(default_factory=list)
+    parsed: dict[str, Any] = Field(default_factory=dict)
+    model: str | None = None
+    usage: dict[str, Any] = Field(default_factory=dict)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    api_type: APIType = APIType.COMPLETION
+    vectors: list[float] = Field(default_factory=list)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @property
+    def sanitized_name(self) -> str:
+        return re.sub(r"[^a-zA-Z0-9_-]", "_", self.name)[:64]
+
+    @property
+    def is_function_call(self) -> bool:
+        return bool(self.function_calls)
+
+    @property
+    def cost(self) -> InvokeCost:
+        if not self.usage:
+            return InvokeCost()
+        prompt_tokens = int(self.usage.get("prompt_tokens", 0) or 0)
+        completion_tokens = int(self.usage.get("completion_tokens", 0) or 0)
+        prompt_details = self.usage.get("prompt_tokens_details", {}) or {}
+        completion_details = self.usage.get("completion_tokens_details", {}) or {}
+        return InvokeCost(
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+            total_tokens=int(
+                self.usage.get("total_tokens", prompt_tokens + completion_tokens) or 0
+            ),
+            cached_prompt_tokens=int(prompt_details.get("cached_tokens") or 0),
+            audio_prompt_tokens=int(prompt_details.get("audio_tokens") or 0),
+            reasoning_tokens=int(completion_details.get("reasoning_tokens") or 0),
+            audio_completion_tokens=int(completion_details.get("audio_tokens") or 0),
+            input_cost_per_token=float(self.usage.get("input_cost_per_token", 0.0) or 0.0),
+            output_cost_per_token=float(
+                self.usage.get("output_cost_per_token", 0.0) or 0.0
+            ),
+            cache_read_input_token_cost=float(
+                self.usage.get("cache_read_input_token_cost", 0.0) or 0.0
+            ),
+            prompt_cost=float(self.usage.get("prompt_cost", 0.0) or 0.0),
+            completion_cost=float(self.usage.get("completion_cost", 0.0) or 0.0),
+            cost=float(self.usage.get("response_cost", 0.0) or 0.0),
+        )
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.model_dump(mode="json")
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Message":
+        return cls.model_validate(data)
+
+
+@dataclass
+class DialogTreeNode:
+    """Serializable lineage metadata for a dialog branch."""
+
+    dialog_id: str = field(default_factory=lambda: uuid.uuid4().hex)
+    owner: str | None = None
+    parent_id: str | None = None
+    split_point: int | None = None
+    children_ids: list[str] = field(default_factory=list)
+    last_n: int | None = None
+    first_k: int | None = None
+    _parent: Optional["DialogTreeNode"] = field(default=None, repr=False)
+    _children: list["DialogTreeNode"] = field(default_factory=list, repr=False)
+
+    @property
+    def is_root(self) -> bool:
+        return self.parent_id is None
+
+    @property
+    def depth(self) -> int:
+        depth = 0
+        node = self
+        while node._parent is not None:
+            depth += 1
+            node = node._parent
+        return depth
+
+    def add_child(self, child: "DialogTreeNode") -> None:
+        child._parent = self
+        child.parent_id = self.dialog_id
+        self._children.append(child)
+        if child.dialog_id not in self.children_ids:
+            self.children_ids.append(child.dialog_id)
+
+    def subtree_ids(self) -> list[str]:
+        visited: list[str] = []
+        queue = [self]
+        while queue:
+            node = queue.pop(0)
+            visited.append(node.dialog_id)
+            queue.extend(node._children)
+        return visited
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "dialog_id": self.dialog_id,
+            "owner": self.owner,
+            "parent_id": self.parent_id,
+            "split_point": self.split_point,
+            "children_ids": list(self.children_ids),
+            "last_n": self.last_n,
+            "first_k": self.first_k,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "DialogTreeNode":
+        return cls(
+            dialog_id=data["dialog_id"],
+            owner=data.get("owner"),
+            parent_id=data.get("parent_id"),
+            split_point=data.get("split_point"),
+            children_ids=list(data.get("children_ids", [])),
+            last_n=data.get("last_n"),
+            first_k=data.get("first_k"),
+        )
+
+
+@dataclass
+class Dialog:
+    """Append-only native message history with fork lineage."""
+
+    session_name: str | None = None
+    top_prompt: Optional["Prompt"] = None
+    owner: str | None = None
+    _messages: list[Message] = field(default_factory=list)
+    tree_node: DialogTreeNode | None = None
+    _parent_dialog: Optional["Dialog"] = field(default=None, repr=False)
+    _children_dialogs: list["Dialog"] = field(default_factory=list, repr=False)
+
+    def __post_init__(self) -> None:
+        if self.tree_node is None:
+            self.tree_node = DialogTreeNode(owner=self.owner)
+        if self.session_name is None:
+            timestamp = dt.datetime.now(tz=dt.timezone.utc).strftime("%Y%m%d_%H%M%S")
+            self.session_name = f"{timestamp}_{uuid.uuid4().hex[:6]}"
+
+    @property
+    def dialog_id(self) -> str:
+        assert self.tree_node is not None
+        return self.tree_node.dialog_id
+
+    @property
+    def parent(self) -> Optional["Dialog"]:
+        return self._parent_dialog
+
+    @property
+    def children(self) -> list["Dialog"]:
+        return list(self._children_dialogs)
+
+    @property
+    def is_root(self) -> bool:
+        assert self.tree_node is not None
+        return self.tree_node.is_root
+
+    @property
+    def depth(self) -> int:
+        assert self.tree_node is not None
+        return self.tree_node.depth
+
+    @property
+    def messages(self) -> list[Message]:
+        return list(self._messages)
+
+    @property
+    def head(self) -> Message | None:
+        return self._messages[0] if self._messages else None
+
+    @property
+    def tail(self) -> Message | None:
+        return self._messages[-1] if self._messages else None
+
+    @property
+    def cost(self) -> InvokeCost:
+        total = InvokeCost()
+        for message in self._messages:
+            total += message.cost
+        return total
+
+    def append(self, message: Message) -> None:
+        message.metadata["dialog_id"] = self.dialog_id
+        self._messages.append(message)
+
+    def put_text(
+        self,
+        text: str,
+        *,
+        name: str = "user",
+        role: Role = Role.USER,
+        metadata: dict[str, Any] | None = None,
+    ) -> Message:
+        message = Message(
+            role=role,
+            content=text,
+            name=name,
+            metadata=dict(metadata or {}),
+        )
+        self.append(message)
+        return message
+
+    def put_prompt(
+        self,
+        prompt: "Prompt",
+        *,
+        prompt_args: dict[str, Any] | None = None,
+        name: str = "user",
+        role: Role = Role.USER,
+        metadata: dict[str, Any] | None = None,
+    ) -> Message:
+        content = prompt(**dict(prompt_args or {}))
+        message = Message(
+            role=role,
+            content=content,
+            name=name,
+            metadata=dict(metadata or {}),
+        )
+        self.append(message)
+        self.top_prompt = prompt
+        return message
+
+    def fork(self, *, last_n: int = 0, first_k: int = 1) -> "Dialog":
+        assert self.tree_node is not None
+        if last_n >= len(self._messages):
+            last_n = 0
+        if last_n > 0:
+            tail_start = len(self._messages) - last_n
+            first_k = min(first_k, tail_start) if first_k > 0 else 0
+            messages = self._messages[:first_k] + self._messages[tail_start:]
+        else:
+            messages = self._messages
+        child_node = DialogTreeNode(
+            owner=self.owner,
+            split_point=len(messages),
+            last_n=last_n,
+            first_k=first_k,
+        )
+        child = Dialog(
+            session_name=self.session_name,
+            top_prompt=self.top_prompt,
+            owner=self.owner,
+            _messages=[copy.deepcopy(message) for message in messages],
+            tree_node=child_node,
+        )
+        self.tree_node.add_child(child_node)
+        child._parent_dialog = self
+        self._children_dialogs.append(child)
+        return child
+
+    def overview(self, *, max_length: int = 100, remove_tail: bool = False) -> str:
+        messages = self._messages[:-1] if remove_tail else self._messages
+        rows = []
+        for index, message in enumerate(messages):
+            content = str(message.content)
+            preview = content[:max_length] + "..." if len(content) > max_length else content
+            rows.append(f"[{index}. {message.name} ({message.role.msg_value})]: {preview}")
+        return "\n\n".join(rows)
+
+    def tree_overview(self, *, indent: int = 0) -> str:
+        assert self.tree_node is not None
+        prefix = "  " * indent
+        branch = "+- " if indent > 0 else ""
+        line = (
+            f"{prefix}{branch}[{self.dialog_id[:8]}] owner={self.owner} "
+            f"msgs={len(self._messages)} split@{self.tree_node.split_point}"
+        )
+        lines = [line]
+        for child in self._children_dialogs:
+            lines.append(child.tree_overview(indent=indent + 1))
+        return "\n".join(lines)
+
+    def to_dict(self) -> dict[str, Any]:
+        assert self.tree_node is not None
+        return {
+            "messages": [message.to_dict() for message in self._messages],
+            "session_name": self.session_name,
+            "owner": self.owner,
+            "tree_node": self.tree_node.to_dict(),
+            "top_prompt": self.top_prompt.to_dict() if self.top_prompt else None,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Dialog":
+        top_prompt_data = data.get("top_prompt")
+        return cls(
+            _messages=[Message.from_dict(message) for message in data.get("messages", [])],
+            session_name=data.get("session_name"),
+            owner=data.get("owner"),
+            tree_node=DialogTreeNode.from_dict(data["tree_node"])
+            if data.get("tree_node")
+            else None,
+            top_prompt=Prompt.from_dict(top_prompt_data) if top_prompt_data else None,
+        )
+
+
+_PY_TYPE_TO_JSON: dict[Any, str] = {
+    str: "string",
+    int: "integer",
+    float: "number",
+    bool: "boolean",
+    list: "array",
+    dict: "object",
+}
+
+
+def _default_function_call_processor(result: Any, function_call: FunctionCall) -> str:
+    return (
+        f"Return of calling function {function_call.name} "
+        f"with arguments {function_call.arguments}:\n---\n{result}\n---\n"
+    )
+
+
+def _json_type_for_annotation(annotation: Any) -> str:
+    origin = get_origin(annotation)
+    if origin in (Union, types.UnionType):
+        args = [arg for arg in get_args(annotation) if arg is not type(None)]
+        return _json_type_for_annotation(args[0]) if args else "string"
+    if origin is not None:
+        return _PY_TYPE_TO_JSON.get(origin, "string")
+    return _PY_TYPE_TO_JSON.get(annotation, "string")
+
+
+class Function(BaseModel):
+    """Declarative native tool schema with an optional Python implementation."""
+
+    name: str
+    description: str
+    properties: dict[str, Any]
+    required: list[str] = Field(default_factory=list)
+    additional_properties: bool = False
+    strict: bool = True
+    function: Callable[..., Any] | None = None
+    processor: Callable[[Any, FunctionCall], str] = _default_function_call_processor
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def __call__(self, function_call: FunctionCall) -> FunctionCall:
+        if self.function is None:
+            raise RuntimeError(f"Function '{self.name}' has no implementation.")
+        try:
+            result = self.function(**function_call.arguments)
+        except Exception as exc:  # pragma: no cover - exact user function varies
+            function_call.error_message = str(exc)
+            function_call.result_str = f"Error: {exc}"
+            return function_call
+        function_call.result = result
+        function_call.result_str = self.processor(result, function_call)
+        return function_call
+
+    def to_tool(self) -> dict[str, Any]:
+        return {
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": {
+                    "type": "object",
+                    "properties": self.properties,
+                    "required": self.required,
+                    "additionalProperties": self.additional_properties,
+                },
+                "strict": self.strict,
+            },
+        }
+
+    @classmethod
+    def from_callable(
+        cls,
+        fn: Callable[..., Any],
+        *,
+        name: str | None = None,
+        description: str | None = None,
+        prop_desc: dict[str, str] | None = None,
+        strict: bool = True,
+        processor: Callable[[Any, FunctionCall], str] = _default_function_call_processor,
+    ) -> "Function":
+        function_name = name or fn.__name__
+        signature = inspect.signature(fn)
+        hints = get_type_hints(fn) if getattr(fn, "__annotations__", None) else {}
+        property_descriptions = dict(prop_desc or {})
+        properties: dict[str, Any] = {}
+        required: list[str] = []
+        for param_name, parameter in signature.parameters.items():
+            if param_name in {"self", "cls"}:
+                continue
+            annotation = hints.get(param_name, str)
+            schema: dict[str, Any] = {"type": _json_type_for_annotation(annotation)}
+            if param_name in property_descriptions:
+                schema["description"] = property_descriptions[param_name]
+            if parameter.default is inspect.Parameter.empty:
+                required.append(param_name)
+            else:
+                default_note = f"(default: {parameter.default!r})"
+                if schema.get("description"):
+                    schema["description"] = f"{schema['description']} {default_note}"
+                else:
+                    schema["description"] = default_note
+            properties[param_name] = schema
+        return cls(
+            name=function_name,
+            description=description or inspect.getdoc(fn) or function_name,
+            properties=properties,
+            required=required,
+            strict=strict,
+            function=fn,
+            processor=processor,
+        )
+
+
+def tool(
+    description: str | None = None,
+    prop_desc: dict[str, str] | None = None,
+    *,
+    name: str | None = None,
+    strict: bool = True,
+    processor: Callable[[Any, FunctionCall], str] = _default_function_call_processor,
+) -> Callable[[Callable[..., Any]], Function]:
+    """Decorate a plain Python callable as a native :class:`Function`."""
+
+    def decorator(fn: Callable[..., Any]) -> Function:
+        return Function.from_callable(
+            fn,
+            name=name,
+            description=description,
+            prop_desc=prop_desc,
+            strict=strict,
+            processor=processor,
+        )
+
+    return decorator
+
+
+class StringFormatterRenderer(BaseModel):
+    """Render prompt templates with ``str.format``."""
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def render(self, template: str, **kwargs: Any) -> str:
+        return template.format(**kwargs)
+
+
+class Prompt(BaseModel):
+    """A native prompt template plus lightweight parser/tool metadata."""
+
+    path: str
+    prompt: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+    parser: Any = None
+    format: Any = None
+    function_list: list[Function | str] = Field(default_factory=list)
+    addon_args: dict[str, Any] = Field(default_factory=dict)
+    renderer: Any = Field(default_factory=StringFormatterRenderer)
+
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    _template_vars: set[str] = PrivateAttr(default_factory=set)
+
+    def model_post_init(self, __context: Any) -> None:
+        formatter = string.Formatter()
+        self._template_vars = {
+            field_name.split(".")[0].split("[")[0]
+            for _, field_name, _, _ in formatter.parse(self.prompt)
+            if field_name is not None
+        }
+
+    @property
+    def functions(self) -> dict[str, Function]:
+        return {
+            function.name: function
+            for function in self.function_list
+            if isinstance(function, Function)
+        }
+
+    @property
+    def template_vars(self) -> set[str]:
+        return set(self._template_vars)
+
+    def validate_args(self, prompt_args: dict[str, Any]) -> list[str]:
+        return sorted(var for var in self._template_vars if var not in prompt_args)
+
+    def __call__(self, **kwargs: Any) -> str:
+        missing = self.validate_args(kwargs)
+        if missing:
+            raise ValueError(
+                f"Missing required template variables for prompt '{self.path}': {missing}"
+            )
+        return self.renderer.render(self.prompt, **kwargs)
+
+    def parse(self, content: str, **runtime_args: Any) -> dict[str, Any]:
+        if self.parser is None:
+            return {"raw": content}
+        if hasattr(self.parser, "parse"):
+            parsed = self.parser.parse(content, **runtime_args)
+        else:
+            parsed = self.parser(content, **runtime_args)
+        if not isinstance(parsed, dict):
+            parsed = {"value": parsed}
+        parsed.setdefault("raw", content)
+        return parsed
+
+    def get_function(self, name: str) -> Function:
+        try:
+            return self.functions[name]
+        except KeyError as exc:
+            raise KeyError(
+                f"Function '{name}' not found on prompt '{self.path}'. "
+                f"Available: {sorted(self.functions)}"
+            ) from exc
+
+    def extend(self, **overrides: Any) -> "Prompt":
+        if "path" not in overrides:
+            raise ValueError("extend() requires a new 'path'")
+        current = {
+            field_name: getattr(self, field_name)
+            for field_name in type(self).model_fields
+        }
+        current.update(overrides)
+        return Prompt(**current)
+
+    def info_dict(self) -> dict[str, Any]:
+        return {
+            "path": self.path,
+            "prompt_hash": hashlib.sha256(self.prompt.encode()).hexdigest()[:12],
+            "metadata": self.metadata,
+            "functions": [
+                function.name if isinstance(function, Function) else function
+                for function in self.function_list
+            ],
+            "addon_args": self.addon_args,
+            "has_parser": self.parser is not None,
+            "has_format": self.format is not None,
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        return self.model_dump(mode="python", exclude={"parser", "renderer"})
+
+    @classmethod
+    def from_dict(cls, data: dict[str, Any]) -> "Prompt":
+        return cls.model_validate(data)
+
+
+__all__ = [
+    "APITypes",
+    "APIType",
+    "Dialog",
+    "DialogTreeNode",
+    "Function",
+    "FunctionCall",
+    "InvokeCost",
+    "Message",
+    "Modalities",
+    "Modality",
+    "Prompt",
+    "Role",
+    "Roles",
+    "StringFormatterRenderer",
+    "TokenLogprob",
+    "tool",
+]
