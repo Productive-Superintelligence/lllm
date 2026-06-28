@@ -67,6 +67,26 @@ tactic = PydanticAITactic(agent, input_type=str, output_type=str)
 
 LLLM forwards request metadata where the agent run method accepts `metadata`.
 
+## Create A Project
+
+Generate a runnable tactic/service project:
+
+```bash
+lllm create plain my-tactic
+cd my-tactic
+pip install -e ".[dev]"
+pytest
+uvicorn app:app --reload
+```
+
+Templates:
+
+- `plain`: typed Python `Tactic`.
+- `pydantic-ai`: a Pydantic AI-style agent wrapped as a tactic.
+- `native`: a native-style object wrapped behind the tactic boundary.
+
+Add package metadata later with `psihub init`.
+
 ## Boundaries
 
 - LLLM owns the `Tactic` protocol and service adapter.

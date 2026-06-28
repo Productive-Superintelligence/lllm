@@ -8,6 +8,7 @@ import inspect
 import json
 from typing import Any
 
+from .create import create_project
 from .integrations import tactic_resource
 from .protocol import Tactic
 from .runtimes import as_tactic
@@ -28,6 +29,16 @@ def main(argv: list[str] | None = None) -> int:
     serve_cmd.add_argument("--port", type=int, default=8000)
     serve_cmd.add_argument("--log-level", default="info")
 
+    create_cmd = subcommands.add_parser("create", help="Create a tactic service project")
+    create_cmd.add_argument(
+        "template",
+        choices=["plain", "pydantic-ai", "native"],
+        help="Project template",
+    )
+    create_cmd.add_argument("name", help="Project name")
+    create_cmd.add_argument("--directory", default=".", help="Parent directory")
+    create_cmd.add_argument("--force", action="store_true", help="Overwrite existing files")
+
     args = parser.parse_args(argv)
 
     if args.command == "inspect":
@@ -47,6 +58,16 @@ def main(argv: list[str] | None = None) -> int:
         tactic = load_tactic_entrypoint(args.entrypoint)
         app = create_tactic_app(tactic)
         uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level)
+        return 0
+
+    if args.command == "create":
+        result = create_project(
+            args.template,
+            args.name,
+            directory=args.directory,
+            force=args.force,
+        )
+        print(f"created {result.template} project at {result.path}")
         return 0
 
     parser.error(f"Unknown command: {args.command}")

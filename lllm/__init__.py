@@ -17,6 +17,7 @@ from .protocol import (
     TacticServiceError,
     TacticUnsupportedError,
 )
+from .create import create_project
 from .runtimes import CallableTactic, NativeTacticAdapter, PydanticAITactic, as_tactic, tactic_as_tool
 from .services import (
     EndpointSpec,
@@ -53,6 +54,7 @@ __all__ = [
     "TacticUnsupportedError",
     "__version__",
     "as_tactic",
+    "create_project",
     "create_service_app",
     "create_tactic_app",
     "endpoint",
