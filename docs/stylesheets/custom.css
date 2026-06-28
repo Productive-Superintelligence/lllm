@@ -9,7 +9,8 @@
 }
 
 body {
-  --md-text-font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+  --md-text-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
+    "Helvetica Neue", Arial, sans-serif;
   --md-code-font-family: "Roboto Mono", SFMono-Regular, Consolas, Menlo,
     monospace;
 }
@@ -131,7 +132,9 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-footer-meta__inner {
   align-items: center;
-  min-height: 3.35rem;
+  min-height: 2.2rem;
+  padding-bottom: 0;
+  padding-top: 0;
 }
 
 .md-footer a,
@@ -151,6 +154,24 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
   margin: 0;
 }
 
+.md-copyright {
+  margin: 0;
+  padding: 0;
+}
+
+.md-social {
+  margin: 0;
+  padding: 0;
+}
+
+.md-social__link {
+  align-items: center;
+  display: inline-flex;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
 .psi-footer-brand {
   display: inline-flex;
   align-items: center;
@@ -164,8 +185,8 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .psi-footer-mark {
   display: inline-block;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1rem;
+  height: 1rem;
   background-image: url("../assets/logo.svg");
   background-position: center;
   background-repeat: no-repeat;
@@ -236,13 +257,42 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-typeset .mermaid svg {
   display: inline-block;
-  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    Arial, sans-serif;
   height: auto;
   max-width: 100%;
 }
 
 .md-typeset .mermaid svg * {
-  font-family: "Roboto", "Helvetica Neue", Arial, sans-serif;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+    Arial, sans-serif;
+}
+
+.md-typeset .mermaid .node rect,
+.md-typeset .mermaid .node polygon,
+.md-typeset .mermaid .node circle,
+.md-typeset .mermaid .node ellipse {
+  fill: #ffffff !important;
+  stroke: var(--psi-ink) !important;
+  stroke-width: 1.4px !important;
+}
+
+.md-typeset .mermaid .edgePath path,
+.md-typeset .mermaid .flowchart-link {
+  stroke: var(--psi-ink) !important;
+  stroke-width: 1.4px !important;
+}
+
+.md-typeset .mermaid marker path {
+  fill: var(--psi-ink) !important;
+  stroke: var(--psi-ink) !important;
+}
+
+.md-typeset .mermaid .nodeLabel,
+.md-typeset .mermaid .edgeLabel,
+.md-typeset .mermaid .label {
+  color: var(--psi-ink) !important;
+  fill: var(--psi-ink) !important;
 }
 
 @media screen and (max-width: 44.984rem) {

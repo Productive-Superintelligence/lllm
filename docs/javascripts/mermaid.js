@@ -10,10 +10,11 @@
     window.mermaid.initialize({
       startOnLoad: false,
       theme: "base",
-      fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif",
+      fontFamily:
+        "Roboto, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
       securityLevel: "strict",
       flowchart: {
-        htmlLabels: true,
+        htmlLabels: false,
         useMaxWidth: true
       },
       themeVariables: {
@@ -23,8 +24,15 @@
         lineColor: "#050505",
         secondaryColor: "#f7f7f7",
         tertiaryColor: "#ffffff",
-        fontFamily: "Roboto, Helvetica Neue, Arial, sans-serif",
-        altFontFamily: "Roboto, Helvetica Neue, Arial, sans-serif"
+        fontFamily:
+          "Roboto, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
+        altFontFamily:
+          "Roboto, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
+        fontSize: "16px",
+        nodeBorder: "#050505",
+        mainBkg: "#ffffff",
+        clusterBkg: "#ffffff",
+        edgeLabelBackground: "#ffffff"
       }
     });
     initialized = true;
@@ -33,6 +41,7 @@
   function normalizeDiagramNode(node) {
     var container = node;
     var source = node;
+    var sourceText = node.getAttribute("data-mermaid-source");
 
     if (node.matches("code")) {
       source = node;
@@ -48,8 +57,17 @@
           : null;
     }
 
-    if (source) {
-      container.textContent = source.textContent;
+    if (!sourceText && source) {
+      sourceText = source.textContent;
+    }
+
+    if (!sourceText) {
+      sourceText = container.textContent;
+    }
+
+    if (sourceText) {
+      container.setAttribute("data-mermaid-source", sourceText);
+      container.textContent = sourceText;
     }
 
     return container;
@@ -64,17 +82,18 @@
     );
 
     return nodes
-      .map(normalizeDiagramNode)
       .filter(function (node) {
-        if (!node || seen.indexOf(node) !== -1) {
+        var container = node.matches("code") ? node.closest("pre") : node;
+        if (!container || seen.indexOf(container) !== -1) {
           return false;
         }
-        seen.push(node);
+        seen.push(container);
         return (
-          node.getAttribute("data-processed") !== "true" &&
-          node.getAttribute("data-mermaid-error") !== "true"
+          container.getAttribute("data-processed") !== "true" &&
+          container.getAttribute("data-mermaid-error") !== "true"
         );
-      });
+      })
+      .map(normalizeDiagramNode);
   }
 
   function renderMermaid(attempt) {
