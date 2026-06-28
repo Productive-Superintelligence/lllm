@@ -17,3 +17,9 @@ jobs:
       - run: pytest
       - run: mkdocs build --strict
       - run: python -m build
+      - run: |
+          python -m venv /tmp/lllm-wheel-smoke
+          /tmp/lllm-wheel-smoke/bin/python -m pip install -U pip
+          /tmp/lllm-wheel-smoke/bin/python -m pip install dist/*.whl
+          cd /tmp
+          /tmp/lllm-wheel-smoke/bin/python -c "from lllm import Tactic; print(Tactic.__name__)"
