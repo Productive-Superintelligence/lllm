@@ -3,10 +3,12 @@ import os
 import subprocess
 import sys
 import textwrap
+from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
 from pydantic import BaseModel
+from typing_extensions import TypedDict
 
 from lllm import CallContext, SchemaError, Tactic, as_tactic
 
@@ -44,6 +46,28 @@ class EchoTactic(Tactic[EchoInput, EchoOutput]):
         if context is not None:
             suffix = context.metadata.get("suffix", "")
         return {"text": input_value.text.upper() + suffix}
+
+
+@dataclass(frozen=True)
+class BatchInput:
+    text: str
+    repeat: int
+
+
+class BatchOutput(TypedDict):
+    tokens: list[str]
+    count: int
+
+
+class BatchTactic(Tactic[BatchInput, BatchOutput]):
+    name = "batch"
+    input_type = BatchInput
+    output_type = BatchOutput
+
+    def _run(self, input_value, *, context=None):
+        assert isinstance(input_value, BatchInput)
+        tokens = [input_value.text] * input_value.repeat
+        return {"tokens": tokens, "count": len(tokens)}
 
 
 def test_tactic_validates_and_returns_trace():
@@ -96,6 +120,25 @@ def test_plain_callable_wraps_as_tactic_with_annotations():
     assert info.metadata == {"owner": "tests"}
     assert info.input_schema["type"] == "string"
     assert tactic.run("hello", context=CallContext(metadata={"caller": "test"})) == "HELLO"
+
+
+def test_tactic_accepts_dataclass_input_and_typed_dict_output():
+    tactic = BatchTactic()
+    info = tactic.info()
+
+    assert info.input_schema["title"] == "BatchInput"
+    assert info.output_schema["title"] == "BatchOutput"
+    assert info.input_schema["properties"]["repeat"]["type"] == "integer"
+    assert info.output_schema["properties"]["tokens"]["items"]["type"] == "string"
+    assert tactic.run({"text": "ha", "repeat": 3}) == {
+        "tokens": ["ha", "ha", "ha"],
+        "count": 3,
+    }
+
+
+def test_tactic_rejects_invalid_dataclass_input():
+    with pytest.raises(SchemaError):
+        BatchTactic().run({"text": "ha", "repeat": "many"})
 
 
 def test_protocol_layer_has_no_runtime_or_service_imports():
