@@ -74,6 +74,7 @@ def _template_files(
         "pyproject.toml": _pyproject(project_slug, package_name, dependency),
         "README.md": _readme(project_slug, package_name, template),
         "app.py": _app(package_name),
+        "client.py": _client(package_name),
         f"{package_name}/__init__.py": _init(package_name),
         f"{package_name}/tactics.py": _tactics(template),
         "tests/test_tactic.py": _test(package_name),
@@ -147,6 +148,12 @@ def _readme(project_slug: str, package_name: str, template: str) -> str:
           -d '{{"input":{{"text":"hello"}}}}'
         ```
 
+        Or call it from Python:
+
+        ```bash
+        python client.py
+        ```
+
         The package module is `{package_name}`. Add PsiHub package metadata later
         with `psihub init`.
         """
@@ -162,6 +169,31 @@ def _app(package_name: str) -> str:
 
 
         app = create_tactic_app(build_tactic())
+        """
+    )
+
+
+def _client(package_name: str) -> str:
+    return _clean(
+        f"""
+        from lllm import RemoteTactic
+
+        from {package_name}.tactics import EchoInput, EchoOutput
+
+
+        def main():
+            tactic = RemoteTactic(
+                "http://127.0.0.1:8000/run",
+                name="echo",
+                input_type=EchoInput,
+                output_type=EchoOutput,
+            )
+            result = tactic.run({{"text": "hello"}})
+            print(result.text)
+
+
+        if __name__ == "__main__":
+            main()
         """
     )
 
@@ -309,6 +341,20 @@ def _tutorial(project_slug: str, package_name: str) -> str:
 
         ```bash
         lllm serve {package_name}.tactics:build_tactic --port 8000
+        ```
+
+        In another terminal, call the service with curl:
+
+        ```bash
+        curl -X POST http://127.0.0.1:8000/run \\
+          -H 'content-type: application/json' \\
+          -d '{{"input":{{"text":"hello"}}}}'
+        ```
+
+        Or call it from Python:
+
+        ```bash
+        python client.py
         ```
         """
     )

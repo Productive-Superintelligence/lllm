@@ -19,7 +19,9 @@ def test_create_plain_project_builds_runnable_tactic(tmp_path):
     assert result.path.name == "hello-world"
     assert result.package_name == "hello_world"
     assert (result.path / "app.py").exists()
+    assert (result.path / "client.py").exists()
     assert (result.path / "tests" / "test_tactic.py").exists()
+    assert _import_generated_client(result.path, result.package_name)
     assert _run_generated_tactic(result.path, result.package_name) == "HELLO"
 
 
@@ -56,10 +58,16 @@ def test_create_project_metadata_and_docs_match_server_flow(
 
     install_command = 'pip install -e ".[dev,server]"'
     serve_command = f"lllm serve {result.package_name}.tactics:build_tactic --port 8000"
+    client_command = "python client.py"
     for relative in ("README.md", "docs/tutorial.md"):
         text = (result.path / relative).read_text()
         assert install_command in text
         assert serve_command in text
+        assert client_command in text
+
+    client = (result.path / "client.py").read_text()
+    assert "RemoteTactic" in client
+    assert "http://127.0.0.1:8000/run" in client
 
 
 def test_generated_project_pytest_suite_runs(tmp_path):
@@ -104,4 +112,20 @@ def _run_generated_tactic(project_path, package_name):
         sys.path.remove(str(project_path))
         for name in list(sys.modules):
             if name == package_name or name.startswith(f"{package_name}."):
+                del sys.modules[name]
+
+
+def _import_generated_client(project_path, package_name):
+    sys.path.insert(0, str(project_path))
+    try:
+        module = importlib.import_module("client")
+        return hasattr(module, "main")
+    finally:
+        sys.path.remove(str(project_path))
+        for name in list(sys.modules):
+            if (
+                name == "client"
+                or name == package_name
+                or name.startswith(f"{package_name}.")
+            ):
                 del sys.modules[name]
