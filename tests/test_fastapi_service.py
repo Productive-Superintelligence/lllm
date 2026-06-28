@@ -122,6 +122,16 @@ def test_stream_endpoint_returns_sse_events():
     assert '"data": "HELLO"' in response.text
 
 
+def test_stream_endpoint_reports_unsupported_tactic_stably():
+    app = create_tactic_app(EchoTactic())
+    response = request(app, "POST", "/stream", json={"input": {"text": "hello"}})
+
+    assert response.status_code == 400
+    detail = response.json()["detail"]["error"]
+    assert detail["type"] == "TacticUnsupportedError"
+    assert detail["endpoint"] == "stream"
+
+
 def test_custom_endpoint_metadata_mounts_route():
     app = create_tactic_app(EchoTactic())
     response = request(app, "POST", "/act", json={"input": {"text": "go"}})
@@ -141,6 +151,35 @@ def test_error_envelope_is_stable():
     detail = response.json()["detail"]["error"]
     assert detail["type"] == "SchemaError"
     assert detail["tactic"] == "echo"
+
+
+def test_invalid_request_context_returns_stable_error_envelope():
+    app = create_tactic_app(EchoTactic())
+
+    bad_context = request(
+        app,
+        "POST",
+        "/run",
+        json={"input": {"text": "hello"}, "context": "bad"},
+    )
+    bad_metadata = request(
+        app,
+        "POST",
+        "/act",
+        json={"input": {"text": "go"}, "context": {"metadata": "bad"}},
+    )
+
+    assert bad_context.status_code == 400
+    context_detail = bad_context.json()["detail"]["error"]
+    assert context_detail["type"] == "SchemaError"
+    assert context_detail["tactic"] == "echo"
+    assert context_detail["endpoint"] == "run"
+    assert "context" in context_detail["message"]
+    assert bad_metadata.status_code == 400
+    metadata_detail = bad_metadata.json()["detail"]["error"]
+    assert metadata_detail["type"] == "SchemaError"
+    assert metadata_detail["endpoint"] == "act"
+    assert "metadata" in metadata_detail["message"]
 
 
 def test_single_tactic_openapi_includes_default_and_custom_routes():

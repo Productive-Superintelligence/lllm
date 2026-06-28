@@ -99,12 +99,13 @@ def create_service_app(
     @app.post("/tactics/{name}/run", response_model=RunResponse)
     async def run_tactic(name: str, request: Request) -> RunResponse:
         tactic = _get_tactic(name, tactic_map)
-        input_value, context = await _input_and_context_from_request(
-            request,
-            tactic=tactic,
-            endpoint="run",
-        )
+        context = _error_context(tactic, "run")
         try:
+            input_value, context = await _input_and_context_from_request(
+                request,
+                tactic=tactic,
+                endpoint="run",
+            )
             output = await tactic.arun(input_value, context=context)
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint="run", context=context) from exc
@@ -117,20 +118,17 @@ def create_service_app(
     @app.post("/tactics/{name}/stream")
     async def stream_tactic(name: str, request: Request):
         tactic = _get_tactic(name, tactic_map)
-        input_value, context = await _input_and_context_from_request(
-            request,
-            tactic=tactic,
-            endpoint="stream",
-        )
-        if not tactic.supports("stream") and not tactic.supports("events"):
-            raise _http_error(
-                TacticUnsupportedError(f"Tactic '{name}' does not support streaming."),
+        context = _error_context(tactic, "stream")
+        try:
+            input_value, context = await _input_and_context_from_request(
+                request,
                 tactic=tactic,
                 endpoint="stream",
-                context=context,
-                status_code=400,
             )
-        try:
+            if not tactic.supports("stream") and not tactic.supports("events"):
+                raise TacticUnsupportedError(
+                    f"Tactic '{name}' does not support streaming."
+                )
             result = tactic.aevents(input_value, context=context)
             return StreamingResponse(_event_chunks(result), media_type="text/event-stream")
         except Exception as exc:
@@ -145,12 +143,13 @@ def create_service_app(
 
         @app.post("/run", response_model=RunResponse)
         async def single_run(request: Request) -> RunResponse:
-            input_value, context = await _input_and_context_from_request(
-                request,
-                tactic=only,
-                endpoint="run",
-            )
+            context = _error_context(only, "run")
             try:
+                input_value, context = await _input_and_context_from_request(
+                    request,
+                    tactic=only,
+                    endpoint="run",
+                )
                 output = await only.arun(input_value, context=context)
             except Exception as exc:
                 raise _http_error(exc, tactic=only, endpoint="run", context=context) from exc
@@ -162,23 +161,29 @@ def create_service_app(
 
         @app.post("/stream")
         async def single_stream(request: Request):
-            input_value, context = await _input_and_context_from_request(
-                request,
-                tactic=only,
-                endpoint="stream",
-            )
-            if not only.supports("stream") and not only.supports("events"):
-                raise _http_error(
-                    TacticUnsupportedError(
+            context = _error_context(only, "stream")
+            try:
+                input_value, context = await _input_and_context_from_request(
+                    request,
+                    tactic=only,
+                    endpoint="stream",
+                )
+                if not only.supports("stream") and not only.supports("events"):
+                    raise TacticUnsupportedError(
                         f"Tactic '{only.tactic_name}' does not support streaming."
-                    ),
+                    )
+                result = only.aevents(input_value, context=context)
+                return StreamingResponse(
+                    _event_chunks(result),
+                    media_type="text/event-stream",
+                )
+            except Exception as exc:
+                raise _http_error(
+                    exc,
                     tactic=only,
                     endpoint="stream",
                     context=context,
-                    status_code=400,
-                )
-            result = only.aevents(input_value, context=context)
-            return StreamingResponse(_event_chunks(result), media_type="text/event-stream")
+                ) from exc
 
     for tactic in tactic_map.values():
         _mount_custom_endpoints(app, tactic)
@@ -224,12 +229,13 @@ def _make_custom_route(
     from fastapi import Request
 
     async def route(request: Request):
-        input_value, context = await _input_and_context_from_request(
-            request,
-            tactic=tactic,
-            endpoint=spec.name,
-        )
+        context = _error_context(tactic, spec.name)
         try:
+            input_value, context = await _input_and_context_from_request(
+                request,
+                tactic=tactic,
+                endpoint=spec.name,
+            )
             input_value = tactic.validate_input(input_value)
             if spec.mode in {"stream", "events"}:
                 result = _invoke_custom(method, input_value, context=context)
@@ -288,7 +294,10 @@ async def _input_and_context_from_request(
     value = body
     context_data: Mapping[str, Any] | None = None
     if isinstance(body, Mapping) and _is_protocol_envelope(body):
-        request_model = RunRequest.model_validate(body)
+        try:
+            request_model = RunRequest.model_validate(body)
+        except Exception as exc:
+            raise SchemaError(f"Invalid request envelope: {exc}") from exc
         value = request_model.value
         context_data = request_model.context
 
@@ -329,7 +338,15 @@ def _context_from_data(
     tactic: Tactic[Any, Any],
     endpoint: str,
 ) -> CallContext:
+    if context_data is not None and not isinstance(context_data, Mapping):
+        raise SchemaError("Request context must be an object.")
     data = context_data or {}
+    metadata = data.get("metadata") or {}
+    if not isinstance(metadata, Mapping):
+        raise SchemaError("Request context metadata must be an object.")
+    tags = data.get("tags") or {}
+    if not isinstance(tags, Mapping):
+        raise SchemaError("Request context tags must be an object.")
     return CallContext(
         request_id=str(data.get("request_id") or data.get("call_id") or CallContext().request_id),
         caller=data.get("caller"),
@@ -339,9 +356,13 @@ def _context_from_data(
         service_ref=data.get("service_ref"),
         tactic_ref=data.get("tactic_ref") or tactic.package_ref,
         endpoint=endpoint,
-        metadata=dict(data.get("metadata") or {}),
-        tags=dict(data.get("tags") or {}),
+        metadata=dict(metadata),
+        tags=dict(tags),
     )
+
+
+def _error_context(tactic: Tactic[Any, Any], endpoint: str) -> CallContext:
+    return CallContext(tactic_ref=tactic.package_ref, endpoint=endpoint)
 
 
 async def _event_chunks(result: Any):
