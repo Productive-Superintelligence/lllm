@@ -1,5 +1,9 @@
 # LLLM
 
+<p class="psi-brand">
+  <img src="assets/lllm-logo-text-dark.png" alt="LLLM" />
+</p>
+
 [lllm.one](https://lllm.one){ .psi-domain }
 
 LLLM is the protocol and service layer for reusable agentic tactics. It keeps

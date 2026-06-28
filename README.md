@@ -1,5 +1,7 @@
 # LLLM
 
+![LLLM](assets/lllm-logo-text-dark.png)
+
 LLLM is a small protocol and service layer for reusable agentic tactics.
 
 The center model is `Tactic`: a typed, runtime-agnostic unit that does one
