@@ -1,0 +1,15 @@
+include CHANGELOG.md
+include CONTRIBUTING.md
+include LICENSE
+include README.md
+include SECURITY.md
+include mkdocs.yml
+recursive-include assets *
+recursive-include docs *
+recursive-include examples *
+prune build
+prune dist
+prune site
+global-exclude __pycache__
+global-exclude *.py[cod]
+global-exclude .DS_Store
