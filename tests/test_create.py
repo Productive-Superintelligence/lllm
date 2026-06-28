@@ -1,10 +1,16 @@
 import importlib
+import os
+import subprocess
 import sys
+import tomllib
+from pathlib import Path
 
 import pytest
 
 from lllm.cli import main
 from lllm.create import create_project
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_create_plain_project_builds_runnable_tactic(tmp_path):
@@ -27,6 +33,50 @@ def test_create_native_project_builds_runnable_tactic(tmp_path):
     result = create_project("native", "native-demo", directory=tmp_path)
 
     assert _run_generated_tactic(result.path, result.package_name) == "HELLO"
+
+
+@pytest.mark.parametrize(
+    ("template", "expected_dependency"),
+    [
+        ("plain", "lllm"),
+        ("pydantic-ai", "lllm[pydantic-ai]"),
+        ("native", "lllm"),
+    ],
+)
+def test_create_project_metadata_and_docs_match_server_flow(
+    tmp_path,
+    template,
+    expected_dependency,
+):
+    result = create_project(template, f"{template}-metadata", directory=tmp_path)
+
+    pyproject = tomllib.loads((result.path / "pyproject.toml").read_text())
+    assert expected_dependency in pyproject["project"]["dependencies"]
+    assert "lllm[server]" in pyproject["project"]["optional-dependencies"]["server"]
+
+    install_command = 'pip install -e ".[dev,server]"'
+    serve_command = f"lllm serve {result.package_name}.tactics:build_tactic --port 8000"
+    for relative in ("README.md", "docs/tutorial.md"):
+        text = (result.path / relative).read_text()
+        assert install_command in text
+        assert serve_command in text
+
+
+def test_generated_project_pytest_suite_runs(tmp_path):
+    result = create_project("plain", "suite-demo", directory=tmp_path)
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", "-q"],
+        cwd=result.path,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert completed.returncode == 0, completed.stdout + completed.stderr
 
 
 def test_create_refuses_non_empty_project_without_force(tmp_path):

@@ -169,9 +169,15 @@ Generate a runnable tactic/service project:
 ```bash
 lllm create plain my-tactic
 cd my-tactic
-pip install -e ".[dev]"
+pip install -e ".[dev,server]"
 pytest
 uvicorn app:app --reload
+```
+
+Or serve the generated tactic entrypoint directly:
+
+```bash
+lllm serve my_tactic.tactics:build_tactic --port 8000
 ```
 
 Templates:

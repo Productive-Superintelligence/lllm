@@ -66,9 +66,9 @@ def _template_files(
     package_name: str,
 ) -> dict[str, str]:
     dependency = {
-        "plain": "lllm[server]",
-        "pydantic-ai": "lllm[pydantic-ai,server]",
-        "native": "lllm[server]",
+        "plain": "lllm",
+        "pydantic-ai": "lllm[pydantic-ai]",
+        "native": "lllm",
     }[template]
     return {
         "pyproject.toml": _pyproject(project_slug, package_name, dependency),
@@ -101,6 +101,7 @@ def _pyproject(project_slug: str, package_name: str, dependency: str) -> str:
 
         [project.optional-dependencies]
         dev = ["pytest>=8.0", "httpx>=0.27"]
+        server = ["lllm[server]"]
 
         [tool.setuptools.packages.find]
         where = ["."]
@@ -122,14 +123,20 @@ def _readme(project_slug: str, package_name: str, template: str) -> str:
         Run tests:
 
         ```bash
-        pip install -e ".[dev]"
+        pip install -e ".[dev,server]"
         pytest
         ```
 
-        Serve the tactic:
+        Serve the tactic as a FastAPI app:
 
         ```bash
         uvicorn app:app --reload
+        ```
+
+        Or serve the tactic entrypoint through the LLLM CLI:
+
+        ```bash
+        lllm serve {package_name}.tactics:build_tactic --port 8000
         ```
 
         Call it:
@@ -295,9 +302,13 @@ def _tutorial(project_slug: str, package_name: str) -> str:
 
         ```bash
         cd {project_slug}
-        pip install -e ".[dev]"
+        pip install -e ".[dev,server]"
         pytest
         uvicorn app:app --reload
+        ```
+
+        ```bash
+        lllm serve {package_name}.tactics:build_tactic --port 8000
         ```
         """
     )
