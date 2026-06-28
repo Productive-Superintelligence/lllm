@@ -67,6 +67,26 @@ tactic = PydanticAITactic(agent, input_type=str, output_type=str)
 
 LLLM forwards request metadata where the agent run method accepts `metadata`.
 
+## Native Prompt/Dialog Core
+
+The native namespace preserves prompt and dialog primitives without letting them
+shape the `Tactic` protocol:
+
+```python
+from lllm.runtimes.native import Dialog, Prompt, Role
+
+system = Prompt(path="agent/system", prompt="You are a {style} assistant.")
+dialog = Dialog(owner="agent")
+dialog.put_prompt(system, prompt_args={"style": "careful"}, role=Role.SYSTEM)
+dialog.put_text("Draft the next checkpoint.")
+
+retry = dialog.fork(last_n=1, first_k=1)
+```
+
+Use these pieces for native runtime transcripts, prompt templates, tool schemas,
+and forked histories. Wrap executable native agents with `NativeTacticAdapter`
+when they need to cross the reusable tactic boundary.
+
 ## Create A Project
 
 Generate a runnable tactic/service project:

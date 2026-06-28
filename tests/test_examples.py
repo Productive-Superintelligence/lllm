@@ -28,3 +28,20 @@ def test_pydantic_ai_fake_agent_example_builds_tactic():
     tactic = module.build_tactic()
 
     assert tactic.run("hello") == "HELLO"
+
+
+def test_native_dialog_example_builds_transcript_and_retry_branch():
+    module = load_module(
+        ROOT / "examples" / "native_dialog" / "demo.py",
+        "native_dialog_demo",
+    )
+
+    dialog = module.build_dialog()
+    retry = module.build_retry_dialog()
+
+    assert dialog.owner == "planner"
+    assert dialog.head.content == "You are a careful planning assistant."
+    assert dialog.tail.name == "label"
+    assert dialog.tail.metadata["function_call"]["result"] == "Native Core"
+    assert retry.parent is not None
+    assert retry.depth == 1
