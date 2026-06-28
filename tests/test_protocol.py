@@ -1,7 +1,25 @@
+import ast
+from pathlib import Path
+
 import pytest
 from pydantic import BaseModel
 
 from lllm import CallContext, SchemaError, Tactic, as_tactic
+
+
+ROOT = Path(__file__).resolve().parents[1]
+PROTOCOL_ROOT = ROOT / "lllm" / "protocol"
+FORBIDDEN_PROTOCOL_IMPORT_PREFIXES = (
+    "fastapi",
+    "lllm.cli",
+    "lllm.create",
+    "lllm.integrations",
+    "lllm.runtimes",
+    "lllm.services",
+    "pydantic_ai",
+    "psihub",
+    "sssn",
+)
 
 
 class EchoInput(BaseModel):
@@ -74,3 +92,36 @@ def test_plain_callable_wraps_as_tactic_with_annotations():
     assert info.metadata == {"owner": "tests"}
     assert info.input_schema["type"] == "string"
     assert tactic.run("hello", context=CallContext(metadata={"caller": "test"})) == "HELLO"
+
+
+def test_protocol_layer_has_no_runtime_or_service_imports():
+    leaks: list[str] = []
+    for path in sorted(PROTOCOL_ROOT.glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        for module in _source_imports(tree):
+            if module.startswith(FORBIDDEN_PROTOCOL_IMPORT_PREFIXES):
+                leaks.append(f"{path.relative_to(ROOT)} imports {module}")
+
+    assert leaks == []
+
+
+def _source_imports(tree: ast.AST) -> list[str]:
+    modules: list[str] = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            modules.extend(alias.name for alias in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            module = _resolve_import_from(node)
+            if module:
+                modules.append(module)
+    return modules
+
+
+def _resolve_import_from(node: ast.ImportFrom) -> str:
+    if node.level == 0:
+        return node.module or ""
+    if node.level == 1:
+        return f"lllm.protocol.{node.module}" if node.module else "lllm.protocol"
+    if node.level == 2:
+        return f"lllm.{node.module}" if node.module else "lllm"
+    return f"<outside-lllm>.{node.module}" if node.module else "<outside-lllm>"
