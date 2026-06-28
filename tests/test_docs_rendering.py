@@ -123,6 +123,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert '<img src="assets/lllm-logo-text-dark.png" alt="LLLM" height="56">' in readme
+    assert (site_dir / "CNAME").read_text(encoding="utf-8").strip() == "lllm.one"
 
 
 def test_service_api_reference_matches_error_envelope():
