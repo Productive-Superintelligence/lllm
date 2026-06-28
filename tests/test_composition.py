@@ -123,6 +123,28 @@ def test_remote_tactic_preserves_structured_service_errors():
     assert exc_info.value.request_id == "req-error"
 
 
+def test_remote_tactic_preserves_protocol_error_status():
+    app = create_tactic_app(EchoTactic())
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    with pytest.raises(RemoteTacticError) as exc_info:
+        asyncio.run(
+            remote.arun(
+                {"text": 123},
+                context=CallContext(request_id="req-schema"),
+            )
+        )
+
+    assert exc_info.value.status_code == 400
+    assert exc_info.value.error_type == "SchemaError"
+    assert exc_info.value.tactic == "echo"
+    assert exc_info.value.request_id == "req-schema"
+
+
 def test_resolver_calls_bound_http_tactic():
     app = create_tactic_app(EchoTactic())
     resolver = TacticResolver()

@@ -198,6 +198,8 @@ tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
 fields parsed from the service envelope.
+Protocol and schema errors use HTTP 400; unexpected tactic runtime failures use
+HTTP 500.
 
 ## Package Metadata Helpers
 

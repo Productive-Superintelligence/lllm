@@ -130,7 +130,7 @@ def test_error_envelope_is_stable():
     app = create_tactic_app(EchoTactic())
     response = request(app, "POST", "/run", json={"input": {"text": 123}})
 
-    assert response.status_code == 500
+    assert response.status_code == 400
     detail = response.json()["detail"]["error"]
     assert detail["type"] == "SchemaError"
     assert detail["tactic"] == "echo"

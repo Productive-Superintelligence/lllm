@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from ..protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
+from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
 from .endpoints import EndpointSpec, custom_endpoints
 
 
@@ -400,12 +400,13 @@ def _http_error(
     tactic: Tactic[Any, Any],
     endpoint: str,
     context: CallContext,
-    status_code: int = 500,
+    status_code: int | None = None,
 ):
     from fastapi import HTTPException
 
+    status = status_code if status_code is not None else _status_code_for_error(exc)
     return HTTPException(
-        status_code=status_code,
+        status_code=status,
         detail=ErrorResponse(
             error=ErrorDetail(
                 type=type(exc).__name__,
@@ -416,6 +417,12 @@ def _http_error(
             )
         ).model_dump(mode="json"),
     )
+
+
+def _status_code_for_error(exc: Exception) -> int:
+    if isinstance(exc, (SchemaError, TacticUnsupportedError)):
+        return 400
+    return 500
 
 
 def _route_name(name: str) -> str:
