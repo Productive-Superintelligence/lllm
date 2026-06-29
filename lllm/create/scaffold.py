@@ -386,6 +386,8 @@ def _path_value(value: Any, label: str) -> str:
 def _slug(value: str) -> str:
     if not isinstance(value, str) or not value.strip():
         raise ValueError("Project name must be a non-empty string.")
+    if "%" in value:
+        raise ValueError("Project name must not contain percent escapes.")
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip()).strip(".-")
     if not slug or not re.search(r"[A-Za-z0-9]", slug):
         raise ValueError("Project name must contain at least one letter or number.")
