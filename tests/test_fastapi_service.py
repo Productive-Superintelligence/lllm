@@ -7,6 +7,7 @@ import pytest
 from pydantic import BaseModel, ValidationError
 
 from lllm import Tactic, endpoint
+from lllm.runtimes import PydanticAITactic
 from lllm.services import create_service_app, create_tactic_app
 from lllm.services.endpoints import EndpointSpec, custom_endpoints
 from lllm.services.fastapi import ErrorDetail, RunRequest, RunResponse
@@ -61,6 +62,29 @@ class FailingStreamTactic(Tactic[str, str]):
     def stream(self, input_value, *, context=None):
         yield input_value
         raise ValueError("stream failed")
+
+
+class ServicePydanticResult:
+    def __init__(self, output):
+        self.output = output
+
+
+class ServicePydanticAgent:
+    name = "pydantic-service"
+    output_type = EchoOutput
+
+    def __init__(self):
+        self.seen_task = None
+        self.seen_metadata = None
+
+    def run_sync(self, task, *, metadata=None, **kwargs):
+        self.seen_task = dict(task)
+        self.seen_metadata = dict(metadata or {})
+        return ServicePydanticResult(
+            EchoOutput(
+                text=f"{task['text'].upper()}:{self.seen_metadata['lllm_trace_id']}",
+            )
+        )
 
 
 @dataclass(frozen=True)
@@ -218,6 +242,46 @@ def test_multi_tactic_service_lists_and_runs_named_tactics():
     assert {item["name"] for item in listed.json()} == {"echo", "streamer"}
     assert response.status_code == 200
     assert response.json()["output"] == {"text": "HELLO"}
+
+
+def test_pydantic_ai_tactic_serves_through_fastapi_with_context_metadata():
+    agent = ServicePydanticAgent()
+    tactic = PydanticAITactic(
+        agent,
+        input_type=EchoInput,
+        output_type=EchoOutput,
+        input_mode="dict",
+    )
+    app = create_tactic_app(tactic)
+
+    info = request(app, "GET", "/info")
+    response = request(
+        app,
+        "POST",
+        "/run",
+        json={
+            "input": {"text": "hello"},
+            "context": {
+                "request_id": "req-pydantic-service",
+                "trace_id": "trace-pydantic-service",
+                "metadata": {"caller": "fastapi-test"},
+            },
+        },
+    )
+
+    assert info.status_code == 200
+    assert info.json()["name"] == "pydantic-service"
+    assert info.json()["runtime_kind"] == "pydantic-ai"
+    assert response.status_code == 200
+    assert response.json() == {
+        "output": {"text": "HELLO:trace-pydantic-service"},
+        "request_id": "req-pydantic-service",
+        "tactic": "pydantic-service",
+    }
+    assert agent.seen_task == {"text": "hello"}
+    assert agent.seen_metadata["caller"] == "fastapi-test"
+    assert agent.seen_metadata["lllm_trace_id"] == "trace-pydantic-service"
+    assert agent.seen_metadata["lllm_endpoint"] == "run"
 
 
 def test_service_rejects_path_control_tactic_route_names():
