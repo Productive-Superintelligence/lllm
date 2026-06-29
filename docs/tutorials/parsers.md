@@ -83,7 +83,7 @@ python -m pytest tests/test_parsers.py -q
 Expected output:
 
 ```text
-4 passed
+17 passed
 ```
 
 Next, attach the parser to a native prompt or wrap Pydantic AI output before

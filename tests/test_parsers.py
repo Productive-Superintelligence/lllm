@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from lllm import (
     DefaultTagParser,
@@ -31,6 +32,54 @@ def test_default_tag_parser_raises_shared_parse_error():
 
     with pytest.raises(ParseError):
         parser.parse("missing")
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"required_xml_tags": [b"answer"]},
+        {"required_xml_tags": [""]},
+        {"required_xml_tags": ["   "]},
+        {"required_xml_tags": ["answer tag"]},
+        {"required_md_tags": [b"json"]},
+        {"signal_tags": [b"DONE"]},
+        {"xml_tags": "answer"},
+    ],
+)
+def test_default_tag_parser_rejects_invalid_tag_config(kwargs):
+    with pytest.raises(ValidationError, match="tag|must be a list"):
+        DefaultTagParser(**kwargs)
+
+
+@pytest.mark.parametrize(
+    ("helper", "args", "error_type", "message"),
+    [
+        (find_xml_blocks, (b"<answer>Hello</answer>", "answer"), TypeError, "text"),
+        (find_xml_blocks, ("<answer>Hello</answer>", b"answer"), TypeError, "tag"),
+        (find_xml_blocks, ("<answer>Hello</answer>", ""), ValueError, "non-empty"),
+        (
+            find_md_blocks,
+            ("```json\n{}\n```", "json block"),
+            ValueError,
+            "whitespace",
+        ),
+    ],
+)
+def test_find_block_helpers_reject_invalid_inputs(
+    helper,
+    args,
+    error_type,
+    message,
+):
+    with pytest.raises(error_type, match=message):
+        helper(*args)
+
+
+def test_default_tag_parser_rejects_non_string_content():
+    parser = DefaultTagParser(required_xml_tags=["answer"])
+
+    with pytest.raises(TypeError, match="content must be a string"):
+        parser.parse(b"<answer>Hello</answer>")
 
 
 def test_default_tag_parser_exports_schema_and_round_trips_config():
