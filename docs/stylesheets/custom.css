@@ -417,6 +417,8 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
     sans-serif !important;
   height: auto;
   max-width: 100%;
+  min-width: 0;
+  width: 100%;
 }
 
 .md-typeset .mermaid svg * {

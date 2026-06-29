@@ -42,6 +42,12 @@ def build_docs(tmp_path: Path) -> Path:
     return site_dir
 
 
+def css_block(css: str, selector: str) -> str:
+    match = re.search(rf"{re.escape(selector)}\s*\{{(?P<body>.*?)\n\}}", css, re.S)
+    assert match, f"missing CSS selector: {selector}"
+    return match.group("body")
+
+
 def test_docs_use_tactic_protocol_framing():
     sources = {
         "README": ROOT / "README.md",
@@ -469,6 +475,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
         encoding="utf-8"
     )
     index_html = (site_dir / "index.html").read_text(encoding="utf-8")
+    mermaid_svg_css = css_block(custom_css, ".md-typeset .mermaid svg")
 
     assert ".md-header," in custom_css
     assert ".md-tabs {" in custom_css
@@ -505,9 +512,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "max-width: min(var(--psi-brand-width), 100%);" in custom_css
     assert 'img[src$="#only-dark"]' in custom_css
     assert ".md-typeset .mermaid svg" in custom_css
-    assert "max-width: 100%;" in custom_css
-    assert "min-width: 0;" in custom_css
-    assert "width: 100%;" in custom_css
+    assert "max-width: 100%;" in mermaid_svg_css
+    assert "min-width: 0;" in mermaid_svg_css
+    assert "width: 100%;" in mermaid_svg_css
     assert "--mermaid-font-family" in custom_css
     assert ".md-typeset .mermaid foreignObject" in custom_css
     assert "line-height: 1.2;" in custom_css
