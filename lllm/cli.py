@@ -53,11 +53,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "serve":
+        try:
+            host = _serve_host(args.host)
+            port = _serve_port(args.port)
+        except ValueError as exc:
+            parser.error(str(exc))
         import uvicorn
 
         tactic = load_tactic_entrypoint(args.entrypoint)
         app = create_tactic_app(tactic)
-        uvicorn.run(app, host=args.host, port=args.port, log_level=args.log_level)
+        uvicorn.run(app, host=host, port=port, log_level=args.log_level)
         return 0
 
     if args.command == "create":
@@ -115,6 +120,25 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
 
 def _entrypoint_segments(value: str) -> bool:
     return all(part and not any(ch.isspace() for ch in part) for part in value.split("."))
+
+
+def _serve_host(value: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("serve host must be a non-empty string")
+    host = value.strip()
+    if any(ch.isspace() for ch in host) or "/" in host or "\\" in host:
+        raise ValueError("serve host must be a host name or address, not a URL or path")
+    return host
+
+
+def _serve_port(value: int) -> int:
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, int)
+        or not (1 <= value <= 65535)
+    ):
+        raise ValueError("serve port must be an integer between 1 and 65535")
+    return value
 
 
 def _can_call_without_args(value: Any) -> bool:

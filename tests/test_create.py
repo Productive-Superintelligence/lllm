@@ -123,6 +123,26 @@ def test_cli_create_project(tmp_path, capsys):
 
 
 @pytest.mark.parametrize(
+    "args",
+    [
+        ["serve", "missing.module:build_tactic", "--host", ""],
+        ["serve", "missing.module:build_tactic", "--host", "bad host"],
+        ["serve", "missing.module:build_tactic", "--host", "http://127.0.0.1"],
+        ["serve", "missing.module:build_tactic", "--port", "0"],
+        ["serve", "missing.module:build_tactic", "--port", "70000"],
+    ],
+)
+def test_cli_serve_rejects_malformed_bindings_before_import(args, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(args)
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert "serve " in captured.err
+    assert "missing.module" not in captured.err
+
+
+@pytest.mark.parametrize(
     "entrypoint",
     [
         None,
