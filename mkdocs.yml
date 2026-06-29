@@ -4,7 +4,7 @@ site_url: https://lllm.one/
 repo_name: GitHub
 repo_url: https://github.com/Productive-Superintelligence/lllm
 edit_uri: edit/v2/docs/
-copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-mark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
+copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
 
 theme:
   name: material

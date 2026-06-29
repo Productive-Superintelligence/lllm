@@ -24,9 +24,13 @@
       fontFamily: fontFamily,
       securityLevel: "strict",
       flowchart: {
-        htmlLabels: false,
+        htmlLabels: true,
         useMaxWidth: true
       },
+      themeCSS:
+        ".label, .label text, .label span, .nodeLabel, .edgeLabel, .cluster-label, .cluster-label span { font-family: " +
+        fontFamily +
+        " !important; }",
       themeVariables: {
         primaryColor: "#ffffff",
         primaryTextColor: "#050505",
@@ -34,10 +38,12 @@
         lineColor: "#050505",
         secondaryColor: "#f7f7f7",
         tertiaryColor: "#ffffff",
+        textColor: "#050505",
         fontFamily: fontFamily,
         altFontFamily: fontFamily,
         fontSize: "16px",
         nodeBorder: "#050505",
+        nodeTextColor: "#050505",
         mainBkg: "#ffffff",
         clusterBkg: "#ffffff",
         edgeLabelBackground: "#ffffff"

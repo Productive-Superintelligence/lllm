@@ -10,6 +10,8 @@
   --psi-brand-height: 5.75rem;
   --psi-diagram-bg: #ffffff;
   --psi-diagram-ink: #050505;
+  --psi-footer-wordmark-width: 4.5rem;
+  --psi-footer-wordmark-height: 1.25rem;
 }
 
 body {
@@ -145,6 +147,9 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-header__button.md-logo {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
   margin: 0.15rem 0.45rem 0.15rem 0;
   padding: 0.35rem;
 }
@@ -276,19 +281,16 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .psi-footer-brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
   color: var(--psi-ink);
-  font-size: 0.8rem;
-  font-weight: 700;
   letter-spacing: 0;
   line-height: 1;
 }
 
-.psi-footer-mark {
+.psi-footer-wordmark {
   display: inline-block;
-  width: 1rem;
-  height: 1rem;
-  background-image: url("../assets/logo.svg");
+  width: var(--psi-footer-wordmark-width);
+  height: var(--psi-footer-wordmark-height);
+  background-image: url("../assets/lllm-logo-text-dark.png");
   background-position: center;
   background-repeat: no-repeat;
   background-size: contain;
@@ -298,13 +300,22 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 [data-md-color-scheme="slate"] .md-header .md-logo img,
 [data-md-color-scheme="slate"] .md-header .md-logo svg,
 [data-md-color-scheme="slate"] .md-nav__button.md-logo img,
-[data-md-color-scheme="slate"] .md-nav__button.md-logo svg,
-[data-md-color-scheme="slate"] .psi-footer-mark {
+[data-md-color-scheme="slate"] .md-nav__button.md-logo svg {
   filter: invert(1) brightness(2);
 }
 
+[data-md-color-scheme="slate"] .psi-footer-wordmark {
+  background-image: url("../assets/lllm-logo-text-white.png");
+}
+
 .psi-footer-text {
-  display: inline-block;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .md-typeset h1,
@@ -418,10 +429,13 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid .nodeLabel,
 .md-typeset .mermaid .edgeLabel,
 .md-typeset .mermaid .label,
+.md-typeset .mermaid .label span,
 .md-typeset .mermaid .label text,
 .md-typeset .mermaid .label tspan {
   color: var(--psi-diagram-ink) !important;
   fill: var(--psi-diagram-ink) !important;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+    sans-serif !important;
 }
 
 .md-typeset .mermaid .edgeLabel rect,
@@ -431,6 +445,10 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 @media screen and (max-width: 44.984rem) {
+  .md-header__button.md-logo {
+    display: inline-flex;
+  }
+
   .psi-brand {
     --psi-brand-height: 4.5rem;
   }
