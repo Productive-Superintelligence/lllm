@@ -43,6 +43,12 @@ def test_sdist_includes_repo_materials(tmp_path):
         "docs/javascripts/vendor/mermaid-LICENSE.txt",
         "docs/tutorials/first-tactic.md",
         "examples/echo_service/README.md",
+        "examples/echo_service/app.py",
+        "examples/echo_service/tactics.py",
+        "examples/native_dialog/demo.py",
+        "examples/pydantic_ai_tactic/fake_agent.py",
+        "examples/pydantic_ai_tactic/structured_agent.py",
+        "examples/pydantic_ai_tactic/surrounding_features.py",
     ]
     missing = [path for path in required if f"{root}/{path}" not in names]
 
