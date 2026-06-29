@@ -321,7 +321,18 @@ def test_pydantic_ai_tactic_serves_through_fastapi_with_context_metadata():
 
 
 def test_service_rejects_path_control_tactic_route_names():
-    bad_names = ("", ".", "..", "bad/name", r"bad\name", "bad:name", None, 123)
+    bad_names = (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad/name",
+        r"bad\name",
+        "bad:name",
+        "bad name",
+        None,
+        123,
+    )
 
     for name in bad_names:
         with pytest.raises(ValueError, match="tactic.name"):

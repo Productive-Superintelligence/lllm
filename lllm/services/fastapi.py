@@ -402,8 +402,9 @@ def _add_tactic(
 def _require_route_segment(field_name: str, value: Any) -> None:
     if (
         not isinstance(value, str)
-        or not value
+        or not value.strip()
         or value in {".", ".."}
+        or any(ch.isspace() for ch in value)
         or any(ch in value for ch in "/:\\")
     ):
         raise ValueError(f"{field_name} must be a non-empty path segment.")
