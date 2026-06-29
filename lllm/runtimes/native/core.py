@@ -117,6 +117,7 @@ class FunctionCall(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def model_post_init(self, __context: Any) -> None:
+        _validate_tool_name(self.name, "function call name")
         self.arguments = copy.deepcopy(self.arguments)
         self.result = copy.deepcopy(self.result)
 
@@ -521,6 +522,7 @@ class Function(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def model_post_init(self, __context: Any) -> None:
+        _validate_tool_name(self.name, "function name")
         self.properties = copy.deepcopy(self.properties)
         self.required = copy.deepcopy(self.required)
 
@@ -564,7 +566,7 @@ class Function(BaseModel):
         strict: bool = True,
         processor: Callable[[Any, FunctionCall], str] = _default_function_call_processor,
     ) -> "Function":
-        function_name = name or fn.__name__
+        function_name = name if name is not None else fn.__name__
         signature = inspect.signature(fn)
         hints = get_type_hints(fn) if getattr(fn, "__annotations__", None) else {}
         property_descriptions = dict(prop_desc or {})
@@ -594,6 +596,18 @@ class Function(BaseModel):
             strict=strict,
             function=fn,
             processor=processor,
+        )
+
+
+def _validate_tool_name(value: str, label: str) -> None:
+    if (
+        not value.strip()
+        or value in {".", ".."}
+        or any(ch.isspace() for ch in value)
+        or any(ch in value for ch in "/:\\")
+    ):
+        raise ValueError(
+            f"{label} must be a non-empty token without whitespace or path separators."
         )
 
 

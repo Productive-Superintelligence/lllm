@@ -46,6 +46,25 @@ def test_tool_schema_and_execution_preserve_function_call_result():
     assert add.to_tool()["function"]["parameters"]["required"] == ["left"]
 
 
+@pytest.mark.parametrize(
+    "name",
+    ["", "   ", ".", "..", "bad/name", "bad:name", "bad\\name"],
+)
+def test_native_function_names_reject_malformed_tokens(name):
+    with pytest.raises(ValidationError):
+        Function(name=name, description="Bad name.", properties={})
+    with pytest.raises(ValidationError):
+        FunctionCall(name=name)
+
+    def helper(value: str) -> str:
+        return value
+
+    with pytest.raises(ValidationError):
+        Function.from_callable(helper, name=name)
+    with pytest.raises(ValidationError):
+        tool(name=name)(helper)
+
+
 def test_native_function_schema_views_are_isolated():
     properties = {"left": {"type": "integer"}}
     required = ["left"]
