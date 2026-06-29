@@ -134,7 +134,7 @@ def test_create_rejects_malformed_name_and_directory_values(tmp_path):
         with pytest.raises(ValueError, match="Project name"):
             create_project("plain", name, directory=tmp_path)  # type: ignore[arg-type]
 
-    for directory in (123, "   "):
+    for directory in (123, "   ", f" {tmp_path} "):
         with pytest.raises(ValueError, match="directory"):
             create_project("plain", "demo", directory=directory)  # type: ignore[arg-type]
 
@@ -153,6 +153,7 @@ def test_cli_create_project(tmp_path, capsys):
         ["create", "plain", "___"],
         ["create", "plain", "demo%2Fname"],
         ["create", "plain", "demo", "--directory", "   "],
+        ["create", "plain", "demo", "--directory", " ./out "],
     ],
 )
 def test_cli_create_rejects_malformed_project_inputs(args, capsys):

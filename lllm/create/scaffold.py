@@ -378,9 +378,9 @@ def _path_value(value: Any, label: str) -> str:
         text = os.fspath(value)
     except TypeError as exc:
         raise ValueError(f"{label} must be a non-empty path string") from exc
-    if not isinstance(text, str) or not text.strip():
+    if not isinstance(text, str) or not text or text != text.strip():
         raise ValueError(f"{label} must be a non-empty path string")
-    return text.strip()
+    return text
 
 
 def _slug(value: str) -> str:
