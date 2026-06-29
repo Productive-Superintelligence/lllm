@@ -24,4 +24,20 @@ Local config can bind the same ref to a service:
 url = "http://127.0.0.1:8000/tactics/echo"
 ```
 
+`TacticResolver.from_config()` can read a shared `.psi/config.toml` that also
+contains non-tactic refs from PsiHub or SSSN. It loads tactic URL bindings and
+ignores refs owned by other layers, such as services, channels, snapshots,
+docs, examples, and assets. Malformed tactic refs still fail validation.
+
+```toml
+[refs."psi://demo/echo/tactics/echo"]
+url = "http://127.0.0.1:8000/tactics/echo"
+
+[refs."psi://demo/echo/services/api"]
+url = "http://127.0.0.1:8000"
+
+[refs."psi://demo/echo/channels/events"]
+store = ".sssn"
+```
+
 PsiHub validates and documents refs. It does not launch services.

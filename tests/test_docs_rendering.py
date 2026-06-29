@@ -206,6 +206,19 @@ def test_service_api_reference_matches_error_envelope():
     assert '"type": "TacticInputError"' not in reference
 
 
+def test_composition_guide_documents_mixed_local_config():
+    guide = (ROOT / "docs" / "guides" / "composition.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "TacticResolver.from_config()" in guide
+    assert "shared `.psi/config.toml`" in guide
+    assert "non-tactic refs" in guide
+    assert "psi://demo/echo/services/api" in guide
+    assert "psi://demo/echo/channels/events" in guide
+    assert "Malformed tactic refs still fail validation." in guide
+
+
 def test_public_text_does_not_use_staging_name():
     text_paths = [ROOT / "README.md"]
     text_paths.extend((ROOT / "docs").rglob("*.md"))
