@@ -70,36 +70,27 @@
 
   function diagramNodes() {
     return Array.prototype.slice
-      .call(document.querySelectorAll(".mermaid"))
+      .call(document.querySelectorAll(".md-typeset .mermaid, .mermaid"))
       .filter(function (node) {
+        var source = sourceFor(node);
+
         return (
           !node.querySelector("svg") &&
           node.getAttribute("data-mermaid-rendering") !== "true" &&
-          Boolean(sourceFor(node) && sourceFor(node).trim())
+          Boolean(source && source.trim())
         );
       });
   }
 
-  function prepareNode(node) {
+  function renderNode(node, index) {
     var source = sourceFor(node);
+    var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
 
+    renderSequence += 1;
     node.removeAttribute("data-processed");
     node.removeAttribute("data-mermaid-error");
     node.setAttribute("data-mermaid-rendering", "true");
     node.setAttribute("data-mermaid-source", source);
-
-    if (!node.querySelector("svg")) {
-      node.textContent = source;
-    }
-
-    return source;
-  }
-
-  function renderNode(node, index) {
-    var source = prepareNode(node);
-    var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
-
-    renderSequence += 1;
     node.textContent = "";
 
     if (typeof window.mermaid.render !== "function") {
@@ -127,7 +118,7 @@
   function renderNodeSafely(node, index) {
     return renderNode(node, index)
       .catch(function (error) {
-        var source = node.getAttribute("data-mermaid-source") || "";
+        var source = node.getAttribute("data-mermaid-source") || sourceFor(node);
 
         node.removeAttribute("data-processed");
         node.setAttribute("data-mermaid-error", "true");
@@ -139,26 +130,12 @@
       });
   }
 
-  function renderNodesWithRun(nodes) {
-    nodes.forEach(prepareNode);
-
-    if (typeof window.mermaid.run !== "function") {
-      return Promise.all(nodes.map(renderNodeSafely));
-    }
-
-    return Promise.resolve(window.mermaid.run({ nodes: nodes })).catch(function (
-      error
-    ) {
-      console.warn("Mermaid run failed; falling back to manual rendering.", error);
-
-      return Promise.all(
-        nodes
-          .filter(function (node) {
-            return !node.querySelector("svg");
-          })
-          .map(renderNodeSafely)
-      );
-    });
+  function renderDiagrams(nodes) {
+    return Promise.all(
+      nodes.map(function (node, index) {
+        return renderNodeSafely(node, index);
+      })
+    );
   }
 
   function renderMermaid(attempt) {
@@ -186,25 +163,14 @@
     }
 
     rendering = true;
-    renderNodesWithRun(nodes).then(
-      function () {
-        nodes.forEach(function (node) {
-          node.removeAttribute("data-mermaid-rendering");
-        });
-        rendering = false;
+    renderDiagrams(nodes).then(function () {
+      rendering = false;
 
-        if (renderAgain) {
-          renderAgain = false;
-          scheduleRender();
-        }
-      },
-      function () {
-        nodes.forEach(function (node) {
-          node.removeAttribute("data-mermaid-rendering");
-        });
-        rendering = false;
+      if (renderAgain) {
+        renderAgain = false;
+        scheduleRender();
       }
-    );
+    });
   }
 
   function afterFontsReady(callback) {

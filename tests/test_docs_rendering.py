@@ -305,8 +305,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] == pytest.approx(569, abs=3)
-    assert visible_brands[0]["height"] == pytest.approx(160, abs=2)
+    assert visible_brands[0]["width"] == pytest.approx(462, abs=3)
+    assert visible_brands[0]["height"] == pytest.approx(130, abs=2)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -462,7 +462,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
     assert visible_brands[0]["width"] < metrics["viewportWidth"]
-    assert 98 <= visible_brands[0]["height"] <= 106
+    assert 88 <= visible_brands[0]["height"] <= 92
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -493,9 +493,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
-    assert "--psi-brand-width: 30rem;" in custom_css
-    assert "--psi-brand-height: 8rem;" in custom_css
-    assert "--psi-brand-height: 5.25rem;" in custom_css
+    assert "--psi-brand-width: 27rem;" in custom_css
+    assert "--psi-brand-height: 6.5rem;" in custom_css
+    assert "--psi-brand-height: 4.5rem;" in custom_css
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
@@ -541,13 +541,13 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "normalizeSource" in mermaid_js
     assert "sourceFor" in mermaid_js
     assert "diagramNodes" in mermaid_js
-    assert "renderNodesWithRun" in mermaid_js
-    assert "window.mermaid.run" in mermaid_js
-    assert "falling back to manual rendering" in mermaid_js
-    assert 'document.querySelectorAll(".mermaid")' in mermaid_js
+    assert "renderDiagrams" in mermaid_js
+    assert "window.mermaid.run" not in mermaid_js
+    assert "falling back to manual rendering" not in mermaid_js
+    assert 'document.querySelectorAll(".md-typeset .mermaid, .mermaid")' in mermaid_js
     assert '!node.querySelector("svg")' in mermaid_js
     assert 'node.getAttribute("data-mermaid-rendering") !== "true"' in mermaid_js
-    assert "Boolean(sourceFor(node) && sourceFor(node).trim())" in mermaid_js
+    assert "Boolean(source && source.trim())" in mermaid_js
     assert 'node.setAttribute("data-mermaid-source", source)' in mermaid_js
     assert "data-mermaid-error" in mermaid_js
     assert "renderSequence" in mermaid_js

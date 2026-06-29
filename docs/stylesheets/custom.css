@@ -6,8 +6,8 @@
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
-  --psi-brand-width: 30rem;
-  --psi-brand-height: 8rem;
+  --psi-brand-width: 27rem;
+  --psi-brand-height: 6.5rem;
   --psi-diagram-bg: #ffffff;
   --psi-diagram-ink: #050505;
   --psi-footer-wordmark-width: 5rem;
@@ -484,7 +484,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   }
 
   .psi-brand {
-    --psi-brand-height: 5.25rem;
+    --psi-brand-height: 4.5rem;
   }
 
   .md-typeset .mermaid {
