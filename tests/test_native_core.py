@@ -72,6 +72,44 @@ def test_dialog_put_prompt_fork_and_roundtrip_lineage():
     assert restored_child.messages[-1].content == "hello"
 
 
+def test_native_prompt_and_message_metadata_are_isolated():
+    prompt_metadata = {"nested": {"value": 1}}
+    addon_args = {"settings": {"tone": "careful"}}
+    prompt = Prompt(
+        path="draft",
+        prompt="Write about {topic}.",
+        metadata=prompt_metadata,
+        addon_args=addon_args,
+    )
+    info = prompt.info_dict()
+    child = prompt.extend(path="draft/child")
+    dialog = Dialog()
+    message_metadata = {"nested": {"value": 1}}
+    message = dialog.put_text("hello", metadata=message_metadata)
+    prompt_message_metadata = {"nested": {"value": 2}}
+    prompt_message = dialog.put_prompt(
+        prompt,
+        prompt_args={"topic": "metadata"},
+        metadata=prompt_message_metadata,
+    )
+
+    prompt_metadata["nested"]["value"] = 99
+    addon_args["settings"]["tone"] = "changed"
+    info["metadata"]["nested"]["value"] = 100
+    info["addon_args"]["settings"]["tone"] = "loud"
+    prompt.metadata["nested"]["value"] = 3
+    prompt.addon_args["settings"]["tone"] = "brief"
+    message_metadata["nested"]["value"] = 8
+    prompt_message_metadata["nested"]["value"] = 9
+
+    assert prompt.metadata == {"nested": {"value": 3}}
+    assert prompt.addon_args == {"settings": {"tone": "brief"}}
+    assert child.metadata == {"nested": {"value": 1}}
+    assert child.addon_args == {"settings": {"tone": "careful"}}
+    assert message.metadata["nested"] == {"value": 1}
+    assert prompt_message.metadata["nested"] == {"value": 2}
+
+
 def test_default_tag_parser_extracts_prompt_outputs():
     parser = DefaultTagParser(
         xml_tags=["answer"],

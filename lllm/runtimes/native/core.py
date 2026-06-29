@@ -354,7 +354,7 @@ class Dialog:
             role=role,
             content=text,
             name=name,
-            metadata=dict(metadata or {}),
+            metadata=copy.deepcopy(metadata or {}),
         )
         self.append(message)
         return message
@@ -373,7 +373,7 @@ class Dialog:
             role=role,
             content=content,
             name=name,
-            metadata=dict(metadata or {}),
+            metadata=copy.deepcopy(metadata or {}),
         )
         self.append(message)
         self.top_prompt = prompt
@@ -631,6 +631,9 @@ class Prompt(BaseModel):
             for _, field_name, _, _ in formatter.parse(self.prompt)
             if field_name is not None
         }
+        self.metadata = copy.deepcopy(self.metadata)
+        self.addon_args = copy.deepcopy(self.addon_args)
+        self.function_list = copy.deepcopy(self.function_list)
 
     @property
     def functions(self) -> dict[str, Function]:
@@ -679,10 +682,12 @@ class Prompt(BaseModel):
     def extend(self, **overrides: Any) -> "Prompt":
         if "path" not in overrides:
             raise ValueError("extend() requires a new 'path'")
-        current = {
-            field_name: getattr(self, field_name)
-            for field_name in type(self).model_fields
-        }
+        current = {}
+        for field_name in type(self).model_fields:
+            value = getattr(self, field_name)
+            if field_name in {"addon_args", "function_list", "metadata"}:
+                value = copy.deepcopy(value)
+            current[field_name] = value
         current.update(overrides)
         return Prompt(**current)
 
@@ -690,12 +695,12 @@ class Prompt(BaseModel):
         return {
             "path": self.path,
             "prompt_hash": hashlib.sha256(self.prompt.encode()).hexdigest()[:12],
-            "metadata": self.metadata,
+            "metadata": copy.deepcopy(self.metadata),
             "functions": [
                 function.name if isinstance(function, Function) else function
                 for function in self.function_list
             ],
-            "addon_args": self.addon_args,
+            "addon_args": copy.deepcopy(self.addon_args),
             "has_parser": self.parser is not None,
             "has_format": self.format is not None,
         }
