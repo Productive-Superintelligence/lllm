@@ -191,6 +191,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
                 headerLogo: inspect(
                   ".md-header__button.md-logo img, .md-header__button.md-logo svg"
                 ),
+                palette: inspect(".md-header__option[data-md-component='palette']"),
                 tabs: inspect(".md-tabs"),
                 brandImages,
               };
@@ -208,6 +209,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["header"]["boxShadow"] == "none"
     assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
+    assert metrics["palette"]["width"] == pytest.approx(0, abs=1)
+    assert metrics["palette"]["height"] == pytest.approx(0, abs=1)
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
     assert metrics["footerMark"]["width"] == pytest.approx(20, abs=1)
     assert metrics["footerMark"]["height"] == pytest.approx(20, abs=1)
