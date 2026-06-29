@@ -1,9 +1,9 @@
 (function () {
   var fontFamily =
-    "Roboto, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif";
+    "Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif";
   var initialized = false;
-  var renderQueued = false;
   var renderRunning = false;
+  var renderAgain = false;
   var renderScheduled = false;
   var renderSequence = 0;
   var retryDelay = 150;
@@ -97,10 +97,7 @@
 
     container.classList.add("mermaid");
     container.removeAttribute("data-mermaid-error");
-    container.removeAttribute("data-processed");
-    container.setAttribute("data-mermaid-rendering", "true");
     container.setAttribute("data-mermaid-source", source);
-    container.textContent = "";
     return container;
   }
 
@@ -131,6 +128,10 @@
     var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
 
     renderSequence += 1;
+    node.removeAttribute("data-processed");
+    node.removeAttribute("data-mermaid-error");
+    node.setAttribute("data-mermaid-rendering", "true");
+    node.textContent = "";
 
     if (typeof window.mermaid.render !== "function") {
       return Promise.reject(new Error("No Mermaid render API is available."));
@@ -155,21 +156,25 @@
   }
 
   function renderNodeSafely(node, index) {
-    return renderNode(node, index).catch(function (error) {
-      var source = node.getAttribute("data-mermaid-source") || "";
+    return renderNode(node, index)
+      .catch(function (error) {
+        var source = node.getAttribute("data-mermaid-source") || "";
 
-      node.removeAttribute("data-processed");
-      node.setAttribute("data-mermaid-error", "true");
-      node.textContent = source;
-      console.error("Mermaid render failed", error);
-    });
+        node.removeAttribute("data-processed");
+        node.setAttribute("data-mermaid-error", "true");
+        node.textContent = source;
+        console.error("Mermaid render failed", error);
+      })
+      .then(function () {
+        node.removeAttribute("data-mermaid-rendering");
+      });
   }
 
   function renderMermaid(attempt) {
     var nodes;
 
     if (renderRunning) {
-      renderQueued = true;
+      renderAgain = true;
       return;
     }
 
@@ -190,17 +195,24 @@
     }
 
     renderRunning = true;
-    Promise.all(nodes.map(renderNodeSafely)).finally(function () {
-      nodes.forEach(function (node) {
-        node.removeAttribute("data-mermaid-rendering");
-      });
+    Promise.all(nodes.map(renderNodeSafely)).then(function () {
       renderRunning = false;
 
-      if (renderQueued) {
-        renderQueued = false;
+      if (renderAgain) {
+        renderAgain = false;
         scheduleRender();
       }
+    }, function () {
+      renderRunning = false;
     });
+  }
+
+  function afterFontsReady(callback) {
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(callback, callback);
+    } else {
+      callback();
+    }
   }
 
   function scheduleRender() {
@@ -210,8 +222,10 @@
 
     renderScheduled = true;
     window.requestAnimationFrame(function () {
-      renderScheduled = false;
-      renderMermaid(0);
+      afterFontsReady(function () {
+        renderScheduled = false;
+        renderMermaid(0);
+      });
     });
   }
 
