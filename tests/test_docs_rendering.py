@@ -331,6 +331,15 @@ def test_service_api_reference_matches_error_envelope():
     assert '"type": "TacticInputError"' not in reference
 
 
+def test_psihub_metadata_reference_names_json_schemas():
+    reference = (ROOT / "docs" / "reference" / "psihub-metadata.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "input and output JSON schemas" in reference
+    assert "input and output schema refs" not in reference
+
+
 def test_composition_guide_documents_mixed_local_config():
     guide = (ROOT / "docs" / "guides" / "composition.md").read_text(
         encoding="utf-8"

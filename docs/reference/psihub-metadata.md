@@ -11,7 +11,7 @@ resource = tactic_resource(EchoTactic())
 Metadata can include:
 
 - tactic name and runtime kind,
-- input and output schema refs,
+- input and output JSON schemas,
 - package and service refs,
 - examples,
 - custom endpoint metadata,

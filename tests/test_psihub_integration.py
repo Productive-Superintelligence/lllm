@@ -38,6 +38,8 @@ def test_tactic_resource_includes_custom_endpoint_metadata():
     resource = tactic_resource(PolicyTactic(examples=[example]))
 
     assert resource["name"] == "policy"
+    assert resource["input_schema"]["properties"]["text"]["type"] == "string"
+    assert resource["output_schema"]["properties"]["text"]["type"] == "string"
     assert resource["examples"] == [example]
     assert resource["endpoints"] == [
         {
