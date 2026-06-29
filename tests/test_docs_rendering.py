@@ -11,6 +11,14 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def chromium_executable() -> str | None:
+    return (
+        shutil.which("chromium")
+        or shutil.which("chromium-browser")
+        or shutil.which("google-chrome")
+    )
+
+
 def build_docs(tmp_path: Path) -> Path:
     pytest.importorskip("mkdocs")
     site_dir = tmp_path / "site"
@@ -67,11 +75,7 @@ def test_docs_render_mermaid_as_diagram_containers(tmp_path):
 
 def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
     playwright = pytest.importorskip("playwright.sync_api")
-    chromium = (
-        shutil.which("chromium")
-        or shutil.which("chromium-browser")
-        or shutil.which("google-chrome")
-    )
+    chromium = chromium_executable()
     if not chromium:
         pytest.skip("Chromium executable is not available")
 
@@ -119,6 +123,111 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             assert console_errors == []
             page.close()
         browser.close()
+
+
+def test_docs_chrome_matches_light_visual_contract(tmp_path):
+    playwright = pytest.importorskip("playwright.sync_api")
+    chromium = chromium_executable()
+    if not chromium:
+        pytest.skip("Chromium executable is not available")
+
+    site_dir = build_docs(tmp_path)
+
+    with playwright.sync_playwright() as p:
+        browser = p.chromium.launch(
+            executable_path=chromium,
+            headless=True,
+            args=["--no-sandbox"],
+        )
+        page = browser.new_page(viewport={"width": 1280, "height": 900})
+        page.goto(
+            (site_dir / "index.html").as_uri(), wait_until="domcontentloaded"
+        )
+        page.wait_for_selector(
+            ".md-header__button.md-logo img, .md-header__button.md-logo svg"
+        )
+        metrics = page.evaluate(
+            """
+            () => {
+              const inspect = (selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                  return null;
+                }
+                const style = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return {
+                  backgroundColor: style.backgroundColor,
+                  boxShadow: style.boxShadow,
+                  color: style.color,
+                  display: style.display,
+                  fontFamily: style.fontFamily,
+                  height: rect.height,
+                  src: element.getAttribute("src") || "",
+                  width: rect.width,
+                };
+              };
+              const brandImages = [...document.querySelectorAll(".psi-brand img")]
+                .map((element) => {
+                  const style = getComputedStyle(element);
+                  const rect = element.getBoundingClientRect();
+                  return {
+                    display: style.display,
+                    height: rect.height,
+                    src: element.getAttribute("src") || "",
+                    width: rect.width,
+                  };
+                });
+              return {
+                bodyFont: getComputedStyle(document.body)
+                  .getPropertyValue("--md-text-font-family")
+                  .trim(),
+                codeFont: getComputedStyle(document.body)
+                  .getPropertyValue("--md-code-font-family")
+                  .trim(),
+                footer: inspect(".md-footer-meta"),
+                footerMark: inspect(".psi-footer-mark"),
+                header: inspect(".md-header"),
+                headerLogo: inspect(
+                  ".md-header__button.md-logo img, .md-header__button.md-logo svg"
+                ),
+                tabs: inspect(".md-tabs"),
+                brandImages,
+              };
+            }
+            """
+        )
+        page.close()
+        browser.close()
+
+    assert metrics["header"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["tabs"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["footer"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["header"]["color"] == "rgb(5, 5, 5)"
+    assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
+    assert metrics["header"]["boxShadow"] == "none"
+    assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
+    assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
+    assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
+    assert metrics["footerMark"]["width"] == pytest.approx(20, abs=1)
+    assert metrics["footerMark"]["height"] == pytest.approx(20, abs=1)
+    assert "Inter" in metrics["bodyFont"]
+    assert "JetBrains Mono" in metrics["codeFont"]
+
+    visible_brands = [
+        image for image in metrics["brandImages"] if image["display"] == "block"
+    ]
+    hidden_brands = [
+        image for image in metrics["brandImages"] if image["display"] == "none"
+    ]
+    assert len(visible_brands) == 1
+    assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
+    assert visible_brands[0]["width"] == pytest.approx(520, abs=1)
+    assert visible_brands[0]["height"] > 100
+    assert any(
+        image["src"] == "assets/lllm-logo-text-white.png#only-dark"
+        for image in hidden_brands
+    )
 
 
 def test_docs_keep_light_brand_styles(tmp_path):
