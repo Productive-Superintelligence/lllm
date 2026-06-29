@@ -6,12 +6,12 @@
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
-  --psi-brand-width: 36rem;
-  --psi-brand-height: 12rem;
+  --psi-brand-width: 30rem;
+  --psi-brand-height: 8rem;
   --psi-diagram-bg: #ffffff;
   --psi-diagram-ink: #050505;
-  --psi-footer-wordmark-width: 4.5rem;
-  --psi-footer-wordmark-height: 1.25rem;
+  --psi-footer-wordmark-width: 5rem;
+  --psi-footer-wordmark-height: 1.35rem;
 }
 
 body {
@@ -157,15 +157,15 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
   display: block;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .md-nav__button.md-logo img,
 .md-nav__button.md-logo svg {
   display: block;
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .md-nav--primary .md-nav__title .md-nav__button.md-logo img,
@@ -175,7 +175,11 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-header__title {
-  font-weight: 400;
+  font-weight: 700;
+}
+
+.md-header__topic {
+  font-weight: 700;
 }
 
 .md-tabs {
@@ -342,7 +346,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   align-items: center;
   display: flex;
   justify-content: center;
-  margin: 0 0 1.15rem;
+  margin: 0.25rem 0 1.35rem;
   min-height: var(--psi-brand-height);
   text-align: center;
 }
@@ -480,7 +484,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   }
 
   .psi-brand {
-    --psi-brand-height: 6.5rem;
+    --psi-brand-height: 5.25rem;
   }
 
   .md-typeset .mermaid {

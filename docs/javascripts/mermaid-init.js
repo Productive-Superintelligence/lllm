@@ -53,13 +53,19 @@
     return true;
   }
 
+  function normalizeSource(source) {
+    return (source || "").replace(/\u00a0/g, " ").trim();
+  }
+
   function sourceFor(node) {
     var existing = node.getAttribute("data-mermaid-source");
     var code = node.querySelector(
       "code.language-mermaid, code.highlight-mermaid, code"
     );
 
-    return existing || (code ? code.textContent : node.textContent);
+    return normalizeSource(
+      existing || (code ? code.textContent : node.textContent)
+    );
   }
 
   function diagramNodes() {
@@ -74,15 +80,26 @@
       });
   }
 
-  function renderNode(node, index) {
+  function prepareNode(node) {
     var source = sourceFor(node);
-    var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
 
-    renderSequence += 1;
     node.removeAttribute("data-processed");
     node.removeAttribute("data-mermaid-error");
     node.setAttribute("data-mermaid-rendering", "true");
     node.setAttribute("data-mermaid-source", source);
+
+    if (!node.querySelector("svg")) {
+      node.textContent = source;
+    }
+
+    return source;
+  }
+
+  function renderNode(node, index) {
+    var source = prepareNode(node);
+    var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
+
+    renderSequence += 1;
     node.textContent = "";
 
     if (typeof window.mermaid.render !== "function") {
@@ -122,6 +139,28 @@
       });
   }
 
+  function renderNodesWithRun(nodes) {
+    nodes.forEach(prepareNode);
+
+    if (typeof window.mermaid.run !== "function") {
+      return Promise.all(nodes.map(renderNodeSafely));
+    }
+
+    return Promise.resolve(window.mermaid.run({ nodes: nodes })).catch(function (
+      error
+    ) {
+      console.warn("Mermaid run failed; falling back to manual rendering.", error);
+
+      return Promise.all(
+        nodes
+          .filter(function (node) {
+            return !node.querySelector("svg");
+          })
+          .map(renderNodeSafely)
+      );
+    });
+  }
+
   function renderMermaid(attempt) {
     var nodes;
 
@@ -147,8 +186,11 @@
     }
 
     rendering = true;
-    Promise.all(nodes.map(renderNodeSafely)).then(
+    renderNodesWithRun(nodes).then(
       function () {
+        nodes.forEach(function (node) {
+          node.removeAttribute("data-mermaid-rendering");
+        });
         rendering = false;
 
         if (renderAgain) {
@@ -157,6 +199,9 @@
         }
       },
       function () {
+        nodes.forEach(function (node) {
+          node.removeAttribute("data-mermaid-rendering");
+        });
         rendering = false;
       }
     );
