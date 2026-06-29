@@ -225,6 +225,7 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post("/act?mode=fast"),
         lambda: endpoint.post("/act#fast"),
         lambda: endpoint.post("http://example.com/act"),
+        lambda: endpoint.post("//example.com/act"),
         lambda: endpoint.post("/act", name=""),
         lambda: endpoint.post("/act", name=123),
         lambda: endpoint.post("/act", name="bad name"),

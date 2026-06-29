@@ -226,6 +226,8 @@ def _endpoint_path(path: str) -> str:
         raise ValueError("endpoint path must not contain percent escapes")
     if any(ch.isspace() for ch in path):
         raise ValueError("endpoint path must not contain whitespace")
+    if path.startswith("//"):
+        raise ValueError("endpoint path must not be a network-path reference")
     if "://" in path or "?" in path or "#" in path:
         raise ValueError("endpoint path must be a route path, not a URL or query")
     return path if path.startswith("/") else f"/{path}"

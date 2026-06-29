@@ -12,7 +12,7 @@ Custom endpoints declared with `@endpoint.*` are mounted alongside these
 portable routes. They must use unique method/path pairs and must not shadow
 reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
 `/tactics/{name}/run`. Endpoint paths, names, and tags must avoid whitespace
-and percent escapes.
+and percent escapes; paths must also avoid `//` network-path prefixes.
 
 Error envelopes are stable across protocol and runtime failures.
 
