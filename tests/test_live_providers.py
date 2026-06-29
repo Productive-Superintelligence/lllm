@@ -2,6 +2,8 @@
 
 These tests only list models. They do not send prompts or request generations.
 Run them with ``LLLM_LIVE_PROVIDER_TESTS=1`` when checking local credentials.
+The checks read ``OPENAI_API_KEY``, ``ANTHROPIC_API_KEY``, and
+``TOGETHER_API_KEY`` when present.
 """
 
 from __future__ import annotations

@@ -91,9 +91,10 @@ Live provider credentials can be smoke-checked without sending prompts:
 LLLM_LIVE_PROVIDER_TESTS=1 pytest tests/test_live_providers.py
 ```
 
-Those opt-in tests list models for OpenAI and Anthropic. Together is included as
-an expected-soft-failure check because some networks return an edge-level
-`403 error code: 1010` before API-key validation.
+Those opt-in tests list models using whichever credentials are available:
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `TOGETHER_API_KEY`. Together is
+included as an expected-soft-failure check because some networks return an
+edge-level `403 error code: 1010` before API-key validation.
 
 ## Parsers
 
