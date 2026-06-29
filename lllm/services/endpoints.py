@@ -177,7 +177,9 @@ def _attach_endpoint(
 def _http_method(method: str) -> HttpMethod:
     if not isinstance(method, str) or not method.strip():
         raise ValueError("endpoint method must be a non-empty HTTP method")
-    value = method.strip().upper()
+    if any(ch.isspace() for ch in method):
+        raise ValueError("endpoint method must not contain whitespace")
+    value = method.upper()
     if value not in _HTTP_METHODS:
         raise ValueError(f"unsupported endpoint method: {method!r}")
     return value  # type: ignore[return-value]

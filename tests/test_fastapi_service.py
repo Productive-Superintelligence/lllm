@@ -143,6 +143,7 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post("/act", tags=(123,)),
         lambda: endpoint.post("/act", tags=("",)),
         lambda: endpoint.post("/act", tags=("bad tag",)),
+        lambda: EndpointSpec(method=" POST ", path="/act", name="act"),
         lambda: EndpointSpec(method="TRACE", path="/act", name="act"),
     ],
 )
