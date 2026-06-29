@@ -11,6 +11,9 @@ HttpMethod = Literal["GET", "POST", "PUT", "PATCH", "DELETE"]
 
 F = TypeVar("F", bound=Callable[..., Any])
 
+_ENDPOINT_MODES = {"run", "stream", "events"}
+_HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+
 
 @dataclass(frozen=True)
 class EndpointSpec:
@@ -22,6 +25,14 @@ class EndpointSpec:
     mode: EndpointMode = "run"
     description: str = ""
     tags: tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "method", _http_method(self.method))
+        object.__setattr__(self, "path", _endpoint_path(self.path))
+        object.__setattr__(self, "name", _metadata_name(self.name, "endpoint name"))
+        object.__setattr__(self, "mode", _endpoint_mode(self.mode))
+        object.__setattr__(self, "description", _description(self.description))
+        object.__setattr__(self, "tags", _tags(self.tags))
 
 
 class endpoint:
@@ -142,18 +153,70 @@ def _attach_endpoint(
     description: str,
     tags: Sequence[str],
 ) -> Callable[[F], F]:
-    normalized = path if path.startswith("/") else f"/{path}"
+    normalized = _endpoint_path(path)
+    endpoint_name = None if name is None else _metadata_name(name, "endpoint name")
+    endpoint_mode = _endpoint_mode(mode)
+    endpoint_description = _description(description)
+    endpoint_tags = _tags(tags)
 
     def decorator(fn: F) -> F:
         spec = EndpointSpec(
             method=method,
             path=normalized,
-            name=name or fn.__name__,
-            mode=mode,
-            description=description or (fn.__doc__ or "").strip(),
-            tags=tuple(tags),
+            name=endpoint_name or fn.__name__,
+            mode=endpoint_mode,
+            description=endpoint_description or (fn.__doc__ or "").strip(),
+            tags=endpoint_tags,
         )
         setattr(fn, "__lllm_endpoint__", spec)
         return fn
 
     return decorator
+
+
+def _http_method(method: str) -> HttpMethod:
+    if not isinstance(method, str) or not method.strip():
+        raise ValueError("endpoint method must be a non-empty HTTP method")
+    value = method.strip().upper()
+    if value not in _HTTP_METHODS:
+        raise ValueError(f"unsupported endpoint method: {method!r}")
+    return value  # type: ignore[return-value]
+
+
+def _endpoint_path(path: str) -> str:
+    if not isinstance(path, str) or not path:
+        raise ValueError("endpoint path must be a non-empty route path")
+    if any(ch.isspace() for ch in path):
+        raise ValueError("endpoint path must not contain whitespace")
+    if "://" in path or "?" in path or "#" in path:
+        raise ValueError("endpoint path must be a route path, not a URL or query")
+    return path if path.startswith("/") else f"/{path}"
+
+
+def _metadata_name(name: str, label: str) -> str:
+    if not isinstance(name, str) or not name:
+        raise ValueError(f"{label} must be a non-empty string")
+    if any(ch.isspace() for ch in name):
+        raise ValueError(f"{label} must not contain whitespace")
+    return name
+
+
+def _endpoint_mode(mode: str) -> EndpointMode:
+    if not isinstance(mode, str) or mode not in _ENDPOINT_MODES:
+        raise ValueError(f"unsupported endpoint mode: {mode!r}")
+    return mode  # type: ignore[return-value]
+
+
+def _description(description: str) -> str:
+    if not isinstance(description, str):
+        raise ValueError("endpoint description must be a string")
+    return description.strip()
+
+
+def _tags(tags: Sequence[str]) -> tuple[str, ...]:
+    if isinstance(tags, (str, bytes)) or not isinstance(tags, Sequence):
+        raise ValueError("endpoint tags must be a sequence of strings")
+    values: list[str] = []
+    for tag in tags:
+        values.append(_metadata_name(tag, "endpoint tag"))
+    return tuple(values)

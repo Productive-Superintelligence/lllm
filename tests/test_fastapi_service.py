@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from lllm import Tactic, endpoint
 from lllm.services import create_service_app, create_tactic_app
+from lllm.services.endpoints import EndpointSpec, custom_endpoints
 from lllm.services.fastapi import ErrorDetail, RunRequest, RunResponse
 
 
@@ -98,6 +99,56 @@ def test_service_dto_models_isolate_mutable_constructor_inputs():
     assert request.value == {"items": [1]}
     assert response.output == {"items": [2]}
     assert error.metadata == {"labels": ["error"]}
+
+
+def test_endpoint_decorator_normalizes_relative_paths():
+    class RelativeEndpointTactic(EchoTactic):
+        @endpoint.post(
+            "act",
+            name="custom_act",
+            mode="run",
+            tags=("policy",),
+        )
+        async def custom_act(self, input_value, *, context=None):
+            return {"acted": input_value.text}
+
+    spec, _method = next(
+        item
+        for item in custom_endpoints(RelativeEndpointTactic())
+        if item[0].name == "custom_act"
+    )
+
+    assert spec.path == "/act"
+    assert spec.name == "custom_act"
+    assert spec.mode == "run"
+    assert spec.tags == ("policy",)
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: endpoint.post(None),
+        lambda: endpoint.post(123),
+        lambda: endpoint.post(""),
+        lambda: endpoint.post("bad path"),
+        lambda: endpoint.post("/act?mode=fast"),
+        lambda: endpoint.post("/act#fast"),
+        lambda: endpoint.post("http://example.com/act"),
+        lambda: endpoint.post("/act", name=""),
+        lambda: endpoint.post("/act", name=123),
+        lambda: endpoint.post("/act", name="bad name"),
+        lambda: endpoint.post("/act", mode="batch"),
+        lambda: endpoint.post("/act", description=123),
+        lambda: endpoint.post("/act", tags="policy"),
+        lambda: endpoint.post("/act", tags=(123,)),
+        lambda: endpoint.post("/act", tags=("",)),
+        lambda: endpoint.post("/act", tags=("bad tag",)),
+        lambda: EndpointSpec(method="TRACE", path="/act", name="act"),
+    ],
+)
+def test_endpoint_decorator_rejects_malformed_metadata(factory):
+    with pytest.raises(ValueError):
+        factory()
 
 
 def request(app, method, path, **kwargs):
