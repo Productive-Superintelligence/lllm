@@ -158,6 +158,29 @@ def test_protocol_string_fields_reject_bytes(factory):
         factory()
 
 
+@pytest.mark.parametrize(
+    "name",
+    ("", "   ", ".", "..", "bad/name", "bad:name", "bad\\name"),
+)
+def test_tactic_name_fields_reject_path_control_values(name):
+    with pytest.raises(ValueError, match="name"):
+        Tactic(name=name)
+    with pytest.raises(ValidationError):
+        TacticInfo(name=name)
+    with pytest.raises(ValidationError):
+        CallTrace(request_id="req", tactic=name)
+
+
+def test_tactic_name_fields_allow_display_names_with_spaces():
+    tactic = Tactic(name="add numbers")
+    info = TacticInfo(name="add numbers")
+    trace = CallTrace(request_id="req", tactic="add numbers")
+
+    assert tactic.tactic_name == "add numbers"
+    assert info.name == "add numbers"
+    assert trace.tactic == "add numbers"
+
+
 def test_call_result_isolates_mutable_output_and_trace():
     output = {"items": [1]}
     trace = CallTrace(request_id="req", tactic="echo", metadata={"labels": ["trace"]})

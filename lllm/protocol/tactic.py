@@ -10,7 +10,7 @@ from copy import deepcopy
 from collections.abc import AsyncIterator, Iterator, Mapping
 from typing import Any, ClassVar, Generic, TypeVar
 
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from .context import CallContext
 from .errors import TacticUnsupportedError
@@ -39,6 +39,11 @@ class CallTrace(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         self.metadata = deepcopy(self.metadata)
+
+    @model_validator(mode="after")
+    def _validate_identity(self) -> "CallTrace":
+        _path_segment_value(self.tactic, "tactic")
+        return self
 
     def success(self, output: Any) -> None:
         self.state = "success"
@@ -86,6 +91,11 @@ class TacticInfo(BaseModel):
         self.examples = deepcopy(self.examples)
         self.metadata = deepcopy(self.metadata)
 
+    @model_validator(mode="after")
+    def _validate_identity(self) -> "TacticInfo":
+        _path_segment_value(self.name, "name")
+        return self
+
 
 class Tactic(Generic[InputT, OutputT]):
     """Typed, service-ready unit that does one thing well.
@@ -111,7 +121,8 @@ class Tactic(Generic[InputT, OutputT]):
         examples: list[dict[str, Any]] | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
-        self._name = _text_value(name or self.name or type(self).__name__, "name")
+        name_value = name if name is not None else self.name or type(self).__name__
+        self._name = _path_segment_value(name_value, "name")
         self._description = _optional_text_value(description, "description")
         self.package_ref = _optional_text_value(package_ref, "package_ref")
         self.service_ref = _optional_text_value(service_ref, "service_ref")
@@ -281,3 +292,14 @@ def _optional_text_value(value: Any, label: str) -> str | None:
     if value is None:
         return None
     return _text_value(value, label)
+
+
+def _path_segment_value(value: Any, label: str) -> str:
+    text = _text_value(value, label)
+    if (
+        not text.strip()
+        or text in {".", ".."}
+        or any(ch in text for ch in "/:\\")
+    ):
+        raise ValueError(f"{label} must be a non-empty name without path separators.")
+    return text
