@@ -1,8 +1,8 @@
 :root {
   --md-primary-fg-color: #ffffff;
-  --md-accent-fg-color: #666666;
-  --md-text-font: "Inter";
-  --md-code-font: "JetBrains Mono";
+  --md-accent-fg-color: #050505;
+  --md-text-font: "Roboto";
+  --md-code-font: "Roboto Mono";
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
@@ -13,9 +13,9 @@
 }
 
 body {
-  --md-text-font-family: "Inter", -apple-system, BlinkMacSystemFont,
-    "Helvetica Neue", Arial, sans-serif;
-  --md-code-font-family: "JetBrains Mono", SFMono-Regular, Consolas, Menlo,
+  --md-text-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
+    Helvetica, Arial, sans-serif;
+  --md-code-font-family: "Roboto Mono", SFMono-Regular, Consolas, Menlo,
     monospace;
 }
 
@@ -25,7 +25,7 @@ body {
   --psi-soft: #f7f7f7;
   --md-default-bg-color: #ffffff;
   --md-typeset-a-color: #050505;
-  --md-accent-fg-color: #666666;
+  --md-accent-fg-color: #050505;
   --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.1);
   --md-accent-bg-color: #e0e0e0;
   --psi-diagram-bg: #ffffff;
@@ -38,7 +38,7 @@ body {
   --psi-soft: #111111;
   --md-default-bg-color: #0a0a0a;
   --md-typeset-a-color: #ffffff;
-  --md-accent-fg-color: #a3a3a3;
+  --md-accent-fg-color: #ffffff;
   --md-accent-fg-color--transparent: rgba(255, 255, 255, 0.1);
   --md-accent-bg-color: #333333;
   --psi-diagram-bg: #050505;
@@ -350,7 +350,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .psi-tile {
   border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.35rem;
+  border-radius: 0.1rem;
   padding: 0.85rem;
 }
 
@@ -368,7 +368,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .psi-flow > div {
   border: 1px solid var(--md-default-fg-color--lightest);
-  border-radius: 0.35rem;
+  border-radius: 0.1rem;
   padding: 0.75rem;
   background: var(--md-default-bg-color);
 }
@@ -383,15 +383,15 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .md-typeset .mermaid svg {
   display: inline-block;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+    sans-serif !important;
   height: auto;
   max-width: 100%;
 }
 
 .md-typeset .mermaid svg * {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
-    Arial, sans-serif;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+    sans-serif !important;
 }
 
 .md-typeset .mermaid .node rect,

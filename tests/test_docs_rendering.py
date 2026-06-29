@@ -63,7 +63,7 @@ def test_docs_render_mermaid_as_diagram_containers(tmp_path):
     for path in diagram_pages:
         html = path.read_text(encoding="utf-8")
         assert "javascripts/vendor/mermaid.min.js" in html
-        assert "javascripts/mermaid.js" in html
+        assert "javascripts/mermaid-init.js" in html
         assert "cdn.jsdelivr" not in html
         assert "unpkg" not in html
 
@@ -214,8 +214,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
     assert metrics["footerMark"]["width"] == pytest.approx(20, abs=1)
     assert metrics["footerMark"]["height"] == pytest.approx(20, abs=1)
-    assert "Inter" in metrics["bodyFont"]
-    assert "JetBrains Mono" in metrics["codeFont"]
+    assert "Roboto" in metrics["bodyFont"]
+    assert "Roboto Mono" in metrics["codeFont"]
 
     visible_brands = [
         image for image in metrics["brandImages"] if image["display"] == "block"
@@ -239,7 +239,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     custom_css = (site_dir / "stylesheets" / "custom.css").read_text(
         encoding="utf-8"
     )
-    mermaid_js = (site_dir / "javascripts" / "mermaid.js").read_text(
+    mermaid_js = (site_dir / "javascripts" / "mermaid-init.js").read_text(
         encoding="utf-8"
     )
     index_html = (site_dir / "index.html").read_text(encoding="utf-8")
@@ -249,10 +249,10 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-header--shadow" in custom_css
     assert "background-color: #ffffff;" in custom_css
     assert "--md-footer-fg-color--light: var(--psi-ink);" in custom_css
-    assert '--md-text-font: "Inter";' in custom_css
-    assert '--md-code-font: "JetBrains Mono";' in custom_css
+    assert '--md-text-font: "Roboto";' in custom_css
+    assert '--md-code-font: "Roboto Mono";' in custom_css
     assert "--md-text-font-family" in custom_css
-    assert '"JetBrains Mono", SFMono-Regular' in custom_css
+    assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
     assert "--psi-brand-width: 26rem;" in custom_css
     assert "--psi-brand-height: 7.25rem;" in custom_css
@@ -281,20 +281,20 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-typeset .mermaid marker path" in custom_css
     assert "var(--psi-diagram-ink)" in custom_css
     assert "var fontFamily" in mermaid_js
-    assert "Inter, -apple-system, BlinkMacSystemFont" in mermaid_js
+    assert "Roboto, -apple-system, BlinkMacSystemFont" in mermaid_js
     assert "window.mermaid.startOnLoad = false" in mermaid_js
     assert 'securityLevel: "strict"' in mermaid_js
     assert "flowchart:" in mermaid_js
     assert "htmlLabels: false" in mermaid_js
     assert "useMaxWidth: true" in mermaid_js
     assert "data-mermaid-source" in mermaid_js
-    assert "normalizeDiagramNode" in mermaid_js
+    assert "normalizeNode" in mermaid_js
     assert "pre code.language-mermaid" in mermaid_js
     assert "data-mermaid-error" in mermaid_js
     assert "renderWithRun" in mermaid_js
     assert "renderNodeFallback" in mermaid_js
     assert "window.mermaid.render" in mermaid_js
-    assert "attempt < 30" in mermaid_js
+    assert "attempt < maxRetries" in mermaid_js
     assert "requestAnimationFrame" in mermaid_js
     assert "window.document$.subscribe(scheduleRender)" in mermaid_js
     assert 'window.addEventListener("load", scheduleRender)' in mermaid_js
