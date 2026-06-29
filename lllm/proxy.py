@@ -41,7 +41,7 @@ class InMemoryProxyLog:
         self.records: list[ProxyRecord] = []
 
     def append(self, record: ProxyRecord) -> None:
-        self.records.append(record)
+        self.records.append(record.model_copy(deep=True))
 
     def clear(self) -> None:
         self.records.clear()

@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from lllm import (
     CallContext,
     InMemoryProxyLog,
+    ProxyRecord,
     ProxyTactic,
     Tactic,
     TacticEvent,
@@ -149,6 +150,31 @@ def test_proxy_tactic_isolates_mutable_metadata():
     assert proxy.info().metadata["purpose"] == {"name": "test"}
     assert record.metadata["context"]["trace"] == {"id": "one"}
     assert record.metadata["proxy"]["purpose"] == {"name": "test"}
+
+
+def test_in_memory_proxy_log_isolates_appended_records():
+    log = InMemoryProxyLog()
+    record = ProxyRecord(
+        request_id="req-log",
+        proxy="proxy",
+        tactic="echo",
+        state="success",
+        started_at=1.0,
+        ended_at=2.0,
+        latency_ms=1000.0,
+        input_value={"items": [1]},
+        output_value={"items": [2]},
+        metadata={"labels": ["log"]},
+    )
+
+    log.append(record)
+    record.input_value["items"].append(10)
+    record.output_value["items"].append(20)
+    record.metadata["labels"].append("mutated")
+
+    assert log.records[0].input_value == {"items": [1]}
+    assert log.records[0].output_value == {"items": [2]}
+    assert log.records[0].metadata == {"labels": ["log"]}
 
 
 def test_proxy_tactic_records_failure_and_calls_error_hook():
