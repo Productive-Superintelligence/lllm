@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator, Iterable, Iterator
+from copy import deepcopy
 from typing import Any
 
 from pydantic import BaseModel
@@ -212,12 +213,12 @@ class RemoteTactic(Tactic[Any, Any]):
 
 def _request_envelope(input_value: Any, context: CallContext | None) -> dict[str, Any]:
     if isinstance(input_value, BaseModel):
-        value = input_value.model_dump(mode="json")
+        value = deepcopy(input_value.model_dump(mode="json"))
     else:
-        value = input_value
+        value = deepcopy(input_value)
     return {
         "input": value,
-        "context": (context or CallContext()).model_dump(mode="json"),
+        "context": deepcopy((context or CallContext()).model_dump(mode="json")),
     }
 
 

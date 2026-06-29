@@ -15,6 +15,7 @@ from lllm import (
     TacticResolver,
 )
 from lllm.services import create_service_app, create_tactic_app
+from lllm.services.client import _request_envelope
 
 
 REF = "psi://demo/echo/tactics/echo"
@@ -130,6 +131,18 @@ def test_remote_tactic_calls_fastapi_service():
     )
 
     assert result == EchoOutput(text="HELLO!")
+
+
+def test_remote_tactic_request_envelope_isolates_mutable_inputs():
+    input_value = {"items": ["hello"]}
+    context = CallContext(metadata={"labels": ["ctx"]})
+
+    envelope = _request_envelope(input_value, context)
+    input_value["items"].append("changed")
+    context.metadata["labels"].append("changed")
+
+    assert envelope["input"] == {"items": ["hello"]}
+    assert envelope["context"]["metadata"] == {"labels": ["ctx"]}
 
 
 def test_remote_tactic_fetches_service_info():
