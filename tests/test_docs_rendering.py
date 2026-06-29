@@ -86,7 +86,7 @@ def test_docs_render_mermaid_as_diagram_containers(tmp_path):
     for path in diagram_pages:
         html = path.read_text(encoding="utf-8")
         assert "javascripts/vendor/mermaid.min.js" in html
-        assert "javascripts/mermaid-init.js" in html
+        assert "javascripts/mermaid-init.20260629.js" in html
         assert "cdn.jsdelivr" not in html
         assert "unpkg" not in html
 
@@ -305,8 +305,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] == pytest.approx(462, abs=3)
-    assert visible_brands[0]["height"] == pytest.approx(130, abs=2)
+    assert visible_brands[0]["width"] == pytest.approx(320, abs=3)
+    assert visible_brands[0]["height"] == pytest.approx(90, abs=2)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -462,7 +462,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
     assert visible_brands[0]["width"] < metrics["viewportWidth"]
-    assert 88 <= visible_brands[0]["height"] <= 92
+    assert 63 <= visible_brands[0]["height"] <= 67
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -471,10 +471,10 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
 
 def test_docs_keep_light_brand_styles(tmp_path):
     site_dir = build_docs(tmp_path)
-    custom_css = (site_dir / "stylesheets" / "custom.css").read_text(
+    custom_css = (site_dir / "stylesheets" / "custom.20260629.css").read_text(
         encoding="utf-8"
     )
-    mermaid_js = (site_dir / "javascripts" / "mermaid-init.js").read_text(
+    mermaid_js = (site_dir / "javascripts" / "mermaid-init.20260629.js").read_text(
         encoding="utf-8"
     )
     index_html = (site_dir / "index.html").read_text(encoding="utf-8")
@@ -493,9 +493,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
-    assert "--psi-brand-width: 27rem;" in custom_css
-    assert "--psi-brand-height: 6.5rem;" in custom_css
+    assert "--psi-brand-width: 20rem;" in custom_css
     assert "--psi-brand-height: 4.5rem;" in custom_css
+    assert "--psi-brand-height: 3.25rem;" in custom_css
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
@@ -577,7 +577,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
     assert '<p align="center">' in readme
-    assert '<img src="assets/lllm-logo-text-dark.png" alt="LLLM" width="560">' in readme
+    assert '<img src="assets/lllm-logo-text-dark.png" alt="LLLM" width="420">' in readme
     assert (site_dir / "CNAME").read_text(encoding="utf-8").strip() == "lllm.one"
 
 

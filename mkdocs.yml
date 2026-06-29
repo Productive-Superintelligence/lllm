@@ -67,11 +67,11 @@ extra:
       link: https://github.com/Productive-Superintelligence/lllm
 
 extra_css:
-  - stylesheets/custom.css
+  - stylesheets/custom.20260629.css
 
 extra_javascript:
   - javascripts/vendor/mermaid.min.js
-  - javascripts/mermaid-init.js
+  - javascripts/mermaid-init.20260629.js
 
 markdown_extensions:
   - admonition
