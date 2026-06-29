@@ -481,10 +481,14 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
     --psi-brand-height: 4.5rem;
   }
 
+  .md-typeset .mermaid {
+    text-align: left;
+  }
+
   .md-typeset .mermaid svg {
-    max-width: 100%;
-    min-width: 0;
-    width: 100%;
+    max-width: none;
+    min-width: 32rem;
+    width: auto;
   }
 }
 
