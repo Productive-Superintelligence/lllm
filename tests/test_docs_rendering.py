@@ -222,8 +222,9 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] == pytest.approx(520, abs=1)
-    assert visible_brands[0]["height"] > 100
+    assert visible_brands[0]["width"] <= 520
+    assert visible_brands[0]["width"] > 500
+    assert visible_brands[0]["height"] == pytest.approx(145, abs=1)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -251,6 +252,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert '"JetBrains Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
     assert "--psi-brand-width: 26rem;" in custom_css
+    assert "--psi-brand-height: 7.25rem;" in custom_css
+    assert "--psi-diagram-bg: #ffffff;" in custom_css
+    assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
     assert "width: 1.2rem;" in custom_css
     assert ".md-search__form .md-icon svg" in custom_css
@@ -263,7 +267,8 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-social__link" in custom_css
     assert "height: 1rem;" in custom_css
     assert ".psi-brand img" in custom_css
-    assert "width: min(var(--psi-brand-width), 100%);" in custom_css
+    assert "max-height: var(--psi-brand-height);" in custom_css
+    assert "max-width: min(var(--psi-brand-width), 100%);" in custom_css
     assert 'img[src$="#only-dark"]' in custom_css
     assert ".md-typeset .mermaid svg" in custom_css
     assert "max-width: 100%;" in custom_css
@@ -271,6 +276,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-typeset .mermaid .node rect" in custom_css
     assert ".md-typeset .mermaid .edgePath path" in custom_css
     assert ".md-typeset .mermaid marker path" in custom_css
+    assert "var(--psi-diagram-ink)" in custom_css
     assert "var fontFamily" in mermaid_js
     assert "Inter, -apple-system, BlinkMacSystemFont" in mermaid_js
     assert "window.mermaid.startOnLoad = false" in mermaid_js
@@ -308,6 +314,8 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
 
     assert "- navigation.sections" in config
     assert "- navigation.indexes" in config
+    assert "scheme: slate" not in config
+    assert "material/weather-night" not in config
     assert "  - Tutorials:\n      - Protocol Level:" in config
     assert "      - Native Runtime:" in config
     assert "      - Pydantic Runtime:" in config

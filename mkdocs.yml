@@ -18,15 +18,6 @@ theme:
     - scheme: default
       primary: white
       accent: black
-      toggle:
-        icon: material/weather-night
-        name: Switch to dark mode
-    - scheme: slate
-      primary: black
-      accent: white
-      toggle:
-        icon: material/weather-sunny
-        name: Switch to light mode
   features:
     - navigation.tabs
     - navigation.tabs.sticky

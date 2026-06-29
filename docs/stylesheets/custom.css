@@ -7,6 +7,9 @@
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
   --psi-brand-width: 26rem;
+  --psi-brand-height: 7.25rem;
+  --psi-diagram-bg: #ffffff;
+  --psi-diagram-ink: #050505;
 }
 
 body {
@@ -25,6 +28,8 @@ body {
   --md-accent-fg-color: #666666;
   --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.1);
   --md-accent-bg-color: #e0e0e0;
+  --psi-diagram-bg: #ffffff;
+  --psi-diagram-ink: #050505;
 }
 
 [data-md-color-scheme="slate"] {
@@ -36,6 +41,8 @@ body {
   --md-accent-fg-color: #a3a3a3;
   --md-accent-fg-color--transparent: rgba(255, 255, 255, 0.1);
   --md-accent-bg-color: #333333;
+  --psi-diagram-bg: #050505;
+  --psi-diagram-ink: #ffffff;
 }
 
 [data-md-color-scheme="default"] .md-sidebar--primary {
@@ -305,15 +312,21 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .psi-brand {
+  align-items: center;
+  display: flex;
+  justify-content: center;
   margin: 0.25rem 0 1.25rem;
+  min-height: var(--psi-brand-height);
   text-align: center;
 }
 
 .psi-brand img {
   display: block;
-  width: min(var(--psi-brand-width), 100%);
+  width: auto;
   height: auto;
+  max-height: var(--psi-brand-height);
   max-width: 100%;
+  max-width: min(var(--psi-brand-width), 100%);
   margin: 0 auto;
   object-fit: contain;
 }
@@ -385,30 +398,42 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid .node polygon,
 .md-typeset .mermaid .node circle,
 .md-typeset .mermaid .node ellipse {
-  fill: #ffffff !important;
-  stroke: var(--psi-ink) !important;
+  fill: var(--psi-diagram-bg) !important;
+  stroke: var(--psi-diagram-ink) !important;
   stroke-width: 1.4px !important;
 }
 
 .md-typeset .mermaid .edgePath path,
 .md-typeset .mermaid .flowchart-link {
-  stroke: var(--psi-ink) !important;
+  stroke: var(--psi-diagram-ink) !important;
   stroke-width: 1.4px !important;
 }
 
 .md-typeset .mermaid marker path {
-  fill: var(--psi-ink) !important;
-  stroke: var(--psi-ink) !important;
+  fill: var(--psi-diagram-ink) !important;
+  stroke: var(--psi-diagram-ink) !important;
 }
 
 .md-typeset .mermaid .nodeLabel,
 .md-typeset .mermaid .edgeLabel,
-.md-typeset .mermaid .label {
-  color: var(--psi-ink) !important;
-  fill: var(--psi-ink) !important;
+.md-typeset .mermaid .label,
+.md-typeset .mermaid .label text,
+.md-typeset .mermaid .label tspan {
+  color: var(--psi-diagram-ink) !important;
+  fill: var(--psi-diagram-ink) !important;
+}
+
+.md-typeset .mermaid .edgeLabel rect,
+.md-typeset .mermaid .labelBkg {
+  fill: var(--md-default-bg-color) !important;
+  opacity: 1 !important;
 }
 
 @media screen and (max-width: 44.984rem) {
+  .psi-brand {
+    --psi-brand-height: 5.25rem;
+  }
+
   .md-typeset .mermaid svg {
     min-width: 34rem;
     max-width: none;
