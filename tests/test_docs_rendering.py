@@ -47,6 +47,7 @@ def test_docs_use_tactic_protocol_framing():
         "README": ROOT / "README.md",
         "docs home": ROOT / "docs" / "index.md",
         "package docstring": ROOT / "lllm" / "__init__.py",
+        "package metadata": ROOT / "pyproject.toml",
         "site metadata": ROOT / "mkdocs.yml",
     }
     combined = "\n".join(

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lllm"
 version = "0.1.0"
-description = "Protocol-first service layer for reusable agentic tactics."
+description = "Protocol and service layer for reusable agentic tactics."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
