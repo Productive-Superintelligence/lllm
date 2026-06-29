@@ -179,7 +179,10 @@ def test_cli_serve_rejects_malformed_bindings_before_import(args, capsys):
     assert "missing.module" not in captured.err
 
 
-@pytest.mark.parametrize("entrypoint", ["demo", " demo:build_tactic "])
+@pytest.mark.parametrize(
+    "entrypoint",
+    ["demo", " demo:build_tactic ", "demo%2Ftactics:build_tactic"],
+)
 def test_cli_inspect_rejects_malformed_entrypoint_without_traceback(
     capsys,
     entrypoint,
@@ -249,6 +252,8 @@ def test_cli_reports_missing_entrypoint_attributes_without_traceback(
         "demo.tactics:build_tactic.",
         "demo.tactics:.build_tactic",
         "demo.tactics:build tactic",
+        "demo%2Ftactics:build_tactic",
+        "demo.tactics:build%2Ftactic",
         " demo.tactics:build_tactic ",
     ],
 )

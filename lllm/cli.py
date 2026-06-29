@@ -135,7 +135,10 @@ def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic
 
 
 def _entrypoint_segments(value: str) -> bool:
-    return all(part and not any(ch.isspace() for ch in part) for part in value.split("."))
+    return all(
+        part and "%" not in part and not any(ch.isspace() for ch in part)
+        for part in value.split(".")
+    )
 
 
 def _serve_host(value: str) -> str:
