@@ -503,6 +503,10 @@ class Function(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    def model_post_init(self, __context: Any) -> None:
+        self.properties = copy.deepcopy(self.properties)
+        self.required = copy.deepcopy(self.required)
+
     def __call__(self, function_call: FunctionCall) -> FunctionCall:
         if self.function is None:
             raise RuntimeError(f"Function '{self.name}' has no implementation.")
@@ -524,8 +528,8 @@ class Function(BaseModel):
                 "description": self.description,
                 "parameters": {
                     "type": "object",
-                    "properties": self.properties,
-                    "required": self.required,
+                    "properties": copy.deepcopy(self.properties),
+                    "required": copy.deepcopy(self.required),
                     "additionalProperties": self.additional_properties,
                 },
                 "strict": self.strict,
@@ -638,7 +642,7 @@ class Prompt(BaseModel):
     @property
     def functions(self) -> dict[str, Function]:
         return {
-            function.name: function
+            function.name: copy.deepcopy(function)
             for function in self.function_list
             if isinstance(function, Function)
         }

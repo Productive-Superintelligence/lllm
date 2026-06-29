@@ -3,6 +3,7 @@ import pytest
 from lllm.runtimes.native import (
     DefaultTagParser,
     Dialog,
+    Function,
     FunctionCall,
     ParseError,
     Prompt,
@@ -40,6 +41,33 @@ def test_tool_schema_and_execution_preserve_function_call_result():
     assert call.result == 5
     assert "Return of calling function add" in call.result_str
     assert add.to_tool()["function"]["parameters"]["required"] == ["left"]
+
+
+def test_native_function_schema_views_are_isolated():
+    properties = {"left": {"type": "integer"}}
+    required = ["left"]
+    function = Function(
+        name="add",
+        description="Add one value",
+        properties=properties,
+        required=required,
+        function=lambda left: left + 1,
+    )
+    prompt = Prompt(path="tools", prompt="Use tools.", function_list=[function])
+
+    properties["left"]["type"] = "string"
+    required.append("right")
+    tool_schema = function.to_tool()
+    tool_schema["function"]["parameters"]["properties"]["left"]["type"] = "number"
+    tool_schema["function"]["parameters"]["required"].append("right")
+    prompt_functions = prompt.functions
+    prompt_functions["add"].properties["left"]["type"] = "boolean"
+    prompt_function = prompt.get_function("add")
+
+    assert function.properties == {"left": {"type": "integer"}}
+    assert function.required == ["left"]
+    assert prompt_function.properties == {"left": {"type": "integer"}}
+    assert prompt_function(FunctionCall(name="add", arguments={"left": 2})).result == 3
 
 
 def test_dialog_put_prompt_fork_and_roundtrip_lineage():
