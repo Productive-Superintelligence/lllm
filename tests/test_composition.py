@@ -190,6 +190,24 @@ def test_remote_tactic_metadata_keeps_normalized_service_url():
     assert info.metadata["labels"] == ["remote"]
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        None,
+        123,
+        "",
+        "   ",
+        "testserver/run",
+        "/run",
+        "ftp://testserver/run",
+        "http://test server/run",
+    ],
+)
+def test_remote_tactic_rejects_malformed_service_urls(url):
+    with pytest.raises(ValueError, match="url"):
+        RemoteTactic(url)  # type: ignore[arg-type]
+
+
 def test_remote_tactic_async_fetches_service_info():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(

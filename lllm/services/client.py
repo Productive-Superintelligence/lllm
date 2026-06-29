@@ -6,6 +6,7 @@ import json
 from collections.abc import AsyncIterator, Iterable, Iterator
 from copy import deepcopy
 from typing import Any
+from urllib.parse import urlsplit
 
 from pydantic import BaseModel
 
@@ -64,6 +65,7 @@ class RemoteTactic(Tactic[Any, Any]):
         async_transport: Any = None,
         metadata: dict[str, Any] | None = None,
     ) -> None:
+        url = _service_url(url)
         self.url = _run_url(url)
         self.stream_url = _stream_url(url)
         self.info_url = _info_url(url)
@@ -372,6 +374,18 @@ def _endpoint_url(url: str, endpoint: str) -> str:
     if value.endswith(f"/{endpoint}"):
         return value
     return f"{value}/{endpoint}"
+
+
+def _service_url(url: str) -> str:
+    if not isinstance(url, str) or not url.strip():
+        raise ValueError("url must be a non-empty absolute http(s) URL")
+    value = url.strip()
+    if any(ch.isspace() for ch in value):
+        raise ValueError("url must not contain whitespace")
+    parsed = urlsplit(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ValueError("url must be an absolute http(s) URL")
+    return value
 
 
 def _name_from_url(url: str) -> str:
