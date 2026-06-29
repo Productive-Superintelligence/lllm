@@ -125,6 +125,32 @@ def test_proxy_tactic_records_success_and_runs_hooks():
     assert record.metadata["proxy"] == {"purpose": "test"}
 
 
+def test_proxy_tactic_isolates_mutable_metadata():
+    log = InMemoryProxyLog()
+    proxy_metadata = {"purpose": {"name": "test"}}
+    context_metadata = {"suffix": "!", "trace": {"id": "one"}}
+    proxy = ProxyTactic(
+        EchoTactic(),
+        sink=log.append,
+        metadata=proxy_metadata,
+    )
+
+    info_before = proxy.info()
+    proxy_metadata["purpose"]["name"] = "changed"
+    proxy.run(
+        {"text": "hi"},
+        context=CallContext(request_id="req-meta", metadata=context_metadata),
+    )
+    context_metadata["trace"]["id"] = "two"
+    proxy.proxy_metadata["purpose"]["name"] = "internal-change"
+
+    record = log.records[0]
+    assert info_before.metadata["purpose"] == {"name": "test"}
+    assert proxy.info().metadata["purpose"] == {"name": "test"}
+    assert record.metadata["context"]["trace"] == {"id": "one"}
+    assert record.metadata["proxy"]["purpose"] == {"name": "test"}
+
+
 def test_proxy_tactic_records_failure_and_calls_error_hook():
     errors = []
     log = InMemoryProxyLog()

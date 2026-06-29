@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import time
+from copy import deepcopy
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
@@ -77,7 +78,7 @@ class ProxyTactic(Tactic[Any, Any]):
         self.sink = sink
         self.capture_inputs = capture_inputs
         self.capture_outputs = capture_outputs
-        self.proxy_metadata = dict(metadata or {})
+        self.proxy_metadata = deepcopy(dict(metadata or {}))
         info = tactic.info()
         self.input_type = tactic.input_type
         self.output_type = tactic.output_type
@@ -282,8 +283,8 @@ class ProxyTactic(Tactic[Any, Any]):
                 error_type=error_type,
                 error=error,
                 metadata={
-                    "context": dict(context.metadata),
-                    "proxy": dict(self.proxy_metadata),
+                    "context": deepcopy(context.metadata),
+                    "proxy": deepcopy(self.proxy_metadata),
                 },
             )
         )
