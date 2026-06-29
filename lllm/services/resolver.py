@@ -56,6 +56,7 @@ class TacticResolver:
 
     def register(self, ref: str | TacticRef, tactic: Tactic[Any, Any]) -> None:
         parsed = TacticRef.parse(ref)
+        tactic = _require_tactic(tactic)
         tactic.package_ref = str(parsed)
         self._bindings[str(parsed)] = tactic
 
@@ -137,3 +138,9 @@ def _path_value(value: Any, label: str) -> str:
     if not isinstance(text, str) or not text.strip():
         raise ValueError(f"{label} must be a non-empty path string")
     return text.strip()
+
+
+def _require_tactic(value: Any) -> Tactic[Any, Any]:
+    if not isinstance(value, Tactic):
+        raise TypeError("tactic must be a Tactic instance.")
+    return value

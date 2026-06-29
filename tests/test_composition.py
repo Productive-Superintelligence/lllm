@@ -127,6 +127,16 @@ def test_resolver_calls_in_process_tactic():
     assert resolver.refs() == (REF,)
 
 
+def test_resolver_register_rejects_non_tactic_objects():
+    resolver = TacticResolver()
+
+    for tactic in (object(), lambda value: value, None):
+        with pytest.raises(TypeError, match="Tactic"):
+            resolver.register(REF, tactic)  # type: ignore[arg-type]
+
+    assert resolver.refs() == ()
+
+
 def test_remote_tactic_calls_fastapi_service():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(
