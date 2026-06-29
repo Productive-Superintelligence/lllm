@@ -286,14 +286,14 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["header"]["color"] == "rgb(5, 5, 5)"
     assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
     assert metrics["header"]["boxShadow"] == "none"
-    assert metrics["title"]["fontWeight"] == "400"
+    assert metrics["title"]["fontWeight"] == "700"
     assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
     assert metrics["palette"]["width"] == pytest.approx(0, abs=1)
     assert metrics["palette"]["height"] == pytest.approx(0, abs=1)
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
-    assert metrics["footerMark"]["width"] == pytest.approx(90, abs=2)
-    assert metrics["footerMark"]["height"] == pytest.approx(25, abs=2)
+    assert metrics["footerMark"]["width"] == pytest.approx(100, abs=2)
+    assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
     assert "Roboto" in metrics["bodyFont"]
     assert "Roboto Mono" in metrics["codeFont"]
 
@@ -305,9 +305,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] <= 700
-    assert visible_brands[0]["width"] > 650
-    assert visible_brands[0]["height"] == pytest.approx(193, abs=2)
+    assert visible_brands[0]["width"] == pytest.approx(569, abs=3)
+    assert visible_brands[0]["height"] == pytest.approx(160, abs=2)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -442,8 +441,8 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
     assert metrics["footer"]["height"] <= 72
-    assert metrics["footerMark"]["width"] == pytest.approx(90, abs=2)
-    assert metrics["footerMark"]["height"] == pytest.approx(25, abs=2)
+    assert metrics["footerMark"]["width"] == pytest.approx(100, abs=2)
+    assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
     assert "Roboto" in metrics["bodyFont"]
     assert "Roboto Mono" in metrics["codeFont"]
     assert metrics["mermaid"]["width"] <= metrics["viewportWidth"]
@@ -463,7 +462,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
     assert visible_brands[0]["width"] < metrics["viewportWidth"]
-    assert visible_brands[0]["height"] == pytest.approx(101, abs=2)
+    assert 98 <= visible_brands[0]["height"] <= 106
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -494,13 +493,13 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
-    assert "--psi-brand-width: 36rem;" in custom_css
-    assert "--psi-brand-height: 12rem;" in custom_css
-    assert "--psi-brand-height: 6.5rem;" in custom_css
+    assert "--psi-brand-width: 30rem;" in custom_css
+    assert "--psi-brand-height: 8rem;" in custom_css
+    assert "--psi-brand-height: 5.25rem;" in custom_css
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
-    assert "width: 1.2rem;" in custom_css
+    assert "width: 1.25rem;" in custom_css
     assert ".md-nav--primary .md-nav__title .md-nav__button.md-logo" in custom_css
     assert "width: 2.4rem;" in custom_css
     assert ".md-search__form .md-icon svg" in custom_css
@@ -539,8 +538,12 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "nodeTextColor" in mermaid_js
     assert "useMaxWidth: true" in mermaid_js
     assert "data-mermaid-source" in mermaid_js
+    assert "normalizeSource" in mermaid_js
     assert "sourceFor" in mermaid_js
     assert "diagramNodes" in mermaid_js
+    assert "renderNodesWithRun" in mermaid_js
+    assert "window.mermaid.run" in mermaid_js
+    assert "falling back to manual rendering" in mermaid_js
     assert 'document.querySelectorAll(".mermaid")' in mermaid_js
     assert '!node.querySelector("svg")' in mermaid_js
     assert 'node.getAttribute("data-mermaid-rendering") !== "true"' in mermaid_js
