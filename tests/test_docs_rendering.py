@@ -234,6 +234,159 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     )
 
 
+def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
+    playwright = pytest.importorskip("playwright.sync_api")
+    chromium = chromium_executable()
+    if not chromium:
+        pytest.skip("Chromium executable is not available")
+
+    site_dir = build_docs(tmp_path)
+
+    with playwright.sync_playwright() as p:
+        browser = p.chromium.launch(
+            executable_path=chromium,
+            headless=True,
+            args=["--no-sandbox"],
+        )
+        page = browser.new_page(
+            viewport={"width": 390, "height": 844},
+            is_mobile=True,
+        )
+        page.goto(
+            (site_dir / "index.html").as_uri(), wait_until="domcontentloaded"
+        )
+        page.wait_for_function(
+            """
+            () => {
+              const diagrams = document.querySelectorAll('.mermaid');
+              return diagrams.length > 0 &&
+                document.querySelectorAll('.mermaid svg').length === diagrams.length;
+            }
+            """,
+            timeout=5000,
+        )
+        metrics = page.evaluate(
+            """
+            () => {
+              const inspect = (selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                  return null;
+                }
+                const style = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return {
+                  backgroundColor: style.backgroundColor,
+                  color: style.color,
+                  display: style.display,
+                  height: rect.height,
+                  src: element.getAttribute("src") || "",
+                  width: rect.width,
+                };
+              };
+              const images = (selector) =>
+                [...document.querySelectorAll(selector)].map((element) => {
+                  const style = getComputedStyle(element);
+                  const rect = element.getBoundingClientRect();
+                  return {
+                    display: style.display,
+                    height: rect.height,
+                    src: element.getAttribute("src") || "",
+                    width: rect.width,
+                  };
+                });
+              return {
+                bodyFont: getComputedStyle(document.body)
+                  .getPropertyValue("--md-text-font-family")
+                  .trim(),
+                codeFont: getComputedStyle(document.body)
+                  .getPropertyValue("--md-code-font-family")
+                  .trim(),
+                docWidth: document.documentElement.scrollWidth,
+                viewportWidth: window.innerWidth,
+                footer: inspect(".md-footer-meta"),
+                footerMark: inspect(".psi-footer-mark"),
+                header: inspect(".md-header"),
+                headerLogo: inspect(
+                  ".md-header__button.md-logo img, .md-header__button.md-logo svg"
+                ),
+                mermaid: inspect(".md-typeset .mermaid"),
+                brandImages: images(".psi-brand img"),
+                mermaidSvgs: images(".md-typeset .mermaid svg"),
+              };
+            }
+            """
+        )
+        page.click('.md-header__button[for="__drawer"]')
+        page.wait_for_timeout(350)
+        drawer_metrics = page.evaluate(
+            """
+            () => {
+              const inspect = (selector) => {
+                const element = document.querySelector(selector);
+                if (!element) {
+                  return null;
+                }
+                const style = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return {
+                  backgroundColor: style.backgroundColor,
+                  color: style.color,
+                  height: rect.height,
+                  src: element.getAttribute("src") || "",
+                  width: rect.width,
+                };
+              };
+              return {
+                logo: inspect(
+                  ".md-nav__button.md-logo img, .md-nav__button.md-logo svg"
+                ),
+                title: inspect('.md-nav--primary .md-nav__title[for="__drawer"]'),
+              };
+            }
+            """
+        )
+        page.close()
+        browser.close()
+
+    assert metrics["docWidth"] <= metrics["viewportWidth"] + 1
+    assert metrics["header"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["footer"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["header"]["color"] == "rgb(5, 5, 5)"
+    assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
+    assert metrics["header"]["height"] == pytest.approx(49, abs=1)
+    assert metrics["headerLogo"]["src"] == "assets/logo.svg"
+    assert metrics["headerLogo"]["width"] == pytest.approx(0, abs=1)
+    assert metrics["headerLogo"]["height"] == pytest.approx(0, abs=1)
+    assert metrics["footer"]["height"] <= 70
+    assert metrics["footerMark"]["width"] == pytest.approx(20, abs=1)
+    assert metrics["footerMark"]["height"] == pytest.approx(20, abs=1)
+    assert "Roboto" in metrics["bodyFont"]
+    assert "Roboto Mono" in metrics["codeFont"]
+    assert metrics["mermaid"]["width"] <= metrics["viewportWidth"]
+    assert metrics["mermaidSvgs"][0]["width"] > metrics["viewportWidth"]
+    assert drawer_metrics["title"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert drawer_metrics["title"]["color"] == "rgb(5, 5, 5)"
+    assert drawer_metrics["logo"]["src"] == "assets/logo.svg"
+    assert drawer_metrics["logo"]["width"] == pytest.approx(48, abs=1)
+    assert drawer_metrics["logo"]["height"] == pytest.approx(48, abs=1)
+
+    visible_brands = [
+        image for image in metrics["brandImages"] if image["display"] == "block"
+    ]
+    hidden_brands = [
+        image for image in metrics["brandImages"] if image["display"] == "none"
+    ]
+    assert len(visible_brands) == 1
+    assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
+    assert visible_brands[0]["width"] < metrics["viewportWidth"]
+    assert visible_brands[0]["height"] == pytest.approx(90, abs=2)
+    assert any(
+        image["src"] == "assets/lllm-logo-text-white.png#only-dark"
+        for image in hidden_brands
+    )
+
+
 def test_docs_keep_light_brand_styles(tmp_path):
     site_dir = build_docs(tmp_path)
     custom_css = (site_dir / "stylesheets" / "custom.css").read_text(
