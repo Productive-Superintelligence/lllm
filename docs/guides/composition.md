@@ -28,6 +28,8 @@ url = "http://127.0.0.1:8000/tactics/echo"
 contains non-tactic refs from PsiHub or SSSN. It loads tactic URL bindings and
 ignores refs owned by other layers, such as services, channels, snapshots,
 docs, examples, and assets. Malformed tactic refs still fail validation.
+Tactic ref segments are plain non-empty path segments; avoid whitespace,
+percent escapes, `.`, `..`, `/`, `\`, and `:`.
 
 ```toml
 [refs."psi://demo/echo/tactics/echo"]

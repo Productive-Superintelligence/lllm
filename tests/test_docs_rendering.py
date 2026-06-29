@@ -634,6 +634,8 @@ def test_composition_guide_documents_mixed_local_config():
     assert "psi://demo/echo/services/api" in guide
     assert "psi://demo/echo/channels/events" in guide
     assert "Malformed tactic refs still fail validation." in guide
+    assert "avoid whitespace" in guide
+    assert "percent escapes" in guide
 
 
 def test_public_text_does_not_use_staging_name():

@@ -106,6 +106,13 @@ def test_tactic_ref_rejects_non_string_or_empty_values(value):
         "psi://demo/echo pkg/tactics/echo",
         "psi://demo/echo/tact ics/echo",
         "psi://demo/echo/tactics/echo name",
+        "psi://demo%2Forg/echo/tactics/echo",
+        "psi://demo/echo%2Fpkg/tactics/echo",
+        "psi://demo/echo/tactics/echo%2Fname",
+        "psi://demo/echo/tactics/echo%5Cname",
+        "psi://demo/echo/tactics/%2E%2E",
+        "psi://demo/echo/tactics/echo%20name",
+        "psi://demo/echo/tactics/echo%3Aname",
     ],
 )
 def test_tactic_ref_rejects_non_resource_url_parts(value):
