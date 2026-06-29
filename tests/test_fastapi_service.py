@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import httpx
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from lllm import Tactic, endpoint
 from lllm.services import create_service_app, create_tactic_app
@@ -99,6 +99,23 @@ def test_service_dto_models_isolate_mutable_constructor_inputs():
     assert request.value == {"items": [1]}
     assert response.output == {"items": [2]}
     assert error.metadata == {"labels": ["error"]}
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: RunResponse(output={}, request_id=b"req", tactic="echo"),
+        lambda: RunResponse(output={}, request_id="req", tactic=b"echo"),
+        lambda: ErrorDetail(type=b"ValueError", message="bad"),
+        lambda: ErrorDetail(type="ValueError", message=b"bad"),
+        lambda: ErrorDetail(type="ValueError", message="bad", tactic=b"echo"),
+        lambda: ErrorDetail(type="ValueError", message="bad", endpoint=b"/run"),
+        lambda: ErrorDetail(type="ValueError", message="bad", request_id=b"req"),
+    ],
+)
+def test_service_dto_models_reject_bytes_for_string_fields(factory):
+    with pytest.raises(ValidationError):
+        factory()
 
 
 def test_endpoint_decorator_normalizes_relative_paths():

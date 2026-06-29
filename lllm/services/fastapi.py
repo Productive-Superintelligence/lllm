@@ -7,7 +7,7 @@ import re
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field, StrictStr, ValidationError
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
 from .endpoints import EndpointSpec, custom_endpoints
@@ -34,8 +34,8 @@ class RunResponse(BaseModel):
     """Canonical response envelope for successful tactic calls."""
 
     output: Any = None
-    request_id: str
-    tactic: str
+    request_id: StrictStr
+    tactic: StrictStr
 
     def model_post_init(self, __context: Any) -> None:
         self.output = deepcopy(self.output)
@@ -44,11 +44,11 @@ class RunResponse(BaseModel):
 class ErrorDetail(BaseModel):
     """Stable service error body."""
 
-    type: str
-    message: str
-    tactic: str | None = None
-    endpoint: str | None = None
-    request_id: str | None = None
+    type: StrictStr
+    message: StrictStr
+    tactic: StrictStr | None = None
+    endpoint: StrictStr | None = None
+    request_id: StrictStr | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
