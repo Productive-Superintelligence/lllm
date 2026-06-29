@@ -3,7 +3,7 @@ import asyncio
 from pydantic import BaseModel
 
 from lllm import CallContext, Tactic
-from lllm.runtimes import PydanticAITactic, tactic_as_tool
+from lllm.runtimes import PydanticAITactic, PydanticAITacticConfig, tactic_as_tool
 
 
 class Result:
@@ -66,6 +66,27 @@ class FeatureAgent:
                 "temperature": kwargs.get("model_settings", {}).get("temperature"),
             }
         )
+
+
+class MutatingKwargsAgent:
+    name = "mutating-kwargs"
+    output_type = str
+
+    def __init__(self):
+        self.snapshots = []
+
+    def run_sync(self, task, **kwargs):
+        self.snapshots.append(
+            {
+                "temperature": kwargs["model_settings"]["temperature"],
+                "flags": list(kwargs["runtime_flags"]),
+                "handle": kwargs["deps"]["handle"],
+            }
+        )
+        kwargs["model_settings"]["temperature"] = 99
+        kwargs["runtime_flags"].append("mutated")
+        kwargs["deps"]["agent_mutated"] = True
+        return Result(task)
 
 
 async def collect(iterator):
@@ -144,6 +165,25 @@ def test_pydantic_ai_adapter_accepts_package_metadata_from_config():
     assert info.metadata == {"source": "config"}
 
 
+def test_pydantic_ai_config_isolates_mutable_inputs():
+    run_kwargs = {"model_settings": {"temperature": 0}}
+    examples = [{"input": "hi", "output": "hi:"}]
+    metadata = {"labels": ["config"]}
+    config = PydanticAITacticConfig(
+        run_kwargs=run_kwargs,
+        examples=examples,
+        metadata=metadata,
+    )
+
+    run_kwargs["model_settings"]["temperature"] = 7
+    examples[0]["input"] = "changed"
+    metadata["labels"].append("changed")
+
+    assert config.run_kwargs == {"model_settings": {"temperature": 0}}
+    assert config.examples == [{"input": "hi", "output": "hi:"}]
+    assert config.metadata == {"labels": ["config"]}
+
+
 def test_pydantic_ai_adapter_supports_async_streams():
     tactic = PydanticAITactic.from_agent(
         FakeStreamAgent(),
@@ -188,6 +228,58 @@ def test_pydantic_ai_adapter_preserves_runtime_owned_kwargs():
     assert agent.seen_kwargs["deps"] == {"db": "fake"}
     assert agent.seen_kwargs["eval_hook"] == "offline"
     assert agent.seen_kwargs["tool_approval"] == "runtime-owned"
+
+
+def test_pydantic_ai_adapter_isolates_mutable_run_kwargs_containers():
+    agent = MutatingKwargsAgent()
+    handle = object()
+    run_kwargs = {
+        "model_settings": {"temperature": 0},
+        "runtime_flags": ["initial"],
+        "deps": {"handle": handle},
+    }
+    tactic = PydanticAITactic.from_agent(agent, input_type=str, run_kwargs=run_kwargs)
+
+    run_kwargs["model_settings"]["temperature"] = 7
+    run_kwargs["runtime_flags"].append("caller")
+    run_kwargs["deps"]["caller_mutated"] = True
+
+    assert tactic.run("first") == "first"
+    assert tactic.run("second") == "second"
+
+    assert agent.snapshots == [
+        {"temperature": 0, "flags": ["initial"], "handle": handle},
+        {"temperature": 0, "flags": ["initial"], "handle": handle},
+    ]
+    assert tactic.run_kwargs == {
+        "model_settings": {"temperature": 0},
+        "runtime_flags": ["initial"],
+        "deps": {"handle": handle},
+    }
+
+
+def test_pydantic_ai_adapter_isolates_mutable_call_kwargs_containers():
+    agent = MutatingKwargsAgent()
+    handle = object()
+    tactic = PydanticAITactic.from_agent(agent, input_type=str)
+    model_settings = {"temperature": 0}
+    runtime_flags = ["call"]
+    deps = {"handle": handle}
+
+    assert (
+        tactic.run(
+            "hello",
+            model_settings=model_settings,
+            runtime_flags=runtime_flags,
+            deps=deps,
+        )
+        == "hello"
+    )
+
+    assert model_settings == {"temperature": 0}
+    assert runtime_flags == ["call"]
+    assert deps == {"handle": handle}
+    assert agent.snapshots == [{"temperature": 0, "flags": ["call"], "handle": handle}]
 
 
 def test_pydantic_ai_adapter_does_not_override_user_metadata():

@@ -7,8 +7,8 @@ adapter only supplies the typed tactic boundary and service-friendly metadata.
 from __future__ import annotations
 
 import inspect
-from copy import deepcopy
 from collections.abc import Callable, Mapping
+from copy import deepcopy
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -18,6 +18,24 @@ from ..protocol import CallContext, Tactic, TacticInfo
 InputMode = Literal["auto", "json", "dict", "python", "text"]
 ResultMode = Literal["output", "result"]
 StreamMode = Literal["output", "text", "response", "raw"]
+
+
+def _copy_runtime_value(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: _copy_runtime_value(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_copy_runtime_value(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_copy_runtime_value(item) for item in value)
+    if isinstance(value, set):
+        return {_copy_runtime_value(item) for item in value}
+    if isinstance(value, frozenset):
+        return frozenset(_copy_runtime_value(item) for item in value)
+    return value
+
+
+def _copy_runtime_kwargs(value: Mapping[str, Any]) -> dict[str, Any]:
+    return {key: _copy_runtime_value(item) for key, item in value.items()}
 
 
 class PydanticAITacticConfig(BaseModel):
@@ -39,6 +57,11 @@ class PydanticAITacticConfig(BaseModel):
     service_ref: str | None = None
     examples: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.run_kwargs = _copy_runtime_kwargs(self.run_kwargs)
+        self.examples = deepcopy(self.examples)
+        self.metadata = deepcopy(self.metadata)
 
 
 class PydanticAITactic(Tactic[Any, Any]):
@@ -81,7 +104,7 @@ class PydanticAITactic(Tactic[Any, Any]):
             if include_context_metadata is None
             else include_context_metadata
         )
-        self.run_kwargs = dict(cfg.run_kwargs if run_kwargs is None else run_kwargs)
+        self.run_kwargs = _copy_runtime_kwargs(cfg.run_kwargs if run_kwargs is None else run_kwargs)
         self.input_mapper = input_mapper or cfg.input_mapper
         self.output_mapper = output_mapper or cfg.output_mapper
         self.input_type = input_type or cfg.input_type or self.input_type
@@ -204,8 +227,8 @@ class PydanticAITactic(Tactic[Any, Any]):
         context: CallContext | None,
         method: Callable[..., Any],
     ) -> dict[str, Any]:
-        merged = dict(self.run_kwargs)
-        merged.update(kwargs)
+        merged = _copy_runtime_kwargs(self.run_kwargs)
+        merged.update(_copy_runtime_kwargs(kwargs))
         if (
             self.include_context_metadata
             and context is not None
