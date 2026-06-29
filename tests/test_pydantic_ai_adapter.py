@@ -1,6 +1,7 @@
 import asyncio
 
-from pydantic import BaseModel
+import pytest
+from pydantic import BaseModel, ValidationError
 
 from lllm import CallContext, Tactic
 from lllm.runtimes import PydanticAITactic, PydanticAITacticConfig, tactic_as_tool
@@ -182,6 +183,14 @@ def test_pydantic_ai_config_isolates_mutable_inputs():
     assert config.run_kwargs == {"model_settings": {"temperature": 0}}
     assert config.examples == [{"input": "hi", "output": "hi:"}]
     assert config.metadata == {"labels": ["config"]}
+
+
+@pytest.mark.parametrize("field_name", ["description", "package_ref", "service_ref"])
+def test_pydantic_ai_config_rejects_bytes_for_package_metadata(field_name):
+    with pytest.raises(ValidationError) as exc_info:
+        PydanticAITacticConfig.model_validate({field_name: b"not-text"})
+
+    assert exc_info.value.errors()[0]["type"] == "string_type"
 
 
 def test_pydantic_ai_adapter_supports_async_streams():

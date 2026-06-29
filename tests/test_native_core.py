@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from lllm.runtimes.native import (
     DefaultTagParser,
@@ -124,6 +125,69 @@ def test_native_message_models_isolate_mutable_constructor_inputs():
     assert message.usage == {"nested": {"tokens": [1]}}
     assert message.metadata == {"trace": {"id": "one"}}
     assert message.vectors == [1.0]
+
+
+@pytest.mark.parametrize(
+    ("label", "factory"),
+    [
+        ("FunctionCall.id", lambda: FunctionCall(id=b"call-1", name="collect")),
+        ("FunctionCall.name", lambda: FunctionCall(name=b"collect")),
+        (
+            "FunctionCall.result_str",
+            lambda: FunctionCall(name="collect", result_str=b"ok"),
+        ),
+        (
+            "FunctionCall.error_message",
+            lambda: FunctionCall(name="collect", error_message=b"failed"),
+        ),
+        ("TokenLogprob.token", lambda: TokenLogprob(token=b"hello")),
+        (
+            "Message.content",
+            lambda: Message(role=Role.USER, content=b"hello", name="user"),
+        ),
+        (
+            "Message.name",
+            lambda: Message(role=Role.USER, content="hello", name=b"user"),
+        ),
+        (
+            "Message.model",
+            lambda: Message(
+                role=Role.USER,
+                content="hello",
+                name="user",
+                model=b"gpt",
+            ),
+        ),
+        (
+            "Function.name",
+            lambda: Function(name=b"collect", description="Collect.", properties={}),
+        ),
+        (
+            "Function.description",
+            lambda: Function(name="collect", description=b"Collect.", properties={}),
+        ),
+        (
+            "Function.required",
+            lambda: Function(
+                name="collect",
+                description="Collect.",
+                properties={},
+                required=[b"value"],
+            ),
+        ),
+        ("Prompt.path", lambda: Prompt(path=b"prompt", prompt="Hello.")),
+        ("Prompt.prompt", lambda: Prompt(path="prompt", prompt=b"Hello.")),
+        (
+            "Prompt.function_list",
+            lambda: Prompt(path="prompt", prompt="Hello.", function_list=[b"collect"]),
+        ),
+    ],
+)
+def test_native_models_reject_bytes_for_text_fields(label, factory):
+    with pytest.raises(ValidationError) as exc_info:
+        factory()
+
+    assert any(error["type"] == "string_type" for error in exc_info.value.errors()), label
 
 
 def test_dialog_put_prompt_fork_and_roundtrip_lineage():

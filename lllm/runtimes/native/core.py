@@ -19,7 +19,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional, Union, get_args, get_origin, get_type_hints
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, StrictStr
 
 from ...parsers import (
     BaseParser,
@@ -107,12 +107,12 @@ class InvokeCost(BaseModel):
 class FunctionCall(BaseModel):
     """One invocation of a native tool, including its result once executed."""
 
-    id: str = Field(default_factory=lambda: uuid.uuid4().hex)
-    name: str
+    id: StrictStr = Field(default_factory=lambda: uuid.uuid4().hex)
+    name: StrictStr
     arguments: dict[str, Any] = Field(default_factory=dict)
     result: Any = None
-    result_str: str | None = None
-    error_message: str | None = None
+    result_str: StrictStr | None = None
+    error_message: StrictStr | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -142,7 +142,7 @@ class FunctionCall(BaseModel):
 class TokenLogprob(BaseModel):
     """Provider logprob data attached to a token."""
 
-    token: str | None = None
+    token: StrictStr | None = None
     logprob: float | None = None
     bytes: list[int] | None = None
     top_logprobs: list["TokenLogprob"] = Field(default_factory=list)
@@ -158,13 +158,13 @@ class Message(BaseModel):
     """A native dialog message with provider-neutral metadata."""
 
     role: Role
-    content: str | list[dict[str, Any]]
-    name: str
+    content: StrictStr | list[dict[str, Any]]
+    name: StrictStr
     function_calls: list[FunctionCall] = Field(default_factory=list)
     modality: Modality = Modality.TEXT
     logprobs: list[TokenLogprob] = Field(default_factory=list)
     parsed: dict[str, Any] = Field(default_factory=dict)
-    model: str | None = None
+    model: StrictStr | None = None
     usage: dict[str, Any] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
     api_type: APIType = APIType.COMPLETION
@@ -509,10 +509,10 @@ def _json_type_for_annotation(annotation: Any) -> str:
 class Function(BaseModel):
     """Declarative native tool schema with an optional Python implementation."""
 
-    name: str
-    description: str
+    name: StrictStr
+    description: StrictStr
     properties: dict[str, Any]
-    required: list[str] = Field(default_factory=list)
+    required: list[StrictStr] = Field(default_factory=list)
     additional_properties: bool = False
     strict: bool = True
     function: Callable[..., Any] | None = None
@@ -632,12 +632,12 @@ class StringFormatterRenderer(BaseModel):
 class Prompt(BaseModel):
     """A native prompt template plus lightweight parser/tool metadata."""
 
-    path: str
-    prompt: str
+    path: StrictStr
+    prompt: StrictStr
     metadata: dict[str, Any] = Field(default_factory=dict)
     parser: Any = None
     format: Any = None
-    function_list: list[Function | str] = Field(default_factory=list)
+    function_list: list[Function | StrictStr] = Field(default_factory=list)
     addon_args: dict[str, Any] = Field(default_factory=dict)
     renderer: Any = Field(default_factory=StringFormatterRenderer)
 

@@ -11,7 +11,7 @@ from collections.abc import Callable, Mapping
 from copy import deepcopy
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from ..protocol import CallContext, Tactic, TacticInfo
 
@@ -52,9 +52,9 @@ class PydanticAITacticConfig(BaseModel):
     run_kwargs: dict[str, Any] = Field(default_factory=dict)
     input_mapper: Callable[[Any], Any] | None = None
     output_mapper: Callable[[Any], Any] | None = None
-    description: str | None = None
-    package_ref: str | None = None
-    service_ref: str | None = None
+    description: StrictStr | None = None
+    package_ref: StrictStr | None = None
+    service_ref: StrictStr | None = None
     examples: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
