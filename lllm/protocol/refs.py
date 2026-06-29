@@ -29,7 +29,7 @@ class TacticRef:
                 "Tactic ref must not include params, query, or fragment: "
                 f"{self.value}"
             )
-        org = parsed.netloc.strip()
+        org = parsed.netloc
         raw_parts = parsed.path.split("/")
         if (
             len(raw_parts) != 4
@@ -43,6 +43,12 @@ class TacticRef:
         package, resource_kind, name = raw_parts[1:]
         if not org or not package.strip() or not name.strip():
             raise TacticRefError(f"Tactic ref contains an empty segment: {self.value}")
+        for segment in (org, package, resource_kind, name):
+            if any(ch.isspace() for ch in segment):
+                raise TacticRefError(
+                    "Tactic ref contains a whitespace-bearing segment: "
+                    f"{self.value}"
+                )
         for segment in (org, package, name):
             if segment in {".", ".."} or any(ch in segment for ch in ":\\"):
                 raise TacticRefError(
