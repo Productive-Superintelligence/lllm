@@ -142,6 +142,21 @@ def test_service_dto_models_reject_bytes_for_string_fields(factory):
         factory()
 
 
+@pytest.mark.parametrize(
+    "value",
+    ("", "   ", ".", "..", "bad type", "bad/type", "bad:type", "bad\\type"),
+)
+def test_service_error_detail_rejects_malformed_type_tokens(value):
+    with pytest.raises(ValidationError):
+        ErrorDetail(type=value, message="bad")
+
+
+def test_service_error_detail_allows_common_type_tokens():
+    error = ErrorDetail(type="InvalidResponse", message="bad")
+
+    assert error.type == "InvalidResponse"
+
+
 def test_endpoint_decorator_normalizes_relative_paths():
     class RelativeEndpointTactic(EchoTactic):
         @endpoint.post(

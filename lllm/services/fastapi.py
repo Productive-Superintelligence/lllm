@@ -7,9 +7,10 @@ import re
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
-from pydantic import BaseModel, Field, StrictStr, ValidationError
+from pydantic import BaseModel, Field, StrictStr, ValidationError, model_validator
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
+from ..protocol._validation import token_value
 from .endpoints import (
     EndpointSpec,
     custom_endpoints,
@@ -58,6 +59,11 @@ class ErrorDetail(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         self.metadata = deepcopy(self.metadata)
+
+    @model_validator(mode="after")
+    def _validate_type(self) -> "ErrorDetail":
+        token_value(self.type, "error.type")
+        return self
 
 
 class ErrorResponse(BaseModel):
