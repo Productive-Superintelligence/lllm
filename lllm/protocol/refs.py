@@ -41,7 +41,7 @@ class TacticRef:
                 f"{self.value}"
             )
         package, resource_kind, name = raw_parts[1:]
-        if not org or not package or not name:
+        if not org or not package.strip() or not name.strip():
             raise TacticRefError(f"Tactic ref contains an empty segment: {self.value}")
         for segment in (org, package, name):
             if segment in {".", ".."} or any(ch in segment for ch in ":\\"):

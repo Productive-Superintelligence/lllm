@@ -100,6 +100,8 @@ def test_tactic_ref_rejects_non_string_or_empty_values(value):
         "psi://demo/echo/tactics//echo",
         "psi://demo/echo//tactics/echo",
         "psi://demo/echo/tactics/echo/",
+        "psi://demo/   /tactics/echo",
+        "psi://demo/echo/tactics/   ",
     ],
 )
 def test_tactic_ref_rejects_non_resource_url_parts(value):
