@@ -15,7 +15,7 @@ from lllm import (
     TacticResolver,
 )
 from lllm.services import create_service_app, create_tactic_app
-from lllm.services.client import _request_envelope
+from lllm.services.client import _aiter_sse_events, _iter_sse_events, _request_envelope
 
 
 REF = "psi://demo/echo/tactics/echo"
@@ -648,6 +648,42 @@ def test_remote_tactic_reports_invalid_sse_event_envelopes():
     assert events[0].data == {"message": "Invalid SSE event envelope."}
     assert events[0].metadata["payload"]["data"] == "hello"
     assert events[0].metadata["errors"]
+
+
+def test_sse_parser_reports_non_text_stream_lines():
+    events = list(
+        _iter_sse_events(
+            [
+                object(),
+                'data: {"kind": "message", "data": "ok"}',
+                "",
+            ]
+        )
+    )
+
+    assert [event.kind for event in events] == ["error", "message"]
+    assert events[0].data == {"message": "Invalid SSE stream line."}
+    assert events[0].metadata["line_type"] == "object"
+    assert events[0].metadata["errors"]
+    assert events[1].data == "ok"
+
+
+def test_async_sse_parser_reports_non_text_stream_lines():
+    async def lines():
+        yield object()
+        yield 'data: {"kind": "message", "data": "ok"}'
+        yield ""
+
+    async def collect():
+        return [event async for event in _aiter_sse_events(lines())]
+
+    events = asyncio.run(collect())
+
+    assert [event.kind for event in events] == ["error", "message"]
+    assert events[0].data == {"message": "Invalid SSE stream line."}
+    assert events[0].metadata["line_type"] == "object"
+    assert events[0].metadata["errors"]
+    assert events[1].data == "ok"
 
 
 def test_resolver_calls_bound_http_tactic():

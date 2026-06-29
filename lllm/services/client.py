@@ -334,12 +334,20 @@ def _optional_token_value(value: Any, label: str) -> str | None:
 def _iter_sse_events(lines: Iterable[Any]) -> Iterator[TacticEvent]:
     buffer: list[str] = []
     for line in lines:
-        if _sse_line(line) == "":
+        try:
+            text = _sse_line(line)
+        except (TypeError, UnicodeDecodeError) as exc:
+            if buffer:
+                yield _sse_event(buffer)
+                buffer = []
+            yield _invalid_sse_line_event(line, exc)
+            continue
+        if text == "":
             if buffer:
                 yield _sse_event(buffer)
                 buffer = []
             continue
-        data = _sse_data(line)
+        data = _sse_data(text)
         if data is not None:
             buffer.append(data)
     if buffer:
@@ -349,12 +357,20 @@ def _iter_sse_events(lines: Iterable[Any]) -> Iterator[TacticEvent]:
 async def _aiter_sse_events(lines: AsyncIterator[Any]) -> AsyncIterator[TacticEvent]:
     buffer: list[str] = []
     async for line in lines:
-        if _sse_line(line) == "":
+        try:
+            text = _sse_line(line)
+        except (TypeError, UnicodeDecodeError) as exc:
+            if buffer:
+                yield _sse_event(buffer)
+                buffer = []
+            yield _invalid_sse_line_event(line, exc)
+            continue
+        if text == "":
             if buffer:
                 yield _sse_event(buffer)
                 buffer = []
             continue
-        data = _sse_data(line)
+        data = _sse_data(text)
         if data is not None:
             buffer.append(data)
     if buffer:
@@ -392,8 +408,7 @@ def _validation_errors(exc: Exception) -> Any:
     return str(exc)
 
 
-def _sse_data(line: Any) -> str | None:
-    text = _sse_line(line)
+def _sse_data(text: str) -> str | None:
     if not text.startswith("data:"):
         return None
     value = text[5:]
@@ -403,9 +418,19 @@ def _sse_data(line: Any) -> str | None:
 
 
 def _sse_line(line: Any) -> str:
+    if isinstance(line, str):
+        return line
     if isinstance(line, bytes):
         return line.decode("utf-8")
-    return str(line)
+    raise TypeError("SSE stream lines must be text or bytes.")
+
+
+def _invalid_sse_line_event(line: Any, exc: Exception) -> TacticEvent:
+    return TacticEvent.error(
+        "Invalid SSE stream line.",
+        line_type=type(line).__name__,
+        errors=_validation_errors(exc),
+    )
 
 
 def _run_url(url: str) -> str:
