@@ -116,6 +116,10 @@ class FunctionCall(BaseModel):
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
+    def model_post_init(self, __context: Any) -> None:
+        self.arguments = copy.deepcopy(self.arguments)
+        self.result = copy.deepcopy(self.result)
+
     @property
     def success(self) -> bool:
         return self.error_message is None and self.result_str is not None
@@ -145,6 +149,10 @@ class TokenLogprob(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
+    def model_post_init(self, __context: Any) -> None:
+        self.bytes = copy.deepcopy(self.bytes)
+        self.top_logprobs = copy.deepcopy(self.top_logprobs)
+
 
 class Message(BaseModel):
     """A native dialog message with provider-neutral metadata."""
@@ -163,6 +171,15 @@ class Message(BaseModel):
     vectors: list[float] = Field(default_factory=list)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.content = copy.deepcopy(self.content)
+        self.function_calls = copy.deepcopy(self.function_calls)
+        self.logprobs = copy.deepcopy(self.logprobs)
+        self.parsed = copy.deepcopy(self.parsed)
+        self.usage = copy.deepcopy(self.usage)
+        self.metadata = copy.deepcopy(self.metadata)
+        self.vectors = copy.deepcopy(self.vectors)
 
     @property
     def sanitized_name(self) -> str:

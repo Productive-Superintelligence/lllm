@@ -5,9 +5,11 @@ from lllm.runtimes.native import (
     Dialog,
     Function,
     FunctionCall,
+    Message,
     ParseError,
     Prompt,
     Role,
+    TokenLogprob,
     find_md_blocks,
     find_xml_blocks,
     tool,
@@ -68,6 +70,60 @@ def test_native_function_schema_views_are_isolated():
     assert function.required == ["left"]
     assert prompt_function.properties == {"left": {"type": "integer"}}
     assert prompt_function(FunctionCall(name="add", arguments={"left": 2})).result == 3
+
+
+def test_native_message_models_isolate_mutable_constructor_inputs():
+    arguments = {"items": [1]}
+    result = {"values": [1]}
+    call = FunctionCall(name="collect", arguments=arguments, result=result)
+    content = [{"text": ["hello"]}]
+    logprob_bytes = [1, 2]
+    child_logprob = TokenLogprob(token="h", bytes=[3])
+    logprob = TokenLogprob(
+        token="hello",
+        bytes=logprob_bytes,
+        top_logprobs=[child_logprob],
+    )
+    parsed = {"labels": ["greeting"]}
+    usage = {"nested": {"tokens": [1]}}
+    metadata = {"trace": {"id": "one"}}
+    vectors = [1.0]
+    message = Message(
+        role=Role.USER,
+        content=content,
+        name="user",
+        function_calls=[call],
+        logprobs=[logprob],
+        parsed=parsed,
+        usage=usage,
+        metadata=metadata,
+        vectors=vectors,
+    )
+
+    arguments["items"].append(2)
+    result["values"].append(2)
+    content[0]["text"].append("changed")
+    logprob_bytes.append(4)
+    child_logprob.bytes.append(5)
+    parsed["labels"].append("changed")
+    usage["nested"]["tokens"].append(2)
+    metadata["trace"]["id"] = "two"
+    vectors.append(2.0)
+
+    assert call.arguments == {"items": [1]}
+    assert call.result == {"values": [1]}
+
+    call.arguments["items"].append(3)
+    logprob.top_logprobs[0].bytes.append(6)
+
+    assert message.content == [{"text": ["hello"]}]
+    assert message.function_calls[0].arguments == {"items": [1]}
+    assert message.logprobs[0].bytes == [1, 2]
+    assert message.logprobs[0].top_logprobs[0].bytes == [3]
+    assert message.parsed == {"labels": ["greeting"]}
+    assert message.usage == {"nested": {"tokens": [1]}}
+    assert message.metadata == {"trace": {"id": "one"}}
+    assert message.vectors == [1.0]
 
 
 def test_dialog_put_prompt_fork_and_roundtrip_lineage():
