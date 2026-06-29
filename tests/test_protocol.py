@@ -1,4 +1,5 @@
 import ast
+import asyncio
 import os
 import subprocess
 import sys
@@ -312,6 +313,25 @@ def test_tactic_validates_and_returns_trace():
     assert result.trace.state == "success"
     assert result.trace.tactic == "echo"
     assert result.trace.latency_ms is not None
+
+
+def test_tactic_run_rejects_malformed_context():
+    tactic = EchoTactic()
+
+    with pytest.raises(TypeError, match="CallContext"):
+        tactic.run(  # type: ignore[arg-type]
+            {"text": "hello"},
+            context={"metadata": {}},
+        )
+
+    async def run():
+        with pytest.raises(TypeError, match="CallContext"):
+            await tactic.arun(
+                {"text": "hello"},
+                context={"metadata": {}},  # type: ignore[arg-type]
+            )
+
+    asyncio.run(run())
 
 
 def test_tactic_info_exports_json_schema():

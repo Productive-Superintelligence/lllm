@@ -215,10 +215,19 @@ def _request_envelope(input_value: Any, context: CallContext | None) -> dict[str
         value = deepcopy(input_value.model_dump(mode="json"))
     else:
         value = deepcopy(input_value)
+    context_value = _call_context(context)
     return {
         "input": value,
-        "context": deepcopy((context or CallContext()).model_dump(mode="json")),
+        "context": deepcopy(context_value.model_dump(mode="json")),
     }
+
+
+def _call_context(value: Any) -> CallContext:
+    if value is None:
+        return CallContext()
+    if isinstance(value, CallContext):
+        return value
+    raise TypeError("context must be a CallContext.")
 
 
 def _response_output(response: Any) -> Any:

@@ -186,6 +186,50 @@ def test_remote_tactic_request_envelope_isolates_mutable_inputs():
     assert envelope["context"]["metadata"] == {"labels": ["ctx"]}
 
 
+def test_remote_tactic_request_envelope_rejects_malformed_context():
+    with pytest.raises(TypeError, match="CallContext"):
+        _request_envelope(  # type: ignore[arg-type]
+            {"text": "hello"},
+            {"metadata": {}},
+        )
+
+
+def test_remote_tactic_rejects_malformed_context_without_request():
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise AssertionError(f"unexpected request: {request.url}")
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        transport=httpx.MockTransport(handler),
+        async_transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(TypeError, match="CallContext"):
+        remote.run("hello", context={"metadata": {}})  # type: ignore[arg-type]
+    with pytest.raises(TypeError, match="CallContext"):
+        list(  # type: ignore[arg-type]
+            remote.stream("hello", context={"metadata": {}})
+        )
+
+    async def collect_errors():
+        with pytest.raises(TypeError, match="CallContext"):
+            await remote.arun(  # type: ignore[arg-type]
+                "hello",
+                context={"metadata": {}},
+            )
+        with pytest.raises(TypeError, match="CallContext"):
+            [
+                event
+                async for event in remote.aevents(
+                    "hello",
+                    context={"metadata": {}},  # type: ignore[arg-type]
+                )
+            ]
+
+    asyncio.run(collect_errors())
+
+
 def test_remote_tactic_fetches_service_info():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "GET"

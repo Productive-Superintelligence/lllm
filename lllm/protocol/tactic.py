@@ -177,7 +177,7 @@ class Tactic(Generic[InputT, OutputT]):
     ) -> OutputT | CallResult:
         """Run the tactic synchronously through the validated boundary."""
 
-        context = context or CallContext()
+        context = _call_context(context)
         trace = self._new_trace(context)
         try:
             validated = self.validate_input(input_value)
@@ -201,7 +201,7 @@ class Tactic(Generic[InputT, OutputT]):
     ) -> OutputT | CallResult:
         """Run the tactic asynchronously through the validated boundary."""
 
-        context = context or CallContext()
+        context = _call_context(context)
         trace = self._new_trace(context)
         try:
             validated = self.validate_input(input_value)
@@ -254,6 +254,7 @@ class Tactic(Generic[InputT, OutputT]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[Any]:
+        context = _call_context(context)
         for item in self.stream(input_value, context=context, **kwargs):
             yield item
 
@@ -264,6 +265,7 @@ class Tactic(Generic[InputT, OutputT]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[TacticEvent]:
+        context = _call_context(context)
         async for item in self.astream(input_value, context=context, **kwargs):
             if isinstance(item, TacticEvent):
                 yield item
@@ -288,3 +290,11 @@ class Tactic(Generic[InputT, OutputT]):
             input_type=type_name(self.input_type),
             metadata=deepcopy(context.metadata),
         )
+
+
+def _call_context(value: Any) -> CallContext:
+    if value is None:
+        return CallContext()
+    if isinstance(value, CallContext):
+        return value
+    raise TypeError("context must be a CallContext.")
