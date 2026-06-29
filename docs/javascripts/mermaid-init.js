@@ -22,7 +22,7 @@
       startOnLoad: false,
       theme: "base",
       fontFamily: fontFamily,
-      securityLevel: "strict",
+      securityLevel: "loose",
       flowchart: {
         htmlLabels: true,
         useMaxWidth: true
@@ -209,5 +209,6 @@
   }
 
   window.addEventListener("load", scheduleRender);
+  window.addEventListener("pageshow", scheduleRender);
   scheduleRender();
 })();

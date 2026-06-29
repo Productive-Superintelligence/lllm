@@ -162,6 +162,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
                   color: style.color,
                   display: style.display,
                   fontFamily: style.fontFamily,
+                  fontWeight: style.fontWeight,
                   height: rect.height,
                   src: element.getAttribute("src") || "",
                   width: rect.width,
@@ -193,6 +194,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
                 ),
                 palette: inspect(".md-header__option[data-md-component='palette']"),
                 tabs: inspect(".md-tabs"),
+                title: inspect(".md-header__title"),
                 brandImages,
               };
             }
@@ -207,6 +209,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["header"]["color"] == "rgb(5, 5, 5)"
     assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
     assert metrics["header"]["boxShadow"] == "none"
+    assert metrics["title"]["fontWeight"] == "400"
     assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
     assert metrics["palette"]["width"] == pytest.approx(0, abs=1)
@@ -437,7 +440,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "var fontFamily" in mermaid_js
     assert "Roboto, -apple-system, BlinkMacSystemFont" in mermaid_js
     assert "window.mermaid.startOnLoad = false" in mermaid_js
-    assert 'securityLevel: "strict"' in mermaid_js
+    assert 'securityLevel: "loose"' in mermaid_js
     assert "flowchart:" in mermaid_js
     assert "htmlLabels: true" in mermaid_js
     assert "themeCSS:" in mermaid_js
@@ -458,6 +461,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "requestAnimationFrame" in mermaid_js
     assert "window.document$.subscribe(scheduleRender)" in mermaid_js
     assert 'window.addEventListener("load", scheduleRender)' in mermaid_js
+    assert 'window.addEventListener("pageshow", scheduleRender)' in mermaid_js
     assert "assets/logo.svg" in index_html
     assert "assets/lllm-logo-text-dark.png#only-light" in index_html
     assert "assets/lllm-logo-text-white.png#only-dark" in index_html
@@ -477,6 +481,7 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
 
     assert "- navigation.sections" in config
     assert "- navigation.indexes" in config
+    assert "- navigation.tabs.sticky" not in config
     assert "scheme: slate" not in config
     assert "material/weather-night" not in config
     assert "  - Tutorials:\n      - Protocol Level:" in config
