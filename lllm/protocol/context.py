@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import uuid
 from typing import Any
 
@@ -33,3 +34,7 @@ class CallContext(BaseModel):
         """Compatibility alias for older boundary traces."""
 
         return self.request_id
+
+    def model_post_init(self, __context: Any) -> None:
+        self.metadata = deepcopy(self.metadata)
+        self.tags = deepcopy(self.tags)

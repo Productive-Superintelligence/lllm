@@ -7,6 +7,7 @@ adapter only supplies the typed tactic boundary and service-friendly metadata.
 from __future__ import annotations
 
 import inspect
+from copy import deepcopy
 from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
@@ -388,7 +389,7 @@ def _is_basemodel_type(value: Any) -> bool:
 
 
 def _context_metadata(context: CallContext) -> dict[str, Any]:
-    metadata = dict(context.metadata)
+    metadata = deepcopy(context.metadata)
     metadata.setdefault("lllm_request_id", context.request_id)
     if context.trace_id is not None:
         metadata.setdefault("lllm_trace_id", context.trace_id)

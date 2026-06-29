@@ -111,6 +111,17 @@ def test_pydantic_ai_adapter_maps_result_output_and_context_metadata():
     assert tactic.capabilities() == {"run", "arun"}
 
 
+def test_pydantic_ai_adapter_isolates_forwarded_context_metadata():
+    agent = FakeAgent()
+    tactic = PydanticAITactic.from_agent(agent, input_type=str)
+    context = CallContext(metadata={"nested": {"value": 1}})
+
+    tactic.run("hello", context=context)
+    agent.seen_kwargs["metadata"]["nested"]["value"] = 2
+
+    assert context.metadata == {"nested": {"value": 1}}
+
+
 def test_pydantic_ai_adapter_accepts_package_metadata_from_config():
     tactic = PydanticAITactic.from_agent(
         FakeAgent(),

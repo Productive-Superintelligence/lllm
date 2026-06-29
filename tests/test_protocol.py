@@ -70,6 +70,18 @@ class BatchTactic(Tactic[BatchInput, BatchOutput]):
         return {"tokens": tokens, "count": len(tokens)}
 
 
+def test_call_context_isolates_mutable_metadata_inputs():
+    metadata = {"nested": {"value": 1}}
+    tags = {"kind": "demo"}
+    context = CallContext(metadata=metadata, tags=tags)
+
+    metadata["nested"]["value"] = 2
+    tags["kind"] = "changed"
+
+    assert context.metadata == {"nested": {"value": 1}}
+    assert context.tags == {"kind": "demo"}
+
+
 def test_tactic_validates_and_returns_trace():
     result = EchoTactic().run(
         {"text": "hello"},
