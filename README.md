@@ -88,9 +88,11 @@ graph/workflow state, and tool approval pass through the wrapper.
 Live provider credentials can be smoke-checked without sending prompts:
 
 ```bash
-set -a
-source .env
-set +a
+if [ -f .env ]; then
+  set -a
+  source .env
+  set +a
+fi
 LLLM_LIVE_PROVIDER_TESTS=1 pytest tests/test_live_providers.py
 ```
 
