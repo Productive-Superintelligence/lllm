@@ -8,6 +8,11 @@ The FastAPI adapter exposes a tactic through portable endpoints.
 | `POST /run` | Run the tactic with envelope or raw JSON input. |
 | `POST /stream` | Stream tactic output when supported. |
 
+Custom endpoints declared with `@endpoint.*` are mounted alongside these
+portable routes. They must use unique method/path pairs and must not shadow
+reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
+`/tactics/{name}/run`.
+
 Error envelopes are stable across protocol and runtime failures.
 
 ```json

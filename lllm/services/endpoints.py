@@ -140,8 +140,32 @@ def custom_endpoints(obj: Any) -> list[tuple[EndpointSpec, Callable[..., Any]]]:
         spec = getattr(value, "__lllm_endpoint__", None)
         if isinstance(spec, EndpointSpec):
             discovered.append((spec, value))
+    _validate_endpoint_collection(discovered)
     discovered.sort(key=lambda item: item[0].name)
     return discovered
+
+
+def _validate_endpoint_collection(
+    endpoints: list[tuple[EndpointSpec, Callable[..., Any]]],
+) -> None:
+    names: dict[str, str] = {}
+    routes: dict[tuple[str, str], str] = {}
+    for spec, method in endpoints:
+        owner = getattr(method, "__name__", spec.name)
+        if spec.name in names:
+            raise ValueError(
+                f"Duplicate endpoint name {spec.name!r}: "
+                f"{names[spec.name]} and {owner}"
+            )
+        names[spec.name] = owner
+        route = (spec.method, spec.path)
+        route_label = f"{spec.method} {spec.path}"
+        if route in routes:
+            raise ValueError(
+                f"Duplicate custom endpoint route {route_label}: "
+                f"{routes[route]} and {owner}"
+            )
+        routes[route] = owner
 
 
 def _attach_endpoint(

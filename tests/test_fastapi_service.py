@@ -145,7 +145,7 @@ def test_service_dto_models_reject_bytes_for_string_fields(factory):
 def test_endpoint_decorator_normalizes_relative_paths():
     class RelativeEndpointTactic(EchoTactic):
         @endpoint.post(
-            "act",
+            "custom-act",
             name="custom_act",
             mode="run",
             tags=("policy",),
@@ -159,7 +159,7 @@ def test_endpoint_decorator_normalizes_relative_paths():
         if item[0].name == "custom_act"
     )
 
-    assert spec.path == "/act"
+    assert spec.path == "/custom-act"
     assert spec.name == "custom_act"
     assert spec.mode == "run"
     assert spec.tags == ("policy",)
@@ -191,6 +191,31 @@ def test_endpoint_decorator_normalizes_relative_paths():
 def test_endpoint_decorator_rejects_malformed_metadata(factory):
     with pytest.raises(ValueError):
         factory()
+
+
+def test_custom_endpoint_discovery_rejects_duplicate_names_and_routes():
+    class DuplicateNameTactic(EchoTactic):
+        @endpoint.post("/one", name="same")
+        async def one(self, input_value, *, context=None):
+            return {"ok": True}
+
+        @endpoint.post("/two", name="same")
+        async def two(self, input_value, *, context=None):
+            return {"ok": True}
+
+    class DuplicateRouteTactic(EchoTactic):
+        @endpoint.post("/same", name="one")
+        async def one(self, input_value, *, context=None):
+            return {"ok": True}
+
+        @endpoint.post("/same", name="two")
+        async def two(self, input_value, *, context=None):
+            return {"ok": True}
+
+    with pytest.raises(ValueError, match="Duplicate endpoint name"):
+        custom_endpoints(DuplicateNameTactic())
+    with pytest.raises(ValueError, match="Duplicate custom endpoint route"):
+        custom_endpoints(DuplicateRouteTactic())
 
 
 def request(app, method, path, **kwargs):
@@ -354,6 +379,40 @@ def test_custom_endpoint_metadata_mounts_route():
     assert response.json() == {"acted": "go", "endpoint": "act"}
     assert put_response.status_code == 200
     assert put_response.json() == {"updated": "ready", "endpoint": "update_state"}
+
+
+def test_custom_endpoint_routes_cannot_shadow_service_routes():
+    class ShadowRunTactic(EchoTactic):
+        @endpoint.post("/run", name="shadow_run")
+        async def shadow_run(self, input_value, *, context=None):
+            return {"ok": True}
+
+    class ShadowNamedRunTactic(EchoTactic):
+        @endpoint.post("/tactics/echo/run", name="shadow_named_run")
+        async def shadow_named_run(self, input_value, *, context=None):
+            return {"ok": True}
+
+    with pytest.raises(ValueError, match="reserved LLLM service route"):
+        create_tactic_app(ShadowRunTactic())
+    with pytest.raises(ValueError, match="reserved LLLM service route"):
+        create_service_app([ShadowNamedRunTactic()])
+
+
+def test_custom_endpoint_routes_are_unique_across_service():
+    class OtherActTactic(Tactic[EchoInput, EchoOutput]):
+        name = "other"
+        input_type = EchoInput
+        output_type = EchoOutput
+
+        def _run(self, input_value, *, context=None):
+            return EchoOutput(text=input_value.text)
+
+        @endpoint.post("/act")
+        async def act(self, input_value, *, context=None):
+            return {"acted": input_value.text}
+
+    with pytest.raises(ValueError, match="Duplicate custom endpoint route"):
+        create_service_app([EchoTactic(), OtherActTactic()])
 
 
 def test_error_envelope_is_stable():

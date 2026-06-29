@@ -210,13 +210,29 @@ def create_service_app(
                     context=context,
                 ) from exc
 
+    reserved_routes = _reserved_routes(
+        tactic_map,
+        expose_single_tactic_routes=expose_single_tactic_routes,
+    )
+    seen_custom_routes: dict[tuple[str, str], str] = {}
     for tactic in tactic_map.values():
-        _mount_custom_endpoints(app, tactic)
+        _mount_custom_endpoints(
+            app,
+            tactic,
+            reserved_routes=reserved_routes,
+            seen_custom_routes=seen_custom_routes,
+        )
 
     return app
 
 
-def _mount_custom_endpoints(app: Any, tactic: Tactic[Any, Any]) -> None:
+def _mount_custom_endpoints(
+    app: Any,
+    tactic: Tactic[Any, Any],
+    *,
+    reserved_routes: set[tuple[str, str]],
+    seen_custom_routes: dict[tuple[str, str], str],
+) -> None:
     try:
         from fastapi.responses import StreamingResponse
         from fastapi.encoders import jsonable_encoder
@@ -224,6 +240,14 @@ def _mount_custom_endpoints(app: Any, tactic: Tactic[Any, Any]) -> None:
         raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
 
     for spec, method in custom_endpoints(tactic):
+        route_key = (spec.method, spec.path)
+        owner = f"{tactic.tactic_name}.{spec.name}"
+        _validate_custom_route(
+            route_key,
+            owner=owner,
+            reserved_routes=reserved_routes,
+            seen_custom_routes=seen_custom_routes,
+        )
         route = _make_custom_route(
             tactic=tactic,
             spec=spec,
@@ -241,6 +265,56 @@ def _mount_custom_endpoints(app: Any, tactic: Tactic[Any, Any]) -> None:
             description=spec.description,
             tags=list(spec.tags),
         )
+        seen_custom_routes[route_key] = owner
+
+
+def _reserved_routes(
+    tactics: Mapping[str, Tactic[Any, Any]],
+    *,
+    expose_single_tactic_routes: bool,
+) -> set[tuple[str, str]]:
+    routes = {
+        ("GET", "/health"),
+        ("GET", "/tactics"),
+        ("GET", "/tactics/{name}/info"),
+        ("POST", "/tactics/{name}/run"),
+        ("POST", "/tactics/{name}/stream"),
+    }
+    for name in tactics:
+        routes.add(("GET", f"/tactics/{name}/info"))
+        routes.add(("POST", f"/tactics/{name}/run"))
+        routes.add(("POST", f"/tactics/{name}/stream"))
+    if expose_single_tactic_routes and len(tactics) == 1:
+        routes.update({("GET", "/info"), ("POST", "/run"), ("POST", "/stream")})
+    return routes
+
+
+def _validate_custom_route(
+    route_key: tuple[str, str],
+    *,
+    owner: str,
+    reserved_routes: set[tuple[str, str]],
+    seen_custom_routes: dict[tuple[str, str], str],
+) -> None:
+    method, path = route_key
+    if route_key in reserved_routes or _matches_reserved_tactic_route(method, path):
+        raise ValueError(
+            f"Custom endpoint route {method} {path} for {owner} "
+            "conflicts with a reserved LLLM service route."
+        )
+    if route_key in seen_custom_routes:
+        raise ValueError(
+            f"Duplicate custom endpoint route {method} {path}: "
+            f"{seen_custom_routes[route_key]} and {owner}"
+        )
+
+
+def _matches_reserved_tactic_route(method: str, path: str) -> bool:
+    if method == "GET":
+        return bool(re.fullmatch(r"/tactics/[^/]+/info", path))
+    if method == "POST":
+        return bool(re.fullmatch(r"/tactics/[^/]+/(run|stream)", path))
+    return False
 
 
 def _make_custom_route(

@@ -597,6 +597,8 @@ def test_service_api_reference_matches_error_envelope():
     assert '"error": {' in reference
     assert '"type": "SchemaError"' in reference
     assert '"metadata": {}' in reference
+    assert "unique method/path pairs" in reference
+    assert "reserved LLLM service routes" in reference
     assert '"type": "TacticInputError"' not in reference
 
 
