@@ -1,3 +1,4 @@
+import asyncio
 import importlib
 import os
 import subprocess
@@ -38,6 +39,24 @@ def test_create_native_project_builds_runnable_tactic(tmp_path):
     result = create_project("native", "native-demo", directory=tmp_path)
 
     assert _run_generated_tactic(result.path, result.package_name) == "HELLO"
+
+
+@pytest.mark.parametrize("template", ["plain", "pydantic-ai", "native"])
+def test_generated_service_app_handles_protocol_endpoints(tmp_path, template):
+    result = create_project(template, f"{template}-service", directory=tmp_path)
+
+    responses = _run_generated_service_app(result.path, result.package_name)
+
+    assert responses["health"] == {"ok": True, "tactics": ["echo"]}
+    assert responses["info"]["name"] == "echo"
+    assert responses["run"] == {
+        "output": {"text": "HELLO"},
+        "request_id": "req-generated",
+        "tactic": "echo",
+    }
+    assert responses["named_info"]["name"] == "echo"
+    assert responses["named_run"]["output"] == {"text": "WORLD"}
+    assert responses["named_run"]["tactic"] == "echo"
 
 
 @pytest.mark.parametrize(
@@ -282,6 +301,54 @@ def _run_generated_client(project_path, package_name):
         for name in list(sys.modules):
             if (
                 name == "client"
+                or name == package_name
+                or name.startswith(f"{package_name}.")
+            ):
+                del sys.modules[name]
+
+
+def _run_generated_service_app(project_path, package_name):
+    sys.path.insert(0, str(project_path))
+    try:
+        module = importlib.import_module("app")
+
+        async def run():
+            transport = httpx.ASGITransport(app=module.app)
+            async with httpx.AsyncClient(
+                transport=transport,
+                base_url="http://testserver",
+            ) as client:
+                health = await client.get("/health")
+                info = await client.get("/info")
+                run_response = await client.post(
+                    "/run",
+                    json={
+                        "input": {"text": "hello"},
+                        "context": {"request_id": "req-generated"},
+                    },
+                )
+                named_info = await client.get("/tactics/echo/info")
+                named_run = await client.post(
+                    "/tactics/echo/run",
+                    json={"input": {"text": "world"}},
+                )
+
+            for response in (health, info, run_response, named_info, named_run):
+                response.raise_for_status()
+            return {
+                "health": health.json(),
+                "info": info.json(),
+                "run": run_response.json(),
+                "named_info": named_info.json(),
+                "named_run": named_run.json(),
+            }
+
+        return asyncio.run(run())
+    finally:
+        sys.path.remove(str(project_path))
+        for name in list(sys.modules):
+            if (
+                name == "app"
                 or name == package_name
                 or name.startswith(f"{package_name}.")
             ):

@@ -253,6 +253,7 @@ def _tactics(template: TemplateName) -> str:
             def build_tactic():
                 return PydanticAITactic(
                     DemoAgent(),
+                    name="echo",
                     input_type=EchoInput,
                     output_type=EchoOutput,
                     input_mapper=lambda task: task.text,
