@@ -13,3 +13,8 @@ Core public objects:
 Input/output types should be Pydantic-schema-compatible. `BaseModel` is the
 cleanest path, but simple JSON-compatible annotations and supported Pydantic
 types can also work.
+
+Identifier fields stay plain and portable. Tactic names may contain display
+spaces, but they must avoid percent escapes, `.`, `..`, `/`, `\`, and `:`.
+Token-style fields such as request ids, event kinds, runtime kinds, states, and
+error types must also avoid whitespace.

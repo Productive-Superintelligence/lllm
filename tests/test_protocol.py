@@ -160,7 +160,16 @@ def test_protocol_string_fields_reject_bytes(factory):
 
 @pytest.mark.parametrize(
     "name",
-    ("", "   ", ".", "..", "bad/name", "bad:name", "bad\\name"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad/name",
+        "bad:name",
+        "bad\\name",
+        "bad%2Fname",
+    ),
 )
 def test_tactic_name_fields_reject_path_control_values(name):
     with pytest.raises(ValueError, match="name"):
@@ -183,7 +192,17 @@ def test_tactic_name_fields_allow_display_names_with_spaces():
 
 @pytest.mark.parametrize(
     "value",
-    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad id",
+        "bad/id",
+        "bad:id",
+        "bad\\id",
+        "bad%2Fid",
+    ),
 )
 def test_call_identifiers_reject_malformed_tokens(value):
     with pytest.raises(ValidationError):
@@ -198,7 +217,17 @@ def test_call_identifiers_reject_malformed_tokens(value):
 
 @pytest.mark.parametrize(
     "value",
-    ("", "   ", ".", "..", "bad kind", "bad/kind", "bad:kind", "bad\\kind"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad kind",
+        "bad/kind",
+        "bad:kind",
+        "bad\\kind",
+        "bad%2Fkind",
+    ),
 )
 def test_tactic_event_rejects_malformed_identity_tokens(value):
     with pytest.raises(ValidationError):
@@ -218,6 +247,7 @@ def test_tactic_event_rejects_malformed_identity_tokens(value):
         "bad/capability",
         "bad:capability",
         "bad\\capability",
+        "bad%2Fcapability",
     ),
 )
 def test_tactic_info_rejects_malformed_metadata_tokens(value):

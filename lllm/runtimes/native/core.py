@@ -603,11 +603,13 @@ def _validate_tool_name(value: str, label: str) -> None:
     if (
         not value.strip()
         or value in {".", ".."}
+        or "%" in value
         or any(ch.isspace() for ch in value)
         or any(ch in value for ch in "/:\\")
     ):
         raise ValueError(
-            f"{label} must be a non-empty token without whitespace or path separators."
+            f"{label} must be a non-empty token without whitespace, "
+            "percent escapes, or path separators."
         )
 
 

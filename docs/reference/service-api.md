@@ -11,7 +11,8 @@ The FastAPI adapter exposes a tactic through portable endpoints.
 Custom endpoints declared with `@endpoint.*` are mounted alongside these
 portable routes. They must use unique method/path pairs and must not shadow
 reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
-`/tactics/{name}/run`.
+`/tactics/{name}/run`. Endpoint paths, names, and tags must avoid whitespace
+and percent escapes.
 
 Error envelopes are stable across protocol and runtime failures.
 

@@ -417,6 +417,7 @@ def _require_route_segment(field_name: str, value: Any) -> None:
         not isinstance(value, str)
         or not value.strip()
         or value in {".", ".."}
+        or "%" in value
         or any(ch.isspace() for ch in value)
         or any(ch in value for ch in "/:\\")
     ):

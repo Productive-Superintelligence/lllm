@@ -222,6 +222,8 @@ def _http_method(method: str) -> HttpMethod:
 def _endpoint_path(path: str) -> str:
     if not isinstance(path, str) or not path:
         raise ValueError("endpoint path must be a non-empty route path")
+    if "%" in path:
+        raise ValueError("endpoint path must not contain percent escapes")
     if any(ch.isspace() for ch in path):
         raise ValueError("endpoint path must not contain whitespace")
     if "://" in path or "?" in path or "#" in path:
@@ -232,6 +234,8 @@ def _endpoint_path(path: str) -> str:
 def _metadata_name(name: str, label: str) -> str:
     if not isinstance(name, str) or not name:
         raise ValueError(f"{label} must be a non-empty string")
+    if "%" in name:
+        raise ValueError(f"{label} must not contain percent escapes")
     if any(ch.isspace() for ch in name):
         raise ValueError(f"{label} must not contain whitespace")
     return name

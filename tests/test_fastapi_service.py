@@ -144,7 +144,17 @@ def test_service_dto_models_reject_bytes_for_string_fields(factory):
 
 @pytest.mark.parametrize(
     "value",
-    ("", "   ", ".", "..", "bad type", "bad/type", "bad:type", "bad\\type"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad type",
+        "bad/type",
+        "bad:type",
+        "bad\\type",
+        "bad%2Ftype",
+    ),
 )
 def test_service_error_detail_rejects_malformed_type_tokens(value):
     with pytest.raises(ValidationError):
@@ -153,7 +163,17 @@ def test_service_error_detail_rejects_malformed_type_tokens(value):
 
 @pytest.mark.parametrize(
     "value",
-    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad id",
+        "bad/id",
+        "bad:id",
+        "bad\\id",
+        "bad%2Fid",
+    ),
 )
 def test_service_dto_models_reject_malformed_request_id_tokens(value):
     with pytest.raises(ValidationError):
@@ -201,18 +221,21 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post(123),
         lambda: endpoint.post(""),
         lambda: endpoint.post("bad path"),
+        lambda: endpoint.post("/act%2Fextra"),
         lambda: endpoint.post("/act?mode=fast"),
         lambda: endpoint.post("/act#fast"),
         lambda: endpoint.post("http://example.com/act"),
         lambda: endpoint.post("/act", name=""),
         lambda: endpoint.post("/act", name=123),
         lambda: endpoint.post("/act", name="bad name"),
+        lambda: endpoint.post("/act", name="bad%2Fname"),
         lambda: endpoint.post("/act", mode="batch"),
         lambda: endpoint.post("/act", description=123),
         lambda: endpoint.post("/act", tags="policy"),
         lambda: endpoint.post("/act", tags=(123,)),
         lambda: endpoint.post("/act", tags=("",)),
         lambda: endpoint.post("/act", tags=("bad tag",)),
+        lambda: endpoint.post("/act", tags=("bad%2Ftag",)),
         lambda: EndpointSpec(method=" POST ", path="/act", name="act"),
         lambda: EndpointSpec(method="TRACE", path="/act", name="act"),
     ],
@@ -359,6 +382,7 @@ def test_service_rejects_path_control_tactic_route_names():
         r"bad\name",
         "bad:name",
         "bad name",
+        "bad%2Fname",
         None,
         123,
     )

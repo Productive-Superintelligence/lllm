@@ -324,7 +324,17 @@ def test_remote_tactic_error_rejects_bytes_for_text_fields(field_name, kwargs):
 
 @pytest.mark.parametrize(
     "error_type",
-    ("", "   ", ".", "..", "bad type", "bad/type", "bad:type", "bad\\type"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad type",
+        "bad/type",
+        "bad:type",
+        "bad\\type",
+        "bad%2Ftype",
+    ),
 )
 def test_remote_tactic_error_rejects_malformed_error_type_tokens(error_type):
     with pytest.raises(ValueError, match="error_type"):
@@ -333,7 +343,17 @@ def test_remote_tactic_error_rejects_malformed_error_type_tokens(error_type):
 
 @pytest.mark.parametrize(
     "request_id",
-    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad id",
+        "bad/id",
+        "bad:id",
+        "bad\\id",
+        "bad%2Fid",
+    ),
 )
 def test_remote_tactic_error_rejects_malformed_request_id_tokens(request_id):
     with pytest.raises(ValueError, match="request_id"):

@@ -611,7 +611,20 @@ def test_service_api_reference_matches_error_envelope():
     assert '"metadata": {}' in reference
     assert "unique method/path pairs" in reference
     assert "reserved LLLM service routes" in reference
+    assert "Endpoint paths, names, and tags must avoid whitespace" in reference
+    assert "percent escapes" in reference
     assert '"type": "TacticInputError"' not in reference
+
+
+def test_protocol_reference_documents_identifier_rules():
+    reference = (ROOT / "docs" / "reference" / "protocol.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "Tactic names may contain display\nspaces" in reference
+    assert "must avoid percent escapes, `.`, `..`, `/`" in reference
+    assert "`\\`, and `:`" in reference
+    assert "Token-style fields" in reference
 
 
 def test_psihub_metadata_reference_names_json_schemas():

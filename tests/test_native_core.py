@@ -48,7 +48,16 @@ def test_tool_schema_and_execution_preserve_function_call_result():
 
 @pytest.mark.parametrize(
     "name",
-    ["", "   ", ".", "..", "bad/name", "bad:name", "bad\\name"],
+    [
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad/name",
+        "bad:name",
+        "bad\\name",
+        "bad%2Fname",
+    ],
 )
 def test_native_function_names_reject_malformed_tokens(name):
     with pytest.raises(ValidationError):
