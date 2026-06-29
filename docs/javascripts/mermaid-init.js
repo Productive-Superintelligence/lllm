@@ -163,10 +163,22 @@
   }
 
   function afterFontsReady(callback) {
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(callback, callback);
-    } else {
+    var done = false;
+
+    function run() {
+      if (done) {
+        return;
+      }
+
+      done = true;
       callback();
+    }
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(run, run);
+      window.setTimeout(run, 750);
+    } else {
+      run();
     }
   }
 
