@@ -168,6 +168,12 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   height: 1.4rem;
 }
 
+.md-nav--primary .md-nav__title .md-nav__button.md-logo img,
+.md-nav--primary .md-nav__title .md-nav__button.md-logo svg {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
 .md-header__title {
   font-weight: 400;
 }
@@ -238,6 +244,10 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .md-footer-meta__inner {
   align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  justify-content: space-between;
   min-height: 2.2rem;
   padding-bottom: 0;
   padding-top: 0;
@@ -261,12 +271,17 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-copyright {
+  flex: 0 1 auto;
   margin: 0;
+  min-width: 0;
   padding: 0;
+  width: auto;
 }
 
 .md-social {
+  flex: 0 0 auto;
   margin: 0;
+  margin-left: auto;
   padding: 0;
 }
 
@@ -394,6 +409,9 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-typeset .mermaid svg {
+  --mermaid-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
+    Helvetica, Arial, sans-serif;
+  color: var(--psi-diagram-ink);
   display: inline-block;
   font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
     sans-serif !important;
@@ -431,8 +449,18 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid .label,
 .md-typeset .mermaid .label span,
 .md-typeset .mermaid .label text,
-.md-typeset .mermaid .label tspan {
+.md-typeset .mermaid .label tspan,
+.md-typeset .mermaid foreignObject,
+.md-typeset .mermaid foreignObject * {
   color: var(--psi-diagram-ink) !important;
+  fill: var(--psi-diagram-ink) !important;
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+    sans-serif !important;
+  line-height: 1.2;
+}
+
+.md-typeset .mermaid text,
+.md-typeset .mermaid tspan {
   fill: var(--psi-diagram-ink) !important;
   font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
     sans-serif !important;
@@ -454,8 +482,9 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   }
 
   .md-typeset .mermaid svg {
-    min-width: 34rem;
-    max-width: none;
+    max-width: 100%;
+    min-width: 0;
+    width: 100%;
   }
 }
 

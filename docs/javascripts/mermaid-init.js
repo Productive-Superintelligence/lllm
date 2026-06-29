@@ -5,6 +5,7 @@
   var renderQueued = false;
   var renderRunning = false;
   var renderScheduled = false;
+  var renderSequence = 0;
   var retryDelay = 150;
   var maxRetries = 40;
 
@@ -63,13 +64,27 @@
     return existing || (code ? code.textContent : container.textContent);
   }
 
+  function isGeneratedMermaidNode(node) {
+    var tagName = node.tagName ? node.tagName.toLowerCase() : "";
+
+    return (
+      tagName === "svg" ||
+      tagName === "foreignobject" ||
+      Boolean(node.ownerSVGElement) ||
+      Boolean(node.closest("svg, foreignObject"))
+    );
+  }
+
   function normalizeNode(node) {
     var container = node.matches("code") ? node.closest("pre") : node;
     var source;
 
     if (
+      isGeneratedMermaidNode(node) ||
       !container ||
+      isGeneratedMermaidNode(container) ||
       container.querySelector("svg") ||
+      container.getAttribute("data-mermaid-error") === "true" ||
       container.getAttribute("data-mermaid-rendering") === "true"
     ) {
       return null;
@@ -85,7 +100,7 @@
     container.removeAttribute("data-processed");
     container.setAttribute("data-mermaid-rendering", "true");
     container.setAttribute("data-mermaid-source", source);
-    container.textContent = source;
+    container.textContent = "";
     return container;
   }
 
@@ -111,34 +126,42 @@
       .filter(Boolean);
   }
 
-  function renderWithRun(nodes) {
-    if (typeof window.mermaid.run === "function") {
-      return window.mermaid.run({ nodes: nodes });
-    }
-
-    if (typeof window.mermaid.init === "function") {
-      window.mermaid.init(undefined, nodes);
-      return Promise.resolve();
-    }
-
-    return Promise.reject(new Error("No Mermaid render API is available."));
-  }
-
-  function renderNodeFallback(node, index) {
+  function renderNode(node, index) {
     var source = node.getAttribute("data-mermaid-source") || node.textContent;
-    var id = "psi-mermaid-" + Date.now() + "-" + index;
+    var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
+
+    renderSequence += 1;
 
     if (typeof window.mermaid.render !== "function") {
-      return Promise.reject(new Error("No Mermaid fallback API is available."));
+      return Promise.reject(new Error("No Mermaid render API is available."));
     }
 
-    return window.mermaid.render(id, source).then(function (result) {
-      node.innerHTML = result.svg;
+    return Promise.resolve(window.mermaid.render(id, source)).then(function (
+      result
+    ) {
+      var svg = typeof result === "string" ? result : result.svg;
+
+      if (!svg) {
+        throw new Error("Mermaid returned an empty SVG.");
+      }
+
+      node.innerHTML = svg;
       node.setAttribute("data-processed", "true");
 
-      if (typeof result.bindFunctions === "function") {
+      if (result && typeof result.bindFunctions === "function") {
         result.bindFunctions(node);
       }
+    });
+  }
+
+  function renderNodeSafely(node, index) {
+    return renderNode(node, index).catch(function (error) {
+      var source = node.getAttribute("data-mermaid-source") || "";
+
+      node.removeAttribute("data-processed");
+      node.setAttribute("data-mermaid-error", "true");
+      node.textContent = source;
+      console.error("Mermaid render failed", error);
     });
   }
 
@@ -167,17 +190,7 @@
     }
 
     renderRunning = true;
-    renderWithRun(nodes).catch(function (error) {
-      return Promise.all(nodes.map(renderNodeFallback)).catch(function (
-        fallbackError
-      ) {
-        nodes.forEach(function (node) {
-          node.removeAttribute("data-processed");
-          node.setAttribute("data-mermaid-error", "true");
-        });
-        console.error("Mermaid render failed", error, fallbackError);
-      });
-    }).finally(function () {
+    Promise.all(nodes.map(renderNodeSafely)).finally(function () {
       nodes.forEach(function (node) {
         node.removeAttribute("data-mermaid-rendering");
       });
@@ -208,6 +221,7 @@
     document.addEventListener("DOMContentLoaded", scheduleRender);
   }
 
+  initializeMermaid();
   window.addEventListener("load", scheduleRender);
   window.addEventListener("pageshow", scheduleRender);
   scheduleRender();

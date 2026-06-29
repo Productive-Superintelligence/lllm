@@ -107,9 +107,10 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             page.wait_for_function(
                 """
                 () => {
-                  const diagrams = document.querySelectorAll('.mermaid');
+                  const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')]
+                    .filter((diagram) => diagram.hasAttribute('data-mermaid-source'));
                   return diagrams.length > 0 &&
-                    document.querySelectorAll('.mermaid svg').length === diagrams.length;
+                    diagrams.every((diagram) => diagram.querySelector('svg'));
                 }
                 """,
                 timeout=5000,
@@ -120,6 +121,57 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             assert page.evaluate(
                 "() => document.querySelectorAll('code.language-mermaid, code.highlight-mermaid').length"
             ) == 0
+            diagram_metrics = page.evaluate(
+                """
+                () => [...document.querySelectorAll(".md-typeset .mermaid")]
+                  .filter((diagram) => diagram.hasAttribute("data-mermaid-source"))
+                  .map((diagram) => {
+                  const svg = diagram.querySelector("svg");
+                  const label = svg.querySelector(
+                    "foreignObject span, .nodeLabel, .edgeLabel, text, tspan"
+                  );
+                  const labelStyle = label ? getComputedStyle(label) : null;
+                  const diagramRect = diagram.getBoundingClientRect();
+                  const svgRect = svg.getBoundingClientRect();
+                  const shapes = [
+                    ...svg.querySelectorAll(
+                      "path, rect, circle, ellipse, polygon, line"
+                    )
+                  ].map((element) => {
+                    const style = getComputedStyle(element);
+                    return {
+                      fill: style.fill,
+                      stroke: style.stroke,
+                    };
+                  });
+                  return {
+                    diagramHeight: diagramRect.height,
+                    diagramWidth: diagramRect.width,
+                    labelColor: labelStyle ? labelStyle.color : "",
+                    labelFill: labelStyle ? labelStyle.fill : "",
+                    shapeInk: shapes.filter((shape) =>
+                      [shape.fill, shape.stroke].includes("rgb(5, 5, 5)")
+                    ).length,
+                    source: diagram.getAttribute("data-mermaid-source") || "",
+                    svgHeight: svgRect.height,
+                    svgText: svg.textContent.trim(),
+                    svgWidth: svgRect.width,
+                  };
+                })
+                """
+            )
+            for metric in diagram_metrics:
+                assert metric["source"].lstrip().startswith("flowchart")
+                assert metric["diagramWidth"] > 120
+                assert metric["diagramHeight"] > 80
+                assert metric["svgWidth"] > 120
+                assert metric["svgHeight"] > 80
+                assert metric["svgText"]
+                assert metric["shapeInk"] > 0
+                assert "rgb(5, 5, 5)" in {
+                    metric["labelColor"],
+                    metric["labelFill"],
+                }
             assert console_errors == []
             page.close()
         browser.close()
@@ -261,9 +313,10 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
         page.wait_for_function(
             """
             () => {
-              const diagrams = document.querySelectorAll('.mermaid');
+              const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')]
+                .filter((diagram) => diagram.hasAttribute('data-mermaid-source'));
               return diagrams.length > 0 &&
-                document.querySelectorAll('.mermaid svg').length === diagrams.length;
+                diagrams.every((diagram) => diagram.querySelector('svg'));
             }
             """,
             timeout=5000,
@@ -367,7 +420,8 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert "Roboto" in metrics["bodyFont"]
     assert "Roboto Mono" in metrics["codeFont"]
     assert metrics["mermaid"]["width"] <= metrics["viewportWidth"]
-    assert metrics["mermaidSvgs"][0]["width"] > metrics["viewportWidth"]
+    assert metrics["mermaidSvgs"][0]["width"] <= metrics["viewportWidth"]
+    assert metrics["mermaidSvgs"][0]["width"] > metrics["viewportWidth"] * 0.7
     assert drawer_metrics["title"]["backgroundColor"] == "rgb(255, 255, 255)"
     assert drawer_metrics["title"]["color"] == "rgb(5, 5, 5)"
     assert drawer_metrics["logo"]["src"] == "assets/logo.svg"
@@ -405,6 +459,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-header--shadow" in custom_css
     assert "background-color: #ffffff;" in custom_css
     assert "--md-footer-fg-color--light: var(--psi-ink);" in custom_css
+    assert ".md-footer-meta__inner" in custom_css
+    assert "display: flex;" in custom_css
+    assert "justify-content: space-between;" in custom_css
     assert '--md-text-font: "Roboto";' in custom_css
     assert '--md-code-font: "Roboto Mono";' in custom_css
     assert "--md-text-font-family" in custom_css
@@ -416,6 +473,8 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
     assert "width: 1.2rem;" in custom_css
+    assert ".md-nav--primary .md-nav__title .md-nav__button.md-logo" in custom_css
+    assert "width: 2.4rem;" in custom_css
     assert ".md-search__form .md-icon svg" in custom_css
     assert "fill: currentcolor;" in custom_css
     assert ".md-nav__button.md-logo" in custom_css
@@ -432,7 +491,12 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert 'img[src$="#only-dark"]' in custom_css
     assert ".md-typeset .mermaid svg" in custom_css
     assert "max-width: 100%;" in custom_css
-    assert "min-width: 34rem;" in custom_css
+    assert "min-width: 0;" in custom_css
+    assert "width: 100%;" in custom_css
+    assert "--mermaid-font-family" in custom_css
+    assert ".md-typeset .mermaid foreignObject" in custom_css
+    assert "line-height: 1.2;" in custom_css
+    assert ".md-typeset .mermaid text" in custom_css
     assert ".md-typeset .mermaid .node rect" in custom_css
     assert ".md-typeset .mermaid .edgePath path" in custom_css
     assert ".md-typeset .mermaid marker path" in custom_css
@@ -448,10 +512,15 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "useMaxWidth: true" in mermaid_js
     assert "data-mermaid-source" in mermaid_js
     assert "normalizeNode" in mermaid_js
+    assert "isGeneratedMermaidNode" in mermaid_js
+    assert 'tagName === "svg"' in mermaid_js
+    assert "ownerSVGElement" in mermaid_js
+    assert 'node.closest("svg, foreignObject")' in mermaid_js
     assert "pre code.language-mermaid" in mermaid_js
     assert "data-mermaid-error" in mermaid_js
-    assert "renderWithRun" in mermaid_js
-    assert "renderNodeFallback" in mermaid_js
+    assert "renderSequence" in mermaid_js
+    assert "renderNodeSafely" in mermaid_js
+    assert "Mermaid returned an empty SVG." in mermaid_js
     assert "renderQueued" in mermaid_js
     assert "renderRunning" in mermaid_js
     assert "renderScheduled" in mermaid_js
