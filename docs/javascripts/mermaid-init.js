@@ -2,6 +2,9 @@
   var fontFamily =
     "Roboto, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif";
   var initialized = false;
+  var renderQueued = false;
+  var renderRunning = false;
+  var renderScheduled = false;
   var retryDelay = 150;
   var maxRetries = 40;
 
@@ -58,7 +61,11 @@
     var container = node.matches("code") ? node.closest("pre") : node;
     var source;
 
-    if (!container || container.querySelector("svg")) {
+    if (
+      !container ||
+      container.querySelector("svg") ||
+      container.getAttribute("data-mermaid-rendering") === "true"
+    ) {
       return null;
     }
 
@@ -70,6 +77,7 @@
     container.classList.add("mermaid");
     container.removeAttribute("data-mermaid-error");
     container.removeAttribute("data-processed");
+    container.setAttribute("data-mermaid-rendering", "true");
     container.setAttribute("data-mermaid-source", source);
     container.textContent = source;
     return container;
@@ -131,6 +139,11 @@
   function renderMermaid(attempt) {
     var nodes;
 
+    if (renderRunning) {
+      renderQueued = true;
+      return;
+    }
+
     if (!initializeMermaid()) {
       if (attempt < maxRetries) {
         window.setTimeout(function () {
@@ -147,19 +160,38 @@
       return;
     }
 
+    renderRunning = true;
     renderWithRun(nodes).catch(function (error) {
-      Promise.all(nodes.map(renderNodeFallback)).catch(function (fallbackError) {
+      return Promise.all(nodes.map(renderNodeFallback)).catch(function (
+        fallbackError
+      ) {
         nodes.forEach(function (node) {
           node.removeAttribute("data-processed");
           node.setAttribute("data-mermaid-error", "true");
         });
         console.error("Mermaid render failed", error, fallbackError);
       });
+    }).finally(function () {
+      nodes.forEach(function (node) {
+        node.removeAttribute("data-mermaid-rendering");
+      });
+      renderRunning = false;
+
+      if (renderQueued) {
+        renderQueued = false;
+        scheduleRender();
+      }
     });
   }
 
   function scheduleRender() {
+    if (renderScheduled) {
+      return;
+    }
+
+    renderScheduled = true;
     window.requestAnimationFrame(function () {
+      renderScheduled = false;
       renderMermaid(0);
     });
   }

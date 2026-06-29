@@ -225,9 +225,9 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] <= 520
-    assert visible_brands[0]["width"] > 500
-    assert visible_brands[0]["height"] == pytest.approx(145, abs=1)
+    assert visible_brands[0]["width"] <= 420
+    assert visible_brands[0]["width"] > 390
+    assert visible_brands[0]["height"] == pytest.approx(115, abs=1)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -254,8 +254,8 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
-    assert "--psi-brand-width: 26rem;" in custom_css
-    assert "--psi-brand-height: 7.25rem;" in custom_css
+    assert "--psi-brand-width: 22rem;" in custom_css
+    assert "--psi-brand-height: 5.75rem;" in custom_css
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
@@ -293,6 +293,10 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "data-mermaid-error" in mermaid_js
     assert "renderWithRun" in mermaid_js
     assert "renderNodeFallback" in mermaid_js
+    assert "renderQueued" in mermaid_js
+    assert "renderRunning" in mermaid_js
+    assert "renderScheduled" in mermaid_js
+    assert "data-mermaid-rendering" in mermaid_js
     assert "window.mermaid.render" in mermaid_js
     assert "attempt < maxRetries" in mermaid_js
     assert "requestAnimationFrame" in mermaid_js

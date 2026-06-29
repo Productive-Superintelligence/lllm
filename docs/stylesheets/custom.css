@@ -6,8 +6,8 @@
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
-  --psi-brand-width: 26rem;
-  --psi-brand-height: 7.25rem;
+  --psi-brand-width: 22rem;
+  --psi-brand-height: 5.75rem;
   --psi-diagram-bg: #ffffff;
   --psi-diagram-ink: #050505;
 }
@@ -115,6 +115,7 @@ body {
   background-color: var(--md-default-bg-color);
   box-shadow: none;
   color: var(--psi-ink);
+  font-family: var(--md-text-font-family);
 }
 
 .md-header--shadow {
@@ -315,7 +316,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   align-items: center;
   display: flex;
   justify-content: center;
-  margin: 0.25rem 0 1.25rem;
+  margin: 0 0 1.15rem;
   min-height: var(--psi-brand-height);
   text-align: center;
 }
@@ -431,7 +432,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 @media screen and (max-width: 44.984rem) {
   .psi-brand {
-    --psi-brand-height: 5.25rem;
+    --psi-brand-height: 4.5rem;
   }
 
   .md-typeset .mermaid svg {
