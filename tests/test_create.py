@@ -142,6 +142,17 @@ def test_cli_serve_rejects_malformed_bindings_before_import(args, capsys):
     assert "missing.module" not in captured.err
 
 
+def test_cli_inspect_rejects_malformed_entrypoint_without_traceback(capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(["inspect", "demo"])
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Entrypoint must have the form" in captured.err
+    assert "Traceback" not in captured.err
+
+
 @pytest.mark.parametrize(
     "entrypoint",
     [

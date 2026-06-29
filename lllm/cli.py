@@ -42,7 +42,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "inspect":
-        tactic = load_tactic_entrypoint(args.entrypoint)
+        tactic = _load_cli_tactic(parser, args.entrypoint)
         resource = tactic_resource(tactic)
         if args.json:
             print(json.dumps(resource, indent=2, sort_keys=True))
@@ -60,7 +60,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(str(exc))
         import uvicorn
 
-        tactic = load_tactic_entrypoint(args.entrypoint)
+        tactic = _load_cli_tactic(parser, args.entrypoint)
         app = create_tactic_app(tactic)
         uvicorn.run(app, host=host, port=port, log_level=args.log_level)
         return 0
@@ -116,6 +116,14 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
             return as_tactic(produced)
         return as_tactic(value)
     raise TypeError(f"Entrypoint did not resolve to a tactic or callable: {entrypoint}")
+
+
+def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic[Any, Any]:
+    try:
+        return load_tactic_entrypoint(entrypoint)
+    except (TypeError, ValueError) as exc:
+        parser.error(str(exc))
+        raise
 
 
 def _entrypoint_segments(value: str) -> bool:
