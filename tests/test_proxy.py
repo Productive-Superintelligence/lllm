@@ -278,6 +278,23 @@ def test_proxy_record_rejects_malformed_error_type_tokens(error_type):
         )
 
 
+@pytest.mark.parametrize(
+    "request_id",
+    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+)
+def test_proxy_record_rejects_malformed_request_id_tokens(request_id):
+    with pytest.raises(ValidationError):
+        ProxyRecord(
+            request_id=request_id,
+            proxy="proxy",
+            tactic="echo",
+            state="success",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+        )
+
+
 def test_proxy_tactic_records_failure_and_calls_error_hook():
     errors = []
     log = InMemoryProxyLog()

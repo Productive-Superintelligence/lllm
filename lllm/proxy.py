@@ -40,7 +40,8 @@ class ProxyRecord(BaseModel):
         self.metadata = deepcopy(self.metadata)
 
     @model_validator(mode="after")
-    def _validate_error_type(self) -> "ProxyRecord":
+    def _validate_identity(self) -> "ProxyRecord":
+        token_value(self.request_id, "request_id")
         if self.error_type is not None:
             token_value(self.error_type, "error_type")
         return self

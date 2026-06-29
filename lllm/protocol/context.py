@@ -6,7 +6,9 @@ from copy import deepcopy
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, model_validator
+
+from ._validation import token_value
 
 
 class CallContext(BaseModel):
@@ -38,3 +40,12 @@ class CallContext(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.metadata = deepcopy(self.metadata)
         self.tags = deepcopy(self.tags)
+
+    @model_validator(mode="after")
+    def _validate_identifiers(self) -> "CallContext":
+        token_value(self.request_id, "request_id")
+        if self.trace_id is not None:
+            token_value(self.trace_id, "trace_id")
+        if self.span_id is not None:
+            token_value(self.span_id, "span_id")
+        return self

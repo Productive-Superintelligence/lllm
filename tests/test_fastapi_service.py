@@ -151,10 +151,24 @@ def test_service_error_detail_rejects_malformed_type_tokens(value):
         ErrorDetail(type=value, message="bad")
 
 
-def test_service_error_detail_allows_common_type_tokens():
-    error = ErrorDetail(type="InvalidResponse", message="bad")
+@pytest.mark.parametrize(
+    "value",
+    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+)
+def test_service_dto_models_reject_malformed_request_id_tokens(value):
+    with pytest.raises(ValidationError):
+        RunResponse(output={}, request_id=value, tactic="echo")
+    with pytest.raises(ValidationError):
+        ErrorDetail(type="ValueError", message="bad", request_id=value)
 
+
+def test_service_error_detail_allows_common_type_tokens():
+    response = RunResponse(output={}, request_id="req-1", tactic="echo")
+    error = ErrorDetail(type="InvalidResponse", message="bad", request_id="req.1")
+
+    assert response.request_id == "req-1"
     assert error.type == "InvalidResponse"
+    assert error.request_id == "req.1"
 
 
 def test_endpoint_decorator_normalizes_relative_paths():

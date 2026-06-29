@@ -43,6 +43,7 @@ class CallTrace(BaseModel):
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "CallTrace":
+        token_value(self.request_id, "request_id")
         path_segment_value(self.tactic, "tactic")
         token_value(self.state, "state")
         if self.error_type is not None:

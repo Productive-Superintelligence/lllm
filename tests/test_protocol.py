@@ -183,6 +183,21 @@ def test_tactic_name_fields_allow_display_names_with_spaces():
 
 @pytest.mark.parametrize(
     "value",
+    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+)
+def test_call_identifiers_reject_malformed_tokens(value):
+    with pytest.raises(ValidationError):
+        CallContext(request_id=value)
+    with pytest.raises(ValidationError):
+        CallContext(trace_id=value)
+    with pytest.raises(ValidationError):
+        CallContext(span_id=value)
+    with pytest.raises(ValidationError):
+        CallTrace(request_id=value, tactic="echo")
+
+
+@pytest.mark.parametrize(
+    "value",
     ("", "   ", ".", "..", "bad kind", "bad/kind", "bad:kind", "bad\\kind"),
 )
 def test_tactic_event_rejects_malformed_identity_tokens(value):
@@ -217,6 +232,7 @@ def test_tactic_info_rejects_malformed_metadata_tokens(value):
 
 
 def test_tactic_metadata_tokens_allow_common_separators():
+    context = CallContext(request_id="req-1", trace_id="trace.1", span_id="span_1")
     event = TacticEvent(id="event-1", kind="tool-call")
     info = TacticInfo(
         name="echo",
@@ -224,6 +240,9 @@ def test_tactic_metadata_tokens_allow_common_separators():
         capabilities=("run", "custom.capability"),
     )
 
+    assert context.request_id == "req-1"
+    assert context.trace_id == "trace.1"
+    assert context.span_id == "span_1"
     assert event.id == "event-1"
     assert event.kind == "tool-call"
     assert info.runtime_kind == "pydantic-ai"

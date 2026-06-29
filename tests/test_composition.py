@@ -317,6 +317,15 @@ def test_remote_tactic_error_rejects_malformed_error_type_tokens(error_type):
         RemoteTacticError(500, error_type=error_type)
 
 
+@pytest.mark.parametrize(
+    "request_id",
+    ("", "   ", ".", "..", "bad id", "bad/id", "bad:id", "bad\\id"),
+)
+def test_remote_tactic_error_rejects_malformed_request_id_tokens(request_id):
+    with pytest.raises(ValueError, match="request_id"):
+        RemoteTacticError(500, request_id=request_id)
+
+
 def test_remote_tactic_ignores_non_string_error_payload_fields():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
@@ -353,7 +362,7 @@ def test_remote_tactic_ignores_non_string_error_payload_fields():
     assert exc_info.value.request_id is None
 
 
-def test_remote_tactic_ignores_malformed_error_type_payload_tokens():
+def test_remote_tactic_ignores_malformed_error_payload_tokens():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
         assert request.url.path == "/run"
@@ -364,6 +373,7 @@ def test_remote_tactic_ignores_malformed_error_type_payload_tokens():
                     "error": {
                         "type": "bad type",
                         "message": "still readable",
+                        "request_id": "bad id",
                     }
                 }
             },
@@ -381,6 +391,7 @@ def test_remote_tactic_ignores_malformed_error_type_payload_tokens():
     assert exc_info.value.status_code == 500
     assert exc_info.value.error_type is None
     assert exc_info.value.message == "still readable"
+    assert exc_info.value.request_id is None
 
 
 def test_remote_tactic_preserves_protocol_error_status():

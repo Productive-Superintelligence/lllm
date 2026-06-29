@@ -46,6 +46,11 @@ class RunResponse(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.output = deepcopy(self.output)
 
+    @model_validator(mode="after")
+    def _validate_request_id(self) -> "RunResponse":
+        token_value(self.request_id, "request_id")
+        return self
+
 
 class ErrorDetail(BaseModel):
     """Stable service error body."""
@@ -61,8 +66,10 @@ class ErrorDetail(BaseModel):
         self.metadata = deepcopy(self.metadata)
 
     @model_validator(mode="after")
-    def _validate_type(self) -> "ErrorDetail":
+    def _validate_identity(self) -> "ErrorDetail":
         token_value(self.type, "error.type")
+        if self.request_id is not None:
+            token_value(self.request_id, "request_id")
         return self
 
 

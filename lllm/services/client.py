@@ -38,7 +38,7 @@ class RemoteTacticError(TacticServiceError):
         self.error_type = _optional_token_value(error_type, "error_type")
         self.tactic = _optional_text_value(tactic, "tactic")
         self.endpoint = _optional_text_value(endpoint, "endpoint")
-        self.request_id = _optional_text_value(request_id, "request_id")
+        self.request_id = _optional_token_value(request_id, "request_id")
         self.detail = detail
         self.message = _optional_text_value(message, "message") or _detail_message(detail)
         text = f"Remote tactic returned HTTP {status_code}"
@@ -275,7 +275,7 @@ def _remote_error(response: Any) -> RemoteTacticError:
         message=_error_text_field(error, "message"),
         tactic=_error_text_field(error, "tactic"),
         endpoint=_error_text_field(error, "endpoint"),
-        request_id=_error_text_field(error, "request_id"),
+        request_id=_error_token_field(error, "request_id"),
         detail=data,
     )
 
