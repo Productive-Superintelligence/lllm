@@ -303,6 +303,22 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert (site_dir / "CNAME").read_text(encoding="utf-8").strip() == "lllm.one"
 
 
+def test_docs_nav_keeps_foldable_tutorial_groups():
+    config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+
+    assert "- navigation.sections" in config
+    assert "- navigation.indexes" in config
+    assert "  - Tutorials:\n      - Protocol Level:" in config
+    assert "      - Native Runtime:" in config
+    assert "      - Pydantic Runtime:" in config
+    assert "          - First Tactic: tutorials/first-tactic.md" in config
+    assert "          - Native Core: tutorials/native-core.md" in config
+    assert (
+        "          - Pydantic AI Compatibility: tutorials/pydantic-ai-compat.md"
+        in config
+    )
+
+
 def test_service_api_reference_matches_error_envelope():
     reference = (ROOT / "docs" / "reference" / "service-api.md").read_text(
         encoding="utf-8"
