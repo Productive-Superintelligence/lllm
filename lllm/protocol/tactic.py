@@ -12,6 +12,7 @@ from typing import Any, ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
+from ._validation import optional_text_value, path_segment_value, token_value
 from .context import CallContext
 from .errors import TacticUnsupportedError
 from .events import TacticEvent
@@ -42,7 +43,7 @@ class CallTrace(BaseModel):
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "CallTrace":
-        _path_segment_value(self.tactic, "tactic")
+        path_segment_value(self.tactic, "tactic")
         return self
 
     def success(self, output: Any) -> None:
@@ -93,7 +94,10 @@ class TacticInfo(BaseModel):
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticInfo":
-        _path_segment_value(self.name, "name")
+        path_segment_value(self.name, "name")
+        token_value(self.runtime_kind, "runtime_kind")
+        for capability in self.capabilities:
+            token_value(capability, "capabilities")
         return self
 
 
@@ -122,10 +126,10 @@ class Tactic(Generic[InputT, OutputT]):
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
         name_value = name if name is not None else self.name or type(self).__name__
-        self._name = _path_segment_value(name_value, "name")
-        self._description = _optional_text_value(description, "description")
-        self.package_ref = _optional_text_value(package_ref, "package_ref")
-        self.service_ref = _optional_text_value(service_ref, "service_ref")
+        self._name = path_segment_value(name_value, "name")
+        self._description = optional_text_value(description, "description")
+        self.package_ref = optional_text_value(package_ref, "package_ref")
+        self.service_ref = optional_text_value(service_ref, "service_ref")
         self.examples = deepcopy(examples or [])
         self.metadata = deepcopy(dict(metadata or {}))
 
@@ -280,26 +284,3 @@ class Tactic(Generic[InputT, OutputT]):
             input_type=type_name(self.input_type),
             metadata=deepcopy(context.metadata),
         )
-
-
-def _text_value(value: Any, label: str) -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{label} must be a string.")
-    return value
-
-
-def _optional_text_value(value: Any, label: str) -> str | None:
-    if value is None:
-        return None
-    return _text_value(value, label)
-
-
-def _path_segment_value(value: Any, label: str) -> str:
-    text = _text_value(value, label)
-    if (
-        not text.strip()
-        or text in {".", ".."}
-        or any(ch in text for ch in "/:\\")
-    ):
-        raise ValueError(f"{label} must be a non-empty name without path separators.")
-    return text

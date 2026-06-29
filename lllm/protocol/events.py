@@ -7,7 +7,9 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictStr, model_validator
+
+from ._validation import token_value
 
 
 class TacticEvent(BaseModel):
@@ -22,6 +24,12 @@ class TacticEvent(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.data = deepcopy(self.data)
         self.metadata = deepcopy(self.metadata)
+
+    @model_validator(mode="after")
+    def _validate_identity(self) -> "TacticEvent":
+        token_value(self.id, "event.id")
+        token_value(self.kind, "event.kind")
+        return self
 
     @classmethod
     def result(cls, value: Any, **metadata: Any) -> "TacticEvent":

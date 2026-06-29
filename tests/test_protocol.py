@@ -181,6 +181,51 @@ def test_tactic_name_fields_allow_display_names_with_spaces():
     assert trace.tactic == "add numbers"
 
 
+@pytest.mark.parametrize(
+    "value",
+    ("", "   ", ".", "..", "bad kind", "bad/kind", "bad:kind", "bad\\kind"),
+)
+def test_tactic_event_rejects_malformed_identity_tokens(value):
+    with pytest.raises(ValidationError):
+        TacticEvent(id=value)
+    with pytest.raises(ValidationError):
+        TacticEvent(kind=value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad capability",
+        "bad/capability",
+        "bad:capability",
+        "bad\\capability",
+    ),
+)
+def test_tactic_info_rejects_malformed_metadata_tokens(value):
+    with pytest.raises(ValidationError):
+        TacticInfo(name="echo", runtime_kind=value)
+    with pytest.raises(ValidationError):
+        TacticInfo(name="echo", capabilities=(value,))
+
+
+def test_tactic_metadata_tokens_allow_common_separators():
+    event = TacticEvent(id="event-1", kind="tool-call")
+    info = TacticInfo(
+        name="echo",
+        runtime_kind="pydantic-ai",
+        capabilities=("run", "custom.capability"),
+    )
+
+    assert event.id == "event-1"
+    assert event.kind == "tool-call"
+    assert info.runtime_kind == "pydantic-ai"
+    assert info.capabilities == ("run", "custom.capability")
+
+
 def test_call_result_isolates_mutable_output_and_trace():
     output = {"items": [1]}
     trace = CallTrace(request_id="req", tactic="echo", metadata={"labels": ["trace"]})
