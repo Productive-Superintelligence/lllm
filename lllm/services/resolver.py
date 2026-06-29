@@ -55,7 +55,12 @@ class TacticResolver:
                 raise TacticRefError(
                     f"Tactic URL binding must not contain whitespace: {raw_ref}"
                 )
-            resolver.bind_url(raw_ref, url)
+            try:
+                resolver.bind_url(raw_ref, url)
+            except ValueError as exc:
+                raise TacticRefError(
+                    f"Tactic URL binding is invalid for {raw_ref}: {exc}"
+                ) from exc
         return resolver
 
     def register(self, ref: str | TacticRef, tactic: Tactic[Any, Any]) -> None:

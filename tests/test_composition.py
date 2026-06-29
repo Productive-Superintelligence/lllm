@@ -783,3 +783,19 @@ url = {url_value}
 
         with pytest.raises(TacticRefError, match="non-empty string"):
             TacticResolver.from_config(config_dir.parent)
+
+
+def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_path):
+    for index, url in enumerate(("service", "/service", "ftp://service", "http://")):
+        config_dir = tmp_path / f"workspace-url-{index}" / ".psi"
+        config_dir.mkdir(parents=True)
+        (config_dir / "config.toml").write_text(
+            f"""
+[refs."{REF}"]
+url = "{url}"
+""".lstrip(),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(TacticRefError, match="absolute http"):
+            TacticResolver.from_config(config_dir.parent)

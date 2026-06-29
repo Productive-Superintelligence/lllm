@@ -31,7 +31,8 @@ docs, examples, and assets. Malformed tactic refs still fail validation.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them
-with leading or trailing whitespace.
+with leading or trailing whitespace. Tactic URL bindings must be absolute
+HTTP(S) service URLs.
 
 ```toml
 [refs."psi://demo/echo/tactics/echo"]
