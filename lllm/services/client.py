@@ -434,9 +434,9 @@ def _endpoint_url(url: str, endpoint: str) -> str:
 
 
 def _service_url(url: str) -> str:
-    if not isinstance(url, str) or not url.strip():
+    if not isinstance(url, str) or not url:
         raise ValueError("url must be a non-empty absolute http(s) URL")
-    value = url.strip()
+    value = url
     if any(ch.isspace() for ch in value):
         raise ValueError("url must not contain whitespace")
     parsed = urlsplit(value)

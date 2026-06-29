@@ -214,6 +214,7 @@ def test_remote_tactic_metadata_keeps_normalized_service_url():
         "testserver/run",
         "/run",
         "ftp://testserver/run",
+        " http://testserver/run ",
         "http://test server/run",
     ],
 )
@@ -663,7 +664,7 @@ store = ".sssn"
     assert resolver.refs() == (REF,)
 
 
-def test_resolver_trims_url_bindings_from_local_config(tmp_path):
+def test_resolver_rejects_whitespace_bearing_url_bindings_from_local_config(tmp_path):
     config_dir = tmp_path / ".psi"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
@@ -674,11 +675,8 @@ url = "  http://127.0.0.1:8000/tactics/echo  "
         encoding="utf-8",
     )
 
-    resolver = TacticResolver.from_config(tmp_path)
-    tactic = resolver.resolve(REF)
-
-    assert isinstance(tactic, RemoteTactic)
-    assert tactic.url == "http://127.0.0.1:8000/tactics/echo/run"
+    with pytest.raises(TacticRefError, match="whitespace"):
+        TacticResolver.from_config(tmp_path)
 
 
 def test_resolver_rejects_malformed_config_paths():
