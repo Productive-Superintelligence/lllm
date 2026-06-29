@@ -499,7 +499,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
-    assert "width: 1.25rem;" in custom_css
+    assert "width: 1.2rem;" in custom_css
     assert ".md-nav--primary .md-nav__title .md-nav__button.md-logo" in custom_css
     assert "width: 2.4rem;" in custom_css
     assert ".md-search__form .md-icon svg" in custom_css

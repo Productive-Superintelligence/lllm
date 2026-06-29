@@ -150,15 +150,15 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   align-items: center;
   display: inline-flex;
   justify-content: center;
-  margin: 0.15rem 0.45rem 0.15rem 0;
-  padding: 0.35rem;
+  margin: 0.2rem;
+  padding: 0.4rem;
 }
 
 .md-header__button.md-logo img,
 .md-header__button.md-logo svg {
   display: block;
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1.2rem;
+  height: 1.2rem;
 }
 
 .md-nav__button.md-logo img,
