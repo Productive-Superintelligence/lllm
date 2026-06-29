@@ -538,30 +538,30 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "nodeTextColor" in mermaid_js
     assert "useMaxWidth: true" in mermaid_js
     assert "data-mermaid-source" in mermaid_js
-    assert "normalizeNode" in mermaid_js
-    assert "isGeneratedMermaidNode" in mermaid_js
-    assert 'tagName === "svg"' in mermaid_js
-    assert "ownerSVGElement" in mermaid_js
-    assert 'node.closest("svg, foreignObject")' in mermaid_js
-    assert "pre code.language-mermaid" in mermaid_js
+    assert "sourceFor" in mermaid_js
+    assert "diagramNodes" in mermaid_js
+    assert 'document.querySelectorAll(".mermaid")' in mermaid_js
+    assert '!node.querySelector("svg")' in mermaid_js
+    assert 'node.getAttribute("data-mermaid-rendering") !== "true"' in mermaid_js
+    assert "Boolean(sourceFor(node) && sourceFor(node).trim())" in mermaid_js
+    assert 'node.setAttribute("data-mermaid-source", source)' in mermaid_js
     assert "data-mermaid-error" in mermaid_js
     assert "renderSequence" in mermaid_js
     assert "renderNodeSafely" in mermaid_js
     assert "Mermaid returned an empty SVG." in mermaid_js
     assert "renderAgain" in mermaid_js
-    assert "renderRunning" in mermaid_js
-    assert "renderScheduled" in mermaid_js
+    assert "rendering" in mermaid_js
+    assert "scheduled" in mermaid_js
     assert "afterFontsReady" in mermaid_js
     assert "data-mermaid-rendering" in mermaid_js
     assert "window.mermaid.render" in mermaid_js
     assert "attempt < maxRetries" in mermaid_js
-    assert "MutationObserver" in mermaid_js
-    assert "observeContent" in mermaid_js
-    assert "handleDocumentChange" in mermaid_js
     assert "requestAnimationFrame" in mermaid_js
-    assert "window.document$.subscribe(handleDocumentChange)" in mermaid_js
-    assert 'window.addEventListener("load", handleDocumentChange)' in mermaid_js
-    assert 'window.addEventListener("pageshow", handleDocumentChange)' in mermaid_js
+    assert "window.document$.subscribe(scheduleRender)" in mermaid_js
+    assert 'window.addEventListener("load", scheduleRender)' in mermaid_js
+    assert 'window.addEventListener("pageshow", scheduleRender)' in mermaid_js
+    assert "renderRunning" not in mermaid_js
+    assert "renderScheduled" not in mermaid_js
     assert 'container.getAttribute("data-mermaid-error") === "true"' not in mermaid_js
     assert "assets/logo.svg" in index_html
     assert "assets/lllm-logo-text-dark.png#only-light" in index_html
