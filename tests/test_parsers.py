@@ -54,6 +54,29 @@ def test_default_tag_parser_exports_schema_and_round_trips_config():
     assert restored.parser_args == {"mode": "strict"}
 
 
+def test_default_tag_parser_isolates_mutable_config_inputs():
+    required_xml_tags = ["answer"]
+    required_md_tags = ["json"]
+    signal_tags = ["DONE"]
+    parser_args = {"mode": {"levels": ["strict"]}}
+    parser = DefaultTagParser(
+        required_xml_tags=required_xml_tags,
+        required_md_tags=required_md_tags,
+        signal_tags=signal_tags,
+        parser_args=parser_args,
+    )
+
+    required_xml_tags.append("changed")
+    required_md_tags.append("changed")
+    signal_tags.append("changed")
+    parser_args["mode"]["levels"].append("changed")
+
+    assert parser.required_xml_tags == ["answer"]
+    assert parser.required_md_tags == ["json"]
+    assert parser.signal_tags == ["DONE"]
+    assert parser.parser_args == {"mode": {"levels": ["strict"]}}
+
+
 def test_default_tag_parser_can_back_plain_tactic_boundary():
     parser = DefaultTagParser(required_xml_tags=["answer"], signal_tags=["DONE"])
 

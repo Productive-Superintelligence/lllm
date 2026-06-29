@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import re
 from typing import Any
 
@@ -45,6 +46,14 @@ class DefaultTagParser(BaseParser, BaseModel):
     parser_args: dict[str, Any] = Field(default_factory=dict)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.xml_tags = deepcopy(self.xml_tags)
+        self.md_tags = deepcopy(self.md_tags)
+        self.signal_tags = deepcopy(self.signal_tags)
+        self.required_xml_tags = deepcopy(self.required_xml_tags)
+        self.required_md_tags = deepcopy(self.required_md_tags)
+        self.parser_args = deepcopy(self.parser_args)
 
     def parse(self, content: str, **runtime_args: Any) -> dict[str, Any]:
         xml_tags = _unique([*self.xml_tags, *self.required_xml_tags])
