@@ -112,8 +112,9 @@ class PydanticAITactic(Tactic[Any, Any]):
         agent_description = description if description is not None else cfg.description
         if agent_description is None:
             agent_description = getattr(agent, "description", None) or inspect.getdoc(agent) or ""
+        tactic_name = name if name is not None else getattr(agent, "name", None)
         super().__init__(
-            name=name or getattr(agent, "name", None),
+            name=tactic_name,
             description=agent_description,
             package_ref=package_ref if package_ref is not None else cfg.package_ref,
             service_ref=service_ref if service_ref is not None else cfg.service_ref,

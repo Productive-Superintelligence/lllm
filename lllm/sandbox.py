@@ -59,8 +59,12 @@ class SandboxedTactic(Tactic[Any, Any]):
         self.input_type = tactic.input_type
         self.output_type = tactic.output_type
         super().__init__(
-            name=name or f"{tactic.tactic_name}_sandbox",
-            description=description or f"Sandbox wrapper for {tactic.tactic_name}.",
+            name=name if name is not None else f"{tactic.tactic_name}_sandbox",
+            description=(
+                description
+                if description is not None
+                else f"Sandbox wrapper for {tactic.tactic_name}."
+            ),
             package_ref=tactic.package_ref,
             service_ref=tactic.service_ref,
             examples=info.examples,

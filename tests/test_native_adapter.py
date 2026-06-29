@@ -1,3 +1,4 @@
+import pytest
 from pydantic import BaseModel
 
 from lllm.runtimes.native import NativeTacticAdapter
@@ -36,3 +37,9 @@ def test_native_adapter_keeps_native_object_behind_boundary():
     assert info.examples == [example]
     assert info.metadata == {"owner": "tests"}
     assert tactic.run({"left": 2, "right": 3}) == 5
+
+
+@pytest.mark.parametrize("name", ["", "   "])
+def test_native_adapter_rejects_explicit_blank_names(name):
+    with pytest.raises(ValueError, match="name"):
+        NativeTacticAdapter(NativeAdd(), name=name)

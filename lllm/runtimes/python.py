@@ -35,8 +35,11 @@ class CallableTactic(Tactic[Any, Any]):
         self.output_type = output_type if output_type is not None else inferred_output
         self._signature = signature
         self._is_async = inspect.iscoroutinefunction(fn)
+        tactic_name = (
+            name if name is not None else getattr(fn, "__name__", None) or "callable"
+        )
         super().__init__(
-            name=name or getattr(fn, "__name__", None) or "callable",
+            name=tactic_name,
             description=(
                 description if description is not None else inspect.getdoc(fn) or ""
             ),

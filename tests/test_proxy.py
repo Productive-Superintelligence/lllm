@@ -126,6 +126,12 @@ def test_proxy_tactic_records_success_and_runs_hooks():
     assert record.metadata["proxy"] == {"purpose": "test"}
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_proxy_tactic_rejects_explicit_blank_names(name):
+    with pytest.raises(ValueError, match="name"):
+        ProxyTactic(EchoTactic(), name=name)
+
+
 def test_proxy_tactic_isolates_mutable_metadata():
     log = InMemoryProxyLog()
     proxy_metadata = {"purpose": {"name": "test"}}

@@ -363,6 +363,15 @@ def test_plain_callable_wraps_as_tactic_with_annotations():
     assert tactic.run("hello", context=CallContext(metadata={"caller": "test"})) == "HELLO"
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_plain_callable_rejects_explicit_blank_names(name):
+    def echo(text: str) -> str:
+        return text
+
+    with pytest.raises(ValueError, match="name"):
+        as_tactic(echo, name=name)
+
+
 def test_tactic_accepts_dataclass_input_and_typed_dict_output():
     tactic = BatchTactic()
     info = tactic.info()

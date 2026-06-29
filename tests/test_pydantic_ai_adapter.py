@@ -133,6 +133,12 @@ def test_pydantic_ai_adapter_maps_result_output_and_context_metadata():
     assert tactic.capabilities() == {"run", "arun"}
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_pydantic_ai_adapter_rejects_explicit_blank_names(name):
+    with pytest.raises(ValueError, match="name"):
+        PydanticAITactic.from_agent(FakeAgent(), name=name)
+
+
 def test_pydantic_ai_adapter_isolates_forwarded_context_metadata():
     agent = FakeAgent()
     tactic = PydanticAITactic.from_agent(agent, input_type=str)

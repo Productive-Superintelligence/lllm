@@ -61,8 +61,13 @@ class NativeTacticAdapter(Tactic[Any, Any]):
             None,
         )
         self.output_type = output_type or getattr(native, "output_type", None)
+        tactic_name = (
+            name
+            if name is not None
+            else getattr(native, "name", None) or type(native).__name__
+        )
         super().__init__(
-            name=name or getattr(native, "name", None) or type(native).__name__,
+            name=tactic_name,
             description=(
                 description
                 if description is not None

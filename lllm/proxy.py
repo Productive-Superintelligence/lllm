@@ -96,8 +96,12 @@ class ProxyTactic(Tactic[Any, Any]):
         self.input_type = tactic.input_type
         self.output_type = tactic.output_type
         super().__init__(
-            name=name or f"{tactic.tactic_name}_proxy",
-            description=description or f"Proxy for {tactic.tactic_name}.",
+            name=name if name is not None else f"{tactic.tactic_name}_proxy",
+            description=(
+                description
+                if description is not None
+                else f"Proxy for {tactic.tactic_name}."
+            ),
             package_ref=tactic.package_ref,
             service_ref=tactic.service_ref,
             examples=info.examples,

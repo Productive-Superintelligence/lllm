@@ -223,6 +223,12 @@ def test_remote_tactic_rejects_malformed_service_urls(url):
         RemoteTactic(url)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_remote_tactic_rejects_explicit_blank_names(name):
+    with pytest.raises(ValueError, match="name"):
+        RemoteTactic("http://testserver/run", name=name)
+
+
 def test_remote_tactic_async_fetches_service_info():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(

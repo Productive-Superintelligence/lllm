@@ -76,7 +76,7 @@ class RemoteTactic(Tactic[Any, Any]):
         self.input_type = input_type
         self.output_type = output_type
         super().__init__(
-            name=name or _name_from_url(url),
+            name=name if name is not None else _name_from_url(url),
             service_ref=url,
             metadata={**dict(metadata or {}), "url": self.url},
         )

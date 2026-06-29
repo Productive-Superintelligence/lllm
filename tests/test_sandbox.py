@@ -94,6 +94,12 @@ def test_sandboxed_tactic_allows_calls_within_policy():
     assert tactic.info().metadata["sandbox_policy"]["max_input_bytes"] == 100
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_sandboxed_tactic_rejects_explicit_blank_names(name):
+    with pytest.raises(ValueError, match="name"):
+        SandboxedTactic(EchoTactic(), name=name)
+
+
 def test_sandboxed_tactic_isolates_policy_object():
     policy = SandboxPolicy(max_input_bytes=100, allowed_metadata_keys=("tenant",))
     tactic = SandboxedTactic(EchoTactic(), policy=policy)
