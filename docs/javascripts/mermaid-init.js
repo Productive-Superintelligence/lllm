@@ -1,6 +1,6 @@
 (function () {
   var fontFamily =
-    "Inter, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif";
+    "Roboto, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif";
   var initialized = false;
   var renderRunning = false;
   var renderAgain = false;

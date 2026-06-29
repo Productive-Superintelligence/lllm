@@ -1,8 +1,8 @@
 :root {
   --md-primary-fg-color: #ffffff;
   --md-accent-fg-color: #050505;
-  --md-text-font: "Inter";
-  --md-code-font: "JetBrains Mono";
+  --md-text-font: "Roboto";
+  --md-code-font: "Roboto Mono";
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
@@ -15,9 +15,9 @@
 }
 
 body {
-  --md-text-font-family: "Inter", -apple-system, BlinkMacSystemFont,
+  --md-text-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
     Helvetica, Arial, sans-serif;
-  --md-code-font-family: "JetBrains Mono", SFMono-Regular, Consolas, Menlo,
+  --md-code-font-family: "Roboto Mono", SFMono-Regular, Consolas, Menlo,
     monospace;
 }
 
@@ -170,8 +170,8 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .md-nav--primary .md-nav__title .md-nav__button.md-logo img,
 .md-nav--primary .md-nav__title .md-nav__button.md-logo svg {
-  width: 1.2rem;
-  height: 1.2rem;
+  width: 2.4rem;
+  height: 2.4rem;
 }
 
 .md-header__title {
@@ -409,11 +409,11 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-typeset .mermaid svg {
-  --mermaid-font-family: "Inter", -apple-system, BlinkMacSystemFont,
+  --mermaid-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
     Helvetica, Arial, sans-serif;
   color: var(--psi-diagram-ink);
   display: inline-block;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
     sans-serif !important;
   height: auto;
   max-width: 100%;
@@ -422,7 +422,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-typeset .mermaid svg * {
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
     sans-serif !important;
 }
 
@@ -456,7 +456,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid foreignObject * {
   color: var(--psi-diagram-ink) !important;
   fill: var(--psi-diagram-ink) !important;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
     sans-serif !important;
   line-height: 1.2;
 }
@@ -464,7 +464,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid text,
 .md-typeset .mermaid tspan {
   fill: var(--psi-diagram-ink) !important;
-  font-family: "Inter", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
+  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
     sans-serif !important;
 }
 
