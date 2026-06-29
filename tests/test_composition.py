@@ -88,6 +88,9 @@ def test_tactic_ref_rejects_non_tactic_refs():
         "psi://../echo/tactics/echo",
         "psi://demo/./tactics/echo",
         "psi://demo/echo/tactics/..",
+        "psi://demo/echo/tactics//echo",
+        "psi://demo/echo//tactics/echo",
+        "psi://demo/echo/tactics/echo/",
     ],
 )
 def test_tactic_ref_rejects_non_resource_url_parts(value):
@@ -432,3 +435,19 @@ url = "http://127.0.0.1:8000/tactics/echo"
 
     with pytest.raises(TacticRefError, match="psi://"):
         TacticResolver.from_config(tmp_path)
+
+
+def test_resolver_rejects_invalid_tactic_url_values_from_local_config(tmp_path):
+    for index, url_value in enumerate(("123", "false", '""'), start=1):
+        config_dir = tmp_path / f"workspace-{index}" / ".psi"
+        config_dir.mkdir(parents=True)
+        (config_dir / "config.toml").write_text(
+            f"""
+[refs."{REF}"]
+url = {url_value}
+""".lstrip(),
+            encoding="utf-8",
+        )
+
+        with pytest.raises(TacticRefError, match="non-empty string"):
+            TacticResolver.from_config(config_dir.parent)

@@ -28,13 +28,17 @@ class TacticRef:
                 f"{self.value}"
             )
         org = parsed.netloc.strip()
-        parts = [part for part in parsed.path.split("/") if part]
-        if len(parts) != 3:
+        raw_parts = parsed.path.split("/")
+        if (
+            len(raw_parts) != 4
+            or raw_parts[0] != ""
+            or any(not part for part in raw_parts[1:])
+        ):
             raise TacticRefError(
                 "Tactic ref must have shape psi://org/package/tactics/name: "
                 f"{self.value}"
             )
-        package, resource_kind, name = parts
+        package, resource_kind, name = raw_parts[1:]
         if not org or not package or not name:
             raise TacticRefError(f"Tactic ref contains an empty segment: {self.value}")
         for segment in (org, package, name):

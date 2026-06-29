@@ -41,11 +41,16 @@ class TacticResolver:
         for raw_ref, data in refs.items():
             if not isinstance(data, dict):
                 raise TacticRefError(f"Ref binding must be a table: {raw_ref}")
-            url = data.get("url")
-            if url:
-                if not _is_tactic_config_ref(raw_ref):
-                    continue
-                resolver.bind_url(raw_ref, str(url))
+            if "url" not in data:
+                continue
+            if not _is_tactic_config_ref(raw_ref):
+                continue
+            url = data["url"]
+            if not isinstance(url, str) or not url:
+                raise TacticRefError(
+                    f"Tactic URL binding must be a non-empty string: {raw_ref}"
+                )
+            resolver.bind_url(raw_ref, url)
         return resolver
 
     def register(self, ref: str | TacticRef, tactic: Tactic[Any, Any]) -> None:
