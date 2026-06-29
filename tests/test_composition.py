@@ -246,6 +246,27 @@ def test_remote_tactic_preserves_protocol_error_status():
     assert exc_info.value.request_id == "req-schema"
 
 
+def test_remote_tactic_preserves_plain_text_service_errors():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/run"
+        return httpx.Response(503, text="upstream unavailable")
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(RemoteTacticError) as exc_info:
+        remote.run("hello")
+
+    assert exc_info.value.status_code == 503
+    assert exc_info.value.error_type is None
+    assert exc_info.value.message == "upstream unavailable"
+    assert exc_info.value.detail == "upstream unavailable"
+
+
 def test_remote_tactic_streams_fastapi_sse_events():
     app = create_tactic_app(StreamTactic())
     remote = RemoteTactic(
