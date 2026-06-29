@@ -92,9 +92,7 @@ class RemoteTactic(Tactic[Any, Any]):
 
         with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
             response = client.get(self.info_url, **kwargs)
-        if response.status_code >= 400:
-            raise _remote_error(response)
-        return TacticInfo.model_validate(response.json())
+        return _response_info(response)
 
     async def afetch_info(self, **kwargs: Any) -> TacticInfo:
         """Fetch the service-advertised tactic contract asynchronously."""
@@ -111,9 +109,7 @@ class RemoteTactic(Tactic[Any, Any]):
             timeout=self.timeout,
         ) as client:
             response = await client.get(self.info_url, **kwargs)
-        if response.status_code >= 400:
-            raise _remote_error(response)
-        return TacticInfo.model_validate(response.json())
+        return _response_info(response)
 
     def _run(
         self,
@@ -227,10 +223,39 @@ def _request_envelope(input_value: Any, context: CallContext | None) -> dict[str
 def _response_output(response: Any) -> Any:
     if response.status_code >= 400:
         raise _remote_error(response)
-    data = response.json()
+    data = _response_json(response, endpoint="run")
     if isinstance(data, dict) and "output" in data:
         return data["output"]
     return data
+
+
+def _response_info(response: Any) -> TacticInfo:
+    if response.status_code >= 400:
+        raise _remote_error(response)
+    data = _response_json(response, endpoint="info")
+    try:
+        return TacticInfo.model_validate(data)
+    except Exception as exc:
+        raise RemoteTacticError(
+            response.status_code,
+            error_type="InvalidResponse",
+            message="Remote tactic info response did not match the TacticInfo schema.",
+            endpoint="info",
+            detail=data,
+        ) from exc
+
+
+def _response_json(response: Any, *, endpoint: str) -> Any:
+    try:
+        return response.json()
+    except Exception as exc:
+        raise RemoteTacticError(
+            response.status_code,
+            error_type="InvalidResponse",
+            message=f"Remote tactic {endpoint} response was not valid JSON.",
+            endpoint=endpoint,
+            detail=response.text,
+        ) from exc
 
 
 def _remote_error(response: Any) -> RemoteTacticError:

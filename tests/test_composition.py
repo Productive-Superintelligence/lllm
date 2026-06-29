@@ -322,6 +322,56 @@ def test_remote_tactic_preserves_plain_text_service_errors():
     assert exc_info.value.detail == "upstream unavailable"
 
 
+def test_remote_tactic_reports_invalid_success_json():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/run"
+        return httpx.Response(200, text="{bad")
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(RemoteTacticError) as exc_info:
+        remote.run("hello")
+
+    assert exc_info.value.status_code == 200
+    assert exc_info.value.error_type == "InvalidResponse"
+    assert exc_info.value.endpoint == "run"
+    assert "not valid JSON" in exc_info.value.message
+    assert exc_info.value.detail == "{bad"
+
+
+@pytest.mark.parametrize(
+    ("response", "expected"),
+    [
+        (httpx.Response(200, text="{bad"), "not valid JSON"),
+        (httpx.Response(200, json={"name": 123}), "TacticInfo schema"),
+    ],
+)
+def test_remote_tactic_reports_invalid_info_responses(response, expected):
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "GET"
+        assert request.url.path == "/info"
+        return response
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(RemoteTacticError) as exc_info:
+        remote.fetch_info()
+
+    assert exc_info.value.status_code == 200
+    assert exc_info.value.error_type == "InvalidResponse"
+    assert exc_info.value.endpoint == "info"
+    assert expected in exc_info.value.message
+
+
 def test_remote_tactic_streams_fastapi_sse_events():
     app = create_tactic_app(StreamTactic())
     remote = RemoteTactic(
