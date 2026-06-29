@@ -37,6 +37,9 @@ class CallTrace(BaseModel):
     traceback: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    def model_post_init(self, __context: Any) -> None:
+        self.metadata = deepcopy(self.metadata)
+
     def success(self, output: Any) -> None:
         self.state = "success"
         self.ended_at = time.time()
@@ -72,6 +75,12 @@ class TacticInfo(BaseModel):
     service_ref: str | None = None
     examples: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.input_schema = deepcopy(self.input_schema)
+        self.output_schema = deepcopy(self.output_schema)
+        self.examples = deepcopy(self.examples)
+        self.metadata = deepcopy(self.metadata)
 
 
 class Tactic(Generic[InputT, OutputT]):

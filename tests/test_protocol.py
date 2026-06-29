@@ -10,7 +10,15 @@ import pytest
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from lllm import CallContext, SchemaError, Tactic, TacticEvent, as_tactic
+from lllm import (
+    CallContext,
+    CallTrace,
+    SchemaError,
+    Tactic,
+    TacticEvent,
+    TacticInfo,
+    as_tactic,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -99,6 +107,34 @@ def test_tactic_event_isolates_mutable_payload_inputs():
 
     assert result.data == {"items": [1]}
     assert result.metadata == {"tags": ["result"]}
+
+
+def test_protocol_info_and_trace_models_isolate_mutable_inputs():
+    input_schema = {"properties": {"text": {"type": "string"}}}
+    output_schema = {"properties": {"text": {"type": "string"}}}
+    examples = [{"input": {"text": "hello"}}]
+    metadata = {"labels": ["info"]}
+    info = TacticInfo(
+        name="echo",
+        input_schema=input_schema,
+        output_schema=output_schema,
+        examples=examples,
+        metadata=metadata,
+    )
+    trace_metadata = {"labels": ["trace"]}
+    trace = CallTrace(request_id="req", tactic="echo", metadata=trace_metadata)
+
+    input_schema["properties"]["text"]["type"] = "integer"
+    output_schema["properties"]["text"]["type"] = "integer"
+    examples[0]["input"]["text"] = "changed"
+    metadata["labels"].append("changed")
+    trace_metadata["labels"].append("changed")
+
+    assert info.input_schema == {"properties": {"text": {"type": "string"}}}
+    assert info.output_schema == {"properties": {"text": {"type": "string"}}}
+    assert info.examples == [{"input": {"text": "hello"}}]
+    assert info.metadata == {"labels": ["info"]}
+    assert trace.metadata == {"labels": ["trace"]}
 
 
 def test_tactic_validates_and_returns_trace():
