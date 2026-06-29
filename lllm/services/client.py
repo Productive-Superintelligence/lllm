@@ -17,6 +17,7 @@ from ..protocol import (
     TacticInfo,
     TacticServiceError,
 )
+from ..protocol._validation import token_value
 
 
 class RemoteTacticError(TacticServiceError):
@@ -34,15 +35,15 @@ class RemoteTacticError(TacticServiceError):
         detail: Any = None,
     ) -> None:
         self.status_code = status_code
-        self.error_type = _optional_text_value(error_type, "error_type")
+        self.error_type = _optional_token_value(error_type, "error_type")
         self.tactic = _optional_text_value(tactic, "tactic")
         self.endpoint = _optional_text_value(endpoint, "endpoint")
         self.request_id = _optional_text_value(request_id, "request_id")
         self.detail = detail
         self.message = _optional_text_value(message, "message") or _detail_message(detail)
         text = f"Remote tactic returned HTTP {status_code}"
-        if error_type:
-            text += f" ({error_type})"
+        if self.error_type:
+            text += f" ({self.error_type})"
         if self.message:
             text += f": {self.message}"
         super().__init__(text)
@@ -270,7 +271,7 @@ def _remote_error(response: Any) -> RemoteTacticError:
     error = _error_detail(data)
     return RemoteTacticError(
         response.status_code,
-        error_type=_error_text_field(error, "type"),
+        error_type=_error_token_field(error, "type"),
         message=_error_text_field(error, "message"),
         tactic=_error_text_field(error, "tactic"),
         endpoint=_error_text_field(error, "endpoint"),
@@ -306,12 +307,28 @@ def _error_text_field(error: Any, field_name: str) -> str | None:
     return value if isinstance(value, str) else None
 
 
+def _error_token_field(error: Any, field_name: str) -> str | None:
+    value = _error_text_field(error, field_name)
+    if value is None:
+        return None
+    try:
+        return token_value(value, f"error.{field_name}")
+    except ValueError:
+        return None
+
+
 def _optional_text_value(value: Any, label: str) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str):
         raise TypeError(f"{label} must be a string.")
     return value
+
+
+def _optional_token_value(value: Any, label: str) -> str | None:
+    if value is None:
+        return None
+    return token_value(value, label)
 
 
 def _iter_sse_events(lines: Iterable[Any]) -> Iterator[TacticEvent]:

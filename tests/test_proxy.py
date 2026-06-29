@@ -260,6 +260,24 @@ def test_proxy_record_rejects_bytes_for_text_fields(factory):
         factory()
 
 
+@pytest.mark.parametrize(
+    "error_type",
+    ("", "   ", ".", "..", "bad type", "bad/type", "bad:type", "bad\\type"),
+)
+def test_proxy_record_rejects_malformed_error_type_tokens(error_type):
+    with pytest.raises(ValidationError):
+        ProxyRecord(
+            request_id="req",
+            proxy="proxy",
+            tactic="echo",
+            state="failure",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+            error_type=error_type,
+        )
+
+
 def test_proxy_tactic_records_failure_and_calls_error_hook():
     errors = []
     log = InMemoryProxyLog()

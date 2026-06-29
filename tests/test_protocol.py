@@ -212,6 +212,8 @@ def test_tactic_info_rejects_malformed_metadata_tokens(value):
         TacticInfo(name="echo", capabilities=(value,))
     with pytest.raises(ValidationError):
         CallTrace(request_id="req", tactic="echo", state=value)
+    with pytest.raises(ValidationError):
+        CallTrace(request_id="req", tactic="echo", error_type=value)
 
 
 def test_tactic_metadata_tokens_allow_common_separators():
@@ -226,8 +228,14 @@ def test_tactic_metadata_tokens_allow_common_separators():
     assert event.kind == "tool-call"
     assert info.runtime_kind == "pydantic-ai"
     assert info.capabilities == ("run", "custom.capability")
-    trace = CallTrace(request_id="req", tactic="echo", state="custom.state")
+    trace = CallTrace(
+        request_id="req",
+        tactic="echo",
+        state="custom.state",
+        error_type="ValidationError",
+    )
     assert trace.state == "custom.state"
+    assert trace.error_type == "ValidationError"
 
 
 def test_call_result_isolates_mutable_output_and_trace():

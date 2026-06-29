@@ -8,9 +8,10 @@ from copy import deepcopy
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, StrictStr
+from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from .protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
+from .protocol._validation import token_value
 
 ValueHook = Callable[[Any, CallContext], Any]
 ErrorHook = Callable[[BaseException, CallContext], Any]
@@ -37,6 +38,12 @@ class ProxyRecord(BaseModel):
         self.input_value = deepcopy(self.input_value)
         self.output_value = deepcopy(self.output_value)
         self.metadata = deepcopy(self.metadata)
+
+    @model_validator(mode="after")
+    def _validate_error_type(self) -> "ProxyRecord":
+        if self.error_type is not None:
+            token_value(self.error_type, "error_type")
+        return self
 
 
 class InMemoryProxyLog:

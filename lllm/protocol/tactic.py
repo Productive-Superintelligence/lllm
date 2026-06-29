@@ -45,6 +45,8 @@ class CallTrace(BaseModel):
     def _validate_identity(self) -> "CallTrace":
         path_segment_value(self.tactic, "tactic")
         token_value(self.state, "state")
+        if self.error_type is not None:
+            token_value(self.error_type, "error_type")
         return self
 
     def success(self, output: Any) -> None:
