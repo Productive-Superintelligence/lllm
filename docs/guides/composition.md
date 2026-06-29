@@ -30,6 +30,8 @@ ignores refs owned by other layers, such as services, channels, snapshots,
 docs, examples, and assets. Malformed tactic refs still fail validation.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
+Config file paths and tactic URL bindings are read exactly; do not pad them
+with leading or trailing whitespace.
 
 ```toml
 [refs."psi://demo/echo/tactics/echo"]

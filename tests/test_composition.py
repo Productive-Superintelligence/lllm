@@ -749,7 +749,7 @@ url = "  http://127.0.0.1:8000/tactics/echo  "
 
 
 def test_resolver_rejects_malformed_config_paths():
-    for path in ("   ", 123):
+    for path in ("   ", " ./config.toml ", 123):
         with pytest.raises(ValueError, match="config path"):
             TacticResolver.from_config(path)  # type: ignore[arg-type]
 

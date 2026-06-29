@@ -649,6 +649,7 @@ def test_composition_guide_documents_mixed_local_config():
     assert "psi://demo/echo/channels/events" in guide
     assert "Malformed tactic refs still fail validation." in guide
     assert "avoid whitespace" in guide
+    assert "do not pad them" in guide
     assert "percent escapes" in guide
 
 
