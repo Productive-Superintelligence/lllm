@@ -91,9 +91,12 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
     ``CallableTactic`` unless they already return a ``Tactic``.
     """
 
-    if not isinstance(entrypoint, str) or not entrypoint.strip():
+    if (
+        not isinstance(entrypoint, str)
+        or not entrypoint
+        or entrypoint != entrypoint.strip()
+    ):
         raise ValueError("Entrypoint must have the form 'module:attribute'.")
-    entrypoint = entrypoint.strip()
     module_name, sep, attr_path = entrypoint.partition(":")
     if (
         not sep

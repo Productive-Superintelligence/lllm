@@ -179,9 +179,13 @@ def test_cli_serve_rejects_malformed_bindings_before_import(args, capsys):
     assert "missing.module" not in captured.err
 
 
-def test_cli_inspect_rejects_malformed_entrypoint_without_traceback(capsys):
+@pytest.mark.parametrize("entrypoint", ["demo", " demo:build_tactic "])
+def test_cli_inspect_rejects_malformed_entrypoint_without_traceback(
+    capsys,
+    entrypoint,
+):
     with pytest.raises(SystemExit) as exc_info:
-        main(["inspect", "demo"])
+        main(["inspect", entrypoint])
 
     assert exc_info.value.code == 2
     captured = capsys.readouterr()
@@ -245,6 +249,7 @@ def test_cli_reports_missing_entrypoint_attributes_without_traceback(
         "demo.tactics:build_tactic.",
         "demo.tactics:.build_tactic",
         "demo.tactics:build tactic",
+        " demo.tactics:build_tactic ",
     ],
 )
 def test_load_tactic_entrypoint_rejects_malformed_values(entrypoint):
