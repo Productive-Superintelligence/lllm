@@ -61,6 +61,10 @@ class CallResult(BaseModel):
     output: Any = None
     trace: CallTrace
 
+    def model_post_init(self, __context: Any) -> None:
+        self.output = deepcopy(self.output)
+        self.trace = self.trace.model_copy(deep=True)
+
 
 class TacticInfo(BaseModel):
     """Static description of a tactic boundary."""

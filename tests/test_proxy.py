@@ -177,6 +177,32 @@ def test_in_memory_proxy_log_isolates_appended_records():
     assert log.records[0].metadata == {"labels": ["log"]}
 
 
+def test_proxy_record_isolates_mutable_constructor_inputs():
+    input_value = {"items": [1]}
+    output_value = {"items": [2]}
+    metadata = {"labels": ["record"]}
+    record = ProxyRecord(
+        request_id="req-record",
+        proxy="proxy",
+        tactic="echo",
+        state="success",
+        started_at=1.0,
+        ended_at=2.0,
+        latency_ms=1000.0,
+        input_value=input_value,
+        output_value=output_value,
+        metadata=metadata,
+    )
+
+    input_value["items"].append(10)
+    output_value["items"].append(20)
+    metadata["labels"].append("mutated")
+
+    assert record.input_value == {"items": [1]}
+    assert record.output_value == {"items": [2]}
+    assert record.metadata == {"labels": ["record"]}
+
+
 def test_proxy_tactic_records_failure_and_calls_error_hook():
     errors = []
     log = InMemoryProxyLog()

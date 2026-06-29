@@ -12,6 +12,7 @@ from typing_extensions import TypedDict
 
 from lllm import (
     CallContext,
+    CallResult,
     CallTrace,
     SchemaError,
     Tactic,
@@ -135,6 +136,20 @@ def test_protocol_info_and_trace_models_isolate_mutable_inputs():
     assert info.examples == [{"input": {"text": "hello"}}]
     assert info.metadata == {"labels": ["info"]}
     assert trace.metadata == {"labels": ["trace"]}
+
+
+def test_call_result_isolates_mutable_output_and_trace():
+    output = {"items": [1]}
+    trace = CallTrace(request_id="req", tactic="echo", metadata={"labels": ["trace"]})
+    result = CallResult(output=output, trace=trace)
+
+    output["items"].append(2)
+    trace.metadata["labels"].append("changed")
+    result.trace.metadata["labels"].append("result")
+
+    assert result.output == {"items": [1]}
+    assert result.trace.metadata == {"labels": ["trace", "result"]}
+    assert trace.metadata == {"labels": ["trace", "changed"]}
 
 
 def test_tactic_validates_and_returns_trace():

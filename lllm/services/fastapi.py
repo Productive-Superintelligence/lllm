@@ -1,5 +1,6 @@
 """FastAPI service adapter for tactics."""
 
+from copy import deepcopy
 import inspect
 import json
 import re
@@ -23,6 +24,11 @@ class RunRequest(BaseModel):
     def value(self) -> Any:
         return self.input if self.input is not None else self.task
 
+    def model_post_init(self, __context: Any) -> None:
+        self.input = deepcopy(self.input)
+        self.task = deepcopy(self.task)
+        self.context = deepcopy(self.context)
+
 
 class RunResponse(BaseModel):
     """Canonical response envelope for successful tactic calls."""
@@ -30,6 +36,9 @@ class RunResponse(BaseModel):
     output: Any = None
     request_id: str
     tactic: str
+
+    def model_post_init(self, __context: Any) -> None:
+        self.output = deepcopy(self.output)
 
 
 class ErrorDetail(BaseModel):
@@ -41,6 +50,9 @@ class ErrorDetail(BaseModel):
     endpoint: str | None = None
     request_id: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.metadata = deepcopy(self.metadata)
 
 
 class ErrorResponse(BaseModel):

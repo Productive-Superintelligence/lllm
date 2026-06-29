@@ -33,6 +33,11 @@ class ProxyRecord(BaseModel):
     error: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
+    def model_post_init(self, __context: Any) -> None:
+        self.input_value = deepcopy(self.input_value)
+        self.output_value = deepcopy(self.output_value)
+        self.metadata = deepcopy(self.metadata)
+
 
 class InMemoryProxyLog:
     """Simple proxy record sink for tests, examples, and local tools."""

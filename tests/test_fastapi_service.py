@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from lllm import Tactic, endpoint
 from lllm.services import create_service_app, create_tactic_app
+from lllm.services.fastapi import ErrorDetail, RunRequest, RunResponse
 
 
 class EchoInput(BaseModel):
@@ -59,6 +60,30 @@ class ResponseSnapshot:
     @property
     def text(self):
         return self.content.decode("utf-8")
+
+
+def test_service_dto_models_isolate_mutable_constructor_inputs():
+    input_value = {"items": [1]}
+    task_value = {"task": [1]}
+    context = {"metadata": {"labels": ["request"]}}
+    request = RunRequest(input=input_value, task=task_value, context=context)
+    output = {"items": [2]}
+    response = RunResponse(output=output, request_id="req", tactic="echo")
+    metadata = {"labels": ["error"]}
+    error = ErrorDetail(type="ValueError", message="bad", metadata=metadata)
+
+    input_value["items"].append(10)
+    task_value["task"].append(10)
+    context["metadata"]["labels"].append("mutated")
+    output["items"].append(20)
+    metadata["labels"].append("mutated")
+
+    assert request.input == {"items": [1]}
+    assert request.task == {"task": [1]}
+    assert request.context == {"metadata": {"labels": ["request"]}}
+    assert request.value == {"items": [1]}
+    assert response.output == {"items": [2]}
+    assert error.metadata == {"labels": ["error"]}
 
 
 def request(app, method, path, **kwargs):
