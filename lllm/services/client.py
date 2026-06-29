@@ -75,7 +75,7 @@ class RemoteTactic(Tactic[Any, Any]):
         super().__init__(
             name=name or _name_from_url(url),
             service_ref=url,
-            metadata={"url": self.url, **dict(metadata or {})},
+            metadata={**dict(metadata or {}), "url": self.url},
         )
 
     def fetch_info(self, **kwargs: Any) -> TacticInfo:

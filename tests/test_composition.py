@@ -166,6 +166,20 @@ def test_remote_tactic_fetches_service_info():
     assert info.output_schema is not None
 
 
+def test_remote_tactic_metadata_keeps_normalized_service_url():
+    remote = RemoteTactic(
+        "http://testserver/tactics/echo",
+        name="echo",
+        metadata={"url": "http://spoofed", "labels": ["remote"]},
+    )
+
+    info = remote.info()
+
+    assert remote.url == "http://testserver/tactics/echo/run"
+    assert info.metadata["url"] == "http://testserver/tactics/echo/run"
+    assert info.metadata["labels"] == ["remote"]
+
+
 def test_remote_tactic_async_fetches_service_info():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(
