@@ -136,9 +136,9 @@ def _entrypoint_segments(value: str) -> bool:
 
 
 def _serve_host(value: str) -> str:
-    if not isinstance(value, str) or not value.strip():
+    if not isinstance(value, str) or not value or value != value.strip():
         raise ValueError("serve host must be a non-empty string")
-    host = value.strip()
+    host = value
     if any(ch.isspace() for ch in host) or "/" in host or "\\" in host:
         raise ValueError("serve host must be a host name or address, not a URL or path")
     return host

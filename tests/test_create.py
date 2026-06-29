@@ -162,6 +162,7 @@ def test_cli_create_rejects_malformed_project_inputs(args, capsys):
     "args",
     [
         ["serve", "missing.module:build_tactic", "--host", ""],
+        ["serve", "missing.module:build_tactic", "--host", " 127.0.0.1 "],
         ["serve", "missing.module:build_tactic", "--host", "bad host"],
         ["serve", "missing.module:build_tactic", "--host", "http://127.0.0.1"],
         ["serve", "missing.module:build_tactic", "--port", "0"],

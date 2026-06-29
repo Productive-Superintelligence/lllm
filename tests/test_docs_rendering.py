@@ -305,9 +305,9 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] <= 350
-    assert visible_brands[0]["width"] > 320
-    assert visible_brands[0]["height"] == pytest.approx(95, abs=1)
+    assert visible_brands[0]["width"] <= 700
+    assert visible_brands[0]["width"] > 650
+    assert visible_brands[0]["height"] == pytest.approx(193, abs=2)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -463,7 +463,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
     assert visible_brands[0]["width"] < metrics["viewportWidth"]
-    assert visible_brands[0]["height"] == pytest.approx(75, abs=2)
+    assert visible_brands[0]["height"] == pytest.approx(101, abs=2)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -494,8 +494,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
-    assert "--psi-brand-width: 18rem;" in custom_css
-    assert "--psi-brand-height: 4.75rem;" in custom_css
+    assert "--psi-brand-width: 36rem;" in custom_css
+    assert "--psi-brand-height: 12rem;" in custom_css
+    assert "--psi-brand-height: 6.5rem;" in custom_css
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
