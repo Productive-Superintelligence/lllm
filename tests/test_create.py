@@ -8,7 +8,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from lllm.cli import main
+from lllm.cli import load_tactic_entrypoint, main
 from lllm.create import create_project
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -120,6 +120,27 @@ def test_cli_create_project(tmp_path, capsys):
     assert code == 0
     assert "created plain project" in capsys.readouterr().out
     assert (tmp_path / "cli-demo" / "README.md").exists()
+
+
+@pytest.mark.parametrize(
+    "entrypoint",
+    [
+        None,
+        123,
+        "",
+        "   ",
+        "demo",
+        ":build_tactic",
+        "demo:",
+        "demo..tactics:build_tactic",
+        "demo.tactics:build_tactic.",
+        "demo.tactics:.build_tactic",
+        "demo.tactics:build tactic",
+    ],
+)
+def test_load_tactic_entrypoint_rejects_malformed_values(entrypoint):
+    with pytest.raises(ValueError, match="Entrypoint"):
+        load_tactic_entrypoint(entrypoint)  # type: ignore[arg-type]
 
 
 def _run_generated_tactic(project_path, package_name):

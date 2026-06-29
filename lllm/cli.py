@@ -81,8 +81,15 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
     ``CallableTactic`` unless they already return a ``Tactic``.
     """
 
+    if not isinstance(entrypoint, str) or not entrypoint.strip():
+        raise ValueError("Entrypoint must have the form 'module:attribute'.")
+    entrypoint = entrypoint.strip()
     module_name, sep, attr_path = entrypoint.partition(":")
-    if not sep or not module_name or not attr_path:
+    if (
+        not sep
+        or not _entrypoint_segments(module_name)
+        or not _entrypoint_segments(attr_path)
+    ):
         raise ValueError("Entrypoint must have the form 'module:attribute'.")
     module = importlib.import_module(module_name)
     value: Any = module
@@ -104,6 +111,10 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
             return as_tactic(produced)
         return as_tactic(value)
     raise TypeError(f"Entrypoint did not resolve to a tactic or callable: {entrypoint}")
+
+
+def _entrypoint_segments(value: str) -> bool:
+    return all(part and not any(ch.isspace() for ch in part) for part in value.split("."))
 
 
 def _can_call_without_args(value: Any) -> bool:
