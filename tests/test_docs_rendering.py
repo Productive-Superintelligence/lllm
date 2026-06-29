@@ -666,3 +666,37 @@ def test_readme_and_docs_local_links_resolve():
                 missing.append(f"{path.relative_to(ROOT)} -> {match.group(1)}")
 
     assert missing == []
+
+
+def test_docs_local_asset_references_resolve():
+    patterns = [
+        re.compile(r'\bsrc="([^"]+)"'),
+        re.compile(r"url\([\"']?([^\"')]+)[\"']?\)"),
+        re.compile(r"!\[[^\]]*\]\(([^)]+)\)"),
+    ]
+    text_paths = [ROOT / "README.md"]
+    text_paths.extend((ROOT / "docs").rglob("*.md"))
+    text_paths.extend((ROOT / "docs" / "stylesheets").glob("*.css"))
+    skip_prefixes = ("http://", "https://", "mailto:", "data:", "#")
+
+    missing = []
+    for path in sorted(text_paths):
+        text = path.read_text(encoding="utf-8")
+        for pattern in patterns:
+            for match in pattern.finditer(text):
+                target = match.group(1).strip()
+                if (
+                    not target
+                    or target.startswith(skip_prefixes)
+                    or "://" in target
+                ):
+                    continue
+                target = target.split("#", 1)[0].split("?", 1)[0]
+                if not target:
+                    continue
+                if not (path.parent / unquote(target)).resolve().exists():
+                    missing.append(
+                        f"{path.relative_to(ROOT)} -> {match.group(1)}"
+                    )
+
+    assert missing == []
