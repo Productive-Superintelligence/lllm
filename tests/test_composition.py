@@ -144,6 +144,16 @@ def test_resolver_register_rejects_non_tactic_objects():
     assert resolver.refs() == ()
 
 
+def test_resolver_bind_url_rejects_malformed_service_urls():
+    resolver = TacticResolver()
+
+    for url in ("service", "/service", "ftp://service", "http://"):
+        with pytest.raises(TacticRefError, match="absolute http"):
+            resolver.bind_url(REF, url)
+
+    assert resolver.refs() == ()
+
+
 def test_remote_tactic_calls_fastapi_service():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(

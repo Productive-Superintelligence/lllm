@@ -76,12 +76,17 @@ class TacticResolver:
         **remote_kwargs: Any,
     ) -> RemoteTactic:
         parsed = TacticRef.parse(ref)
-        remote = RemoteTactic(
-            url,
-            name=parsed.name,
-            metadata={"ref": str(parsed)},
-            **remote_kwargs,
-        )
+        try:
+            remote = RemoteTactic(
+                url,
+                name=parsed.name,
+                metadata={"ref": str(parsed)},
+                **remote_kwargs,
+            )
+        except ValueError as exc:
+            raise TacticRefError(
+                f"Tactic URL binding is invalid for {parsed}: {exc}"
+            ) from exc
         remote.package_ref = str(parsed)
         self._bindings[str(parsed)] = remote
         return remote
