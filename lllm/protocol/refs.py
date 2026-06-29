@@ -19,6 +19,8 @@ class TacticRef:
     name: str = field(init=False)
 
     def __post_init__(self) -> None:
+        if not isinstance(self.value, str) or not self.value.strip():
+            raise TacticRefError("Tactic ref must be a non-empty string.")
         parsed = urlparse(self.value)
         if parsed.scheme != "psi":
             raise TacticRefError(f"Tactic ref must use psi:// scheme: {self.value}")
@@ -59,7 +61,7 @@ class TacticRef:
     def parse(cls, value: str | "TacticRef") -> "TacticRef":
         if isinstance(value, cls):
             return value
-        return cls(str(value))
+        return cls(value)
 
     def __str__(self) -> str:
         return self.value

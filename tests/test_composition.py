@@ -78,6 +78,14 @@ def test_tactic_ref_rejects_non_tactic_refs():
         TacticRef("psi://demo/echo/channels/events")
 
 
+@pytest.mark.parametrize("value", [None, 123, ""])
+def test_tactic_ref_rejects_non_string_or_empty_values(value):
+    with pytest.raises(TacticRefError, match="non-empty string"):
+        TacticRef(value)
+    with pytest.raises(TacticRefError, match="non-empty string"):
+        TacticRef.parse(value)
+
+
 @pytest.mark.parametrize(
     "value",
     [
