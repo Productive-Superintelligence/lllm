@@ -246,7 +246,25 @@ def test_invalid_request_context_returns_stable_error_envelope():
         app,
         "POST",
         "/act",
-        json={"input": {"text": "go"}, "context": {"metadata": "bad"}},
+        json={"input": {"text": "go"}, "context": {"metadata": []}},
+    )
+    bad_tags = request(
+        app,
+        "POST",
+        "/run",
+        json={"input": {"text": "hello"}, "context": {"tags": []}},
+    )
+    bad_request_id = request(
+        app,
+        "POST",
+        "/run",
+        json={"input": {"text": "hello"}, "context": {"request_id": 0}},
+    )
+    bad_tactic_ref = request(
+        app,
+        "POST",
+        "/run",
+        json={"input": {"text": "hello"}, "context": {"tactic_ref": 0}},
     )
 
     assert bad_context.status_code == 400
@@ -260,6 +278,21 @@ def test_invalid_request_context_returns_stable_error_envelope():
     assert metadata_detail["type"] == "SchemaError"
     assert metadata_detail["endpoint"] == "act"
     assert "metadata" in metadata_detail["message"]
+    assert bad_tags.status_code == 400
+    tags_detail = bad_tags.json()["detail"]["error"]
+    assert tags_detail["type"] == "SchemaError"
+    assert tags_detail["endpoint"] == "run"
+    assert "tags" in tags_detail["message"]
+    assert bad_request_id.status_code == 400
+    request_id_detail = bad_request_id.json()["detail"]["error"]
+    assert request_id_detail["type"] == "SchemaError"
+    assert request_id_detail["endpoint"] == "run"
+    assert "context" in request_id_detail["message"]
+    assert bad_tactic_ref.status_code == 400
+    tactic_ref_detail = bad_tactic_ref.json()["detail"]["error"]
+    assert tactic_ref_detail["type"] == "SchemaError"
+    assert tactic_ref_detail["endpoint"] == "run"
+    assert "context" in tactic_ref_detail["message"]
 
 
 def test_single_tactic_openapi_includes_default_and_custom_routes():

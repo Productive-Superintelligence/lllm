@@ -10,7 +10,7 @@ from copy import deepcopy
 from collections.abc import AsyncIterator, Iterator, Mapping
 from typing import Any, ClassVar, Generic, TypeVar
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 from .context import CallContext
 from .errors import TacticUnsupportedError
@@ -24,17 +24,17 @@ OutputT = TypeVar("OutputT")
 class CallTrace(BaseModel):
     """Boundary-level trace for one tactic call."""
 
-    request_id: str
-    tactic: str
-    state: str = "running"
+    request_id: StrictStr
+    tactic: StrictStr
+    state: StrictStr = "running"
     started_at: float = Field(default_factory=time.time)
     ended_at: float | None = None
     latency_ms: float | None = None
-    input_type: str | None = None
-    output_type: str | None = None
-    error_type: str | None = None
-    error: str | None = None
-    traceback: str | None = None
+    input_type: StrictStr | None = None
+    output_type: StrictStr | None = None
+    error_type: StrictStr | None = None
+    error: StrictStr | None = None
+    traceback: StrictStr | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
@@ -69,14 +69,14 @@ class CallResult(BaseModel):
 class TacticInfo(BaseModel):
     """Static description of a tactic boundary."""
 
-    name: str
-    description: str = ""
+    name: StrictStr
+    description: StrictStr = ""
     input_schema: dict[str, Any] | None = None
     output_schema: dict[str, Any] | None = None
-    capabilities: tuple[str, ...] = ("run", "arun")
-    runtime_kind: str = "python"
-    package_ref: str | None = None
-    service_ref: str | None = None
+    capabilities: tuple[StrictStr, ...] = ("run", "arun")
+    runtime_kind: StrictStr = "python"
+    package_ref: StrictStr | None = None
+    service_ref: StrictStr | None = None
     examples: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
 

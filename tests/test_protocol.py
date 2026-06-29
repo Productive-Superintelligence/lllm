@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 from typing_extensions import TypedDict
 
 from lllm import (
@@ -136,6 +136,26 @@ def test_protocol_info_and_trace_models_isolate_mutable_inputs():
     assert info.examples == [{"input": {"text": "hello"}}]
     assert info.metadata == {"labels": ["info"]}
     assert trace.metadata == {"labels": ["trace"]}
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: CallContext(request_id=b"req"),
+        lambda: CallContext(caller=b"caller"),
+        lambda: CallContext(tags={b"kind": "demo"}),
+        lambda: CallContext(tags={"kind": b"demo"}),
+        lambda: TacticEvent(id=b"event"),
+        lambda: TacticEvent(kind=b"progress"),
+        lambda: TacticInfo(name=b"echo"),
+        lambda: TacticInfo(name="echo", capabilities=(b"run",)),
+        lambda: CallTrace(request_id=b"req", tactic="echo"),
+        lambda: CallTrace(request_id="req", tactic=b"echo"),
+    ],
+)
+def test_protocol_string_fields_reject_bytes(factory):
+    with pytest.raises(ValidationError):
+        factory()
 
 
 def test_call_result_isolates_mutable_output_and_trace():

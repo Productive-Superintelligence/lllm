@@ -6,7 +6,7 @@ from copy import deepcopy
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 
 class CallContext(BaseModel):
@@ -18,15 +18,15 @@ class CallContext(BaseModel):
 
     model_config = ConfigDict(extra="allow")
 
-    request_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    caller: str | None = None
-    trace_id: str | None = None
-    span_id: str | None = None
-    package_ref: str | None = None
-    service_ref: str | None = None
-    tactic_ref: str | None = None
-    endpoint: str | None = None
-    tags: dict[str, str] = Field(default_factory=dict)
+    request_id: StrictStr = Field(default_factory=lambda: str(uuid.uuid4()))
+    caller: StrictStr | None = None
+    trace_id: StrictStr | None = None
+    span_id: StrictStr | None = None
+    package_ref: StrictStr | None = None
+    service_ref: StrictStr | None = None
+    tactic_ref: StrictStr | None = None
+    endpoint: StrictStr | None = None
+    tags: dict[StrictStr, StrictStr] = Field(default_factory=dict)
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     @property

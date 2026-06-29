@@ -7,7 +7,7 @@ import re
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationError
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
 from .endpoints import EndpointSpec, custom_endpoints
@@ -397,24 +397,42 @@ def _context_from_data(
     if context_data is not None and not isinstance(context_data, Mapping):
         raise SchemaError("Request context must be an object.")
     data = context_data or {}
-    metadata = data.get("metadata") or {}
+    metadata = data.get("metadata")
+    if metadata is None:
+        metadata = {}
     if not isinstance(metadata, Mapping):
         raise SchemaError("Request context metadata must be an object.")
-    tags = data.get("tags") or {}
+    tags = data.get("tags")
+    if tags is None:
+        tags = {}
     if not isinstance(tags, Mapping):
         raise SchemaError("Request context tags must be an object.")
-    return CallContext(
-        request_id=str(data.get("request_id") or data.get("call_id") or CallContext().request_id),
-        caller=data.get("caller"),
-        trace_id=data.get("trace_id"),
-        span_id=data.get("span_id"),
-        package_ref=data.get("package_ref"),
-        service_ref=data.get("service_ref"),
-        tactic_ref=data.get("tactic_ref") or tactic.package_ref,
-        endpoint=endpoint,
-        metadata=dict(metadata),
-        tags=dict(tags),
-    )
+    if "request_id" in data:
+        request_id = data["request_id"]
+    elif "call_id" in data:
+        request_id = data["call_id"]
+    else:
+        request_id = None
+    if request_id is None or request_id == "":
+        request_id = CallContext().request_id
+    tactic_ref = data["tactic_ref"] if "tactic_ref" in data else tactic.package_ref
+    if tactic_ref is None or tactic_ref == "":
+        tactic_ref = tactic.package_ref
+    try:
+        return CallContext(
+            request_id=request_id,
+            caller=data.get("caller"),
+            trace_id=data.get("trace_id"),
+            span_id=data.get("span_id"),
+            package_ref=data.get("package_ref"),
+            service_ref=data.get("service_ref"),
+            tactic_ref=tactic_ref,
+            endpoint=endpoint,
+            metadata=dict(metadata),
+            tags=dict(tags),
+        )
+    except ValidationError as exc:
+        raise SchemaError(f"Invalid request context: {exc}") from exc
 
 
 def _error_context(tactic: Tactic[Any, Any], endpoint: str) -> CallContext:

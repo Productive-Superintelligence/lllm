@@ -7,15 +7,15 @@ import uuid
 from copy import deepcopy
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 
 class TacticEvent(BaseModel):
     """A small event emitted by a streaming tactic."""
 
-    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    id: StrictStr = Field(default_factory=lambda: str(uuid.uuid4()))
     timestamp: float = Field(default_factory=time.time)
-    kind: str = "message"
+    kind: StrictStr = "message"
     data: Any = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
