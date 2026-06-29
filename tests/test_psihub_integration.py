@@ -67,3 +67,25 @@ def test_tactic_resource_includes_custom_endpoint_metadata():
             "tags": ["policy"],
         },
     ]
+
+
+def test_tactic_resource_isolates_exported_mutable_metadata():
+    example = {"input": {"items": ["one"]}}
+    metadata = {"labels": ["policy"]}
+    info = PolicyTactic(examples=[example], metadata=metadata).info()
+
+    class CachedInfoTactic(PolicyTactic):
+        def info(self):
+            return info
+
+    resource = tactic_resource(CachedInfoTactic())
+
+    resource["input_schema"]["properties"]["text"]["type"] = "integer"
+    resource["output_schema"]["properties"]["text"]["type"] = "integer"
+    resource["examples"][0]["input"]["items"].append("changed")
+    resource["metadata"]["labels"].append("changed")
+
+    assert info.input_schema["properties"]["text"]["type"] == "string"
+    assert info.output_schema["properties"]["text"]["type"] == "string"
+    assert info.examples == [{"input": {"items": ["one"]}}]
+    assert info.metadata == {"labels": ["policy"]}
