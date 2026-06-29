@@ -111,10 +111,10 @@ class Tactic(Generic[InputT, OutputT]):
         examples: list[dict[str, Any]] | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
-        self._name = name or self.name or type(self).__name__
-        self._description = description
-        self.package_ref = package_ref
-        self.service_ref = service_ref
+        self._name = _text_value(name or self.name or type(self).__name__, "name")
+        self._description = _optional_text_value(description, "description")
+        self.package_ref = _optional_text_value(package_ref, "package_ref")
+        self.service_ref = _optional_text_value(service_ref, "service_ref")
         self.examples = deepcopy(examples or [])
         self.metadata = deepcopy(dict(metadata or {}))
 
@@ -269,3 +269,15 @@ class Tactic(Generic[InputT, OutputT]):
             input_type=type_name(self.input_type),
             metadata=deepcopy(context.metadata),
         )
+
+
+def _text_value(value: Any, label: str) -> str:
+    if not isinstance(value, str):
+        raise TypeError(f"{label} must be a string.")
+    return value
+
+
+def _optional_text_value(value: Any, label: str) -> str | None:
+    if value is None:
+        return None
+    return _text_value(value, label)

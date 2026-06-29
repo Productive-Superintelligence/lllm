@@ -279,6 +279,57 @@ def test_remote_tactic_preserves_structured_service_errors():
     assert exc_info.value.request_id == "req-error"
 
 
+@pytest.mark.parametrize(
+    ("field_name", "kwargs"),
+    [
+        ("error_type", {"error_type": b"ValueError"}),
+        ("message", {"message": b"bad"}),
+        ("tactic", {"tactic": b"echo"}),
+        ("endpoint", {"endpoint": b"run"}),
+        ("request_id", {"request_id": b"req"}),
+    ],
+)
+def test_remote_tactic_error_rejects_bytes_for_text_fields(field_name, kwargs):
+    with pytest.raises(TypeError, match=field_name):
+        RemoteTacticError(500, **kwargs)
+
+
+def test_remote_tactic_ignores_non_string_error_payload_fields():
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/run"
+        return httpx.Response(
+            500,
+            json={
+                "detail": {
+                    "error": {
+                        "type": 123,
+                        "message": ["bad"],
+                        "tactic": False,
+                        "endpoint": {"path": "run"},
+                        "request_id": 7,
+                    }
+                }
+            },
+        )
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        transport=httpx.MockTransport(handler),
+    )
+
+    with pytest.raises(RemoteTacticError) as exc_info:
+        remote.run("hello")
+
+    assert exc_info.value.status_code == 500
+    assert exc_info.value.error_type is None
+    assert exc_info.value.message is None
+    assert exc_info.value.tactic is None
+    assert exc_info.value.endpoint is None
+    assert exc_info.value.request_id is None
+
+
 def test_remote_tactic_preserves_protocol_error_status():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(

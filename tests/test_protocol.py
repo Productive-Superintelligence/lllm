@@ -220,6 +220,20 @@ def test_tactic_info_and_trace_metadata_are_isolated():
     assert next_result.trace.metadata == {"labels": ["context", "changed"]}
 
 
+@pytest.mark.parametrize(
+    ("kwargs", "field_name"),
+    [
+        ({"name": b"echo"}, "name"),
+        ({"description": b"Echo."}, "description"),
+        ({"package_ref": b"psi://demo/echo/tactics/echo"}, "package_ref"),
+        ({"service_ref": b"psi://demo/echo/services/api"}, "service_ref"),
+    ],
+)
+def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
+    with pytest.raises(TypeError, match=field_name):
+        Tactic(**kwargs)
+
+
 def test_tactic_rejects_invalid_input():
     with pytest.raises(SchemaError):
         EchoTactic().run({"text": 123})

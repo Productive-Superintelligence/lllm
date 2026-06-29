@@ -8,7 +8,7 @@ from copy import deepcopy
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictStr
 
 from .protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
 
@@ -20,17 +20,17 @@ RecordSink = Callable[["ProxyRecord"], None]
 class ProxyRecord(BaseModel):
     """One observed proxy call."""
 
-    request_id: str
-    proxy: str
-    tactic: str
+    request_id: StrictStr
+    proxy: StrictStr
+    tactic: StrictStr
     state: Literal["success", "failure"]
     started_at: float
     ended_at: float
     latency_ms: float
     input_value: Any = None
     output_value: Any = None
-    error_type: str | None = None
-    error: str | None = None
+    error_type: StrictStr | None = None
+    error: StrictStr | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:

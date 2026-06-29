@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import httpx
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from lllm import (
     CallContext,
@@ -201,6 +201,63 @@ def test_proxy_record_isolates_mutable_constructor_inputs():
     assert record.input_value == {"items": [1]}
     assert record.output_value == {"items": [2]}
     assert record.metadata == {"labels": ["record"]}
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: ProxyRecord(
+            request_id=b"req",
+            proxy="proxy",
+            tactic="echo",
+            state="success",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+        ),
+        lambda: ProxyRecord(
+            request_id="req",
+            proxy=b"proxy",
+            tactic="echo",
+            state="success",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+        ),
+        lambda: ProxyRecord(
+            request_id="req",
+            proxy="proxy",
+            tactic=b"echo",
+            state="success",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+        ),
+        lambda: ProxyRecord(
+            request_id="req",
+            proxy="proxy",
+            tactic="echo",
+            state="failure",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+            error_type=b"ValueError",
+        ),
+        lambda: ProxyRecord(
+            request_id="req",
+            proxy="proxy",
+            tactic="echo",
+            state="failure",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+            error=b"bad",
+        ),
+    ],
+)
+def test_proxy_record_rejects_bytes_for_text_fields(factory):
+    with pytest.raises(ValidationError):
+        factory()
 
 
 def test_proxy_tactic_records_failure_and_calls_error_hook():
