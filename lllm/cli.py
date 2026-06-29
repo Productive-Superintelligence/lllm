@@ -58,10 +58,12 @@ def main(argv: list[str] | None = None) -> int:
             port = _serve_port(args.port)
         except ValueError as exc:
             parser.error(str(exc))
-        import uvicorn
 
         tactic = _load_cli_tactic(parser, args.entrypoint)
         app = create_tactic_app(tactic)
+
+        import uvicorn
+
         uvicorn.run(app, host=host, port=port, log_level=args.log_level)
         return 0
 
@@ -124,7 +126,7 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
 def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic[Any, Any]:
     try:
         return load_tactic_entrypoint(entrypoint)
-    except (TypeError, ValueError) as exc:
+    except (AttributeError, ImportError, TypeError, ValueError) as exc:
         parser.error(str(exc))
         raise
 

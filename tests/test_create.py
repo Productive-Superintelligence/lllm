@@ -171,6 +171,47 @@ def test_cli_inspect_rejects_malformed_entrypoint_without_traceback(capsys):
 
 
 @pytest.mark.parametrize(
+    "args",
+    [
+        ["inspect", "missing.module:build_tactic"],
+        ["serve", "missing.module:build_tactic"],
+    ],
+)
+def test_cli_reports_missing_entrypoint_modules_without_traceback(args, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(args)
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "No module named" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_reports_missing_entrypoint_attributes_without_traceback(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    module = tmp_path / "demo_tactics.py"
+    module.write_text(
+        "def build_tactic():\n"
+        "    return lambda value: value\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    with pytest.raises(SystemExit) as exc_info:
+        main(["inspect", "demo_tactics:missing"])
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "missing" in captured.err
+    assert "Traceback" not in captured.err
+
+
+@pytest.mark.parametrize(
     "entrypoint",
     [
         None,
