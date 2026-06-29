@@ -318,6 +318,21 @@ def test_tactic_as_tool_is_plain_callable():
     assert tool("hi") == "hi:"
 
 
+@pytest.mark.parametrize("name", ["", "   "])
+def test_tactic_as_tool_rejects_blank_explicit_names(name):
+    tactic = PydanticAITactic.from_agent(FakeAgent(), input_type=str)
+
+    with pytest.raises(ValueError, match="tool name must be non-empty"):
+        tactic_as_tool(tactic, name=name)
+
+
+def test_tactic_as_tool_infers_name_only_when_name_is_none():
+    tactic = PydanticAITactic.from_agent(FakeAgent(), input_type=str, name="answer tool")
+    tool = tactic_as_tool(tactic, name=None)
+
+    assert tool.__name__ == "answer_tool"
+
+
 class AddInput(BaseModel):
     left: int
     right: int
