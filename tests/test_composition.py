@@ -779,6 +779,31 @@ url = "http://127.0.0.1:8000/tactics/echo"
         TacticResolver.from_config(tmp_path)
 
 
+@pytest.mark.parametrize(
+    "ref",
+    [
+        "http://demo/echo/channels/events",
+        "psi://demo/echo/channels/events?env=dev",
+        "psi://demo/echo/channels/events#latest",
+        "psi://demo/echo/channels/bad name",
+        "psi://demo/echo/channels/events%2Fhidden",
+    ],
+)
+def test_resolver_validates_ignored_non_tactic_config_refs(tmp_path, ref):
+    config_dir = tmp_path / "workspace" / ".psi"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{ref}"]
+store = ".sssn"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TacticRefError):
+        TacticResolver.from_config(config_dir.parent)
+
+
 def test_resolver_rejects_invalid_tactic_url_values_from_local_config(tmp_path):
     for index, url_value in enumerate(("123", "false", '""', '"   "'), start=1):
         config_dir = tmp_path / f"workspace-{index}" / ".psi"

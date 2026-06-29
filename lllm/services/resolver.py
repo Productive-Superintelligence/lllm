@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import unquote, urlparse
 
 from ..protocol import CallContext, Tactic, TacticRef, TacticRefError
 from .client import RemoteTactic
@@ -42,9 +42,10 @@ class TacticResolver:
         for raw_ref, data in refs.items():
             if not isinstance(data, dict):
                 raise TacticRefError(f"Ref binding must be a table: {raw_ref}")
+            is_tactic_ref = _is_tactic_config_ref(raw_ref)
             if "url" not in data:
                 continue
-            if not _is_tactic_config_ref(raw_ref):
+            if not is_tactic_ref:
                 continue
             url = data["url"]
             if not isinstance(url, str) or not url.strip():
@@ -138,8 +139,32 @@ def _is_tactic_config_ref(ref: str) -> bool:
     if not isinstance(ref, str) or not ref.strip():
         raise TacticRefError("Ref binding key must be a non-empty string.")
     parsed = urlparse(ref)
-    parts = [part for part in parsed.path.split("/") if part]
-    if len(parts) == 3 and parts[1] in _NON_TACTIC_CONFIG_REF_SECTIONS:
+    raw_parts = parsed.path.split("/")
+    if (
+        parsed.scheme != "psi"
+        or not parsed.netloc
+        or parsed.params
+        or parsed.query
+        or parsed.fragment
+        or len(raw_parts) != 4
+        or raw_parts[0] != ""
+    ):
+        raise TacticRefError(f"Ref binding key must be a psi:// resource ref: {ref}")
+    package, resource_kind, name = raw_parts[1:]
+    for segment in (parsed.netloc, package, resource_kind, name):
+        decoded = unquote(segment)
+        if (
+            decoded in {".", ".."}
+            or decoded != segment
+            or "%" in segment
+            or not decoded.strip()
+            or any(ch.isspace() for ch in decoded)
+            or any(ch in decoded for ch in "/\\:")
+        ):
+            raise TacticRefError(
+                f"Ref binding key must use plain path segments: {ref}"
+            )
+    if resource_kind in _NON_TACTIC_CONFIG_REF_SECTIONS:
         return False
     return True
 

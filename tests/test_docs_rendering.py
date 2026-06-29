@@ -647,7 +647,8 @@ def test_composition_guide_documents_mixed_local_config():
     assert "non-tactic refs" in guide
     assert "psi://demo/echo/services/api" in guide
     assert "psi://demo/echo/channels/events" in guide
-    assert "Malformed tactic refs still fail validation." in guide
+    assert "All binding keys must still be valid" in guide
+    assert "malformed tactic and non-tactic refs fail validation" in guide
     assert "avoid whitespace" in guide
     assert "do not pad them" in guide
     assert "must be absolute" in guide
