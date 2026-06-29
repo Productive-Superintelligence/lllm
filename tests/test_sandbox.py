@@ -94,6 +94,23 @@ def test_sandboxed_tactic_allows_calls_within_policy():
     assert tactic.info().metadata["sandbox_policy"]["max_input_bytes"] == 100
 
 
+def test_sandboxed_tactic_isolates_policy_object():
+    policy = SandboxPolicy(max_input_bytes=100, allowed_metadata_keys=("tenant",))
+    tactic = SandboxedTactic(EchoTactic(), policy=policy)
+
+    policy.max_input_bytes = 8
+    policy.allowed_metadata_keys = ("tenant", "secret")
+
+    output = tactic.run(
+        {"text": "hello"},
+        context=CallContext(metadata={"tenant": "demo"}),
+    )
+
+    assert output == EchoOutput(text="HELLO")
+    assert tactic.policy.max_input_bytes == 100
+    assert tactic.policy.allowed_metadata_keys == ("tenant",)
+
+
 def test_sandboxed_tactic_rejects_input_output_and_metadata_edges():
     small_input = sandbox_tactic(EchoTactic(), {"max_input_bytes": 8})
     small_output = sandbox_tactic(EchoTactic(), {"max_output_bytes": 8})

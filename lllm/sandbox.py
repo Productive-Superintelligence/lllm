@@ -51,7 +51,7 @@ class SandboxedTactic(Tactic[Any, Any]):
     ) -> None:
         self.tactic = tactic
         self.policy = (
-            policy
+            policy.model_copy(deep=True)
             if isinstance(policy, SandboxPolicy)
             else SandboxPolicy.model_validate(policy or {})
         )
