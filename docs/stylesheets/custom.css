@@ -1,24 +1,111 @@
 :root {
-  --md-primary-fg-color: #050505;
-  --md-accent-fg-color: #050505;
-  --md-text-font: "Roboto";
-  --md-code-font: "Roboto Mono";
+  --md-primary-fg-color: #ffffff;
+  --md-accent-fg-color: #666666;
+  --md-text-font: "Inter";
+  --md-code-font: "JetBrains Mono";
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
+  --psi-brand-width: 26rem;
 }
 
 body {
-  --md-text-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
+  --md-text-font-family: "Inter", -apple-system, BlinkMacSystemFont,
     "Helvetica Neue", Arial, sans-serif;
-  --md-code-font-family: "Roboto Mono", SFMono-Regular, Consolas, Menlo,
+  --md-code-font-family: "JetBrains Mono", SFMono-Regular, Consolas, Menlo,
     monospace;
+}
+
+[data-md-color-scheme="default"] {
+  --psi-ink: #050505;
+  --psi-line: rgba(5, 5, 5, 0.08);
+  --psi-soft: #f7f7f7;
+  --md-default-bg-color: #ffffff;
+  --md-typeset-a-color: #050505;
+  --md-accent-fg-color: #666666;
+  --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.1);
+  --md-accent-bg-color: #e0e0e0;
+}
+
+[data-md-color-scheme="slate"] {
+  --psi-ink: #ffffff;
+  --psi-line: rgba(255, 255, 255, 0.14);
+  --psi-soft: #111111;
+  --md-default-bg-color: #0a0a0a;
+  --md-typeset-a-color: #ffffff;
+  --md-accent-fg-color: #a3a3a3;
+  --md-accent-fg-color--transparent: rgba(255, 255, 255, 0.1);
+  --md-accent-bg-color: #333333;
+}
+
+[data-md-color-scheme="default"] .md-sidebar--primary {
+  background-color: #ffffff;
+  border-right: none;
+}
+
+[data-md-color-scheme="slate"] .md-sidebar--primary {
+  background-color: #000000;
+  border-right: none;
+}
+
+[data-md-color-scheme="default"] .md-nav__title {
+  background-color: #ffffff !important;
+  box-shadow: none !important;
+  position: sticky;
+}
+
+[data-md-color-scheme="slate"] .md-nav__title {
+  background-color: #000000 !important;
+  box-shadow: none !important;
+  position: sticky;
+}
+
+[data-md-color-scheme="default"] .md-nav__title::after,
+[data-md-color-scheme="slate"] .md-nav__title::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  height: 24px;
+  pointer-events: none;
+}
+
+[data-md-color-scheme="default"] .md-nav__title::after {
+  background: linear-gradient(
+    to bottom,
+    #ffffff 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+[data-md-color-scheme="slate"] .md-nav__title::after {
+  background: linear-gradient(
+    to bottom,
+    #000000 0%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.md-sidebar--primary .md-sidebar__scrollwrap {
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+[data-md-color-scheme="default"] .md-nav__link--active {
+  color: #000000 !important;
+  font-weight: 700 !important;
+}
+
+[data-md-color-scheme="slate"] .md-nav__link--active {
+  color: #ffffff !important;
+  font-weight: 700 !important;
 }
 
 .md-header,
 .md-tabs {
-  background: #ffffff;
-  background-color: #ffffff;
+  background: var(--md-default-bg-color);
+  background-color: var(--md-default-bg-color);
   box-shadow: none;
   color: var(--psi-ink);
 }
@@ -27,15 +114,21 @@ body {
   box-shadow: none;
 }
 
-[data-md-color-primary="black"] .md-header,
-[data-md-color-primary="black"] .md-tabs {
+[data-md-color-scheme="default"] .md-header,
+[data-md-color-scheme="default"] .md-tabs {
   background-color: #ffffff;
   color: var(--psi-ink);
 }
 
-html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__drawer"],
-[data-md-color-primary="black"] .md-nav__source {
+html [data-md-color-scheme="default"] .md-nav--primary .md-nav__title[for="__drawer"],
+[data-md-color-scheme="default"] .md-nav__source {
   background-color: #ffffff;
+  color: var(--psi-ink);
+}
+
+html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawer"],
+[data-md-color-scheme="slate"] .md-nav__source {
+  background-color: #000000;
   color: var(--psi-ink);
 }
 
@@ -92,7 +185,7 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-search__form {
   background-color: var(--psi-soft);
-  border: 1px solid rgba(5, 5, 5, 0.1);
+  border: 1px solid var(--psi-line);
 }
 
 .md-search__input,
@@ -114,9 +207,9 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 .md-footer-meta {
   --md-footer-fg-color: var(--psi-ink);
   --md-footer-fg-color--light: var(--psi-ink);
-  --md-footer-fg-color--lighter: rgba(5, 5, 5, 0.62);
-  background: #ffffff;
-  background-color: #ffffff;
+  --md-footer-fg-color--lighter: var(--psi-ink);
+  background: var(--md-default-bg-color);
+  background-color: var(--md-default-bg-color);
   color: var(--psi-ink);
 }
 
@@ -126,7 +219,7 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-footer__inner,
 .md-footer__link {
-  background-color: #ffffff;
+  background-color: var(--md-default-bg-color);
   color: var(--psi-ink);
 }
 
@@ -194,6 +287,14 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
   flex: 0 0 auto;
 }
 
+[data-md-color-scheme="slate"] .md-header .md-logo img,
+[data-md-color-scheme="slate"] .md-header .md-logo svg,
+[data-md-color-scheme="slate"] .md-nav__button.md-logo img,
+[data-md-color-scheme="slate"] .md-nav__button.md-logo svg,
+[data-md-color-scheme="slate"] .psi-footer-mark {
+  filter: invert(1) brightness(2);
+}
+
 .psi-footer-text {
   display: inline-block;
 }
@@ -204,15 +305,27 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 }
 
 .psi-brand {
-  margin: -0.1rem 0 0.85rem;
+  margin: 0.25rem 0 1.25rem;
+  text-align: center;
 }
 
 .psi-brand img {
   display: block;
-  width: auto;
-  height: clamp(1.85rem, 5vw, 2.35rem);
-  max-width: min(9.5rem, 100%);
+  width: min(var(--psi-brand-width), 100%);
+  height: auto;
+  max-width: 100%;
+  margin: 0 auto;
   object-fit: contain;
+}
+
+[data-md-color-scheme="default"] .psi-brand img[src$="#only-dark"],
+[data-md-color-scheme="slate"] .psi-brand img[src$="#only-light"] {
+  display: none;
+}
+
+[data-md-color-scheme="default"] .psi-brand img[src$="#only-light"],
+[data-md-color-scheme="slate"] .psi-brand img[src$="#only-dark"] {
+  display: block;
 }
 
 .psi-tiles {
@@ -257,14 +370,14 @@ html [data-md-color-primary="black"] .md-nav--primary .md-nav__title[for="__draw
 
 .md-typeset .mermaid svg {
   display: inline-block;
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     Arial, sans-serif;
   height: auto;
   max-width: 100%;
 }
 
 .md-typeset .mermaid svg * {
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Helvetica Neue",
     Arial, sans-serif;
 }
 

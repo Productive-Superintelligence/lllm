@@ -1,5 +1,7 @@
 (function () {
   var initialized = false;
+  var fontFamily =
+    "Inter, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif";
 
   function initializeMermaid() {
     if (initialized || !window.mermaid) {
@@ -10,8 +12,7 @@
     window.mermaid.initialize({
       startOnLoad: false,
       theme: "base",
-      fontFamily:
-        "Roboto, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
+      fontFamily: fontFamily,
       securityLevel: "strict",
       flowchart: {
         htmlLabels: false,
@@ -24,10 +25,8 @@
         lineColor: "#050505",
         secondaryColor: "#f7f7f7",
         tertiaryColor: "#ffffff",
-        fontFamily:
-          "Roboto, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
-        altFontFamily:
-          "Roboto, -apple-system, BlinkMacSystemFont, Helvetica Neue, Arial, sans-serif",
+        fontFamily: fontFamily,
+        altFontFamily: fontFamily,
         fontSize: "16px",
         nodeBorder: "#050505",
         mainBkg: "#ffffff",
@@ -96,6 +95,44 @@
       .map(normalizeDiagramNode);
   }
 
+  function markRenderError(nodes) {
+    nodes.forEach(function (node) {
+      node.removeAttribute("data-processed");
+      node.setAttribute("data-mermaid-error", "true");
+    });
+  }
+
+  function renderWithRun(nodes) {
+    if (typeof window.mermaid.run === "function") {
+      return window.mermaid.run({ nodes: nodes });
+    }
+
+    if (typeof window.mermaid.init === "function") {
+      window.mermaid.init(undefined, nodes);
+      return Promise.resolve();
+    }
+
+    return Promise.reject(new Error("No Mermaid render API is available."));
+  }
+
+  function renderNodeFallback(node, index) {
+    if (typeof window.mermaid.render !== "function") {
+      return Promise.reject(new Error("No Mermaid fallback API is available."));
+    }
+
+    var source = node.getAttribute("data-mermaid-source") || node.textContent;
+    var id = "mermaid-fallback-" + Date.now() + "-" + index;
+
+    return window.mermaid.render(id, source).then(function (result) {
+      node.innerHTML = result.svg;
+      node.setAttribute("data-processed", "true");
+      node.removeAttribute("data-mermaid-error");
+      if (typeof result.bindFunctions === "function") {
+        result.bindFunctions(node);
+      }
+    });
+  }
+
   function renderMermaid(attempt) {
     if (!window.mermaid) {
       if (attempt < 30) {
@@ -117,12 +154,15 @@
       return;
     }
 
-    window.mermaid.run({ nodes: nodes }).catch(function (error) {
-      nodes.forEach(function (node) {
-        node.removeAttribute("data-processed");
-        node.setAttribute("data-mermaid-error", "true");
+    renderWithRun(nodes).catch(function (error) {
+      Promise.all(
+        nodes.map(function (node, index) {
+          return renderNodeFallback(node, index);
+        })
+      ).catch(function (fallbackError) {
+        markRenderError(nodes);
+        console.error("Mermaid render failed", error, fallbackError);
       });
-      console.error("Mermaid render failed", error);
     });
   }
 

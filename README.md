@@ -1,7 +1,7 @@
 # LLLM
 
-<p>
-  <img src="assets/lllm-logo-text-dark.png" alt="LLLM" height="56">
+<p align="center">
+  <img src="assets/lllm-logo-text-dark.png" alt="LLLM" width="560">
 </p>
 
 LLLM is a small protocol and service layer for reusable agentic tactics.

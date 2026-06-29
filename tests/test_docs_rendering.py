@@ -1,4 +1,5 @@
 import re
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -64,6 +65,62 @@ def test_docs_render_mermaid_as_diagram_containers(tmp_path):
     assert vendor_license.exists()
 
 
+def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
+    playwright = pytest.importorskip("playwright.sync_api")
+    chromium = (
+        shutil.which("chromium")
+        or shutil.which("chromium-browser")
+        or shutil.which("google-chrome")
+    )
+    if not chromium:
+        pytest.skip("Chromium executable is not available")
+
+    site_dir = build_docs(tmp_path)
+    diagram_pages = [
+        path
+        for path in sorted(site_dir.rglob("*.html"))
+        if 'class="mermaid"' in path.read_text(encoding="utf-8")
+    ]
+
+    assert diagram_pages
+
+    with playwright.sync_playwright() as p:
+        browser = p.chromium.launch(
+            executable_path=chromium,
+            headless=True,
+            args=["--no-sandbox"],
+        )
+        for path in diagram_pages:
+            page = browser.new_page(viewport={"width": 1280, "height": 900})
+            console_errors = []
+            page.on(
+                "console",
+                lambda msg: console_errors.append(msg.text)
+                if msg.type in {"error", "warning"}
+                else None,
+            )
+            page.goto(path.as_uri(), wait_until="domcontentloaded")
+            page.wait_for_function(
+                """
+                () => {
+                  const diagrams = document.querySelectorAll('.mermaid');
+                  return diagrams.length > 0 &&
+                    document.querySelectorAll('.mermaid svg').length === diagrams.length;
+                }
+                """,
+                timeout=5000,
+            )
+            assert page.evaluate(
+                "() => document.querySelectorAll('[data-mermaid-error=\"true\"]').length"
+            ) == 0
+            assert page.evaluate(
+                "() => document.querySelectorAll('code.language-mermaid, code.highlight-mermaid').length"
+            ) == 0
+            assert console_errors == []
+            page.close()
+        browser.close()
+
+
 def test_docs_keep_light_brand_styles(tmp_path):
     site_dir = build_docs(tmp_path)
     custom_css = (site_dir / "stylesheets" / "custom.css").read_text(
@@ -79,9 +136,12 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-header--shadow" in custom_css
     assert "background-color: #ffffff;" in custom_css
     assert "--md-footer-fg-color--light: var(--psi-ink);" in custom_css
-    assert '--md-text-font: "Roboto";' in custom_css
+    assert '--md-text-font: "Inter";' in custom_css
+    assert '--md-code-font: "JetBrains Mono";' in custom_css
     assert "--md-text-font-family" in custom_css
+    assert '"JetBrains Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
+    assert "--psi-brand-width: 26rem;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
     assert "width: 1.2rem;" in custom_css
     assert ".md-search__form .md-icon svg" in custom_css
@@ -94,14 +154,16 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-social__link" in custom_css
     assert "height: 1rem;" in custom_css
     assert ".psi-brand img" in custom_css
-    assert "height: clamp(1.85rem, 5vw, 2.35rem);" in custom_css
+    assert "width: min(var(--psi-brand-width), 100%);" in custom_css
+    assert 'img[src$="#only-dark"]' in custom_css
     assert ".md-typeset .mermaid svg" in custom_css
     assert "max-width: 100%;" in custom_css
     assert "min-width: 34rem;" in custom_css
     assert ".md-typeset .mermaid .node rect" in custom_css
     assert ".md-typeset .mermaid .edgePath path" in custom_css
     assert ".md-typeset .mermaid marker path" in custom_css
-    assert "-apple-system, BlinkMacSystemFont" in mermaid_js
+    assert "var fontFamily" in mermaid_js
+    assert "Inter, -apple-system, BlinkMacSystemFont" in mermaid_js
     assert "window.mermaid.startOnLoad = false" in mermaid_js
     assert 'securityLevel: "strict"' in mermaid_js
     assert "flowchart:" in mermaid_js
@@ -111,19 +173,24 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "normalizeDiagramNode" in mermaid_js
     assert "pre code.language-mermaid" in mermaid_js
     assert "data-mermaid-error" in mermaid_js
+    assert "renderWithRun" in mermaid_js
+    assert "renderNodeFallback" in mermaid_js
+    assert "window.mermaid.render" in mermaid_js
     assert "attempt < 30" in mermaid_js
     assert "requestAnimationFrame" in mermaid_js
     assert "window.document$.subscribe(scheduleRender)" in mermaid_js
     assert 'window.addEventListener("load", scheduleRender)' in mermaid_js
     assert "assets/logo.svg" in index_html
-    assert "assets/lllm-logo-text-dark.png" in index_html
+    assert "assets/lllm-logo-text-dark.png#only-light" in index_html
+    assert "assets/lllm-logo-text-white.png#only-dark" in index_html
     assert "psi-footer-mark" in index_html
     assert "<div class=\"md-source__repository\">\n    GitHub\n  </div>" in index_html
     assert 'data-md-component="source"' not in index_html
     assert 'src="/assets/lllm-logo-text-dark.png"' not in index_html
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
-    assert '<img src="assets/lllm-logo-text-dark.png" alt="LLLM" height="56">' in readme
+    assert '<p align="center">' in readme
+    assert '<img src="assets/lllm-logo-text-dark.png" alt="LLLM" width="560">' in readme
     assert (site_dir / "CNAME").read_text(encoding="utf-8").strip() == "lllm.one"
 
 

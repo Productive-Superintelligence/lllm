@@ -1,7 +1,8 @@
 # LLLM
 
 <p class="psi-brand">
-  <img src="assets/lllm-logo-text-dark.png" alt="LLLM" />
+  <img src="assets/lllm-logo-text-dark.png#only-light" alt="LLLM" />
+  <img src="assets/lllm-logo-text-white.png#only-dark" alt="LLLM" />
 </p>
 
 [lllm.one](https://lllm.one){ .psi-domain }

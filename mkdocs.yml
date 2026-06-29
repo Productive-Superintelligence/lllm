@@ -11,18 +11,35 @@ theme:
   custom_dir: docs/overrides
   logo: assets/logo.svg
   favicon: assets/logo.svg
+  font:
+    text: Inter
+    code: JetBrains Mono
   palette:
     - scheme: default
-      primary: black
+      primary: white
       accent: black
+      toggle:
+        icon: material/weather-night
+        name: Switch to dark mode
+    - scheme: slate
+      primary: black
+      accent: white
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to light mode
   features:
     - navigation.tabs
+    - navigation.tabs.sticky
     - navigation.sections
+    - navigation.indexes
     - navigation.instant
     - navigation.top
+    - navigation.tracking
     - toc.follow
     - content.code.copy
     - content.tabs.link
+    - search.suggest
+    - search.highlight
 
 nav:
   - Overview: index.md
