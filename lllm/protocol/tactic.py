@@ -6,6 +6,7 @@ import asyncio
 import inspect
 import time
 import traceback
+from copy import deepcopy
 from collections.abc import AsyncIterator, Iterator, Mapping
 from typing import Any, ClassVar, Generic, TypeVar
 
@@ -101,8 +102,8 @@ class Tactic(Generic[InputT, OutputT]):
         self._description = description
         self.package_ref = package_ref
         self.service_ref = service_ref
-        self.examples = list(examples or [])
-        self.metadata = dict(metadata or {})
+        self.examples = deepcopy(examples or [])
+        self.metadata = deepcopy(dict(metadata or {}))
 
     @property
     def tactic_name(self) -> str:
@@ -124,8 +125,8 @@ class Tactic(Generic[InputT, OutputT]):
             runtime_kind=self.runtime_kind,
             package_ref=self.package_ref,
             service_ref=self.service_ref,
-            examples=list(self.examples),
-            metadata=dict(self.metadata),
+            examples=deepcopy(self.examples),
+            metadata=deepcopy(self.metadata),
         )
 
     def validate_input(self, value: Any) -> Any:
@@ -253,5 +254,5 @@ class Tactic(Generic[InputT, OutputT]):
             request_id=context.request_id,
             tactic=self.tactic_name,
             input_type=type_name(self.input_type),
-            metadata=dict(context.metadata),
+            metadata=deepcopy(context.metadata),
         )

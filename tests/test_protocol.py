@@ -92,6 +92,32 @@ def test_tactic_info_exports_json_schema():
     assert info.output_schema["properties"]["text"]["type"] == "string"
 
 
+def test_tactic_info_and_trace_metadata_are_isolated():
+    example = {"input": {"text": "hello"}}
+    metadata = {"labels": ["demo"]}
+    tactic = EchoTactic(examples=[example], metadata=metadata)
+
+    example["input"]["text"] = "changed"
+    metadata["labels"].append("changed")
+    info = tactic.info()
+    assert info.examples == [{"input": {"text": "hello"}}]
+    assert info.metadata == {"labels": ["demo"]}
+
+    info.examples[0]["input"]["text"] = "mutated"
+    info.metadata["labels"].append("mutated")
+    assert tactic.info().examples == [{"input": {"text": "hello"}}]
+    assert tactic.info().metadata == {"labels": ["demo"]}
+
+    context = CallContext(metadata={"labels": ["context"]})
+    result = tactic.run({"text": "hello"}, context=context, return_trace=True)
+    context.metadata["labels"].append("changed")
+    result.trace.metadata["labels"].append("mutated")
+
+    next_result = tactic.run({"text": "hello"}, context=context, return_trace=True)
+    assert result.trace.metadata == {"labels": ["context", "mutated"]}
+    assert next_result.trace.metadata == {"labels": ["context", "changed"]}
+
+
 def test_tactic_rejects_invalid_input():
     with pytest.raises(SchemaError):
         EchoTactic().run({"text": 123})
