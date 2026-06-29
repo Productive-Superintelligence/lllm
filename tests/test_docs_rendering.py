@@ -130,10 +130,12 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             page.wait_for_function(
                 """
                 () => {
-                  const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')]
-                    .filter((diagram) => diagram.hasAttribute('data-mermaid-source'));
+                  const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')];
                   return diagrams.length > 0 &&
-                    diagrams.every((diagram) => diagram.querySelector('svg'));
+                    diagrams.every((diagram) =>
+                      diagram.hasAttribute('data-mermaid-source') &&
+                      diagram.querySelector('svg')
+                    );
                 }
                 """,
                 timeout=5000,
@@ -144,10 +146,10 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             assert page.evaluate(
                 "() => document.querySelectorAll('code.language-mermaid, code.highlight-mermaid').length"
             ) == 0
+            assert page.evaluate("() => document.body.innerText.includes('flowchart')") is False
             diagram_metrics = page.evaluate(
                 """
                 () => [...document.querySelectorAll(".md-typeset .mermaid")]
-                  .filter((diagram) => diagram.hasAttribute("data-mermaid-source"))
                   .map((diagram) => {
                   const svg = diagram.querySelector("svg");
                   const label = svg.querySelector(
@@ -303,9 +305,9 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     ]
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
-    assert visible_brands[0]["width"] <= 420
-    assert visible_brands[0]["width"] > 390
-    assert visible_brands[0]["height"] == pytest.approx(115, abs=1)
+    assert visible_brands[0]["width"] <= 350
+    assert visible_brands[0]["width"] > 320
+    assert visible_brands[0]["height"] == pytest.approx(95, abs=1)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -336,10 +338,12 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
         page.wait_for_function(
             """
             () => {
-              const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')]
-                .filter((diagram) => diagram.hasAttribute('data-mermaid-source'));
+              const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')];
               return diagrams.length > 0 &&
-                diagrams.every((diagram) => diagram.querySelector('svg'));
+                diagrams.every((diagram) =>
+                  diagram.hasAttribute('data-mermaid-source') &&
+                  diagram.querySelector('svg')
+                );
             }
             """,
             timeout=5000,
@@ -459,7 +463,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert len(visible_brands) == 1
     assert visible_brands[0]["src"] == "assets/lllm-logo-text-dark.png#only-light"
     assert visible_brands[0]["width"] < metrics["viewportWidth"]
-    assert visible_brands[0]["height"] == pytest.approx(90, abs=2)
+    assert visible_brands[0]["height"] == pytest.approx(75, abs=2)
     assert any(
         image["src"] == "assets/lllm-logo-text-white.png#only-dark"
         for image in hidden_brands
@@ -490,8 +494,8 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "--md-text-font-family" in custom_css
     assert '"Roboto Mono", SFMono-Regular' in custom_css
     assert "-apple-system" in custom_css
-    assert "--psi-brand-width: 22rem;" in custom_css
-    assert "--psi-brand-height: 5.75rem;" in custom_css
+    assert "--psi-brand-width: 18rem;" in custom_css
+    assert "--psi-brand-height: 4.75rem;" in custom_css
     assert "--psi-diagram-bg: #ffffff;" in custom_css
     assert "--psi-diagram-ink: #050505;" in custom_css
     assert ".md-header__button.md-logo" in custom_css
@@ -551,10 +555,14 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "data-mermaid-rendering" in mermaid_js
     assert "window.mermaid.render" in mermaid_js
     assert "attempt < maxRetries" in mermaid_js
+    assert "MutationObserver" in mermaid_js
+    assert "observeContent" in mermaid_js
+    assert "handleDocumentChange" in mermaid_js
     assert "requestAnimationFrame" in mermaid_js
-    assert "window.document$.subscribe(scheduleRender)" in mermaid_js
-    assert 'window.addEventListener("load", scheduleRender)' in mermaid_js
-    assert 'window.addEventListener("pageshow", scheduleRender)' in mermaid_js
+    assert "window.document$.subscribe(handleDocumentChange)" in mermaid_js
+    assert 'window.addEventListener("load", handleDocumentChange)' in mermaid_js
+    assert 'window.addEventListener("pageshow", handleDocumentChange)' in mermaid_js
+    assert 'container.getAttribute("data-mermaid-error") === "true"' not in mermaid_js
     assert "assets/logo.svg" in index_html
     assert "assets/lllm-logo-text-dark.png#only-light" in index_html
     assert "assets/lllm-logo-text-white.png#only-dark" in index_html

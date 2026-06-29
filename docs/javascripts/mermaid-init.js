@@ -6,6 +6,8 @@
   var renderAgain = false;
   var renderScheduled = false;
   var renderSequence = 0;
+  var observer = null;
+  var observedRoot = null;
   var retryDelay = 150;
   var maxRetries = 40;
 
@@ -84,7 +86,6 @@
       !container ||
       isGeneratedMermaidNode(container) ||
       container.querySelector("svg") ||
-      container.getAttribute("data-mermaid-error") === "true" ||
       container.getAttribute("data-mermaid-rendering") === "true"
     ) {
       return null;
@@ -220,6 +221,7 @@
       return;
     }
 
+    observeContent();
     renderScheduled = true;
     window.requestAnimationFrame(function () {
       afterFontsReady(function () {
@@ -229,14 +231,64 @@
     });
   }
 
+  function isMermaidMutation(node) {
+    return (
+      node.nodeType === 1 &&
+      (node.matches(".mermaid, pre code.language-mermaid, pre code.highlight-mermaid") ||
+        Boolean(
+          node.querySelector(
+            ".mermaid, pre code.language-mermaid, pre code.highlight-mermaid"
+          )
+        ))
+    );
+  }
+
+  function observeContent() {
+    var root;
+
+    if (!window.MutationObserver) {
+      return;
+    }
+
+    root =
+      document.querySelector("[data-md-component='content']") ||
+      document.querySelector(".md-content") ||
+      document.body;
+
+    if (!root || root === observedRoot) {
+      return;
+    }
+
+    if (observer) {
+      observer.disconnect();
+    }
+
+    observer = new MutationObserver(function (mutations) {
+      var changed = mutations.some(function (mutation) {
+        return Array.prototype.some.call(mutation.addedNodes, isMermaidMutation);
+      });
+
+      if (changed) {
+        scheduleRender();
+      }
+    });
+    observer.observe(root, { childList: true, subtree: true });
+    observedRoot = root;
+  }
+
+  function handleDocumentChange() {
+    observeContent();
+    scheduleRender();
+  }
+
   if (window.document$) {
-    window.document$.subscribe(scheduleRender);
+    window.document$.subscribe(handleDocumentChange);
   } else {
-    document.addEventListener("DOMContentLoaded", scheduleRender);
+    document.addEventListener("DOMContentLoaded", handleDocumentChange);
   }
 
   initializeMermaid();
-  window.addEventListener("load", scheduleRender);
-  window.addEventListener("pageshow", scheduleRender);
-  scheduleRender();
+  window.addEventListener("load", handleDocumentChange);
+  window.addEventListener("pageshow", handleDocumentChange);
+  handleDocumentChange();
 })();
