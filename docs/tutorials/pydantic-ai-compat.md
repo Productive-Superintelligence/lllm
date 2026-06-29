@@ -68,6 +68,10 @@ Runtime-owned features stay runtime-owned. Configure model/provider settings,
 instrumentation, eval hooks, durable execution IDs, graph/workflow state, tool
 approval, and dependencies on the agent or pass them as normal run kwargs:
 
+The offline surrounding-features example models Logfire/OpenTelemetry-style
+instrumentation as agent-owned state and asserts the LLLM wrapper leaves that
+state intact.
+
 ## Runtime Features
 
 ```python

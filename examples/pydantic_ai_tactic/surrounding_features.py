@@ -13,9 +13,16 @@ class ConfiguredAgent:
     name = "configured-agent"
     output_type = dict
 
-    def __init__(self, *, model: str, instrumented: bool = False):
+    def __init__(
+        self,
+        *,
+        model: str,
+        instrumented: bool = False,
+        instrumentation: tuple[str, ...] = (),
+    ):
         self.model = model
         self.instrumented = instrumented
+        self.instrumentation = instrumentation
         self.seen: dict[str, Any] = {}
 
     def run_sync(self, task, *, metadata=None, **kwargs):
@@ -25,11 +32,13 @@ class ConfiguredAgent:
             "kwargs": dict(kwargs),
             "model": self.model,
             "instrumented": self.instrumented,
+            "instrumentation": self.instrumentation,
         }
         return Result(
             {
                 "task": task,
                 "model": self.model,
+                "instrumentation": list(self.instrumentation),
                 "trace_id": self.seen["metadata"].get("lllm_trace_id"),
                 "durable_run_id": kwargs.get("durable_run_id"),
                 "graph_node": kwargs.get("graph_node"),
@@ -39,7 +48,12 @@ class ConfiguredAgent:
 
 def build_tactic(agent: ConfiguredAgent | None = None) -> PydanticAITactic:
     return PydanticAITactic(
-        agent or ConfiguredAgent(model="fake-provider:small", instrumented=True),
+        agent
+        or ConfiguredAgent(
+            model="fake-provider:small",
+            instrumented=True,
+            instrumentation=("logfire", "opentelemetry"),
+        ),
         input_type=str,
         output_type=dict,
         run_kwargs={
@@ -52,7 +66,11 @@ def build_tactic(agent: ConfiguredAgent | None = None) -> PydanticAITactic:
 
 
 def run_demo() -> tuple[dict[str, Any], ConfiguredAgent]:
-    agent = ConfiguredAgent(model="fake-provider:small", instrumented=True)
+    agent = ConfiguredAgent(
+        model="fake-provider:small",
+        instrumented=True,
+        instrumentation=("logfire", "opentelemetry"),
+    )
     tactic = build_tactic(agent)
     output = tactic.run(
         "summarize package refs",

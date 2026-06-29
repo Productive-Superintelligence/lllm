@@ -101,10 +101,12 @@ def test_pydantic_ai_surrounding_features_example_preserves_runtime_ownership():
     output, agent = module.run_demo()
 
     assert output["model"] == "fake-provider:small"
+    assert output["instrumentation"] == ["logfire", "opentelemetry"]
     assert output["trace_id"] == "trace-surrounding"
     assert output["durable_run_id"] == "durable-1"
     assert output["graph_node"] == "plan.step"
     assert agent.seen["instrumented"] is True
+    assert agent.seen["instrumentation"] == ("logfire", "opentelemetry")
     assert agent.seen["kwargs"]["model_settings"] == {"temperature": 0}
     assert agent.seen["kwargs"]["deps"] == {"vector_store": "fake"}
     assert agent.seen["kwargs"]["eval_hook"] == "offline-score"
