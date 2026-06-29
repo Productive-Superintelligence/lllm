@@ -186,7 +186,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
                   .getPropertyValue("--md-code-font-family")
                   .trim(),
                 footer: inspect(".md-footer-meta"),
-                footerMark: inspect(".psi-footer-mark"),
+                footerMark: inspect(".psi-footer-wordmark"),
                 header: inspect(".md-header"),
                 headerLogo: inspect(
                   ".md-header__button.md-logo img, .md-header__button.md-logo svg"
@@ -212,8 +212,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["palette"]["width"] == pytest.approx(0, abs=1)
     assert metrics["palette"]["height"] == pytest.approx(0, abs=1)
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
-    assert metrics["footerMark"]["width"] == pytest.approx(20, abs=1)
-    assert metrics["footerMark"]["height"] == pytest.approx(20, abs=1)
+    assert metrics["footerMark"]["width"] == pytest.approx(90, abs=2)
+    assert metrics["footerMark"]["height"] == pytest.approx(25, abs=2)
     assert "Roboto" in metrics["bodyFont"]
     assert "Roboto Mono" in metrics["codeFont"]
 
@@ -305,7 +305,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
                 docWidth: document.documentElement.scrollWidth,
                 viewportWidth: window.innerWidth,
                 footer: inspect(".md-footer-meta"),
-                footerMark: inspect(".psi-footer-mark"),
+                footerMark: inspect(".psi-footer-wordmark"),
                 header: inspect(".md-header"),
                 headerLogo: inspect(
                   ".md-header__button.md-logo img, .md-header__button.md-logo svg"
@@ -356,11 +356,11 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
     assert metrics["header"]["height"] == pytest.approx(49, abs=1)
     assert metrics["headerLogo"]["src"] == "assets/logo.svg"
-    assert metrics["headerLogo"]["width"] == pytest.approx(0, abs=1)
-    assert metrics["headerLogo"]["height"] == pytest.approx(0, abs=1)
-    assert metrics["footer"]["height"] <= 70
-    assert metrics["footerMark"]["width"] == pytest.approx(20, abs=1)
-    assert metrics["footerMark"]["height"] == pytest.approx(20, abs=1)
+    assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
+    assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
+    assert metrics["footer"]["height"] <= 72
+    assert metrics["footerMark"]["width"] == pytest.approx(90, abs=2)
+    assert metrics["footerMark"]["height"] == pytest.approx(25, abs=2)
     assert "Roboto" in metrics["bodyFont"]
     assert "Roboto Mono" in metrics["codeFont"]
     assert metrics["mermaid"]["width"] <= metrics["viewportWidth"]
@@ -416,12 +416,13 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-search__form .md-icon svg" in custom_css
     assert "fill: currentcolor;" in custom_css
     assert ".md-nav__button.md-logo" in custom_css
-    assert ".psi-footer-mark" in custom_css
-    assert 'background-image: url("../assets/logo.svg");' in custom_css
-    assert "font-size: 0.8rem;" in custom_css
-    assert "min-height: 2.2rem;" in custom_css
+    assert ".psi-footer-wordmark" in custom_css
+    assert 'background-image: url("../assets/lllm-logo-text-dark.png");' in custom_css
+    assert ".psi-footer-text" in custom_css
+    assert "clip-path: inset(50%);" in custom_css
+    assert "white-space: nowrap;" in custom_css
     assert ".md-social__link" in custom_css
-    assert "height: 1rem;" in custom_css
+    assert "height: 2rem;" in custom_css
     assert ".psi-brand img" in custom_css
     assert "max-height: var(--psi-brand-height);" in custom_css
     assert "max-width: min(var(--psi-brand-width), 100%);" in custom_css
@@ -438,7 +439,9 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "window.mermaid.startOnLoad = false" in mermaid_js
     assert 'securityLevel: "strict"' in mermaid_js
     assert "flowchart:" in mermaid_js
-    assert "htmlLabels: false" in mermaid_js
+    assert "htmlLabels: true" in mermaid_js
+    assert "themeCSS:" in mermaid_js
+    assert "nodeTextColor" in mermaid_js
     assert "useMaxWidth: true" in mermaid_js
     assert "data-mermaid-source" in mermaid_js
     assert "normalizeNode" in mermaid_js
@@ -458,7 +461,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "assets/logo.svg" in index_html
     assert "assets/lllm-logo-text-dark.png#only-light" in index_html
     assert "assets/lllm-logo-text-white.png#only-dark" in index_html
-    assert "psi-footer-mark" in index_html
+    assert "psi-footer-wordmark" in index_html
     assert "<div class=\"md-source__repository\">\n    GitHub\n  </div>" in index_html
     assert 'data-md-component="source"' not in index_html
     assert 'src="/assets/lllm-logo-text-dark.png"' not in index_html

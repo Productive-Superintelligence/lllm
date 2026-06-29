@@ -152,7 +152,7 @@ def test_multi_tactic_service_lists_and_runs_named_tactics():
 
 
 def test_service_rejects_path_control_tactic_route_names():
-    bad_names = ("", ".", "..", "bad/name", r"bad\name", "bad:name")
+    bad_names = ("", ".", "..", "bad/name", r"bad\name", "bad:name", None, 123)
 
     for name in bad_names:
         with pytest.raises(ValueError, match="tactic.name"):

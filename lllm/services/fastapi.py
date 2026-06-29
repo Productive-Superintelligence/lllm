@@ -289,7 +289,7 @@ def _normalize_tactics(
     normalized: dict[str, Tactic[Any, Any]] = {}
     if isinstance(tactics, Mapping):
         for name, tactic in tactics.items():
-            _add_tactic(normalized, str(name), tactic)
+            _add_tactic(normalized, name, tactic)
         return normalized
     for tactic in tactics:
         _add_tactic(normalized, tactic.tactic_name, tactic)
@@ -298,7 +298,7 @@ def _normalize_tactics(
 
 def _add_tactic(
     tactics: dict[str, Tactic[Any, Any]],
-    name: str,
+    name: Any,
     tactic: Tactic[Any, Any],
 ) -> None:
     _require_route_segment("tactic.name", name)
