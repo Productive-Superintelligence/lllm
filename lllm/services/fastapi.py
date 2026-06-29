@@ -10,7 +10,12 @@ from typing import Any
 from pydantic import BaseModel, Field, StrictStr, ValidationError
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
-from .endpoints import EndpointSpec, custom_endpoints
+from .endpoints import (
+    EndpointSpec,
+    custom_endpoints,
+    endpoint_path_key,
+    endpoint_route_key,
+)
 
 
 class RunRequest(BaseModel):
@@ -240,10 +245,12 @@ def _mount_custom_endpoints(
         raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
 
     for spec, method in custom_endpoints(tactic):
-        route_key = (spec.method, spec.path)
+        route_key = endpoint_route_key(spec)
+        route_label = f"{spec.method} {spec.path}"
         owner = f"{tactic.tactic_name}.{spec.name}"
         _validate_custom_route(
             route_key,
+            route_label=route_label,
             owner=owner,
             reserved_routes=reserved_routes,
             seen_custom_routes=seen_custom_routes,
@@ -274,24 +281,35 @@ def _reserved_routes(
     expose_single_tactic_routes: bool,
 ) -> set[tuple[str, str]]:
     routes = {
-        ("GET", "/health"),
-        ("GET", "/tactics"),
-        ("GET", "/tactics/{name}/info"),
-        ("POST", "/tactics/{name}/run"),
-        ("POST", "/tactics/{name}/stream"),
+        _route_key("GET", "/health"),
+        _route_key("GET", "/tactics"),
+        _route_key("GET", "/tactics/{name}/info"),
+        _route_key("POST", "/tactics/{name}/run"),
+        _route_key("POST", "/tactics/{name}/stream"),
     }
     for name in tactics:
-        routes.add(("GET", f"/tactics/{name}/info"))
-        routes.add(("POST", f"/tactics/{name}/run"))
-        routes.add(("POST", f"/tactics/{name}/stream"))
+        routes.add(_route_key("GET", f"/tactics/{name}/info"))
+        routes.add(_route_key("POST", f"/tactics/{name}/run"))
+        routes.add(_route_key("POST", f"/tactics/{name}/stream"))
     if expose_single_tactic_routes and len(tactics) == 1:
-        routes.update({("GET", "/info"), ("POST", "/run"), ("POST", "/stream")})
+        routes.update(
+            {
+                _route_key("GET", "/info"),
+                _route_key("POST", "/run"),
+                _route_key("POST", "/stream"),
+            }
+        )
     return routes
+
+
+def _route_key(method: str, path: str) -> tuple[str, str]:
+    return method, endpoint_path_key(path)
 
 
 def _validate_custom_route(
     route_key: tuple[str, str],
     *,
+    route_label: str,
     owner: str,
     reserved_routes: set[tuple[str, str]],
     seen_custom_routes: dict[tuple[str, str], str],
@@ -299,12 +317,12 @@ def _validate_custom_route(
     method, path = route_key
     if route_key in reserved_routes or _matches_reserved_tactic_route(method, path):
         raise ValueError(
-            f"Custom endpoint route {method} {path} for {owner} "
+            f"Custom endpoint route {route_label} for {owner} "
             "conflicts with a reserved LLLM service route."
         )
     if route_key in seen_custom_routes:
         raise ValueError(
-            f"Duplicate custom endpoint route {method} {path}: "
+            f"Duplicate custom endpoint route {route_label}: "
             f"{seen_custom_routes[route_key]} and {owner}"
         )
 

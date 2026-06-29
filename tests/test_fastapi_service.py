@@ -212,10 +212,21 @@ def test_custom_endpoint_discovery_rejects_duplicate_names_and_routes():
         async def two(self, input_value, *, context=None):
             return {"ok": True}
 
+    class EquivalentRouteTemplateTactic(EchoTactic):
+        @endpoint.post("/items/{name}", name="by_name")
+        async def by_name(self, input_value, *, context=None):
+            return {"ok": True}
+
+        @endpoint.post("/items/{id}", name="by_id")
+        async def by_id(self, input_value, *, context=None):
+            return {"ok": True}
+
     with pytest.raises(ValueError, match="Duplicate endpoint name"):
         custom_endpoints(DuplicateNameTactic())
     with pytest.raises(ValueError, match="Duplicate custom endpoint route"):
         custom_endpoints(DuplicateRouteTactic())
+    with pytest.raises(ValueError, match="Duplicate custom endpoint route"):
+        custom_endpoints(EquivalentRouteTemplateTactic())
 
 
 def request(app, method, path, **kwargs):
@@ -392,10 +403,17 @@ def test_custom_endpoint_routes_cannot_shadow_service_routes():
         async def shadow_named_run(self, input_value, *, context=None):
             return {"ok": True}
 
+    class ShadowNamedRouteTemplateTactic(EchoTactic):
+        @endpoint.post("/tactics/{tactic}/run", name="shadow_named_template")
+        async def shadow_named_template(self, input_value, *, context=None):
+            return {"ok": True}
+
     with pytest.raises(ValueError, match="reserved LLLM service route"):
         create_tactic_app(ShadowRunTactic())
     with pytest.raises(ValueError, match="reserved LLLM service route"):
         create_service_app([ShadowNamedRunTactic()])
+    with pytest.raises(ValueError, match="reserved LLLM service route"):
+        create_service_app([ShadowNamedRouteTemplateTactic()])
 
 
 def test_custom_endpoint_routes_are_unique_across_service():
@@ -413,6 +431,33 @@ def test_custom_endpoint_routes_are_unique_across_service():
 
     with pytest.raises(ValueError, match="Duplicate custom endpoint route"):
         create_service_app([EchoTactic(), OtherActTactic()])
+
+    class ByNameTactic(Tactic[EchoInput, EchoOutput]):
+        name = "by-name"
+        input_type = EchoInput
+        output_type = EchoOutput
+
+        def _run(self, input_value, *, context=None):
+            return EchoOutput(text=input_value.text)
+
+        @endpoint.post("/custom/{name}")
+        async def custom_by_name(self, input_value, *, context=None):
+            return {"name": input_value.text}
+
+    class ByIdTactic(Tactic[EchoInput, EchoOutput]):
+        name = "by-id"
+        input_type = EchoInput
+        output_type = EchoOutput
+
+        def _run(self, input_value, *, context=None):
+            return EchoOutput(text=input_value.text)
+
+        @endpoint.post("/custom/{id}")
+        async def custom_by_id(self, input_value, *, context=None):
+            return {"id": input_value.text}
+
+    with pytest.raises(ValueError, match="Duplicate custom endpoint route"):
+        create_service_app([ByNameTactic(), ByIdTactic()])
 
 
 def test_error_envelope_is_stable():

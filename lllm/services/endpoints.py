@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeVar
@@ -13,6 +14,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 _ENDPOINT_MODES = {"run", "stream", "events"}
 _HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
+_ROUTE_PARAMETER_RE = re.compile(r"\{[^{}]+\}")
 
 
 @dataclass(frozen=True)
@@ -145,6 +147,14 @@ def custom_endpoints(obj: Any) -> list[tuple[EndpointSpec, Callable[..., Any]]]:
     return discovered
 
 
+def endpoint_route_key(spec: EndpointSpec) -> tuple[str, str]:
+    return spec.method, endpoint_path_key(spec.path)
+
+
+def endpoint_path_key(path: str) -> str:
+    return _ROUTE_PARAMETER_RE.sub("{}", path)
+
+
 def _validate_endpoint_collection(
     endpoints: list[tuple[EndpointSpec, Callable[..., Any]]],
 ) -> None:
@@ -158,7 +168,7 @@ def _validate_endpoint_collection(
                 f"{names[spec.name]} and {owner}"
             )
         names[spec.name] = owner
-        route = (spec.method, spec.path)
+        route = endpoint_route_key(spec)
         route_label = f"{spec.method} {spec.path}"
         if route in routes:
             raise ValueError(
