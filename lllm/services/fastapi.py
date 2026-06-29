@@ -286,9 +286,35 @@ def _make_custom_route(
 def _normalize_tactics(
     tactics: Mapping[str, Tactic[Any, Any]] | Sequence[Tactic[Any, Any]],
 ) -> dict[str, Tactic[Any, Any]]:
+    normalized: dict[str, Tactic[Any, Any]] = {}
     if isinstance(tactics, Mapping):
-        return {str(name): tactic for name, tactic in tactics.items()}
-    return {tactic.tactic_name: tactic for tactic in tactics}
+        for name, tactic in tactics.items():
+            _add_tactic(normalized, str(name), tactic)
+        return normalized
+    for tactic in tactics:
+        _add_tactic(normalized, tactic.tactic_name, tactic)
+    return normalized
+
+
+def _add_tactic(
+    tactics: dict[str, Tactic[Any, Any]],
+    name: str,
+    tactic: Tactic[Any, Any],
+) -> None:
+    _require_route_segment("tactic.name", name)
+    if name in tactics:
+        raise ValueError(f"Duplicate tactic.name route: {name}")
+    tactics[name] = tactic
+
+
+def _require_route_segment(field_name: str, value: Any) -> None:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value in {".", ".."}
+        or any(ch in value for ch in "/:\\")
+    ):
+        raise ValueError(f"{field_name} must be a non-empty path segment.")
 
 
 def _get_tactic(name: str, tactics: Mapping[str, Tactic[Any, Any]]) -> Tactic[Any, Any]:

@@ -3,6 +3,7 @@ import json
 from dataclasses import dataclass
 
 import httpx
+import pytest
 from pydantic import BaseModel
 
 from lllm import Tactic, endpoint
@@ -148,6 +149,19 @@ def test_multi_tactic_service_lists_and_runs_named_tactics():
     assert {item["name"] for item in listed.json()} == {"echo", "streamer"}
     assert response.status_code == 200
     assert response.json()["output"] == {"text": "HELLO"}
+
+
+def test_service_rejects_path_control_tactic_route_names():
+    bad_names = ("", ".", "..", "bad/name", r"bad\name", "bad:name")
+
+    for name in bad_names:
+        with pytest.raises(ValueError, match="tactic.name"):
+            create_service_app({name: EchoTactic()})
+
+
+def test_service_rejects_duplicate_sequence_tactic_route_names():
+    with pytest.raises(ValueError, match="Duplicate tactic.name"):
+        create_service_app([EchoTactic(), EchoTactic()])
 
 
 def test_stream_endpoint_returns_sse_events():
