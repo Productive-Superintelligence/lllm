@@ -104,6 +104,16 @@ def test_create_rejects_names_without_letters_or_numbers(tmp_path):
         create_project("plain", "___", directory=tmp_path)
 
 
+def test_create_rejects_malformed_name_and_directory_values(tmp_path):
+    for name in (123, "   "):
+        with pytest.raises(ValueError, match="Project name"):
+            create_project("plain", name, directory=tmp_path)  # type: ignore[arg-type]
+
+    for directory in (123, "   "):
+        with pytest.raises(ValueError, match="directory"):
+            create_project("plain", "demo", directory=directory)  # type: ignore[arg-type]
+
+
 def test_cli_create_project(tmp_path, capsys):
     code = main(["create", "plain", "cli-demo", "--directory", str(tmp_path)])
 

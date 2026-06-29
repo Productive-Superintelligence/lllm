@@ -480,6 +480,30 @@ store = ".sssn"
     assert resolver.refs() == (REF,)
 
 
+def test_resolver_trims_url_bindings_from_local_config(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "  http://127.0.0.1:8000/tactics/echo  "
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    resolver = TacticResolver.from_config(tmp_path)
+    tactic = resolver.resolve(REF)
+
+    assert isinstance(tactic, RemoteTactic)
+    assert tactic.url == "http://127.0.0.1:8000/tactics/echo/run"
+
+
+def test_resolver_rejects_malformed_config_paths():
+    for path in ("   ", 123):
+        with pytest.raises(ValueError, match="config path"):
+            TacticResolver.from_config(path)  # type: ignore[arg-type]
+
+
 def test_resolver_rejects_malformed_url_bindings_from_local_config(tmp_path):
     config_dir = tmp_path / ".psi"
     config_dir.mkdir()
@@ -496,7 +520,7 @@ url = "http://127.0.0.1:8000/tactics/echo"
 
 
 def test_resolver_rejects_invalid_tactic_url_values_from_local_config(tmp_path):
-    for index, url_value in enumerate(("123", "false", '""'), start=1):
+    for index, url_value in enumerate(("123", "false", '""', '"   "'), start=1):
         config_dir = tmp_path / f"workspace-{index}" / ".psi"
         config_dir.mkdir(parents=True)
         (config_dir / "config.toml").write_text(

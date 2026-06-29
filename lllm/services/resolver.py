@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
@@ -46,11 +47,11 @@ class TacticResolver:
             if not _is_tactic_config_ref(raw_ref):
                 continue
             url = data["url"]
-            if not isinstance(url, str) or not url:
+            if not isinstance(url, str) or not url.strip():
                 raise TacticRefError(
                     f"Tactic URL binding must be a non-empty string: {raw_ref}"
                 )
-            resolver.bind_url(raw_ref, url)
+            resolver.bind_url(raw_ref, url.strip())
         return resolver
 
     def register(self, ref: str | TacticRef, tactic: Tactic[Any, Any]) -> None:
@@ -107,7 +108,7 @@ class TacticResolver:
 
 
 def _load_toml(path: str | Path) -> dict[str, Any]:
-    target = Path(path)
+    target = Path(_path_value(path, "config path"))
     if target.is_dir():
         target = target / ".psi" / "config.toml"
     try:
@@ -119,8 +120,20 @@ def _load_toml(path: str | Path) -> dict[str, Any]:
 
 
 def _is_tactic_config_ref(ref: str) -> bool:
-    parsed = urlparse(str(ref))
+    if not isinstance(ref, str) or not ref.strip():
+        raise TacticRefError("Ref binding key must be a non-empty string.")
+    parsed = urlparse(ref)
     parts = [part for part in parsed.path.split("/") if part]
     if len(parts) == 3 and parts[1] in _NON_TACTIC_CONFIG_REF_SECTIONS:
         return False
     return True
+
+
+def _path_value(value: Any, label: str) -> str:
+    try:
+        text = os.fspath(value)
+    except TypeError as exc:
+        raise ValueError(f"{label} must be a non-empty path string") from exc
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError(f"{label} must be a non-empty path string")
+    return text.strip()

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import os
 import re
 import textwrap
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 TemplateName = Literal["plain", "pydantic-ai", "native"]
 
@@ -38,7 +39,7 @@ def create_project(
         raise ValueError("template must be one of: plain, pydantic-ai, native")
     project_slug = _slug(name)
     package_name = _package_name(project_slug)
-    root = Path(directory) / project_slug
+    root = Path(_path_value(directory, "directory")) / project_slug
     if root.exists() and any(root.iterdir()) and not force:
         raise FileExistsError(f"Project directory is not empty: {root}")
 
@@ -371,7 +372,19 @@ def _tutorial(project_slug: str, package_name: str) -> str:
     )
 
 
+def _path_value(value: Any, label: str) -> str:
+    try:
+        text = os.fspath(value)
+    except TypeError as exc:
+        raise ValueError(f"{label} must be a non-empty path string") from exc
+    if not isinstance(text, str) or not text.strip():
+        raise ValueError(f"{label} must be a non-empty path string")
+    return text.strip()
+
+
 def _slug(value: str) -> str:
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError("Project name must be a non-empty string.")
     slug = re.sub(r"[^A-Za-z0-9_.-]+", "-", value.strip()).strip(".-")
     if not slug or not re.search(r"[A-Za-z0-9]", slug):
         raise ValueError("Project name must contain at least one letter or number.")
