@@ -48,6 +48,19 @@ class StreamTactic(Tactic[str, str]):
         yield input_value.upper()
 
 
+class FailingStreamTactic(Tactic[str, str]):
+    name = "failing-streamer"
+    input_type = str
+    output_type = str
+
+    def _run(self, input_value, *, context=None):
+        return input_value
+
+    def stream(self, input_value, *, context=None):
+        yield input_value
+        raise ValueError("stream failed")
+
+
 @dataclass(frozen=True)
 class ResponseSnapshot:
     status_code: int
@@ -145,6 +158,34 @@ def test_stream_endpoint_returns_sse_events():
     assert response.headers["content-type"].startswith("text/event-stream")
     assert '"data": "hello"' in response.text
     assert '"data": "HELLO"' in response.text
+
+
+def test_stream_endpoint_reports_iterator_errors_as_sse_events():
+    app = create_tactic_app(FailingStreamTactic())
+    response = request(
+        app,
+        "POST",
+        "/stream",
+        json={"input": "hello", "context": {"request_id": "req-stream-error"}},
+    )
+
+    chunks = [
+        json.loads(line.removeprefix("data: "))
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+
+    assert response.status_code == 200
+    assert chunks[0]["kind"] == "message"
+    assert chunks[0]["data"] == "hello"
+    assert chunks[1]["kind"] == "error"
+    assert chunks[1]["data"] == {"message": "stream failed"}
+    assert chunks[1]["metadata"] == {
+        "error_type": "ValueError",
+        "tactic": "failing-streamer",
+        "endpoint": "stream",
+        "request_id": "req-stream-error",
+    }
 
 
 def test_stream_endpoint_reports_unsupported_tactic_stably():

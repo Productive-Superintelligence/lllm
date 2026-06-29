@@ -142,7 +142,15 @@ def create_service_app(
                     f"Tactic '{name}' does not support streaming."
                 )
             result = tactic.aevents(input_value, context=context)
-            return StreamingResponse(_event_chunks(result), media_type="text/event-stream")
+            return StreamingResponse(
+                _event_chunks(
+                    result,
+                    tactic=tactic,
+                    endpoint="stream",
+                    context=context,
+                ),
+                media_type="text/event-stream",
+            )
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint="stream", context=context) from exc
 
@@ -186,7 +194,12 @@ def create_service_app(
                     )
                 result = only.aevents(input_value, context=context)
                 return StreamingResponse(
-                    _event_chunks(result),
+                    _event_chunks(
+                        result,
+                        tactic=only,
+                        endpoint="stream",
+                        context=context,
+                    ),
                     media_type="text/event-stream",
                 )
             except Exception as exc:
@@ -252,7 +265,12 @@ def _make_custom_route(
             if spec.mode in {"stream", "events"}:
                 result = _invoke_custom(method, input_value, context=context)
                 return streaming_response(
-                    _event_chunks(_aiter_custom_result(result)),
+                    _event_chunks(
+                        _aiter_custom_result(result),
+                        tactic=tactic,
+                        endpoint=spec.name,
+                        context=context,
+                    ),
                     media_type="text/event-stream",
                 )
             result = _invoke_custom(method, input_value, context=context)
@@ -377,15 +395,55 @@ def _error_context(tactic: Tactic[Any, Any], endpoint: str) -> CallContext:
     return CallContext(tactic_ref=tactic.package_ref, endpoint=endpoint)
 
 
-async def _event_chunks(result: Any):
-    async for item in _aiter_custom_result(result):
-        if isinstance(item, TacticEvent):
-            payload = item.model_dump(mode="json")
-        elif isinstance(item, BaseModel):
-            payload = item.model_dump(mode="json")
-        else:
-            payload = item
-        yield f"data: {json.dumps(payload, default=str)}\n\n"
+async def _event_chunks(
+    result: Any,
+    *,
+    tactic: Tactic[Any, Any] | None = None,
+    endpoint: str | None = None,
+    context: CallContext | None = None,
+):
+    try:
+        async for item in _aiter_custom_result(result):
+            yield _sse_chunk(item)
+    except Exception as exc:
+        yield _sse_chunk(
+            TacticEvent.error(
+                str(exc),
+                **_stream_error_metadata(
+                    exc,
+                    tactic=tactic,
+                    endpoint=endpoint,
+                    context=context,
+                ),
+            )
+        )
+
+
+def _sse_chunk(item: Any) -> str:
+    if isinstance(item, TacticEvent):
+        payload = item.model_dump(mode="json")
+    elif isinstance(item, BaseModel):
+        payload = item.model_dump(mode="json")
+    else:
+        payload = item
+    return f"data: {json.dumps(payload, default=str)}\n\n"
+
+
+def _stream_error_metadata(
+    exc: Exception,
+    *,
+    tactic: Tactic[Any, Any] | None,
+    endpoint: str | None,
+    context: CallContext | None,
+) -> dict[str, Any]:
+    metadata: dict[str, Any] = {"error_type": type(exc).__name__}
+    if tactic is not None:
+        metadata["tactic"] = tactic.tactic_name
+    if endpoint is not None:
+        metadata["endpoint"] = endpoint
+    if context is not None:
+        metadata["request_id"] = context.request_id
+    return metadata
 
 
 async def _aiter_custom_result(result: Any) -> AsyncIterator[Any]:
