@@ -1,4 +1,4 @@
-"""LLLM: protocol-first service infrastructure for agentic tactics."""
+"""LLLM: protocol and service layer for reusable agentic tactics."""
 
 from .protocol import (
     CallContext,

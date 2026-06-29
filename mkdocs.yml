@@ -1,5 +1,5 @@
 site_name: LLLM
-site_description: Protocol-first tactic services.
+site_description: Protocol and service layer for reusable agentic tactics.
 site_url: https://lllm.one/
 repo_name: GitHub
 repo_url: https://github.com/Productive-Superintelligence/lllm

@@ -42,6 +42,22 @@ def build_docs(tmp_path: Path) -> Path:
     return site_dir
 
 
+def test_docs_use_tactic_protocol_framing():
+    sources = {
+        "README": ROOT / "README.md",
+        "docs home": ROOT / "docs" / "index.md",
+        "package docstring": ROOT / "lllm" / "__init__.py",
+        "site metadata": ROOT / "mkdocs.yml",
+    }
+    combined = "\n".join(
+        path.read_text(encoding="utf-8") for path in sources.values()
+    )
+
+    assert "protocol and service layer for reusable agentic tactics" in combined
+    assert "Protocol-first tactic services" not in combined
+    assert "protocol-first service infrastructure" not in combined
+
+
 def test_docs_render_mermaid_as_diagram_containers(tmp_path):
     site_dir = build_docs(tmp_path)
     html_pages = [
