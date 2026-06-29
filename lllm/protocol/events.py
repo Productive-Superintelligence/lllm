@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 import uuid
+from copy import deepcopy
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -17,6 +18,10 @@ class TacticEvent(BaseModel):
     kind: str = "message"
     data: Any = None
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    def model_post_init(self, __context: Any) -> None:
+        self.data = deepcopy(self.data)
+        self.metadata = deepcopy(self.metadata)
 
     @classmethod
     def result(cls, value: Any, **metadata: Any) -> "TacticEvent":

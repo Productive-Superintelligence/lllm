@@ -10,7 +10,7 @@ import pytest
 from pydantic import BaseModel
 from typing_extensions import TypedDict
 
-from lllm import CallContext, SchemaError, Tactic, as_tactic
+from lllm import CallContext, SchemaError, Tactic, TacticEvent, as_tactic
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -80,6 +80,25 @@ def test_call_context_isolates_mutable_metadata_inputs():
 
     assert context.metadata == {"nested": {"value": 1}}
     assert context.tags == {"kind": "demo"}
+
+
+def test_tactic_event_isolates_mutable_payload_inputs():
+    data = {"chunks": ["hello"]}
+    metadata = {"labels": ["stream"]}
+    event = TacticEvent(kind="progress", data=data, metadata=metadata)
+
+    data["chunks"].append("changed")
+    metadata["labels"].append("changed")
+
+    assert event.data == {"chunks": ["hello"]}
+    assert event.metadata == {"labels": ["stream"]}
+
+    tags = ["result"]
+    result = TacticEvent.result({"items": [1]}, tags=tags)
+    tags.append("changed")
+
+    assert result.data == {"items": [1]}
+    assert result.metadata == {"tags": ["result"]}
 
 
 def test_tactic_validates_and_returns_trace():
