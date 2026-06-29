@@ -66,12 +66,15 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "create":
-        result = create_project(
-            args.template,
-            args.name,
-            directory=args.directory,
-            force=args.force,
-        )
+        try:
+            result = create_project(
+                args.template,
+                args.name,
+                directory=args.directory,
+                force=args.force,
+            )
+        except (FileExistsError, ValueError) as exc:
+            parser.error(str(exc))
         print(f"created {result.template} project at {result.path}")
         return 0
 

@@ -125,6 +125,23 @@ def test_cli_create_project(tmp_path, capsys):
 @pytest.mark.parametrize(
     "args",
     [
+        ["create", "plain", "___"],
+        ["create", "plain", "demo", "--directory", "   "],
+    ],
+)
+def test_cli_create_rejects_malformed_project_inputs(args, capsys):
+    with pytest.raises(SystemExit) as exc_info:
+        main(args)
+
+    assert exc_info.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert "Traceback" not in captured.err
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
         ["serve", "missing.module:build_tactic", "--host", ""],
         ["serve", "missing.module:build_tactic", "--host", "bad host"],
         ["serve", "missing.module:build_tactic", "--host", "http://127.0.0.1"],
