@@ -365,6 +365,8 @@ def test_remote_tactic_accepts_positive_timeout_or_none():
         "ftp://testserver/run",
         " http://testserver/run ",
         "http://test server/run",
+        "http://testserver/run?env=dev",
+        "http://testserver/run#dev",
     ],
 )
 def test_remote_tactic_rejects_malformed_service_urls(url):
@@ -1094,7 +1096,16 @@ url = "http://127.0.0.1:8000/tactics/echo"
 
 
 def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_path):
-    for index, url in enumerate(("service", "/service", "ftp://service", "http://")):
+    for index, url in enumerate(
+        (
+            "service",
+            "/service",
+            "ftp://service",
+            "http://",
+            "http://127.0.0.1:8000/tactics/echo?env=dev",
+            "http://127.0.0.1:8000/tactics/echo#dev",
+        )
+    ):
         config_dir = tmp_path / f"workspace-url-{index}" / ".psi"
         config_dir.mkdir(parents=True)
         (config_dir / "config.toml").write_text(
@@ -1105,5 +1116,5 @@ url = "{url}"
             encoding="utf-8",
         )
 
-        with pytest.raises(TacticRefError, match="absolute http"):
+        with pytest.raises(TacticRefError, match="absolute http|query or fragment"):
             TacticResolver.from_config(config_dir.parent)
