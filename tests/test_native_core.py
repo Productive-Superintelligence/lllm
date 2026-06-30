@@ -400,6 +400,40 @@ def test_default_tag_parser_extracts_prompt_outputs():
     assert find_md_blocks(content, "json") == ['{"ok": true}']
 
 
+def test_prompt_parse_does_not_probe_parser_parse_property():
+    class CallableParser:
+        @property
+        def parse(self):
+            raise AssertionError("parse property should not be evaluated")
+
+        def __call__(self, content, **runtime_args):
+            return {"content": content, "runtime_args": runtime_args}
+
+    prompt = Prompt(path="parse", prompt="Parse output.", parser=CallableParser())
+
+    assert prompt.parse("hello", mode="strict") == {
+        "content": "hello",
+        "runtime_args": {"mode": "strict"},
+        "raw": "hello",
+    }
+
+
+def test_prompt_parse_accepts_classmethod_parse_parser():
+    class ClassMethodParser:
+        @classmethod
+        def parse(cls, content, **runtime_args):
+            return {"parser": cls.__name__, "content": content, **runtime_args}
+
+    prompt = Prompt(path="parse", prompt="Parse output.", parser=ClassMethodParser())
+
+    assert prompt.parse("hello", mode="strict") == {
+        "parser": "ClassMethodParser",
+        "content": "hello",
+        "mode": "strict",
+        "raw": "hello",
+    }
+
+
 def test_default_tag_parser_reports_missing_required_blocks():
     parser = DefaultTagParser(required_xml_tags=["answer"], required_md_tags=["json"])
 

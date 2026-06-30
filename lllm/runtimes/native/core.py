@@ -700,10 +700,12 @@ class Prompt(BaseModel):
     def parse(self, content: str, **runtime_args: Any) -> dict[str, Any]:
         if self.parser is None:
             return {"raw": content}
-        if hasattr(self.parser, "parse"):
+        if _has_static_callable(self.parser, "parse"):
             parsed = self.parser.parse(content, **runtime_args)
-        else:
+        elif callable(self.parser):
             parsed = self.parser(content, **runtime_args)
+        else:
+            raise TypeError("parser must be callable or expose a callable parse() method.")
         if not isinstance(parsed, dict):
             parsed = {"value": parsed}
         parsed.setdefault("raw", content)
@@ -770,6 +772,16 @@ def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:
     ):
         raise TypeError(f"{label} keys and values must be strings.")
     return entries
+
+
+def _has_static_callable(value: Any, name: str) -> bool:
+    try:
+        attribute = inspect.getattr_static(value, name)
+    except AttributeError:
+        return False
+    if isinstance(attribute, (classmethod, staticmethod)):
+        return callable(attribute.__func__)
+    return callable(attribute)
 
 
 __all__ = [
