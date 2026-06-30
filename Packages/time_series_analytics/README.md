@@ -4,8 +4,11 @@ Reusable time-series analysis package for the `lllm` framework.
 
 The numeric forecast and anomaly detection are produced by a real statistical
 model (Holt-Winters / exponential smoothing via `statsmodels`, with numpy
-fallbacks and a robust MAD-based anomaly detector). The LLM agents **interpret**
-those results and write the narrative report; they never invent the numbers.
+fallbacks). Robust (MAD-based) prediction intervals widen with the horizon, a
+robust-z detector flags anomalies, and rolling-origin **backtesting** reports
+out-of-sample accuracy (MAE, RMSE, sMAPE/MAPE), prediction-interval coverage, and
+mean interval width. The LLM agents **interpret** these results and write the
+narrative report; they never invent the numbers.
 
 Pipeline: statistical forecast -> profile (LLM) -> interpret (LLM) -> synthesize (LLM).
 After synthesis, the computed forecast/anomalies are written back authoritatively,

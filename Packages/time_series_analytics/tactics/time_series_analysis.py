@@ -85,6 +85,7 @@ class TimeSeriesAnalysisTactic(Tactic):
         forecast_text = stat.forecast_table_text()
         anomalies_text = stat.anomalies_text()
         diagnostics_text = stat.diagnostics_text()
+        backtest_text = stat.backtest_text()
 
         # --- 2) Profile the raw data --------------------------------------------
         profiler.open("profile")
@@ -114,6 +115,7 @@ class TimeSeriesAnalysisTactic(Tactic):
                 "diagnostics": diagnostics_text,
                 "statistical_forecast": forecast_text,
                 "detected_anomalies": anomalies_text,
+                "backtest": backtest_text,
             },
         )
         forecast_report = forecaster.respond().content
@@ -132,6 +134,7 @@ class TimeSeriesAnalysisTactic(Tactic):
                 "diagnostics": diagnostics_text,
                 "statistical_forecast": forecast_text,
                 "detected_anomalies": anomalies_text,
+                "backtest": backtest_text,
             },
         )
         response = synthesizer.respond()
@@ -148,6 +151,8 @@ class TimeSeriesAnalysisTactic(Tactic):
     @staticmethod
     def _apply_statistical_results(result, stat, output_model):
         """Overwrite forecast (and anomalies) with the computed statistical values."""
+        import typing
+
         forecast_field = output_model.model_fields["forecast"]
         point_model = forecast_field.annotation.__args__[0]
         result.forecast = [point_model(**p) for p in stat.points]
@@ -158,4 +163,15 @@ class TimeSeriesAnalysisTactic(Tactic):
             anomaly_field = output_model.model_fields["anomalies"]
             anomaly_model = anomaly_field.annotation.__args__[0]
             result.anomalies = [anomaly_model(**a) for a in stat.anomalies]
+
+        # Backtest metrics (out-of-sample accuracy) are authoritative from code.
+        if stat.backtest_metrics:
+            bt_field = output_model.model_fields["backtest_metrics"]
+            bt_args = [a for a in typing.get_args(bt_field.annotation) if a is not type(None)]
+            if bt_args:
+                bt_model = bt_args[0]
+                allowed = set(bt_model.model_fields)
+                result.backtest_metrics = bt_model(
+                    **{k: v for k, v in stat.backtest_metrics.items() if k in allowed}
+                )
         return result
