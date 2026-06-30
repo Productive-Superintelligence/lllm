@@ -888,6 +888,34 @@ headers = {{ x_policy = "demo" }}
     }
 
 
+def test_resolver_loaded_config_metadata_is_isolated(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "http://127.0.0.1:8000/tactics/echo"
+
+[refs."{REF}".metadata]
+headers = {{ x_policy = "demo" }}
+labels = ["alpha", "beta"]
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    resolver = TacticResolver.from_config(tmp_path)
+    metadata = resolver.resolve(REF).info().metadata
+    metadata["headers"]["x_policy"] = "changed"
+    metadata["labels"].append("changed")
+
+    assert resolver.resolve(REF).info().metadata == {
+        "headers": {"x_policy": "demo"},
+        "labels": ["alpha", "beta"],
+        "ref": REF,
+        "url": "http://127.0.0.1:8000/tactics/echo/run",
+    }
+
+
 def test_resolver_rejects_non_table_ref_metadata_from_local_config(tmp_path):
     config_dir = tmp_path / ".psi"
     config_dir.mkdir()
