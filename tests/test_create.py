@@ -1,5 +1,6 @@
 import asyncio
 import importlib
+import json
 import os
 import subprocess
 import sys
@@ -282,6 +283,77 @@ def test_cli_reports_missing_entrypoint_attributes_without_traceback(
     assert captured.out == ""
     assert "missing" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_cli_inspect_json_filters_secret_examples_and_metadata(
+    tmp_path,
+    monkeypatch,
+    capsys,
+):
+    module = tmp_path / "secret_tactics.py"
+    module.write_text(
+        """
+from pydantic import BaseModel
+
+from lllm import Tactic
+
+
+class EchoInput(BaseModel):
+    text: str
+
+
+class EchoOutput(BaseModel):
+    text: str
+
+
+class SecretTactic(Tactic[EchoInput, EchoOutput]):
+    name = "secret_echo"
+    input_type = EchoInput
+    output_type = EchoOutput
+
+    def _run(self, input_value, *, context=None):
+        return EchoOutput(text=input_value.text)
+
+
+def build_tactic():
+    return SecretTactic(
+        examples=[
+            {
+                "input": {
+                    "text": "hello",
+                    "headers": {
+                        "authorization": "Bearer raw-example-auth",
+                        "x-policy": "safe-policy",
+                    },
+                },
+                "output": {"password": "raw-example-password", "text": "hello"},
+            }
+        ],
+        metadata={
+            "api_key_ref": "credentials/openai",
+            "headers": {
+                "authorization": "Bearer raw-metadata-auth",
+                "x-policy": "safe-metadata-policy",
+            },
+        },
+    )
+""".lstrip(),
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    assert main(["inspect", "secret_tactics:build_tactic", "--json"]) == 0
+
+    captured = capsys.readouterr()
+    payload = json.loads(captured.out)
+    rendered = json.dumps(payload, sort_keys=True)
+    assert "raw-example-auth" not in rendered
+    assert "raw-example-password" not in rendered
+    assert "raw-metadata-auth" not in rendered
+    assert "safe-policy" in rendered
+    assert "safe-metadata-policy" in rendered
+    assert payload["metadata"]["api_key_ref"] == "credentials/openai"
+    assert captured.err == ""
 
 
 @pytest.mark.parametrize(

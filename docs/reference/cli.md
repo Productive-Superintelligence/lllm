@@ -6,6 +6,10 @@ Inspect a tactic:
 lllm inspect examples.echo_service.tactics:build_tactic --json
 ```
 
+`inspect --json` uses the public tactic metadata export and filters raw
+secret-shaped keys from examples and user metadata while preserving refs such as
+`api_key_ref`.
+
 Serve a tactic:
 
 ```bash
