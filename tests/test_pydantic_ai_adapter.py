@@ -199,6 +199,16 @@ def test_pydantic_ai_config_rejects_bytes_for_package_metadata(field_name):
     assert exc_info.value.errors()[0]["type"] == "string_type"
 
 
+@pytest.mark.parametrize("run_kwargs", [[], [("suffix", "ok")], "bad", 123])
+def test_pydantic_ai_adapter_rejects_non_mapping_run_kwargs(run_kwargs):
+    with pytest.raises(TypeError, match="run_kwargs"):
+        PydanticAITactic.from_agent(
+            FakeAgent(),
+            input_type=str,
+            run_kwargs=run_kwargs,  # type: ignore[arg-type]
+        )
+
+
 def test_pydantic_ai_adapter_supports_async_streams():
     tactic = PydanticAITactic.from_agent(
         FakeStreamAgent(),

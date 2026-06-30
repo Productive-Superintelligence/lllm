@@ -34,7 +34,9 @@ def _copy_runtime_value(value: Any) -> Any:
     return value
 
 
-def _copy_runtime_kwargs(value: Mapping[str, Any]) -> dict[str, Any]:
+def _copy_runtime_kwargs(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise TypeError("run_kwargs must be a mapping.")
     return {key: _copy_runtime_value(item) for key, item in value.items()}
 
 
