@@ -1044,7 +1044,10 @@ url = {url_value}
             TacticResolver.from_config(config_dir.parent)
 
 
-@pytest.mark.parametrize("extra_target", ['store = ".sssn"', 'path = "tactic.py"'])
+@pytest.mark.parametrize(
+    "extra_target",
+    ['store = ".sssn"', 'path = "tactic.py"', 'object = "local"'],
+)
 def test_resolver_rejects_ambiguous_tactic_url_targets_from_local_config(
     tmp_path,
     extra_target,

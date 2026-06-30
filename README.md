@@ -243,7 +243,7 @@ sections fail validation.
 `TacticResolver.from_config()` preserves `[refs."...".metadata]` on tactic URL
 bindings; legacy top-level extras still work, and explicit metadata table
 values win on duplicate keys. Tactic URL bindings must not also declare a
-`store` or `path` target.
+`store`, `path`, or `object` target.
 
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`

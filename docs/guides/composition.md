@@ -37,7 +37,8 @@ and unknown resource sections fail validation.
 The resolver preserves explicit `[refs."...".metadata]` values on tactic URL
 bindings. Legacy top-level extra keys are also read as metadata, and the
 explicit metadata table wins on duplicate keys. Resolver-owned `ref` and remote
-`url` fields remain canonical.
+`url` fields remain canonical. A tactic URL binding must not also declare a
+`store`, `path`, or `object` target.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them

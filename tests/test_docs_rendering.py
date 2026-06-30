@@ -658,6 +658,7 @@ def test_composition_guide_documents_mixed_local_config():
     assert "must be absolute" in guide
     assert "HTTP(S) service URLs" in guide
     assert "must not also declare a `store`" in guide
+    assert "`store`, `path`, or `object` target" in guide
     assert "percent escapes" in guide
 
 

@@ -156,13 +156,13 @@ def _config_ref_metadata(ref: str, data: dict[str, Any]) -> dict[str, Any]:
     extras = {
         key: value
         for key, value in data.items()
-        if key not in {"url", "store", "path", "metadata"}
+        if key not in {"url", "store", "path", "object", "metadata"}
     }
     return {**extras, **metadata}
 
 
 def _validate_tactic_url_binding_targets(ref: str, data: dict[str, Any]) -> None:
-    targets = [name for name in ("url", "store", "path") if name in data]
+    targets = [name for name in ("url", "store", "path", "object") if name in data]
     if len(targets) > 1:
         targets_text = ", ".join(targets)
         raise TacticRefError(
