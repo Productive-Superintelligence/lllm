@@ -197,9 +197,13 @@ def _is_tactic_config_ref(ref: str) -> bool:
             raise TacticRefError(
                 f"Ref binding key must use plain path segments: {ref}"
             )
+    if resource_kind == "tactics":
+        return True
     if resource_kind in _NON_TACTIC_CONFIG_REF_SECTIONS:
         return False
-    return True
+    raise TacticRefError(
+        f"Ref binding key uses unknown resource section {resource_kind!r}: {ref}"
+    )
 
 
 def _path_value(value: Any, label: str) -> str:

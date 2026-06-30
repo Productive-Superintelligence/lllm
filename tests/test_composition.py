@@ -976,6 +976,7 @@ url = "http://127.0.0.1:8000/tactics/echo"
         "psi://demo/echo/channels/events#latest",
         "psi://demo/echo/channels/bad name",
         "psi://demo/echo/channels/events%2Fhidden",
+        "psi://demo/echo/widgets/item",
     ],
 )
 def test_resolver_validates_ignored_non_tactic_config_refs(tmp_path, ref):
