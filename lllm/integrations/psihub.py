@@ -6,10 +6,10 @@ in a shape PsiHub can consume.
 
 from __future__ import annotations
 
-from copy import deepcopy
 from typing import Any
 
 from ..protocol import Tactic
+from ..protocol._validation import copy_boundary_value
 from ..services.endpoints import custom_endpoints
 
 
@@ -33,10 +33,10 @@ def tactic_resource(tactic: Tactic[Any, Any]) -> dict[str, Any]:
             }
             for spec, _method in custom_endpoints(tactic)
         ],
-        "input_schema": deepcopy(info.input_schema),
-        "output_schema": deepcopy(info.output_schema),
+        "input_schema": copy_boundary_value(info.input_schema),
+        "output_schema": copy_boundary_value(info.output_schema),
         "package_ref": info.package_ref,
         "service_ref": info.service_ref,
-        "examples": deepcopy(info.examples),
-        "metadata": deepcopy(info.metadata),
+        "examples": copy_boundary_value(info.examples),
+        "metadata": copy_boundary_value(info.metadata),
     }

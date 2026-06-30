@@ -1,3 +1,5 @@
+from types import MappingProxyType, SimpleNamespace
+
 from pydantic import BaseModel
 
 from lllm import Tactic, endpoint
@@ -89,3 +91,36 @@ def test_tactic_resource_isolates_exported_mutable_metadata():
     assert info.output_schema["properties"]["text"]["type"] == "string"
     assert info.examples == [{"input": {"items": ["one"]}}]
     assert info.metadata == {"labels": ["policy"]}
+
+
+def test_tactic_resource_accepts_nested_read_only_mapping_info_values():
+    input_inner = {"type": "string"}
+    output_inner = {"type": "string"}
+    example_inner = {"text": "forward"}
+    metadata_inner = {"labels": ["policy"]}
+
+    class CustomInfoTactic(PolicyTactic):
+        def info(self):
+            return SimpleNamespace(
+                name="policy",
+                description="",
+                runtime_kind="python",
+                capabilities=("run",),
+                input_schema={"properties": {"text": MappingProxyType(input_inner)}},
+                output_schema={"properties": {"text": MappingProxyType(output_inner)}},
+                package_ref=None,
+                service_ref=None,
+                examples=({"input": MappingProxyType(example_inner)},),
+                metadata={"nested": MappingProxyType(metadata_inner)},
+            )
+
+    resource = tactic_resource(CustomInfoTactic())
+    input_inner["type"] = "integer"
+    output_inner["type"] = "integer"
+    example_inner["text"] = "changed"
+    metadata_inner["labels"].append("changed")
+
+    assert resource["input_schema"] == {"properties": {"text": {"type": "string"}}}
+    assert resource["output_schema"] == {"properties": {"text": {"type": "string"}}}
+    assert resource["examples"] == ({"input": {"text": "forward"}},)
+    assert resource["metadata"] == {"nested": {"labels": ["policy"]}}
