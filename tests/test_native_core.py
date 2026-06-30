@@ -108,6 +108,37 @@ def test_native_function_property_descriptions_reject_non_string_entries(prop_de
         tool(prop_desc=prop_desc)(helper)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_native_function_rejects_coerced_boolean_flags(value):
+    with pytest.raises(ValidationError):
+        Function(
+            name="collect",
+            description="Collect.",
+            properties={},
+            strict=value,  # type: ignore[arg-type]
+        )
+
+    with pytest.raises(ValidationError):
+        Function(
+            name="collect",
+            description="Collect.",
+            properties={},
+            additional_properties=value,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_native_function_helpers_reject_coerced_strict_flag(value):
+    def helper(value: str) -> str:
+        return value
+
+    with pytest.raises(TypeError, match="strict"):
+        Function.from_callable(helper, strict=value)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="strict"):
+        tool(strict=value)  # type: ignore[arg-type]
+
+
 def test_native_function_schema_views_are_isolated():
     properties = {"left": {"type": "integer"}}
     required = ["left"]

@@ -20,7 +20,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional, Union, get_args, get_origin, get_type_hints
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, StrictBool, StrictStr
 
 from ...parsers import (
     BaseParser,
@@ -516,8 +516,8 @@ class Function(BaseModel):
     description: StrictStr
     properties: dict[str, Any]
     required: list[StrictStr] = Field(default_factory=list)
-    additional_properties: bool = False
-    strict: bool = True
+    additional_properties: StrictBool = False
+    strict: StrictBool = True
     function: Callable[..., Any] | None = None
     processor: Callable[[Any, FunctionCall], str] = _default_function_call_processor
 
@@ -572,6 +572,7 @@ class Function(BaseModel):
         signature = inspect.signature(fn)
         hints = get_type_hints(fn) if getattr(fn, "__annotations__", None) else {}
         property_descriptions = _optional_string_mapping("prop_desc", prop_desc)
+        strict_value = _bool_value("strict", strict)
         properties: dict[str, Any] = {}
         required: list[str] = []
         for param_name, parameter in signature.parameters.items():
@@ -595,7 +596,7 @@ class Function(BaseModel):
             description=description or inspect.getdoc(fn) or function_name,
             properties=properties,
             required=required,
-            strict=strict,
+            strict=strict_value,
             function=fn,
             processor=processor,
         )
@@ -625,13 +626,15 @@ def tool(
 ) -> Callable[[Callable[..., Any]], Function]:
     """Decorate a plain Python callable as a native :class:`Function`."""
 
+    strict_value = _bool_value("strict", strict)
+
     def decorator(fn: Callable[..., Any]) -> Function:
         return Function.from_callable(
             fn,
             name=name,
             description=description,
             prop_desc=prop_desc,
-            strict=strict,
+            strict=strict_value,
             processor=processor,
         )
 
@@ -772,6 +775,12 @@ def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:
     ):
         raise TypeError(f"{label} keys and values must be strings.")
     return entries
+
+
+def _bool_value(label: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{label} must be a boolean.")
+    return value
 
 
 def _has_static_callable(value: Any, name: str) -> bool:
