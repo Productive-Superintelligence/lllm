@@ -208,6 +208,16 @@ def test_proxy_tactic_rejects_non_mapping_metadata(metadata):
         ProxyTactic(EchoTactic(), metadata=metadata)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+@pytest.mark.parametrize("flag", ["capture_inputs", "capture_outputs"])
+def test_proxy_tactic_rejects_coerced_capture_flags(flag, value):
+    with pytest.raises(TypeError, match=flag):
+        ProxyTactic(EchoTactic(), **{flag: value})  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match=flag):
+        proxy_tactic(EchoTactic(), **{flag: value})  # type: ignore[arg-type]
+
+
 def test_in_memory_proxy_log_isolates_appended_records():
     log = InMemoryProxyLog()
     record = ProxyRecord(

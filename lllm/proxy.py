@@ -83,13 +83,15 @@ class ProxyTactic(Tactic[Any, Any]):
         capture_outputs: bool = False,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
+        capture_inputs_value = _bool_value("capture_inputs", capture_inputs)
+        capture_outputs_value = _bool_value("capture_outputs", capture_outputs)
         self.tactic = tactic
         self.before = before
         self.after = after
         self.on_error = on_error
         self.sink = sink
-        self.capture_inputs = capture_inputs
-        self.capture_outputs = capture_outputs
+        self.capture_inputs = capture_inputs_value
+        self.capture_outputs = capture_outputs_value
         self.proxy_metadata = _metadata_mapping(metadata)
         info = tactic.info()
         self.input_type = tactic.input_type
@@ -382,6 +384,12 @@ def _call_context(value: Any) -> CallContext:
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
     return optional_mapping_value("metadata", value)
+
+
+def _bool_value(label: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{label} must be a boolean.")
+    return value
 
 
 __all__ = [
