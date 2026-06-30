@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import importlib
+import ipaddress
 import inspect
 import json
 from typing import Any
@@ -147,6 +148,13 @@ def _serve_host(value: str) -> str:
     host = value
     if any(ch.isspace() for ch in host) or "/" in host or "\\" in host:
         raise ValueError("serve host must be a host name or address, not a URL or path")
+    if ":" in host:
+        try:
+            ipaddress.ip_address(host)
+        except ValueError as exc:
+            raise ValueError(
+                "serve host must be a host name or address, not host:port"
+            ) from exc
     return host
 
 
