@@ -200,6 +200,19 @@ def test_protocol_string_fields_reject_bytes(factory):
         factory()
 
 
+@pytest.mark.parametrize("value", [False, True])
+@pytest.mark.parametrize("field", ["started_at", "ended_at", "latency_ms"])
+def test_call_trace_rejects_bool_numeric_fields(field, value):
+    with pytest.raises(ValidationError, match=field):
+        CallTrace(request_id="req", tactic="echo", **{field: value})
+
+
+@pytest.mark.parametrize("value", [False, True])
+def test_tactic_event_rejects_bool_timestamp(value):
+    with pytest.raises(ValidationError, match="timestamp"):
+        TacticEvent(timestamp=value)
+
+
 @pytest.mark.parametrize(
     "name",
     (

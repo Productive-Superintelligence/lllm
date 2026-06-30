@@ -6,7 +6,7 @@ import time
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
 from ._validation import copy_boundary_value, token_value
 
@@ -23,6 +23,13 @@ class TacticEvent(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.data = copy_boundary_value(self.data)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("timestamp", mode="before")
+    @classmethod
+    def _reject_bool_timestamp(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("timestamp must not be boolean")
+        return value
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticEvent":

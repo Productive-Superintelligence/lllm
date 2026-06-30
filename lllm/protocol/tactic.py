@@ -46,6 +46,13 @@ class CallTrace(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.metadata = copy_boundary_value(self.metadata)
 
+    @field_validator("started_at", "ended_at", "latency_ms", mode="before")
+    @classmethod
+    def _reject_bool_numeric_fields(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("trace numeric fields must not be boolean")
+        return value
+
     @model_validator(mode="after")
     def _validate_identity(self) -> "CallTrace":
         token_value(self.request_id, "request_id")
