@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import AsyncIterator, Iterable, Iterator
+from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
 from copy import deepcopy
 from typing import Any
 from urllib.parse import urlsplit
@@ -75,10 +75,12 @@ class RemoteTactic(Tactic[Any, Any]):
         self.async_transport = async_transport
         self.input_type = input_type
         self.output_type = output_type
+        metadata_value = _metadata_mapping(metadata)
+        metadata_value["url"] = self.url
         super().__init__(
             name=name if name is not None else _name_from_url(url),
             service_ref=url,
-            metadata={**dict(metadata or {}), "url": self.url},
+            metadata=metadata_value,
         )
 
     def fetch_info(self, **kwargs: Any) -> TacticInfo:
@@ -228,6 +230,14 @@ def _call_context(value: Any) -> CallContext:
     if isinstance(value, CallContext):
         return value
     raise TypeError("context must be a CallContext.")
+
+
+def _metadata_mapping(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("metadata must be a mapping.")
+    return deepcopy(dict(value))
 
 
 def _response_output(response: Any) -> Any:

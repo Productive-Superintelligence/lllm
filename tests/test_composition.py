@@ -265,6 +265,15 @@ def test_remote_tactic_metadata_keeps_normalized_service_url():
     assert info.metadata["labels"] == ["remote"]
 
 
+@pytest.mark.parametrize("metadata", [[], [("labels", ["remote"])], "bad", 123])
+def test_remote_tactic_rejects_non_mapping_metadata(metadata):
+    with pytest.raises(TypeError, match="metadata"):
+        RemoteTactic(  # type: ignore[arg-type]
+            "http://testserver/run",
+            metadata=metadata,
+        )
+
+
 @pytest.mark.parametrize(
     "url",
     [

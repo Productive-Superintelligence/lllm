@@ -135,7 +135,7 @@ class Tactic(Generic[InputT, OutputT]):
         self.package_ref = optional_text_value(package_ref, "package_ref")
         self.service_ref = optional_text_value(service_ref, "service_ref")
         self.examples = deepcopy(examples or [])
-        self.metadata = deepcopy(dict(metadata or {}))
+        self.metadata = _metadata_mapping(metadata)
 
     @property
     def tactic_name(self) -> str:
@@ -298,3 +298,11 @@ def _call_context(value: Any) -> CallContext:
     if isinstance(value, CallContext):
         return value
     raise TypeError("context must be a CallContext.")
+
+
+def _metadata_mapping(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("metadata must be a mapping.")
+    return deepcopy(dict(value))

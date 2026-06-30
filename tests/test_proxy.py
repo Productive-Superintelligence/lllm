@@ -158,6 +158,12 @@ def test_proxy_tactic_isolates_mutable_metadata():
     assert record.metadata["proxy"]["purpose"] == {"name": "test"}
 
 
+@pytest.mark.parametrize("metadata", [[], [("purpose", "test")], "bad", 123])
+def test_proxy_tactic_rejects_non_mapping_metadata(metadata):
+    with pytest.raises(TypeError, match="metadata"):
+        ProxyTactic(EchoTactic(), metadata=metadata)  # type: ignore[arg-type]
+
+
 def test_in_memory_proxy_log_isolates_appended_records():
     log = InMemoryProxyLog()
     record = ProxyRecord(

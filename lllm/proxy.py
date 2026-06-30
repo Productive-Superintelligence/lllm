@@ -91,7 +91,7 @@ class ProxyTactic(Tactic[Any, Any]):
         self.sink = sink
         self.capture_inputs = capture_inputs
         self.capture_outputs = capture_outputs
-        self.proxy_metadata = deepcopy(dict(metadata or {}))
+        self.proxy_metadata = _metadata_mapping(metadata)
         info = tactic.info()
         self.input_type = tactic.input_type
         self.output_type = tactic.output_type
@@ -379,6 +379,14 @@ def _call_context(value: Any) -> CallContext:
     if isinstance(value, CallContext):
         return value
     raise TypeError("context must be a CallContext.")
+
+
+def _metadata_mapping(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("metadata must be a mapping.")
+    return deepcopy(dict(value))
 
 
 __all__ = [

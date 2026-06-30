@@ -383,6 +383,12 @@ def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
         Tactic(**kwargs)
 
 
+@pytest.mark.parametrize("metadata", [[], [("owner", "tests")], "bad", 123])
+def test_tactic_constructor_rejects_non_mapping_metadata(metadata):
+    with pytest.raises(TypeError, match="metadata"):
+        EchoTactic(metadata=metadata)  # type: ignore[arg-type]
+
+
 def test_tactic_rejects_invalid_input():
     with pytest.raises(SchemaError):
         EchoTactic().run({"text": 123})
