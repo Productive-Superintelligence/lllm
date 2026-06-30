@@ -21,7 +21,7 @@ StreamMode = Literal["output", "text", "response", "raw"]
 
 
 def _copy_runtime_value(value: Any) -> Any:
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         return {key: _copy_runtime_value(item) for key, item in value.items()}
     if isinstance(value, list):
         return [_copy_runtime_value(item) for item in value]

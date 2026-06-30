@@ -1,4 +1,5 @@
 import asyncio
+from types import MappingProxyType
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -173,7 +174,11 @@ def test_pydantic_ai_adapter_accepts_package_metadata_from_config():
 
 
 def test_pydantic_ai_config_isolates_mutable_inputs():
-    run_kwargs = {"model_settings": {"temperature": 0}}
+    provider_settings = {"timeout": 30}
+    run_kwargs = {
+        "model_settings": {"temperature": 0},
+        "provider_settings": MappingProxyType(provider_settings),
+    }
     examples = [{"input": "hi", "output": "hi:"}]
     metadata = {"labels": ["config"]}
     config = PydanticAITacticConfig(
@@ -183,10 +188,14 @@ def test_pydantic_ai_config_isolates_mutable_inputs():
     )
 
     run_kwargs["model_settings"]["temperature"] = 7
+    provider_settings["timeout"] = 60
     examples[0]["input"] = "changed"
     metadata["labels"].append("changed")
 
-    assert config.run_kwargs == {"model_settings": {"temperature": 0}}
+    assert config.run_kwargs == {
+        "model_settings": {"temperature": 0},
+        "provider_settings": {"timeout": 30},
+    }
     assert config.examples == [{"input": "hi", "output": "hi:"}]
     assert config.metadata == {"labels": ["config"]}
 
