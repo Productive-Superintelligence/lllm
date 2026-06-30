@@ -15,6 +15,7 @@ import re
 import string
 import types
 import uuid
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional, Union, get_args, get_origin, get_type_hints
@@ -372,7 +373,7 @@ class Dialog:
             role=role,
             content=text,
             name=name,
-            metadata=copy.deepcopy(metadata or {}),
+            metadata=_metadata_mapping(metadata),
         )
         self.append(message)
         return message
@@ -391,7 +392,7 @@ class Dialog:
             role=role,
             content=content,
             name=name,
-            metadata=copy.deepcopy(metadata or {}),
+            metadata=_metadata_mapping(metadata),
         )
         self.append(message)
         self.top_prompt = prompt
@@ -748,6 +749,14 @@ class Prompt(BaseModel):
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Prompt":
         return cls.model_validate(data)
+
+
+def _metadata_mapping(value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("metadata must be a mapping.")
+    return copy.deepcopy(dict(value))
 
 
 __all__ = [

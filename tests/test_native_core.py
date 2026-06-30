@@ -286,6 +286,18 @@ def test_native_prompt_and_message_metadata_are_isolated():
     assert prompt_message.metadata["nested"] == {"value": 2}
 
 
+@pytest.mark.parametrize("metadata", [[], [("owner", "tests")], "bad", 123])
+def test_native_dialog_rejects_non_mapping_message_metadata(metadata):
+    dialog = Dialog()
+    prompt = Prompt(path="draft", prompt="Write.")
+
+    with pytest.raises(TypeError, match="metadata"):
+        dialog.put_text("hello", metadata=metadata)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="metadata"):
+        dialog.put_prompt(prompt, metadata=metadata)  # type: ignore[arg-type]
+
+
 def test_default_tag_parser_extracts_prompt_outputs():
     parser = DefaultTagParser(
         xml_tags=["answer"],
