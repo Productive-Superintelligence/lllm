@@ -8,9 +8,10 @@ lllm inspect examples.echo_service.tactics:build_tactic --json
 
 `inspect --json` uses the public tactic metadata export and filters raw
 secret-shaped keys from examples and user metadata while preserving refs such as
-`api_key_ref`/`apiKeyRef`. Snake_case, kebab-case, and camelCase secret keys
-such as `api_key`, `x-api-key`, `apiKey`, `accessToken`, and `clientSecret`
-are treated consistently.
+`api_key_ref`/`apiKeyRef`/`apikeyref`. Snake_case, kebab-case, camelCase, and
+collapsed lowercase secret keys such as `api_key`, `x-api-key`, `apiKey`,
+`apikey`, `accessToken`, `accesstoken`, `clientSecret`, and `clientsecret` are
+treated consistently.
 
 Serve a tactic:
 
