@@ -245,7 +245,8 @@ bindings; legacy top-level extras still work, and explicit metadata table
 values win on duplicate keys. Tactic URL bindings must not also declare a
 `store`, `path`, or `object` target. Tactic refs with a concrete target must
 use `url`; `store`, `path`, and serialized `object` targets belong to other
-layers or direct in-process registration.
+layers or direct in-process registration. URL bindings must not include
+embedded credentials; use local credential refs or auth hooks instead.
 
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`

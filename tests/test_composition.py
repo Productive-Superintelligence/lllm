@@ -365,6 +365,8 @@ def test_remote_tactic_accepts_positive_timeout_or_none():
         "ftp://testserver/run",
         " http://testserver/run ",
         "http://test server/run",
+        "http://user@testserver/run",
+        "http://user:pass@testserver/run",
         "http://testserver/run?env=dev",
         "http://testserver/run#dev",
     ],
@@ -1124,6 +1126,7 @@ def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_pat
             "/service",
             "ftp://service",
             "http://",
+            "http://user:pass@127.0.0.1:8000/tactics/echo",
             "http://127.0.0.1:8000/tactics/echo?env=dev",
             "http://127.0.0.1:8000/tactics/echo#dev",
         )
@@ -1138,5 +1141,8 @@ url = "{url}"
             encoding="utf-8",
         )
 
-        with pytest.raises(TacticRefError, match="absolute http|query or fragment"):
+        with pytest.raises(
+            TacticRefError,
+            match="absolute http|embedded credentials|query or fragment",
+        ):
             TacticResolver.from_config(config_dir.parent)

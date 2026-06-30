@@ -40,7 +40,8 @@ explicit metadata table wins on duplicate keys. Resolver-owned `ref` and remote
 `url` fields remain canonical. A tactic URL binding must not also declare a
 `store`, `path`, or `object` target. Tactic refs with a concrete target must
 use `url`; `store`, `path`, and serialized `object` targets belong to other
-layers or direct in-process registration.
+layers or direct in-process registration. URL bindings must not include
+embedded credentials; use local credential refs or auth hooks instead.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them

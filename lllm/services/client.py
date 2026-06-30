@@ -501,6 +501,8 @@ def _service_url(url: str) -> str:
     parsed = urlsplit(value)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
         raise ValueError("url must be an absolute http(s) URL")
+    if parsed.username is not None or parsed.password is not None:
+        raise ValueError("url must not include embedded credentials")
     if parsed.query or parsed.fragment:
         raise ValueError("url must not include query or fragment parts")
     return value
