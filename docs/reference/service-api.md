@@ -20,6 +20,8 @@ user metadata while preserving local credential refs such as
 collapsed lowercase secret keys such as `api_key`, `x-api-key`, `apiKey`,
 `apikey`, `accessToken`, `accesstoken`, `clientSecret`, and `clientsecret` are
 treated consistently.
+SSE stream event metadata is filtered with the same public boundary before it
+is written to the response; event data remains the tactic output.
 
 Error envelopes are stable across protocol and runtime failures.
 

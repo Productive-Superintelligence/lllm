@@ -6,7 +6,7 @@ import httpx
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from lllm import Tactic, endpoint
+from lllm import Tactic, TacticEvent, endpoint
 from lllm.runtimes import PydanticAITactic
 from lllm.services import create_service_app, create_tactic_app
 from lllm.services.endpoints import EndpointSpec, custom_endpoints
@@ -49,6 +49,34 @@ class StreamTactic(Tactic[str, str]):
     def stream(self, input_value, *, context=None):
         yield input_value
         yield input_value.upper()
+
+
+class SecretEventStreamTactic(Tactic[str, str]):
+    name = "secret-event-streamer"
+    input_type = str
+    output_type = str
+
+    def _run(self, input_value, *, context=None):
+        return input_value
+
+    def stream(self, input_value, *, context=None):
+        yield TacticEvent(
+            data=input_value,
+            metadata={
+                "api_key": "raw-key",
+                "apiKey": "raw-camel-key",
+                "apikey": "raw-compact-key",
+                "api_key_ref": "credentials/openai",
+                "apiKeyRef": "credentials/camel-openai",
+                "apikeyref": "credentials/compact-openai",
+                "headers": {
+                    "authorization": "Bearer raw",
+                    "xAuthToken": "raw-camel-token",
+                    "xauthtoken": "raw-compact-token",
+                    "x-policy": "safe-policy",
+                },
+            },
+        )
 
 
 class FailingStreamTactic(Tactic[str, str]):
@@ -515,6 +543,33 @@ def test_stream_endpoint_returns_sse_events():
     assert response.headers["content-type"].startswith("text/event-stream")
     assert '"data": "hello"' in response.text
     assert '"data": "HELLO"' in response.text
+
+
+def test_stream_endpoint_filters_secret_event_metadata():
+    app = create_tactic_app(SecretEventStreamTactic())
+    response = request(app, "POST", "/stream", json={"input": "hello"})
+
+    chunks = [
+        json.loads(line.removeprefix("data: "))
+        for line in response.text.splitlines()
+        if line.startswith("data: ")
+    ]
+    rendered = response.text
+
+    assert response.status_code == 200
+    assert "raw-key" not in rendered
+    assert "raw-camel-key" not in rendered
+    assert "raw-compact-key" not in rendered
+    assert "Bearer raw" not in rendered
+    assert "raw-camel-token" not in rendered
+    assert "raw-compact-token" not in rendered
+    assert chunks[0]["data"] == "hello"
+    assert chunks[0]["metadata"] == {
+        "api_key_ref": "credentials/openai",
+        "apiKeyRef": "credentials/camel-openai",
+        "apikeyref": "credentials/compact-openai",
+        "headers": {"x-policy": "safe-policy"},
+    }
 
 
 def test_stream_endpoint_reports_iterator_errors_as_sse_events():

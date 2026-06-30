@@ -277,6 +277,8 @@ filter raw secret-shaped keys from examples and user metadata, including
 `api_key`/`apiKey`/`apikey`, tokens, `accessToken`/`accesstoken`, passwords,
 `authorization`, and credentials, while preserving local refs such as
 `api_key_ref`, `apiKeyRef`, and `apikeyref`.
+SSE stream event metadata goes through the same public filter before it is
+written to the response; event data is left as the tactic output.
 Runtime adapters such as `as_tactic`, `PydanticAITactic`, and
 `NativeTacticAdapter` accept package refs, service refs, descriptions, examples,
 and metadata so wrapper-created tactics can keep the same package-facing

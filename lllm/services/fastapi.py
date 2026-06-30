@@ -586,12 +586,18 @@ async def _event_chunks(
 
 def _sse_chunk(item: Any) -> str:
     if isinstance(item, TacticEvent):
-        payload = item.model_dump(mode="json")
+        payload = _public_event_payload(item)
     elif isinstance(item, BaseModel):
         payload = item.model_dump(mode="json")
     else:
         payload = item
     return f"data: {json.dumps(payload, default=str)}\n\n"
+
+
+def _public_event_payload(event: TacticEvent) -> dict[str, Any]:
+    payload = event.model_dump(mode="json")
+    payload["metadata"] = public_boundary_value(payload.get("metadata", {}))
+    return payload
 
 
 def _stream_error_metadata(
