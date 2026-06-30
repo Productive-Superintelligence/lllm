@@ -81,6 +81,14 @@
     );
   }
 
+  function sourceNodeIsRenderable(node, source) {
+    return (
+      !node.querySelector("svg") &&
+      node.getAttribute("data-mermaid-rendering") !== "true" &&
+      Boolean(source && source.trim())
+    );
+  }
+
   function normalizeNode(node) {
     var wrapper = node.closest(".mermaid");
     var container = node.matches("code")
@@ -100,7 +108,7 @@
     }
 
     source = sourceFor(node, container);
-    if (!source) {
+    if (!sourceNodeIsRenderable(node, source)) {
       return null;
     }
 
@@ -112,11 +120,15 @@
 
   function diagramNodes() {
     var seen = [];
-    var nodes = Array.prototype.slice.call(
-      document.querySelectorAll(
-        ".md-typeset .mermaid, .mermaid, pre code.language-mermaid, pre code.highlight-mermaid"
-      )
-    );
+    var nodes = Array.prototype.slice
+      .call(document.querySelectorAll(".md-typeset .mermaid, .mermaid"))
+      .concat(
+        Array.prototype.slice.call(
+          document.querySelectorAll(
+            "pre code.language-mermaid, pre code.highlight-mermaid"
+          )
+        )
+      );
 
     return nodes
       .map(function (node) {
