@@ -57,33 +57,87 @@
     return (source || "").replace(/\u00a0/g, " ").trim();
   }
 
-  function sourceFor(node) {
-    var existing = node.getAttribute("data-mermaid-source");
-    var code = node.querySelector(
-      "code.language-mermaid, code.highlight-mermaid, code"
-    );
+  function sourceFor(node, container) {
+    var existing = container.getAttribute("data-mermaid-source");
+    var code = node.matches("code")
+      ? node
+      : container.querySelector(
+          "code.language-mermaid, code.highlight-mermaid, code"
+        );
 
     return normalizeSource(
-      existing || (code ? code.textContent : node.textContent)
+      existing || (code ? code.textContent : container.textContent)
     );
+  }
+
+  function isGeneratedMermaidNode(node) {
+    var tagName = node.tagName ? node.tagName.toLowerCase() : "";
+
+    return (
+      tagName === "svg" ||
+      tagName === "foreignobject" ||
+      Boolean(node.ownerSVGElement) ||
+      Boolean(node.closest("svg, foreignObject"))
+    );
+  }
+
+  function normalizeNode(node) {
+    var wrapper = node.closest(".mermaid");
+    var container = node.matches("code")
+      ? wrapper || node.closest("pre")
+      : node;
+    var source;
+
+    if (
+      isGeneratedMermaidNode(node) ||
+      !container ||
+      !container.isConnected ||
+      isGeneratedMermaidNode(container) ||
+      container.querySelector("svg") ||
+      container.getAttribute("data-mermaid-rendering") === "true"
+    ) {
+      return null;
+    }
+
+    source = sourceFor(node, container);
+    if (!source) {
+      return null;
+    }
+
+    container.classList.add("mermaid");
+    container.removeAttribute("data-mermaid-error");
+    container.setAttribute("data-mermaid-source", source);
+    return container;
   }
 
   function diagramNodes() {
-    return Array.prototype.slice
-      .call(document.querySelectorAll(".md-typeset .mermaid, .mermaid"))
-      .filter(function (node) {
-        var source = sourceFor(node);
+    var seen = [];
+    var nodes = Array.prototype.slice.call(
+      document.querySelectorAll(
+        ".md-typeset .mermaid, .mermaid, pre code.language-mermaid, pre code.highlight-mermaid"
+      )
+    );
 
-        return (
-          !node.querySelector("svg") &&
-          node.getAttribute("data-mermaid-rendering") !== "true" &&
-          Boolean(source && source.trim())
-        );
-      });
+    return nodes
+      .map(function (node) {
+        var wrapper = node.closest(".mermaid");
+        var container = node.matches("code")
+          ? wrapper || node.closest("pre")
+          : node;
+
+        if (!container || seen.indexOf(container) !== -1) {
+          return null;
+        }
+
+        seen.push(container);
+        return normalizeNode(node);
+      })
+      .filter(Boolean);
   }
 
   function renderNode(node, index) {
-    var source = sourceFor(node);
+    var source =
+      node.getAttribute("data-mermaid-source") || sourceFor(node, node);
     var id = "psi-mermaid-" + Date.now() + "-" + renderSequence + "-" + index;
 
     renderSequence += 1;

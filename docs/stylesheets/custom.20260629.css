@@ -170,8 +170,8 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .md-nav--primary .md-nav__title .md-nav__button.md-logo img,
 .md-nav--primary .md-nav__title .md-nav__button.md-logo svg {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 1.25rem;
+  height: 1.25rem;
 }
 
 .md-header__title {
@@ -407,9 +407,14 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid {
   background: transparent;
   color: var(--psi-ink);
+  font-family: var(--md-code-font-family);
+  font-size: 0.72rem;
+  line-height: 1.55;
   margin: 1.25rem 0;
   overflow-x: auto;
+  padding: 0.2rem 0;
   text-align: center;
+  white-space: pre;
 }
 
 .md-typeset .mermaid svg {
@@ -423,6 +428,13 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   max-width: 100%;
   min-width: 0;
   width: 100%;
+}
+
+.md-typeset .mermaid[data-processed="true"] {
+  font-family: var(--md-text-font-family);
+  font-size: inherit;
+  line-height: inherit;
+  white-space: normal;
 }
 
 .md-typeset .mermaid svg * {
