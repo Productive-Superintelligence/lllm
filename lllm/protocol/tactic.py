@@ -9,7 +9,7 @@ import traceback
 from collections.abc import AsyncIterator, Iterator, Mapping
 from typing import Any, ClassVar, Generic, TypeVar
 
-from pydantic import BaseModel, Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
 from ._validation import (
     copy_boundary_value,
@@ -100,6 +100,15 @@ class TacticInfo(BaseModel):
         self.output_schema = copy_boundary_value(self.output_schema)
         self.examples = copy_boundary_value(self.examples)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("examples", mode="before")
+    @classmethod
+    def _validate_examples(cls, value: Any) -> Any:
+        if not isinstance(value, list):
+            raise TypeError("examples must be a list.")
+        if not all(isinstance(example, Mapping) for example in value):
+            raise TypeError("examples must contain mappings.")
+        return value
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticInfo":

@@ -459,6 +459,18 @@ def test_tactic_constructor_rejects_non_mapping_examples(examples):
         EchoTactic(examples=examples)  # type: ignore[list-item]
 
 
+@pytest.mark.parametrize("examples", ["", 0, False, (), {"input": "hello"}])
+def test_tactic_info_rejects_non_list_examples(examples):
+    with pytest.raises(TypeError, match="examples"):
+        TacticInfo(name="echo", examples=examples)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("examples", [["bad"], [123], [None]])
+def test_tactic_info_rejects_non_mapping_examples(examples):
+    with pytest.raises(TypeError, match="examples"):
+        TacticInfo(name="echo", examples=examples)  # type: ignore[list-item]
+
+
 def test_tactic_rejects_invalid_input():
     with pytest.raises(SchemaError):
         EchoTactic().run({"text": 123})
