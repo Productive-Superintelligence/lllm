@@ -464,6 +464,12 @@ def test_remote_tactic_error_rejects_bytes_for_text_fields(field_name, kwargs):
         RemoteTacticError(500, **kwargs)
 
 
+@pytest.mark.parametrize("status_code", [False, True, "500", 99, 600])
+def test_remote_tactic_error_rejects_invalid_status_codes(status_code):
+    with pytest.raises(ValueError, match="status_code"):
+        RemoteTacticError(status_code)  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize(
     "error_type",
     (

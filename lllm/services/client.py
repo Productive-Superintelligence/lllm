@@ -34,14 +34,14 @@ class RemoteTacticError(TacticServiceError):
         request_id: str | None = None,
         detail: Any = None,
     ) -> None:
-        self.status_code = status_code
+        self.status_code = _status_code_value(status_code)
         self.error_type = _optional_token_value(error_type, "error_type")
         self.tactic = _optional_text_value(tactic, "tactic")
         self.endpoint = _optional_text_value(endpoint, "endpoint")
         self.request_id = _optional_token_value(request_id, "request_id")
         self.detail = detail
         self.message = _optional_text_value(message, "message") or _detail_message(detail)
-        text = f"Remote tactic returned HTTP {status_code}"
+        text = f"Remote tactic returned HTTP {self.status_code}"
         if self.error_type:
             text += f" ({self.error_type})"
         if self.message:
@@ -355,6 +355,14 @@ def _timeout_value(value: Any) -> float | None:
     if not math.isfinite(amount) or amount <= 0:
         raise ValueError("timeout must be a positive number or None.")
     return amount
+
+
+def _status_code_value(value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError("status_code must be an integer HTTP status code.")
+    if not 100 <= value <= 599:
+        raise ValueError("status_code must be an integer HTTP status code.")
+    return value
 
 
 def _iter_sse_events(lines: Iterable[Any]) -> Iterator[TacticEvent]:
