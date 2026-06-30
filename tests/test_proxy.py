@@ -401,6 +401,26 @@ def test_proxy_tactic_async_streams_and_records_chunks():
     assert log.records[0].output_value == ["go", "GO"]
 
 
+def test_proxy_tactic_rejects_malformed_stream_contexts():
+    proxy = ProxyTactic(StreamTactic())
+
+    with pytest.raises(TypeError, match="CallContext"):
+        list(proxy.stream("hi", context={}))
+
+    async def collect_astream():
+        return [item async for item in proxy.astream("go", context={})]
+
+    with pytest.raises(TypeError, match="CallContext"):
+        asyncio.run(collect_astream())
+
+    async def collect_aevents():
+        event_proxy = ProxyTactic(EventTactic())
+        return [event async for event in event_proxy.aevents("go", context={})]
+
+    with pytest.raises(TypeError, match="CallContext"):
+        asyncio.run(collect_aevents())
+
+
 def test_proxy_tactic_preserves_event_only_tactics():
     log = InMemoryProxyLog()
 

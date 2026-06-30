@@ -119,7 +119,7 @@ class ProxyTactic(Tactic[Any, Any]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> Any:
-        context = context or CallContext()
+        context = _call_context(context)
         started_at = time.time()
         proxied_input = input_value
         try:
@@ -140,7 +140,7 @@ class ProxyTactic(Tactic[Any, Any]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> Any:
-        context = context or CallContext()
+        context = _call_context(context)
         started_at = time.time()
         proxied_input = input_value
         try:
@@ -161,7 +161,7 @@ class ProxyTactic(Tactic[Any, Any]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> Iterator[Any]:
-        context = context or CallContext()
+        context = _call_context(context)
         started_at = time.time()
         proxied_input = input_value
         chunks: list[Any] = []
@@ -185,7 +185,7 @@ class ProxyTactic(Tactic[Any, Any]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[Any]:
-        context = context or CallContext()
+        context = _call_context(context)
         started_at = time.time()
         proxied_input = input_value
         chunks: list[Any] = []
@@ -209,12 +209,12 @@ class ProxyTactic(Tactic[Any, Any]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[TacticEvent]:
+        context = _call_context(context)
         if not self.tactic.supports("events"):
             async for event in super().aevents(input_value, context=context, **kwargs):
                 yield event
             return
 
-        context = context or CallContext()
         started_at = time.time()
         proxied_input = input_value
         events: list[Any] = []
@@ -371,6 +371,14 @@ def _portable(value: Any) -> Any:
     if isinstance(value, dict):
         return {key: _portable(item) for key, item in value.items()}
     return value
+
+
+def _call_context(value: Any) -> CallContext:
+    if value is None:
+        return CallContext()
+    if isinstance(value, CallContext):
+        return value
+    raise TypeError("context must be a CallContext.")
 
 
 __all__ = [
