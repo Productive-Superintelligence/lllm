@@ -224,6 +224,9 @@ Local config can bind the same ref to a running service:
 ```toml
 [refs."psi://demo/echo/tactics/echo"]
 url = "http://127.0.0.1:8000/tactics/echo"
+
+[refs."psi://demo/echo/tactics/echo".metadata]
+policy_url = "http://127.0.0.1:9000"
 ```
 
 ```python
@@ -233,6 +236,9 @@ tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 
 Tactic refs are strict package resource identifiers:
 `psi://org/package/tactics/name` with no query string or fragment.
+`TacticResolver.from_config()` preserves `[refs."...".metadata]` on tactic URL
+bindings; legacy top-level extras still work, and explicit metadata table
+values win on duplicate keys.
 
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
