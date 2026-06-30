@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -183,7 +184,43 @@ def _metadata_mapping(value: Any, ref: str) -> dict[str, Any]:
         return {}
     if not isinstance(value, Mapping):
         raise TacticRefError(f"Tactic URL binding metadata must be a mapping: {ref}")
-    return copy_boundary_value(value)
+    metadata = copy_boundary_value(value)
+    _reject_sensitive_metadata(metadata, ref)
+    return metadata
+
+
+def _reject_sensitive_metadata(value: Any, ref: str) -> None:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            if _is_sensitive_metadata_key(key):
+                raise TacticRefError(
+                    "Tactic URL binding metadata must not include raw secret "
+                    f"key {key!r}: {ref}"
+                )
+            _reject_sensitive_metadata(item, ref)
+    elif isinstance(value, (list, tuple)):
+        for item in value:
+            _reject_sensitive_metadata(item, ref)
+
+
+def _is_sensitive_metadata_key(key: object) -> bool:
+    if not isinstance(key, str):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", "_", key.lower()).strip("_")
+    if not normalized:
+        return False
+    if normalized.endswith(("_ref", "_refs", "_reference", "_references")):
+        return False
+    parts = normalized.split("_")
+    if "api" in parts and "key" in parts:
+        return True
+    if "authorization" in parts or "credential" in parts or "credentials" in parts:
+        return True
+    if "password" in parts or "secret" in parts:
+        return True
+    if normalized == "token" or normalized.endswith("_token"):
+        return True
+    return False
 
 
 def _is_tactic_config_ref(ref: str) -> bool:

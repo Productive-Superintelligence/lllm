@@ -184,6 +184,22 @@ def test_resolver_bind_url_rejects_non_mapping_metadata():
     assert resolver.refs() == ()
 
 
+def test_resolver_bind_url_rejects_secret_metadata_keys():
+    resolver = TacticResolver()
+
+    with pytest.raises(TacticRefError, match="raw secret key"):
+        resolver.bind_url(
+            REF,
+            "http://testserver/tactics/echo",
+            metadata={
+                "api_key_ref": "credentials/openai",
+                "headers": {"authorization": "Bearer raw-token"},
+            },
+        )
+
+    assert resolver.refs() == ()
+
+
 def test_remote_tactic_calls_fastapi_service():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(
@@ -916,6 +932,49 @@ headers = {{ x_policy = "demo" }}
         "ref": REF,
         "url": "http://127.0.0.1:8000/tactics/echo/run",
     }
+
+
+def test_resolver_loads_credential_ref_metadata_from_local_config(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "http://127.0.0.1:8000/tactics/echo"
+
+[refs."{REF}".metadata]
+api_key_ref = "credentials/openai"
+headers = {{ x_policy = "demo" }}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    resolver = TacticResolver.from_config(tmp_path)
+    tactic = resolver.resolve(REF)
+    metadata = tactic.info().metadata
+
+    assert metadata["api_key_ref"] == "credentials/openai"
+    assert metadata["headers"] == {"x_policy": "demo"}
+
+
+def test_resolver_rejects_secret_metadata_keys_from_local_config(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "http://127.0.0.1:8000/tactics/echo"
+api_key = "raw-config-key"
+
+[refs."{REF}".metadata]
+api_key_ref = "credentials/openai"
+headers = {{ authorization = "Bearer raw-config-token" }}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TacticRefError, match="raw secret key"):
+        TacticResolver.from_config(tmp_path)
 
 
 def test_resolver_loaded_config_metadata_is_isolated(tmp_path):
