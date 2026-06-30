@@ -136,7 +136,7 @@ def custom_endpoints(obj: Any) -> list[tuple[EndpointSpec, Callable[..., Any]]]:
     """Return endpoint metadata declared on a tactic instance."""
 
     discovered: list[tuple[EndpointSpec, Callable[..., Any]]] = []
-    for attr_name in dir(obj):
+    for attr_name in _static_attr_names(obj):
         if attr_name.startswith("_"):
             continue
         try:
@@ -150,6 +150,19 @@ def custom_endpoints(obj: Any) -> list[tuple[EndpointSpec, Callable[..., Any]]]:
     _validate_endpoint_collection(discovered)
     discovered.sort(key=lambda item: item[0].name)
     return discovered
+
+
+def _static_attr_names(obj: Any) -> list[str]:
+    names: set[str] = set()
+    try:
+        instance_attrs = object.__getattribute__(obj, "__dict__")
+    except AttributeError:
+        instance_attrs = {}
+    if isinstance(instance_attrs, dict):
+        names.update(instance_attrs)
+    for cls in type(obj).__mro__:
+        names.update(cls.__dict__)
+    return sorted(names)
 
 
 def endpoint_route_key(spec: EndpointSpec) -> tuple[str, str]:

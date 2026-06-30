@@ -307,6 +307,30 @@ def test_custom_endpoint_discovery_does_not_evaluate_properties():
     assert response.json() == {"acted": "go"}
 
 
+def test_custom_endpoint_discovery_does_not_call_custom_dir():
+    class DirTactic(EchoTactic):
+        def __dir__(self):
+            raise AssertionError("__dir__ should not be called")
+
+        @endpoint.post("/dir-act", name="dir_act")
+        async def dir_act(self, input_value, *, context=None):
+            return {"acted": input_value.text}
+
+    endpoints = custom_endpoints(DirTactic())
+    app = create_tactic_app(DirTactic())
+    response = request(
+        app,
+        "POST",
+        "/dir-act",
+        json={"input": {"text": "go"}},
+    )
+
+    endpoint_names = {spec.name for spec, _method in endpoints}
+    assert "dir_act" in endpoint_names
+    assert response.status_code == 200
+    assert response.json() == {"acted": "go"}
+
+
 def request(app, method, path, **kwargs):
     async def run():
         transport = httpx.ASGITransport(app=app)
