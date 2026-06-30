@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import re
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
+
+from .protocol._validation import copy_boundary_value
 
 
 class ParseError(ValueError):
@@ -74,12 +75,12 @@ class DefaultTagParser(BaseParser, BaseModel):
         return validated
 
     def model_post_init(self, __context: Any) -> None:
-        self.xml_tags = deepcopy(self.xml_tags)
-        self.md_tags = deepcopy(self.md_tags)
-        self.signal_tags = deepcopy(self.signal_tags)
-        self.required_xml_tags = deepcopy(self.required_xml_tags)
-        self.required_md_tags = deepcopy(self.required_md_tags)
-        self.parser_args = deepcopy(self.parser_args)
+        self.xml_tags = copy_boundary_value(self.xml_tags)
+        self.md_tags = copy_boundary_value(self.md_tags)
+        self.signal_tags = copy_boundary_value(self.signal_tags)
+        self.required_xml_tags = copy_boundary_value(self.required_xml_tags)
+        self.required_md_tags = copy_boundary_value(self.required_md_tags)
+        self.parser_args = copy_boundary_value(self.parser_args)
 
     def parse(self, content: str, **runtime_args: Any) -> dict[str, Any]:
         content = _require_text(content, label="content")

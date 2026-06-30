@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 import pytest
 from pydantic import ValidationError
 
@@ -123,6 +125,15 @@ def test_default_tag_parser_isolates_mutable_config_inputs():
     assert parser.required_xml_tags == ["answer"]
     assert parser.required_md_tags == ["json"]
     assert parser.signal_tags == ["DONE"]
+    assert parser.parser_args == {"mode": {"levels": ["strict"]}}
+
+
+def test_default_tag_parser_accepts_nested_read_only_mapping_parser_args():
+    mode = {"levels": ["strict"]}
+    parser = DefaultTagParser(parser_args={"mode": MappingProxyType(mode)})
+
+    mode["levels"].append("changed")
+
     assert parser.parser_args == {"mode": {"levels": ["strict"]}}
 
 
