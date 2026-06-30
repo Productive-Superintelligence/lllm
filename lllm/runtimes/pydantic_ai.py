@@ -301,7 +301,9 @@ def tactic_as_tool(
 
     if parameter_mode not in {"task", "kwargs"}:
         raise ValueError("parameter_mode must be 'task' or 'kwargs'.")
-    if name is not None and not name.strip():
+    if name is not None and (
+        not isinstance(name, str) or not name or name != name.strip()
+    ):
         raise ValueError("tool name must be non-empty when provided.")
     tool_name = _safe_name(name if name is not None else tactic.tactic_name)
     input_schema = getattr(tactic, "input_type", None)
