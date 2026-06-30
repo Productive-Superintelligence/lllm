@@ -1095,6 +1095,28 @@ url = "http://127.0.0.1:8000/tactics/echo"
         TacticResolver.from_config(config_dir.parent)
 
 
+@pytest.mark.parametrize(
+    "target_line",
+    ['store = ".sssn"', 'path = "tactic.py"', 'object = "local"'],
+)
+def test_resolver_rejects_non_url_tactic_targets_from_local_config(
+    tmp_path,
+    target_line,
+):
+    config_dir = tmp_path / "workspace" / ".psi"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+{target_line}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TacticRefError, match="url target"):
+        TacticResolver.from_config(config_dir.parent)
+
+
 def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_path):
     for index, url in enumerate(
         (

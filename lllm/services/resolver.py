@@ -45,11 +45,12 @@ class TacticResolver:
             if not isinstance(data, dict):
                 raise TacticRefError(f"Ref binding must be a table: {raw_ref}")
             is_tactic_ref = _is_tactic_config_ref(raw_ref)
+            if is_tactic_ref:
+                _validate_tactic_url_binding_targets(raw_ref, data)
             if "url" not in data:
                 continue
             if not is_tactic_ref:
                 continue
-            _validate_tactic_url_binding_targets(raw_ref, data)
             url = data["url"]
             if not isinstance(url, str) or not url.strip():
                 raise TacticRefError(
@@ -163,6 +164,12 @@ def _config_ref_metadata(ref: str, data: dict[str, Any]) -> dict[str, Any]:
 
 def _validate_tactic_url_binding_targets(ref: str, data: dict[str, Any]) -> None:
     targets = [name for name in ("url", "store", "path", "object") if name in data]
+    if targets and "url" not in targets:
+        targets_text = ", ".join(targets)
+        raise TacticRefError(
+            "Tactic URL binding must declare a url target, "
+            f"got {targets_text}: {ref}"
+        )
     if len(targets) > 1:
         targets_text = ", ".join(targets)
         raise TacticRefError(

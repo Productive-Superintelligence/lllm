@@ -38,13 +38,15 @@ The resolver preserves explicit `[refs."...".metadata]` values on tactic URL
 bindings. Legacy top-level extra keys are also read as metadata, and the
 explicit metadata table wins on duplicate keys. Resolver-owned `ref` and remote
 `url` fields remain canonical. A tactic URL binding must not also declare a
-`store`, `path`, or `object` target.
+`store`, `path`, or `object` target. Tactic refs with a concrete target must
+use `url`; `store`, `path`, and serialized `object` targets belong to other
+layers or direct in-process registration.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them
 with leading or trailing whitespace. Tactic URL bindings must be absolute
 HTTP(S) service URLs, and a tactic URL binding must not also declare a `store`
-or `path` target.
+`path`, or `object` target.
 
 ```toml
 [refs."psi://demo/echo/tactics/echo"]
