@@ -29,10 +29,11 @@ policy_url = "http://127.0.0.1:9000"
 
 `TacticResolver.from_config()` can read a shared `.psi/config.toml` that also
 contains non-tactic refs from PsiHub or SSSN. It loads tactic URL bindings and
-ignores refs owned by other layers, such as services, channels, snapshots,
-docs, examples, and assets. All binding keys must still be valid `psi://`
-resource refs from known PSI resource sections; malformed tactic refs,
-malformed non-tactic refs, and unknown resource sections fail validation.
+ignores refs owned by other layers, such as `schemas`, `services`, `channels`,
+`snapshots`, `runs`, `configs`, `docs`, `examples`, and `assets`.
+All binding keys must still be valid `psi://` resource refs from
+known PSI resource sections; malformed tactic refs, malformed non-tactic refs,
+and unknown resource sections fail validation.
 The resolver preserves explicit `[refs."...".metadata]` values on tactic URL
 bindings. Legacy top-level extra keys are also read as metadata, and the
 explicit metadata table wins on duplicate keys. Resolver-owned `ref` and remote

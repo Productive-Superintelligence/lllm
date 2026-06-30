@@ -650,6 +650,8 @@ def test_composition_guide_documents_mixed_local_config():
     assert "psi://demo/echo/channels/events" in guide
     assert "All binding keys must still be valid" in guide
     assert "known PSI resource sections" in guide
+    assert "`schemas`, `services`, `channels`" in guide
+    assert "`runs`, `configs`, `docs`" in guide
     assert "unknown resource sections fail validation" in guide
     assert "avoid whitespace" in guide
     assert "do not pad them" in guide
