@@ -199,6 +199,12 @@ def test_pydantic_ai_adapter_info_does_not_evaluate_optional_properties():
     assert info.output_schema == {"type": "string"}
 
 
+@pytest.mark.parametrize("config", [[], "", 0, False])
+def test_pydantic_ai_adapter_rejects_falsey_non_mapping_config(config):
+    with pytest.raises(ValidationError):
+        PydanticAITactic.from_agent(FakeAgent(), config=config)
+
+
 def test_pydantic_ai_config_isolates_mutable_inputs():
     provider_settings = {"timeout": 30}
     run_kwargs = {

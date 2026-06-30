@@ -95,7 +95,7 @@ class PydanticAITactic(Tactic[Any, Any]):
         cfg = (
             config
             if isinstance(config, PydanticAITacticConfig)
-            else PydanticAITacticConfig.model_validate(config or {})
+            else PydanticAITacticConfig.model_validate({} if config is None else config)
         )
         self.agent = agent
         self.input_mode = input_mode or cfg.input_mode
