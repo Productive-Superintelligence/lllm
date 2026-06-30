@@ -7,7 +7,7 @@ import time
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field, StrictStr, model_validator
+from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
 from .protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
 from .protocol._validation import copy_boundary_value, optional_mapping_value, token_value
@@ -37,6 +37,13 @@ class ProxyRecord(BaseModel):
         self.input_value = copy_boundary_value(self.input_value)
         self.output_value = copy_boundary_value(self.output_value)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("started_at", "ended_at", "latency_ms", mode="before")
+    @classmethod
+    def _reject_bool_numeric_fields(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("proxy numeric fields must not be boolean")
+        return value
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "ProxyRecord":

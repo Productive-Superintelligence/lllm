@@ -381,6 +381,24 @@ def test_proxy_record_rejects_malformed_request_id_tokens(request_id):
         )
 
 
+@pytest.mark.parametrize("value", [False, True])
+@pytest.mark.parametrize("field", ["started_at", "ended_at", "latency_ms"])
+def test_proxy_record_rejects_bool_numeric_fields(field, value):
+    payload = {
+        "request_id": "req",
+        "proxy": "proxy",
+        "tactic": "echo",
+        "state": "success",
+        "started_at": 1.0,
+        "ended_at": 2.0,
+        "latency_ms": 1000.0,
+        field: value,
+    }
+
+    with pytest.raises(ValidationError, match=field):
+        ProxyRecord(**payload)
+
+
 def test_proxy_tactic_records_failure_and_calls_error_hook():
     errors = []
     log = InMemoryProxyLog()
