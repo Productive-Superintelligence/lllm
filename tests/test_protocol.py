@@ -347,17 +347,30 @@ def test_public_boundary_value_filters_secret_metadata_keys():
     public = public_boundary_value(
         {
             "api_key": "raw-key",
+            "apiKey": "raw-camel-key",
             "api_key_ref": "credentials/openai",
+            "apiKeyRef": "credentials/camel-openai",
+            "clientSecret": "raw-camel-secret",
+            "clientSecretRef": "credentials/camel-secret",
             "headers": {
                 "authorization": "Bearer raw-token",
+                "xAuthToken": "raw-camel-token",
                 "x-policy": "demo",
             },
-            "items": [{"access_token": "raw-token", "name": "safe"}],
+            "items": [
+                {
+                    "access_token": "raw-token",
+                    "accessToken": "raw-camel-token",
+                    "name": "safe",
+                }
+            ],
         }
     )
 
     assert public == {
         "api_key_ref": "credentials/openai",
+        "apiKeyRef": "credentials/camel-openai",
+        "clientSecretRef": "credentials/camel-secret",
         "headers": {"x-policy": "demo"},
         "items": [{"name": "safe"}],
     }

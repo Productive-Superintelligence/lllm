@@ -206,7 +206,7 @@ def _reject_sensitive_metadata(value: Any, ref: str) -> None:
 def _is_sensitive_metadata_key(key: object) -> bool:
     if not isinstance(key, str):
         return False
-    normalized = re.sub(r"[^a-z0-9]+", "_", key.lower()).strip("_")
+    normalized = _normalize_metadata_key(key)
     if not normalized:
         return False
     if normalized.endswith(("_ref", "_refs", "_reference", "_references")):
@@ -221,6 +221,12 @@ def _is_sensitive_metadata_key(key: object) -> bool:
     if normalized == "token" or normalized.endswith("_token"):
         return True
     return False
+
+
+def _normalize_metadata_key(key: str) -> str:
+    with_word_breaks = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
+    with_word_breaks = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", with_word_breaks)
+    return re.sub(r"[^a-z0-9]+", "_", with_word_breaks.lower()).strip("_")
 
 
 def _is_tactic_config_ref(ref: str) -> bool:

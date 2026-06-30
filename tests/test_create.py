@@ -323,16 +323,22 @@ def build_tactic():
                     "text": "hello",
                     "headers": {
                         "authorization": "Bearer raw-example-auth",
+                        "xAuthToken": "raw-example-camel-token",
                         "x-policy": "safe-policy",
                     },
+                    "accessToken": "raw-camel-example-token",
                 },
                 "output": {"password": "raw-example-password", "text": "hello"},
             }
         ],
         metadata={
             "api_key_ref": "credentials/openai",
+            "apiKeyRef": "credentials/camel-openai",
+            "clientSecret": "raw-camel-secret",
+            "clientSecretRef": "credentials/camel-secret",
             "headers": {
                 "authorization": "Bearer raw-metadata-auth",
+                "xAuthToken": "raw-metadata-camel-token",
                 "x-policy": "safe-metadata-policy",
             },
         },
@@ -348,11 +354,17 @@ def build_tactic():
     payload = json.loads(captured.out)
     rendered = json.dumps(payload, sort_keys=True)
     assert "raw-example-auth" not in rendered
+    assert "raw-example-camel-token" not in rendered
+    assert "raw-camel-example-token" not in rendered
     assert "raw-example-password" not in rendered
     assert "raw-metadata-auth" not in rendered
+    assert "raw-metadata-camel-token" not in rendered
+    assert "raw-camel-secret" not in rendered
     assert "safe-policy" in rendered
     assert "safe-metadata-policy" in rendered
     assert payload["metadata"]["api_key_ref"] == "credentials/openai"
+    assert payload["metadata"]["apiKeyRef"] == "credentials/camel-openai"
+    assert payload["metadata"]["clientSecretRef"] == "credentials/camel-secret"
     assert captured.err == ""
 
 

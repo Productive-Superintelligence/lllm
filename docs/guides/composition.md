@@ -42,8 +42,9 @@ explicit metadata table wins on duplicate keys. Resolver-owned `ref` and remote
 use `url`; `store`, `path`, and serialized `object` targets belong to other
 layers or direct in-process registration. URL bindings must not include
 embedded credentials, and binding metadata must not include raw secret-shaped
-keys such as `api_key`, tokens, passwords, `authorization`, or credentials.
-Use local credential refs such as `api_key_ref` or auth hooks instead.
+keys such as `api_key`, `apiKey`, tokens, `accessToken`, passwords,
+`authorization`, or credentials. Use local credential refs such as
+`api_key_ref`/`apiKeyRef` or auth hooks instead.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them

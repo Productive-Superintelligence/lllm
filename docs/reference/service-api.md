@@ -15,7 +15,10 @@ reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
 and percent escapes; paths must also avoid `//` network-path prefixes.
 
 Public info endpoints filter raw secret-shaped keys from tactic examples and
-user metadata while preserving local credential refs such as `api_key_ref`.
+user metadata while preserving local credential refs such as
+`api_key_ref`/`apiKeyRef`. Snake_case, kebab-case, and camelCase secret keys
+such as `api_key`, `x-api-key`, `apiKey`, `accessToken`, and `clientSecret`
+are treated consistently.
 
 Error envelopes are stable across protocol and runtime failures.
 

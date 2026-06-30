@@ -247,8 +247,9 @@ values win on duplicate keys. Tactic URL bindings must not also declare a
 use `url`; `store`, `path`, and serialized `object` targets belong to other
 layers or direct in-process registration. URL bindings must not include
 embedded credentials, and binding metadata must not include raw secret-shaped
-keys such as `api_key`, tokens, passwords, `authorization`, or credentials.
-Use local credential refs such as `api_key_ref` or auth hooks instead.
+keys such as `api_key`, `apiKey`, tokens, `accessToken`, passwords,
+`authorization`, or credentials. Use local credential refs such as
+`api_key_ref`/`apiKeyRef` or auth hooks instead.
 
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
@@ -272,8 +273,8 @@ package cards can show domain routes and concrete calls alongside the portable
 `@endpoint.patch`, or `@endpoint.delete` to declare typed service routes without
 changing the tactic protocol. Public service info and PsiHub metadata exports
 filter raw secret-shaped keys from examples and user metadata, including
-`api_key`, tokens, passwords, `authorization`, and credentials, while preserving
-local refs such as `api_key_ref`.
+`api_key`, `apiKey`, tokens, `accessToken`, passwords, `authorization`, and
+credentials, while preserving local refs such as `api_key_ref` and `apiKeyRef`.
 Runtime adapters such as `as_tactic`, `PydanticAITactic`, and
 `NativeTacticAdapter` accept package refs, service refs, descriptions, examples,
 and metadata so wrapper-created tactics can keep the same package-facing

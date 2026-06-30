@@ -193,7 +193,7 @@ def test_resolver_bind_url_rejects_secret_metadata_keys():
             "http://testserver/tactics/echo",
             metadata={
                 "api_key_ref": "credentials/openai",
-                "headers": {"authorization": "Bearer raw-token"},
+                "headers": {"xAuthToken": "Bearer raw-token"},
             },
         )
 
@@ -944,6 +944,7 @@ url = "http://127.0.0.1:8000/tactics/echo"
 
 [refs."{REF}".metadata]
 api_key_ref = "credentials/openai"
+apiKeyRef = "credentials/camel-openai"
 headers = {{ x_policy = "demo" }}
 """.lstrip(),
         encoding="utf-8",
@@ -954,6 +955,7 @@ headers = {{ x_policy = "demo" }}
     metadata = tactic.info().metadata
 
     assert metadata["api_key_ref"] == "credentials/openai"
+    assert metadata["apiKeyRef"] == "credentials/camel-openai"
     assert metadata["headers"] == {"x_policy": "demo"}
 
 
@@ -964,11 +966,11 @@ def test_resolver_rejects_secret_metadata_keys_from_local_config(tmp_path):
         f"""
 [refs."{REF}"]
 url = "http://127.0.0.1:8000/tactics/echo"
-api_key = "raw-config-key"
+apiKey = "raw-config-key"
 
 [refs."{REF}".metadata]
 api_key_ref = "credentials/openai"
-headers = {{ authorization = "Bearer raw-config-token" }}
+headers = {{ xAuthToken = "Bearer raw-config-token" }}
 """.lstrip(),
         encoding="utf-8",
     )

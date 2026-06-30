@@ -440,16 +440,22 @@ def test_service_info_filters_secret_examples_and_metadata():
                     "headers": {
                         "authorization": "Bearer raw-example-auth",
                         "x-api-key": "raw-example-key",
+                        "xAuthToken": "raw-example-camel-token",
                         "x-policy": "safe-policy",
                     },
+                    "accessToken": "raw-camel-example-token",
                 },
                 "output": {"password": "raw-example-password", "text": "HELLO"},
             }
         ],
         metadata={
             "api_key_ref": "credentials/openai",
+            "apiKeyRef": "credentials/camel-openai",
+            "clientSecret": "raw-camel-secret",
+            "clientSecretRef": "credentials/camel-secret",
             "headers": {
                 "authorization": "Bearer raw-metadata-auth",
+                "xAuthToken": "raw-metadata-camel-token",
                 "x-policy": "safe-metadata-policy",
             },
         },
@@ -463,11 +469,17 @@ def test_service_info_filters_secret_examples_and_metadata():
         text = json.dumps(payload, sort_keys=True)
         assert "raw-example-auth" not in text
         assert "raw-example-key" not in text
+        assert "raw-example-camel-token" not in text
+        assert "raw-camel-example-token" not in text
         assert "raw-example-password" not in text
         assert "raw-metadata-auth" not in text
+        assert "raw-metadata-camel-token" not in text
+        assert "raw-camel-secret" not in text
         assert "safe-policy" in text
         assert "safe-metadata-policy" in text
         assert payload["metadata"]["api_key_ref"] == "credentials/openai"
+        assert payload["metadata"]["apiKeyRef"] == "credentials/camel-openai"
+        assert payload["metadata"]["clientSecretRef"] == "credentials/camel-secret"
 
 
 def test_service_rejects_path_control_tactic_route_names():
