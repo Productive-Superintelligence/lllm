@@ -182,6 +182,7 @@ class Tactic(Generic[InputT, OutputT]):
     ) -> OutputT | CallResult:
         """Run the tactic synchronously through the validated boundary."""
 
+        return_trace_value = _bool_value("return_trace", return_trace)
         context = _call_context(context)
         trace = self._new_trace(context)
         try:
@@ -191,10 +192,10 @@ class Tactic(Generic[InputT, OutputT]):
             trace.success(output)
         except Exception as exc:
             trace.failure(exc)
-            if return_trace:
+            if return_trace_value:
                 return CallResult(output=None, trace=trace)
             raise
-        return CallResult(output=output, trace=trace) if return_trace else output
+        return CallResult(output=output, trace=trace) if return_trace_value else output
 
     async def arun(
         self,
@@ -206,6 +207,7 @@ class Tactic(Generic[InputT, OutputT]):
     ) -> OutputT | CallResult:
         """Run the tactic asynchronously through the validated boundary."""
 
+        return_trace_value = _bool_value("return_trace", return_trace)
         context = _call_context(context)
         trace = self._new_trace(context)
         try:
@@ -217,10 +219,10 @@ class Tactic(Generic[InputT, OutputT]):
             trace.success(output)
         except Exception as exc:
             trace.failure(exc)
-            if return_trace:
+            if return_trace_value:
                 return CallResult(output=None, trace=trace)
             raise
-        return CallResult(output=output, trace=trace) if return_trace else output
+        return CallResult(output=output, trace=trace) if return_trace_value else output
 
     def __call__(self, input_value: InputT, **kwargs: Any) -> OutputT | CallResult:
         return self.run(input_value, **kwargs)
@@ -303,6 +305,12 @@ def _call_context(value: Any) -> CallContext:
     if isinstance(value, CallContext):
         return value
     raise TypeError("context must be a CallContext.")
+
+
+def _bool_value(label: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{label} must be a boolean.")
+    return value
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:

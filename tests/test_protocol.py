@@ -375,6 +375,23 @@ def test_tactic_run_rejects_malformed_context():
     asyncio.run(run())
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_tactic_run_rejects_coerced_return_trace_flag(value):
+    tactic = EchoTactic()
+
+    with pytest.raises(TypeError, match="return_trace"):
+        tactic.run({"text": "hello"}, return_trace=value)  # type: ignore[arg-type]
+
+    async def run():
+        with pytest.raises(TypeError, match="return_trace"):
+            await tactic.arun(
+                {"text": "hello"},
+                return_trace=value,  # type: ignore[arg-type]
+            )
+
+    asyncio.run(run())
+
+
 def test_tactic_info_exports_json_schema():
     info = EchoTactic().info()
 
