@@ -563,14 +563,14 @@ class Function(BaseModel):
         *,
         name: str | None = None,
         description: str | None = None,
-        prop_desc: dict[str, str] | None = None,
+        prop_desc: Mapping[str, str] | None = None,
         strict: bool = True,
         processor: Callable[[Any, FunctionCall], str] = _default_function_call_processor,
     ) -> "Function":
         function_name = name if name is not None else fn.__name__
         signature = inspect.signature(fn)
         hints = get_type_hints(fn) if getattr(fn, "__annotations__", None) else {}
-        property_descriptions = dict(prop_desc or {})
+        property_descriptions = _optional_string_mapping("prop_desc", prop_desc)
         properties: dict[str, Any] = {}
         required: list[str] = []
         for param_name, parameter in signature.parameters.items():
@@ -616,7 +616,7 @@ def _validate_tool_name(value: str, label: str) -> None:
 
 def tool(
     description: str | None = None,
-    prop_desc: dict[str, str] | None = None,
+    prop_desc: Mapping[str, str] | None = None,
     *,
     name: str | None = None,
     strict: bool = True,
@@ -761,6 +761,16 @@ def _optional_mapping(label: str, value: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise TypeError(f"{label} must be a mapping.")
     return copy.deepcopy(dict(value))
+
+
+def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:
+    entries = _optional_mapping(label, value)
+    if not all(
+        isinstance(entry_key, str) and isinstance(entry_value, str)
+        for entry_key, entry_value in entries.items()
+    ):
+        raise TypeError(f"{label} keys and values must be strings.")
+    return entries
 
 
 __all__ = [

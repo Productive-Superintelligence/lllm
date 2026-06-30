@@ -74,6 +74,38 @@ def test_native_function_names_reject_malformed_tokens(name):
         tool(name=name)(helper)
 
 
+@pytest.mark.parametrize("prop_desc", [[], [("value", "desc")], "bad", 123])
+def test_native_function_property_descriptions_reject_non_mapping_inputs(prop_desc):
+    def helper(value: str) -> str:
+        return value
+
+    with pytest.raises(TypeError, match="prop_desc"):
+        Function.from_callable(helper, prop_desc=prop_desc)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="prop_desc"):
+        tool(prop_desc=prop_desc)(helper)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "prop_desc",
+    [
+        {b"value": "Description."},
+        {"value": b"Description."},
+        {1: "Description."},
+        {"value": object()},
+    ],
+)
+def test_native_function_property_descriptions_reject_non_string_entries(prop_desc):
+    def helper(value: str) -> str:
+        return value
+
+    with pytest.raises(TypeError, match="prop_desc keys and values"):
+        Function.from_callable(helper, prop_desc=prop_desc)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="prop_desc keys and values"):
+        tool(prop_desc=prop_desc)(helper)  # type: ignore[arg-type]
+
+
 def test_native_function_schema_views_are_isolated():
     properties = {"left": {"type": "integer"}}
     required = ["left"]
