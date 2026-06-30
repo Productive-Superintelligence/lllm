@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
 from ..protocol import CallContext, Tactic, TacticRef, TacticRefError
+from ..protocol._validation import copy_boundary_value
 from .client import RemoteTactic
 
 
@@ -57,8 +59,12 @@ class TacticResolver:
                     f"Tactic URL binding must not contain whitespace: {raw_ref}"
                 )
             try:
-                resolver.bind_url(raw_ref, url)
-            except ValueError as exc:
+                resolver.bind_url(
+                    raw_ref,
+                    url,
+                    metadata=_config_ref_metadata(raw_ref, data),
+                )
+            except (TypeError, ValueError) as exc:
                 raise TacticRefError(
                     f"Tactic URL binding is invalid for {raw_ref}: {exc}"
                 ) from exc
@@ -74,17 +80,21 @@ class TacticResolver:
         self,
         ref: str | TacticRef,
         url: str,
+        *,
+        metadata: Mapping[str, Any] | None = None,
         **remote_kwargs: Any,
     ) -> RemoteTactic:
         parsed = TacticRef.parse(ref)
+        metadata_value = _metadata_mapping(metadata, str(parsed))
+        metadata_value["ref"] = str(parsed)
         try:
             remote = RemoteTactic(
                 url,
                 name=parsed.name,
-                metadata={"ref": str(parsed)},
+                metadata=metadata_value,
                 **remote_kwargs,
             )
-        except ValueError as exc:
+        except (TypeError, ValueError) as exc:
             raise TacticRefError(
                 f"Tactic URL binding is invalid for {parsed}: {exc}"
             ) from exc
@@ -133,6 +143,29 @@ def _load_toml(path: str | Path) -> dict[str, Any]:
         import tomli as tomllib  # type: ignore[no-redef]
     with target.open("rb") as handle:
         return tomllib.load(handle)
+
+
+def _config_ref_metadata(ref: str, data: dict[str, Any]) -> dict[str, Any]:
+    if "metadata" in data:
+        metadata = data["metadata"]
+        if not isinstance(metadata, dict):
+            raise TacticRefError(f'[refs."{ref}".metadata] must be a TOML table.')
+    else:
+        metadata = {}
+    extras = {
+        key: value
+        for key, value in data.items()
+        if key not in {"url", "store", "path", "metadata"}
+    }
+    return {**extras, **metadata}
+
+
+def _metadata_mapping(value: Any, ref: str) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TacticRefError(f"Tactic URL binding metadata must be a mapping: {ref}")
+    return copy_boundary_value(value)
 
 
 def _is_tactic_config_ref(ref: str) -> bool:

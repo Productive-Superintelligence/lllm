@@ -1,4 +1,5 @@
 import asyncio
+import json
 
 import httpx
 import pytest
@@ -154,6 +155,35 @@ def test_resolver_bind_url_rejects_malformed_service_urls():
     assert resolver.refs() == ()
 
 
+def test_resolver_bind_url_preserves_metadata_with_canonical_ref():
+    resolver = TacticResolver()
+    resolver.bind_url(
+        REF,
+        "http://testserver/tactics/echo",
+        metadata={"ref": "spoofed", "label": "direct"},
+    )
+
+    tactic = resolver.resolve(REF)
+    metadata = tactic.info().metadata
+
+    assert metadata["ref"] == REF
+    assert metadata["url"] == "http://testserver/tactics/echo/run"
+    assert metadata["label"] == "direct"
+
+
+def test_resolver_bind_url_rejects_non_mapping_metadata():
+    resolver = TacticResolver()
+
+    with pytest.raises(TacticRefError, match="metadata"):
+        resolver.bind_url(  # type: ignore[arg-type]
+            REF,
+            "http://testserver/tactics/echo",
+            metadata=[],
+        )
+
+    assert resolver.refs() == ()
+
+
 def test_remote_tactic_calls_fastapi_service():
     app = create_tactic_app(EchoTactic())
     remote = RemoteTactic(
@@ -172,6 +202,35 @@ def test_remote_tactic_calls_fastapi_service():
     )
 
     assert result == EchoOutput(text="HELLO!")
+
+
+def test_remote_tactic_sync_run_sends_one_request():
+    requests = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/run"
+        requests.append(json.loads(request.read().decode("utf-8")))
+        return httpx.Response(200, json={"output": {"text": "HELLO!"}})
+
+    remote = RemoteTactic(
+        "http://testserver/run",
+        name="echo",
+        input_type=EchoInput,
+        output_type=EchoOutput,
+        transport=httpx.MockTransport(handler),
+    )
+
+    result = remote.run(
+        {"text": "hello"},
+        context=CallContext(request_id="req-sync", metadata={"suffix": "!"}),
+    )
+
+    assert result == EchoOutput(text="HELLO!")
+    assert len(requests) == 1
+    assert requests[0]["input"] == {"text": "hello"}
+    assert requests[0]["context"]["request_id"] == "req-sync"
+    assert requests[0]["context"]["metadata"] == {"suffix": "!"}
 
 
 def test_remote_tactic_request_envelope_isolates_mutable_inputs():
@@ -794,6 +853,55 @@ store = ".sssn"
     assert isinstance(tactic, RemoteTactic)
     assert tactic.url == "http://127.0.0.1:8000/tactics/echo/run"
     assert resolver.refs() == (REF,)
+
+
+def test_resolver_loads_url_binding_metadata_from_local_config(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "http://127.0.0.1:8000/tactics/echo"
+label = "legacy-extra"
+tag = "legacy"
+ref = "spoofed-extra"
+
+[refs."{REF}".metadata]
+tag = "explicit"
+ref = "spoofed-table"
+url = "http://spoofed"
+headers = {{ x_policy = "demo" }}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    resolver = TacticResolver.from_config(tmp_path)
+    tactic = resolver.resolve(REF)
+    metadata = tactic.info().metadata
+
+    assert metadata == {
+        "label": "legacy-extra",
+        "tag": "explicit",
+        "headers": {"x_policy": "demo"},
+        "ref": REF,
+        "url": "http://127.0.0.1:8000/tactics/echo/run",
+    }
+
+
+def test_resolver_rejects_non_table_ref_metadata_from_local_config(tmp_path):
+    config_dir = tmp_path / ".psi"
+    config_dir.mkdir()
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "http://127.0.0.1:8000/tactics/echo"
+metadata = "bad"
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TacticRefError, match="metadata"):
+        TacticResolver.from_config(tmp_path)
 
 
 def test_resolver_rejects_whitespace_bearing_url_bindings_from_local_config(tmp_path):
