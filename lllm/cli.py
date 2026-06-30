@@ -137,7 +137,9 @@ def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic
 
 def _entrypoint_segments(value: str) -> bool:
     return all(
-        part and "%" not in part and not any(ch.isspace() for ch in part)
+        part
+        and not any(ch.isspace() for ch in part)
+        and not any(ch in part for ch in "/\\:%")
         for part in value.split(".")
     )
 
