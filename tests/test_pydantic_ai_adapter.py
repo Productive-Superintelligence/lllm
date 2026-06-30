@@ -246,6 +246,12 @@ def test_pydantic_ai_config_rejects_non_bool_context_metadata_flag(value):
         PydanticAITacticConfig.model_validate({"include_context_metadata": value})
 
 
+@pytest.mark.parametrize("examples", [(), ({"input": "hi"},), "", False, 0])
+def test_pydantic_ai_config_rejects_non_list_examples(examples):
+    with pytest.raises(ValidationError):
+        PydanticAITacticConfig.model_validate({"examples": examples})
+
+
 @pytest.mark.parametrize("value", ["false", "true", 0, 1])
 def test_pydantic_ai_adapter_rejects_non_bool_context_metadata_override(value):
     with pytest.raises(TypeError, match="include_context_metadata"):

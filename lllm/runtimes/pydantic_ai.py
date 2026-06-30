@@ -10,7 +10,7 @@ import inspect
 from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 
 from ..protocol import CallContext, Tactic, TacticInfo
 from ..protocol._validation import copy_boundary_value
@@ -67,6 +67,13 @@ class PydanticAITacticConfig(BaseModel):
     service_ref: StrictStr | None = None
     examples: list[dict[str, Any]] = Field(default_factory=list)
     metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("examples", mode="before")
+    @classmethod
+    def _validate_examples_list(cls, value: Any) -> Any:
+        if value is None or isinstance(value, list):
+            return value
+        raise ValueError("examples must be a list.")
 
     def model_post_init(self, __context: Any) -> None:
         self.run_kwargs = _copy_runtime_kwargs(self.run_kwargs)
