@@ -9,7 +9,11 @@ from typing import Any
 from pydantic import BaseModel, Field, StrictStr, ValidationError, model_validator
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
-from ..protocol._validation import copy_boundary_value, token_value
+from ..protocol._validation import (
+    copy_boundary_value,
+    public_boundary_value,
+    token_value,
+)
 from .endpoints import (
     EndpointSpec,
     custom_endpoints,
@@ -122,12 +126,12 @@ def create_service_app(
 
     @app.get("/tactics")
     async def list_tactics() -> list[dict[str, Any]]:
-        return [jsonable_encoder(tactic.info()) for tactic in tactic_map.values()]
+        return [_public_tactic_info(tactic, jsonable_encoder) for tactic in tactic_map.values()]
 
     @app.get("/tactics/{name}/info")
     async def tactic_info(name: str) -> dict[str, Any]:
         tactic = _get_tactic(name, tactic_map)
-        return jsonable_encoder(tactic.info())
+        return _public_tactic_info(tactic, jsonable_encoder)
 
     @app.post("/tactics/{name}/run", response_model=RunResponse)
     async def run_tactic(name: str, request: Request) -> RunResponse:
@@ -180,7 +184,7 @@ def create_service_app(
 
         @app.get("/info")
         async def single_info() -> dict[str, Any]:
-            return jsonable_encoder(only.info())
+            return _public_tactic_info(only, jsonable_encoder)
 
         @app.post("/run", response_model=RunResponse)
         async def single_run(request: Request) -> RunResponse:
@@ -443,6 +447,13 @@ def _get_tactic(name: str, tactics: Mapping[str, Tactic[Any, Any]]) -> Tactic[An
                 )
             ).model_dump(mode="json"),
         ) from exc
+
+
+def _public_tactic_info(tactic: Tactic[Any, Any], jsonable_encoder: Any) -> dict[str, Any]:
+    payload = jsonable_encoder(tactic.info())
+    payload["examples"] = public_boundary_value(payload.get("examples", []))
+    payload["metadata"] = public_boundary_value(payload.get("metadata", {}))
+    return payload
 
 
 async def _input_and_context_from_request(

@@ -22,6 +22,7 @@ from lllm import (
     TacticInfo,
     as_tactic,
 )
+from lllm.protocol._validation import public_boundary_value
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -340,6 +341,26 @@ def test_tactic_metadata_tokens_allow_common_separators():
     )
     assert trace.state == "custom.state"
     assert trace.error_type == "ValidationError"
+
+
+def test_public_boundary_value_filters_secret_metadata_keys():
+    public = public_boundary_value(
+        {
+            "api_key": "raw-key",
+            "api_key_ref": "credentials/openai",
+            "headers": {
+                "authorization": "Bearer raw-token",
+                "x-policy": "demo",
+            },
+            "items": [{"access_token": "raw-token", "name": "safe"}],
+        }
+    )
+
+    assert public == {
+        "api_key_ref": "credentials/openai",
+        "headers": {"x-policy": "demo"},
+        "items": [{"name": "safe"}],
+    }
 
 
 def test_call_result_isolates_mutable_output_and_trace():

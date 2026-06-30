@@ -431,6 +431,45 @@ def test_pydantic_ai_tactic_serves_through_fastapi_with_context_metadata():
     assert agent.seen_metadata["lllm_endpoint"] == "run"
 
 
+def test_service_info_filters_secret_examples_and_metadata():
+    tactic = EchoTactic(
+        examples=[
+            {
+                "input": {
+                    "text": "hello",
+                    "headers": {
+                        "authorization": "Bearer raw-example-auth",
+                        "x-api-key": "raw-example-key",
+                        "x-policy": "safe-policy",
+                    },
+                },
+                "output": {"password": "raw-example-password", "text": "HELLO"},
+            }
+        ],
+        metadata={
+            "api_key_ref": "credentials/openai",
+            "headers": {
+                "authorization": "Bearer raw-metadata-auth",
+                "x-policy": "safe-metadata-policy",
+            },
+        },
+    )
+    app = create_tactic_app(tactic)
+
+    info = request(app, "GET", "/info").json()
+    listed = request(app, "GET", "/tactics").json()
+
+    for payload in (info, listed[0]):
+        text = json.dumps(payload, sort_keys=True)
+        assert "raw-example-auth" not in text
+        assert "raw-example-key" not in text
+        assert "raw-example-password" not in text
+        assert "raw-metadata-auth" not in text
+        assert "safe-policy" in text
+        assert "safe-metadata-policy" in text
+        assert payload["metadata"]["api_key_ref"] == "credentials/openai"
+
+
 def test_service_rejects_path_control_tactic_route_names():
     bad_names = (
         "",

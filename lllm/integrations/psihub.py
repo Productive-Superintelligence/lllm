@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any
 
 from ..protocol import Tactic
-from ..protocol._validation import copy_boundary_value
+from ..protocol._validation import copy_boundary_value, public_boundary_value
 from ..services.endpoints import custom_endpoints
 
 
@@ -37,6 +37,6 @@ def tactic_resource(tactic: Tactic[Any, Any]) -> dict[str, Any]:
         "output_schema": copy_boundary_value(info.output_schema),
         "package_ref": info.package_ref,
         "service_ref": info.service_ref,
-        "examples": copy_boundary_value(info.examples),
-        "metadata": copy_boundary_value(info.metadata),
+        "examples": public_boundary_value(info.examples),
+        "metadata": public_boundary_value(info.metadata),
     }

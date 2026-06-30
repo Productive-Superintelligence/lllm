@@ -270,7 +270,10 @@ Custom endpoint decorators and tactic examples are included in that metadata so
 package cards can show domain routes and concrete calls alongside the portable
 `/run` interface. Use `@endpoint.get`, `@endpoint.post`, `@endpoint.put`,
 `@endpoint.patch`, or `@endpoint.delete` to declare typed service routes without
-changing the tactic protocol.
+changing the tactic protocol. Public service info and PsiHub metadata exports
+filter raw secret-shaped keys from examples and user metadata, including
+`api_key`, tokens, passwords, `authorization`, and credentials, while preserving
+local refs such as `api_key_ref`.
 Runtime adapters such as `as_tactic`, `PydanticAITactic`, and
 `NativeTacticAdapter` accept package refs, service refs, descriptions, examples,
 and metadata so wrapper-created tactics can keep the same package-facing

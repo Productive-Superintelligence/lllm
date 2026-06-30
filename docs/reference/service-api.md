@@ -14,6 +14,9 @@ reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
 `/tactics/{name}/run`. Endpoint paths, names, and tags must avoid whitespace
 and percent escapes; paths must also avoid `//` network-path prefixes.
 
+Public info endpoints filter raw secret-shaped keys from tactic examples and
+user metadata while preserving local credential refs such as `api_key_ref`.
+
 Error envelopes are stable across protocol and runtime failures.
 
 ```json

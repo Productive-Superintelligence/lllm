@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from copy import deepcopy
 from typing import Any
@@ -21,6 +22,42 @@ def copy_boundary_value(value: Any) -> Any:
     if isinstance(value, frozenset):
         return frozenset(copy_boundary_value(item) for item in value)
     return deepcopy(value)
+
+
+def public_boundary_value(value: Any) -> Any:
+    """Return an owned copy with raw secret-shaped metadata keys omitted."""
+
+    if isinstance(value, Mapping):
+        return {
+            key: public_boundary_value(item)
+            for key, item in value.items()
+            if not is_sensitive_metadata_key(key)
+        }
+    if isinstance(value, list):
+        return [public_boundary_value(item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(public_boundary_value(item) for item in value)
+    return copy_boundary_value(value)
+
+
+def is_sensitive_metadata_key(key: object) -> bool:
+    if not isinstance(key, str):
+        return False
+    normalized = re.sub(r"[^a-z0-9]+", "_", key.lower()).strip("_")
+    if not normalized:
+        return False
+    if normalized.endswith(("_ref", "_refs", "_reference", "_references")):
+        return False
+    parts = normalized.split("_")
+    if "api" in parts and "key" in parts:
+        return True
+    if "authorization" in parts or "credential" in parts or "credentials" in parts:
+        return True
+    if "password" in parts or "secret" in parts:
+        return True
+    if normalized == "token" or normalized.endswith("_token"):
+        return True
+    return False
 
 
 def optional_mapping_value(label: str, value: Any) -> dict[str, Any]:

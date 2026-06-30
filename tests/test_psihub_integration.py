@@ -93,6 +93,45 @@ def test_tactic_resource_isolates_exported_mutable_metadata():
     assert info.metadata == {"labels": ["policy"]}
 
 
+def test_tactic_resource_filters_secret_examples_and_metadata():
+    resource = tactic_resource(
+        PolicyTactic(
+            examples=[
+                {
+                    "input": {
+                        "text": "forward",
+                        "headers": {
+                            "authorization": "Bearer raw-example-auth",
+                            "x-api-key": "raw-example-key",
+                            "x-policy": "safe-policy",
+                        },
+                    },
+                    "output": {
+                        "password": "raw-example-password",
+                        "text": "forward",
+                    },
+                }
+            ],
+            metadata={
+                "api_key_ref": "credentials/openai",
+                "headers": {
+                    "authorization": "Bearer raw-metadata-auth",
+                    "x-policy": "safe-metadata-policy",
+                },
+            },
+        )
+    )
+
+    rendered = str(resource["examples"]) + str(resource["metadata"])
+    assert "raw-example-auth" not in rendered
+    assert "raw-example-key" not in rendered
+    assert "raw-example-password" not in rendered
+    assert "raw-metadata-auth" not in rendered
+    assert "safe-policy" in rendered
+    assert "safe-metadata-policy" in rendered
+    assert resource["metadata"]["api_key_ref"] == "credentials/openai"
+
+
 def test_tactic_resource_accepts_nested_read_only_mapping_info_values():
     input_inner = {"type": "string"}
     output_inner = {"type": "string"}
