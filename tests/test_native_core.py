@@ -409,6 +409,7 @@ def test_dialog_put_prompt_fork_and_roundtrip_lineage():
     assert len(child.messages) == 2
     assert child.tree_node.parent_id == dialog.dialog_id
     assert child.tree_node.last_n == 1
+    assert child.tree_node.first_k == 1
     assert dialog.tree_node.children_ids == [child.dialog_id]
 
     restored = Dialog.from_dict(dialog.to_dict())
@@ -432,6 +433,43 @@ def test_dialog_overview_rejects_coerced_remove_tail_flag(value):
 
     with pytest.raises(TypeError, match="remove_tail"):
         dialog.overview(remove_tail=value)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    ("kwargs", "match"),
+    [
+        ({"last_n": True}, "last_n"),
+        ({"first_k": True}, "first_k"),
+        ({"last_n": -1}, "last_n"),
+        ({"first_k": -1}, "first_k"),
+        ({"last_n": 1.5}, "last_n"),
+        ({"first_k": "1"}, "first_k"),
+    ],
+)
+def test_dialog_fork_rejects_invalid_slice_counts(kwargs, match):
+    dialog = Dialog(owner="agent")
+    dialog.put_text("first")
+    dialog.put_text("second")
+
+    with pytest.raises((TypeError, ValueError), match=match):
+        dialog.fork(**kwargs)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("value", [True, -1, 1.5, "10"])
+def test_dialog_overview_rejects_invalid_max_length(value):
+    dialog = Dialog(owner="agent")
+    dialog.put_text("first")
+
+    with pytest.raises((TypeError, ValueError), match="max_length"):
+        dialog.overview(max_length=value)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize("value", [True, -1, 1.5, "1"])
+def test_dialog_tree_overview_rejects_invalid_indent(value):
+    dialog = Dialog(owner="agent")
+
+    with pytest.raises((TypeError, ValueError), match="indent"):
+        dialog.tree_overview(indent=value)  # type: ignore[arg-type]
 
 
 def test_native_prompt_and_message_metadata_are_isolated():

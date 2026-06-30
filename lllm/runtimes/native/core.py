@@ -510,19 +510,21 @@ class Dialog:
 
     def fork(self, *, last_n: int = 0, first_k: int = 1) -> "Dialog":
         assert self.tree_node is not None
-        if last_n >= len(self._messages):
-            last_n = 0
-        if last_n > 0:
-            tail_start = len(self._messages) - last_n
-            first_k = min(first_k, tail_start) if first_k > 0 else 0
-            messages = self._messages[:first_k] + self._messages[tail_start:]
+        last_n_value = _nonnegative_int_value("last_n", last_n)
+        first_k_value = _nonnegative_int_value("first_k", first_k)
+        if last_n_value >= len(self._messages):
+            last_n_value = 0
+        if last_n_value > 0:
+            tail_start = len(self._messages) - last_n_value
+            first_k_value = min(first_k_value, tail_start) if first_k_value > 0 else 0
+            messages = self._messages[:first_k_value] + self._messages[tail_start:]
         else:
             messages = self._messages
         child_node = DialogTreeNode(
             owner=self.owner,
             split_point=len(messages),
-            last_n=last_n,
-            first_k=first_k,
+            last_n=last_n_value,
+            first_k=first_k_value,
         )
         child = Dialog(
             session_name=self.session_name,
@@ -537,26 +539,32 @@ class Dialog:
         return child
 
     def overview(self, *, max_length: int = 100, remove_tail: bool = False) -> str:
+        max_length_value = _nonnegative_int_value("max_length", max_length)
         remove_tail_value = _bool_value("remove_tail", remove_tail)
         messages = self._messages[:-1] if remove_tail_value else self._messages
         rows = []
         for index, message in enumerate(messages):
             content = str(message.content)
-            preview = content[:max_length] + "..." if len(content) > max_length else content
+            preview = (
+                content[:max_length_value] + "..."
+                if len(content) > max_length_value
+                else content
+            )
             rows.append(f"[{index}. {message.name} ({message.role.msg_value})]: {preview}")
         return "\n\n".join(rows)
 
     def tree_overview(self, *, indent: int = 0) -> str:
         assert self.tree_node is not None
-        prefix = "  " * indent
-        branch = "+- " if indent > 0 else ""
+        indent_value = _nonnegative_int_value("indent", indent)
+        prefix = "  " * indent_value
+        branch = "+- " if indent_value > 0 else ""
         line = (
             f"{prefix}{branch}[{self.dialog_id[:8]}] owner={self.owner} "
             f"msgs={len(self._messages)} split@{self.tree_node.split_point}"
         )
         lines = [line]
         for child in self._children_dialogs:
-            lines.append(child.tree_overview(indent=indent + 1))
+            lines.append(child.tree_overview(indent=indent_value + 1))
         return "\n".join(lines)
 
     def to_dict(self) -> dict[str, Any]:
@@ -890,6 +898,14 @@ def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:
 def _bool_value(label: str, value: Any) -> bool:
     if not isinstance(value, bool):
         raise TypeError(f"{label} must be a boolean.")
+    return value
+
+
+def _nonnegative_int_value(label: str, value: Any) -> int:
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise TypeError(f"{label} must be a non-negative integer.")
+    if value < 0:
+        raise ValueError(f"{label} must be a non-negative integer.")
     return value
 
 
