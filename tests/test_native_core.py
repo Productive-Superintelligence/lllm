@@ -1,3 +1,5 @@
+from types import MappingProxyType
+
 import pytest
 from pydantic import ValidationError
 
@@ -316,6 +318,39 @@ def test_native_prompt_and_message_metadata_are_isolated():
     assert child.addon_args == {"settings": {"tone": "careful"}}
     assert message.metadata["nested"] == {"value": 1}
     assert prompt_message.metadata["nested"] == {"value": 2}
+
+
+def test_native_models_accept_nested_read_only_mapping_metadata():
+    prompt_inner = {"value": 1}
+    addon_inner = {"tone": "careful"}
+    message_inner = {"value": 2}
+    prompt_message_inner = {"value": 3}
+    prompt = Prompt(
+        path="draft",
+        prompt="Write about {topic}.",
+        metadata={"nested": MappingProxyType(prompt_inner)},
+        addon_args={"settings": MappingProxyType(addon_inner)},
+    )
+    dialog = Dialog()
+    message = dialog.put_text(
+        "hello",
+        metadata={"nested": MappingProxyType(message_inner)},
+    )
+    prompt_message = dialog.put_prompt(
+        prompt,
+        prompt_args={"topic": "metadata"},
+        metadata={"nested": MappingProxyType(prompt_message_inner)},
+    )
+
+    prompt_inner["value"] = 10
+    addon_inner["tone"] = "changed"
+    message_inner["value"] = 20
+    prompt_message_inner["value"] = 30
+
+    assert prompt.info_dict()["metadata"] == {"nested": {"value": 1}}
+    assert prompt.info_dict()["addon_args"] == {"settings": {"tone": "careful"}}
+    assert message.metadata["nested"] == {"value": 2}
+    assert prompt_message.metadata["nested"] == {"value": 3}
 
 
 @pytest.mark.parametrize("metadata", [[], [("owner", "tests")], "bad", 123])

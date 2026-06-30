@@ -1,6 +1,7 @@
 import asyncio
 import json
 from dataclasses import dataclass
+from types import MappingProxyType
 
 import httpx
 import pytest
@@ -153,6 +154,32 @@ def test_proxy_tactic_isolates_mutable_metadata():
 
     record = log.records[0]
     assert info_before.metadata["purpose"] == {"name": "test"}
+    assert proxy.info().metadata["purpose"] == {"name": "test"}
+    assert record.metadata["context"]["trace"] == {"id": "one"}
+    assert record.metadata["proxy"]["purpose"] == {"name": "test"}
+
+
+def test_proxy_tactic_accepts_nested_read_only_mapping_metadata():
+    log = InMemoryProxyLog()
+    proxy_inner = {"name": "test"}
+    context_inner = {"id": "one"}
+    proxy = ProxyTactic(
+        EchoTactic(),
+        sink=log.append,
+        metadata={"purpose": MappingProxyType(proxy_inner)},
+    )
+
+    proxy.run(
+        {"text": "hi"},
+        context=CallContext(
+            request_id="req-mapping",
+            metadata={"trace": MappingProxyType(context_inner)},
+        ),
+    )
+    proxy_inner["name"] = "changed"
+    context_inner["id"] = "two"
+
+    record = log.records[0]
     assert proxy.info().metadata["purpose"] == {"name": "test"}
     assert record.metadata["context"]["trace"] == {"id": "one"}
     assert record.metadata["proxy"]["purpose"] == {"name": "test"}

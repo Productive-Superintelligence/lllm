@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import inspect
 import time
-from copy import deepcopy
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
 from .protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
-from .protocol._validation import token_value
+from .protocol._validation import copy_boundary_value, optional_mapping_value, token_value
 
 ValueHook = Callable[[Any, CallContext], Any]
 ErrorHook = Callable[[BaseException, CallContext], Any]
@@ -35,9 +34,9 @@ class ProxyRecord(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
-        self.input_value = deepcopy(self.input_value)
-        self.output_value = deepcopy(self.output_value)
-        self.metadata = deepcopy(self.metadata)
+        self.input_value = copy_boundary_value(self.input_value)
+        self.output_value = copy_boundary_value(self.output_value)
+        self.metadata = copy_boundary_value(self.metadata)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "ProxyRecord":
@@ -300,8 +299,8 @@ class ProxyTactic(Tactic[Any, Any]):
                 error_type=error_type,
                 error=error,
                 metadata={
-                    "context": deepcopy(context.metadata),
-                    "proxy": deepcopy(self.proxy_metadata),
+                    "context": copy_boundary_value(context.metadata),
+                    "proxy": copy_boundary_value(self.proxy_metadata),
                 },
             )
         )
@@ -368,7 +367,7 @@ def _portable(value: Any) -> Any:
         return value.model_dump(mode="json")
     if isinstance(value, (list, tuple)):
         return [_portable(item) for item in value]
-    if isinstance(value, dict):
+    if isinstance(value, Mapping):
         return {key: _portable(item) for key, item in value.items()}
     return value
 
@@ -382,11 +381,7 @@ def _call_context(value: Any) -> CallContext:
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
-    if value is None:
-        return {}
-    if not isinstance(value, Mapping):
-        raise TypeError("metadata must be a mapping.")
-    return deepcopy(dict(value))
+    return optional_mapping_value("metadata", value)
 
 
 __all__ = [

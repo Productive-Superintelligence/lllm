@@ -1,6 +1,5 @@
 """FastAPI service adapter for tactics."""
 
-from copy import deepcopy
 import inspect
 import json
 import re
@@ -10,7 +9,7 @@ from typing import Any
 from pydantic import BaseModel, Field, StrictStr, ValidationError, model_validator
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
-from ..protocol._validation import token_value
+from ..protocol._validation import copy_boundary_value, token_value
 from .endpoints import (
     EndpointSpec,
     custom_endpoints,
@@ -31,9 +30,9 @@ class RunRequest(BaseModel):
         return self.input if self.input is not None else self.task
 
     def model_post_init(self, __context: Any) -> None:
-        self.input = deepcopy(self.input)
-        self.task = deepcopy(self.task)
-        self.context = deepcopy(self.context)
+        self.input = copy_boundary_value(self.input)
+        self.task = copy_boundary_value(self.task)
+        self.context = copy_boundary_value(self.context)
 
 
 class RunResponse(BaseModel):
@@ -44,7 +43,7 @@ class RunResponse(BaseModel):
     tactic: StrictStr
 
     def model_post_init(self, __context: Any) -> None:
-        self.output = deepcopy(self.output)
+        self.output = copy_boundary_value(self.output)
 
     @model_validator(mode="after")
     def _validate_request_id(self) -> "RunResponse":
@@ -63,7 +62,7 @@ class ErrorDetail(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
-        self.metadata = deepcopy(self.metadata)
+        self.metadata = copy_boundary_value(self.metadata)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "ErrorDetail":

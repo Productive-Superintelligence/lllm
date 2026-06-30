@@ -6,13 +6,18 @@ import asyncio
 import inspect
 import time
 import traceback
-from copy import deepcopy
 from collections.abc import AsyncIterator, Iterator, Mapping
 from typing import Any, ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
-from ._validation import optional_text_value, path_segment_value, token_value
+from ._validation import (
+    copy_boundary_value,
+    optional_mapping_value,
+    optional_text_value,
+    path_segment_value,
+    token_value,
+)
 from .context import CallContext
 from .errors import TacticUnsupportedError
 from .events import TacticEvent
@@ -39,7 +44,7 @@ class CallTrace(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
-        self.metadata = deepcopy(self.metadata)
+        self.metadata = copy_boundary_value(self.metadata)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "CallTrace":
@@ -72,8 +77,8 @@ class CallResult(BaseModel):
     trace: CallTrace
 
     def model_post_init(self, __context: Any) -> None:
-        self.output = deepcopy(self.output)
-        self.trace = self.trace.model_copy(deep=True)
+        self.output = copy_boundary_value(self.output)
+        self.trace = copy_boundary_value(self.trace)
 
 
 class TacticInfo(BaseModel):
@@ -91,10 +96,10 @@ class TacticInfo(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
-        self.input_schema = deepcopy(self.input_schema)
-        self.output_schema = deepcopy(self.output_schema)
-        self.examples = deepcopy(self.examples)
-        self.metadata = deepcopy(self.metadata)
+        self.input_schema = copy_boundary_value(self.input_schema)
+        self.output_schema = copy_boundary_value(self.output_schema)
+        self.examples = copy_boundary_value(self.examples)
+        self.metadata = copy_boundary_value(self.metadata)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticInfo":
@@ -134,7 +139,7 @@ class Tactic(Generic[InputT, OutputT]):
         self._description = optional_text_value(description, "description")
         self.package_ref = optional_text_value(package_ref, "package_ref")
         self.service_ref = optional_text_value(service_ref, "service_ref")
-        self.examples = deepcopy(examples or [])
+        self.examples = copy_boundary_value(examples or [])
         self.metadata = _metadata_mapping(metadata)
 
     @property
@@ -157,8 +162,8 @@ class Tactic(Generic[InputT, OutputT]):
             runtime_kind=self.runtime_kind,
             package_ref=self.package_ref,
             service_ref=self.service_ref,
-            examples=deepcopy(self.examples),
-            metadata=deepcopy(self.metadata),
+            examples=copy_boundary_value(self.examples),
+            metadata=copy_boundary_value(self.metadata),
         )
 
     def validate_input(self, value: Any) -> Any:
@@ -288,7 +293,7 @@ class Tactic(Generic[InputT, OutputT]):
             request_id=context.request_id,
             tactic=self.tactic_name,
             input_type=type_name(self.input_type),
-            metadata=deepcopy(context.metadata),
+            metadata=copy_boundary_value(context.metadata),
         )
 
 
@@ -301,8 +306,4 @@ def _call_context(value: Any) -> CallContext:
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
-    if value is None:
-        return {}
-    if not isinstance(value, Mapping):
-        raise TypeError("metadata must be a mapping.")
-    return deepcopy(dict(value))
+    return optional_mapping_value("metadata", value)

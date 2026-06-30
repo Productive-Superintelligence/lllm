@@ -29,6 +29,7 @@ from ...parsers import (
     find_md_blocks,
     find_xml_blocks,
 )
+from ...protocol._validation import copy_boundary_value, optional_mapping_value
 
 
 class Role(str, Enum):
@@ -119,8 +120,8 @@ class FunctionCall(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         _validate_tool_name(self.name, "function call name")
-        self.arguments = copy.deepcopy(self.arguments)
-        self.result = copy.deepcopy(self.result)
+        self.arguments = copy_boundary_value(self.arguments)
+        self.result = copy_boundary_value(self.result)
 
     @property
     def success(self) -> bool:
@@ -175,12 +176,12 @@ class Message(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     def model_post_init(self, __context: Any) -> None:
-        self.content = copy.deepcopy(self.content)
+        self.content = copy_boundary_value(self.content)
         self.function_calls = copy.deepcopy(self.function_calls)
         self.logprobs = copy.deepcopy(self.logprobs)
-        self.parsed = copy.deepcopy(self.parsed)
-        self.usage = copy.deepcopy(self.usage)
-        self.metadata = copy.deepcopy(self.metadata)
+        self.parsed = copy_boundary_value(self.parsed)
+        self.usage = copy_boundary_value(self.usage)
+        self.metadata = copy_boundary_value(self.metadata)
         self.vectors = copy.deepcopy(self.vectors)
 
     @property
@@ -524,7 +525,7 @@ class Function(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         _validate_tool_name(self.name, "function name")
-        self.properties = copy.deepcopy(self.properties)
+        self.properties = copy_boundary_value(self.properties)
         self.required = copy.deepcopy(self.required)
 
     def __call__(self, function_call: FunctionCall) -> FunctionCall:
@@ -548,7 +549,7 @@ class Function(BaseModel):
                 "description": self.description,
                 "parameters": {
                     "type": "object",
-                    "properties": copy.deepcopy(self.properties),
+                    "properties": copy_boundary_value(self.properties),
                     "required": copy.deepcopy(self.required),
                     "additionalProperties": self.additional_properties,
                 },
@@ -669,8 +670,8 @@ class Prompt(BaseModel):
             for _, field_name, _, _ in formatter.parse(self.prompt)
             if field_name is not None
         }
-        self.metadata = copy.deepcopy(self.metadata)
-        self.addon_args = copy.deepcopy(self.addon_args)
+        self.metadata = copy_boundary_value(self.metadata)
+        self.addon_args = copy_boundary_value(self.addon_args)
         self.function_list = copy.deepcopy(self.function_list)
 
     @property
@@ -723,7 +724,9 @@ class Prompt(BaseModel):
         current = {}
         for field_name in type(self).model_fields:
             value = getattr(self, field_name)
-            if field_name in {"addon_args", "function_list", "metadata"}:
+            if field_name in {"addon_args", "metadata"}:
+                value = copy_boundary_value(value)
+            elif field_name == "function_list":
                 value = copy.deepcopy(value)
             current[field_name] = value
         current.update(overrides)
@@ -733,12 +736,12 @@ class Prompt(BaseModel):
         return {
             "path": self.path,
             "prompt_hash": hashlib.sha256(self.prompt.encode()).hexdigest()[:12],
-            "metadata": copy.deepcopy(self.metadata),
+            "metadata": copy_boundary_value(self.metadata),
             "functions": [
                 function.name if isinstance(function, Function) else function
                 for function in self.function_list
             ],
-            "addon_args": copy.deepcopy(self.addon_args),
+            "addon_args": copy_boundary_value(self.addon_args),
             "has_parser": self.parser is not None,
             "has_format": self.format is not None,
         }
@@ -756,11 +759,7 @@ def _metadata_mapping(value: Any) -> dict[str, Any]:
 
 
 def _optional_mapping(label: str, value: Any) -> dict[str, Any]:
-    if value is None:
-        return {}
-    if not isinstance(value, Mapping):
-        raise TypeError(f"{label} must be a mapping.")
-    return copy.deepcopy(dict(value))
+    return optional_mapping_value(label, value)
 
 
 def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:

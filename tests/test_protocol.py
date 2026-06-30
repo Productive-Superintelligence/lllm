@@ -6,6 +6,7 @@ import sys
 import textwrap
 from dataclasses import dataclass
 from pathlib import Path
+from types import MappingProxyType
 
 import pytest
 from pydantic import BaseModel, ValidationError
@@ -90,6 +91,46 @@ def test_call_context_isolates_mutable_metadata_inputs():
 
     assert context.metadata == {"nested": {"value": 1}}
     assert context.tags == {"kind": "demo"}
+
+
+def test_protocol_models_accept_nested_read_only_mapping_metadata():
+    context_inner = {"value": 1}
+    event_inner = {"value": 2}
+    info_inner = {"value": 3}
+    trace_inner = {"value": 4}
+    tactic_inner = {"value": 5}
+
+    context = CallContext(metadata={"nested": MappingProxyType(context_inner)})
+    event = TacticEvent(
+        kind="progress",
+        data={"nested": MappingProxyType({"value": "payload"})},
+        metadata={"nested": MappingProxyType(event_inner)},
+    )
+    info = TacticInfo(
+        name="echo",
+        examples=[{"input": MappingProxyType({"text": "hello"})}],
+        metadata={"nested": MappingProxyType(info_inner)},
+    )
+    trace = CallTrace(
+        request_id="req",
+        tactic="echo",
+        metadata={"nested": MappingProxyType(trace_inner)},
+    )
+    tactic = EchoTactic(metadata={"nested": MappingProxyType(tactic_inner)})
+
+    context_inner["value"] = 10
+    event_inner["value"] = 20
+    info_inner["value"] = 30
+    trace_inner["value"] = 40
+    tactic_inner["value"] = 50
+
+    assert context.metadata == {"nested": {"value": 1}}
+    assert event.data == {"nested": {"value": "payload"}}
+    assert event.metadata == {"nested": {"value": 2}}
+    assert info.examples == [{"input": {"text": "hello"}}]
+    assert info.metadata == {"nested": {"value": 3}}
+    assert trace.metadata == {"nested": {"value": 4}}
+    assert tactic.info().metadata == {"nested": {"value": 5}}
 
 
 def test_tactic_event_isolates_mutable_payload_inputs():

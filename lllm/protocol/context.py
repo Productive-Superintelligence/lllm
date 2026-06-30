@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from copy import deepcopy
 import uuid
 from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, model_validator
 
-from ._validation import token_value
+from ._validation import copy_boundary_value, token_value
 
 
 class CallContext(BaseModel):
@@ -38,8 +37,8 @@ class CallContext(BaseModel):
         return self.request_id
 
     def model_post_init(self, __context: Any) -> None:
-        self.metadata = deepcopy(self.metadata)
-        self.tags = deepcopy(self.tags)
+        self.metadata = copy_boundary_value(self.metadata)
+        self.tags = copy_boundary_value(self.tags)
 
     @model_validator(mode="after")
     def _validate_identifiers(self) -> "CallContext":

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
-from copy import deepcopy
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -17,7 +16,7 @@ from ..protocol import (
     TacticInfo,
     TacticServiceError,
 )
-from ..protocol._validation import token_value
+from ..protocol._validation import copy_boundary_value, optional_mapping_value, token_value
 
 
 class RemoteTacticError(TacticServiceError):
@@ -214,13 +213,13 @@ class RemoteTactic(Tactic[Any, Any]):
 
 def _request_envelope(input_value: Any, context: CallContext | None) -> dict[str, Any]:
     if isinstance(input_value, BaseModel):
-        value = deepcopy(input_value.model_dump(mode="json"))
+        value = copy_boundary_value(input_value.model_dump(mode="json"))
     else:
-        value = deepcopy(input_value)
+        value = copy_boundary_value(input_value)
     context_value = _call_context(context)
     return {
         "input": value,
-        "context": deepcopy(context_value.model_dump(mode="json")),
+        "context": copy_boundary_value(context_value.model_dump(mode="json")),
     }
 
 
@@ -233,11 +232,7 @@ def _call_context(value: Any) -> CallContext:
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
-    if value is None:
-        return {}
-    if not isinstance(value, Mapping):
-        raise TypeError("metadata must be a mapping.")
-    return deepcopy(dict(value))
+    return optional_mapping_value("metadata", value)
 
 
 def _response_output(response: Any) -> Any:

@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import inspect
 from collections.abc import Callable, Mapping
-from copy import deepcopy
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr
 
 from ..protocol import CallContext, Tactic, TacticInfo
+from ..protocol._validation import copy_boundary_value
 
 InputMode = Literal["auto", "json", "dict", "python", "text"]
 ResultMode = Literal["output", "result"]
@@ -62,8 +62,8 @@ class PydanticAITacticConfig(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         self.run_kwargs = _copy_runtime_kwargs(self.run_kwargs)
-        self.examples = deepcopy(self.examples)
-        self.metadata = deepcopy(self.metadata)
+        self.examples = copy_boundary_value(self.examples)
+        self.metadata = copy_boundary_value(self.metadata)
 
 
 class PydanticAITactic(Tactic[Any, Any]):
@@ -417,7 +417,7 @@ def _is_basemodel_type(value: Any) -> bool:
 
 
 def _context_metadata(context: CallContext) -> dict[str, Any]:
-    metadata = deepcopy(context.metadata)
+    metadata = copy_boundary_value(context.metadata)
     metadata.setdefault("lllm_request_id", context.request_id)
     if context.trace_id is not None:
         metadata.setdefault("lllm_trace_id", context.trace_id)

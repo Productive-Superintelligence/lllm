@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import time
 import uuid
-from copy import deepcopy
 from typing import Any
 
 from pydantic import BaseModel, Field, StrictStr, model_validator
 
-from ._validation import token_value
+from ._validation import copy_boundary_value, token_value
 
 
 class TacticEvent(BaseModel):
@@ -22,8 +21,8 @@ class TacticEvent(BaseModel):
     metadata: dict[str, Any] = Field(default_factory=dict)
 
     def model_post_init(self, __context: Any) -> None:
-        self.data = deepcopy(self.data)
-        self.metadata = deepcopy(self.metadata)
+        self.data = copy_boundary_value(self.data)
+        self.metadata = copy_boundary_value(self.metadata)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticEvent":
