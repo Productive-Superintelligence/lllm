@@ -49,6 +49,7 @@ class TacticResolver:
                 continue
             if not is_tactic_ref:
                 continue
+            _validate_tactic_url_binding_targets(raw_ref, data)
             url = data["url"]
             if not isinstance(url, str) or not url.strip():
                 raise TacticRefError(
@@ -158,6 +159,16 @@ def _config_ref_metadata(ref: str, data: dict[str, Any]) -> dict[str, Any]:
         if key not in {"url", "store", "path", "metadata"}
     }
     return {**extras, **metadata}
+
+
+def _validate_tactic_url_binding_targets(ref: str, data: dict[str, Any]) -> None:
+    targets = [name for name in ("url", "store", "path") if name in data]
+    if len(targets) > 1:
+        targets_text = ", ".join(targets)
+        raise TacticRefError(
+            "Tactic URL binding must declare only one concrete target, "
+            f"got {targets_text}: {ref}"
+        )
 
 
 def _metadata_mapping(value: Any, ref: str) -> dict[str, Any]:

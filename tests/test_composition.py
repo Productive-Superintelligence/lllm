@@ -1044,6 +1044,26 @@ url = {url_value}
             TacticResolver.from_config(config_dir.parent)
 
 
+@pytest.mark.parametrize("extra_target", ['store = ".sssn"', 'path = "tactic.py"'])
+def test_resolver_rejects_ambiguous_tactic_url_targets_from_local_config(
+    tmp_path,
+    extra_target,
+):
+    config_dir = tmp_path / "workspace" / ".psi"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."{REF}"]
+url = "http://127.0.0.1:8000/tactics/echo"
+{extra_target}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(TacticRefError, match="only one concrete target"):
+        TacticResolver.from_config(config_dir.parent)
+
+
 def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_path):
     for index, url in enumerate(("service", "/service", "ftp://service", "http://")):
         config_dir = tmp_path / f"workspace-url-{index}" / ".psi"
