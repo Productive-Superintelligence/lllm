@@ -994,6 +994,40 @@ store = ".sssn"
         TacticResolver.from_config(config_dir.parent)
 
 
+@pytest.mark.parametrize(
+    ("resource_kind", "target_line"),
+    [
+        ("schemas", 'path = "schemas/input.json"'),
+        ("services", 'url = "http://127.0.0.1:8000"'),
+        ("channels", 'store = ".sssn"'),
+        ("snapshots", 'store = ".sssn"'),
+        ("runs", 'path = "runs/latest.json"'),
+        ("configs", 'path = ".psi/config.toml"'),
+        ("docs", 'path = "docs/guide.md"'),
+        ("examples", 'path = "examples/demo.py"'),
+        ("assets", 'path = "assets/logo.svg"'),
+    ],
+)
+def test_resolver_ignores_known_non_tactic_config_sections(
+    tmp_path,
+    resource_kind,
+    target_line,
+):
+    config_dir = tmp_path / resource_kind / ".psi"
+    config_dir.mkdir(parents=True)
+    (config_dir / "config.toml").write_text(
+        f"""
+[refs."psi://demo/echo/{resource_kind}/local"]
+{target_line}
+""".lstrip(),
+        encoding="utf-8",
+    )
+
+    resolver = TacticResolver.from_config(config_dir.parent)
+
+    assert resolver.refs() == ()
+
+
 def test_resolver_rejects_invalid_tactic_url_values_from_local_config(tmp_path):
     for index, url_value in enumerate(("123", "false", '""', '"   "'), start=1):
         config_dir = tmp_path / f"workspace-{index}" / ".psi"
