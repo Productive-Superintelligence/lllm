@@ -147,7 +147,7 @@ def test_create_rejects_percent_bearing_project_names(tmp_path):
 
 
 def test_create_rejects_malformed_name_and_directory_values(tmp_path):
-    for name in (123, "   "):
+    for name in (123, "   ", " demo "):
         with pytest.raises(ValueError, match="Project name"):
             create_project("plain", name, directory=tmp_path)  # type: ignore[arg-type]
 
@@ -169,6 +169,7 @@ def test_cli_create_project(tmp_path, capsys):
     [
         ["create", "plain", "___"],
         ["create", "plain", "demo%2Fname"],
+        ["create", "plain", " demo "],
         ["create", "plain", "demo", "--directory", "   "],
         ["create", "plain", "demo", "--directory", " ./out "],
     ],
