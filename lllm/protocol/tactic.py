@@ -139,7 +139,7 @@ class Tactic(Generic[InputT, OutputT]):
         self._description = optional_text_value(description, "description")
         self.package_ref = optional_text_value(package_ref, "package_ref")
         self.service_ref = optional_text_value(service_ref, "service_ref")
-        self.examples = copy_boundary_value(examples or [])
+        self.examples = _examples_list(examples)
         self.metadata = _metadata_mapping(metadata)
 
     @property
@@ -307,3 +307,14 @@ def _call_context(value: Any) -> CallContext:
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
     return optional_mapping_value("metadata", value)
+
+
+def _examples_list(value: Any) -> list[dict[str, Any]]:
+    if value is None:
+        return []
+    if not isinstance(value, list):
+        raise TypeError("examples must be a list.")
+    for example in value:
+        if not isinstance(example, Mapping):
+            raise TypeError("examples must contain mappings.")
+    return copy_boundary_value(value)
