@@ -53,7 +53,7 @@ class SandboxedTactic(Tactic[Any, Any]):
         self.policy = (
             policy.model_copy(deep=True)
             if isinstance(policy, SandboxPolicy)
-            else SandboxPolicy.model_validate(policy or {})
+            else SandboxPolicy.model_validate({} if policy is None else policy)
         )
         info = tactic.info()
         self.input_type = tactic.input_type

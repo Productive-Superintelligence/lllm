@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import httpx
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from lllm import (
     CallContext,
@@ -98,6 +98,12 @@ def test_sandboxed_tactic_allows_calls_within_policy():
 def test_sandboxed_tactic_rejects_explicit_blank_names(name):
     with pytest.raises(ValueError, match="name"):
         SandboxedTactic(EchoTactic(), name=name)
+
+
+@pytest.mark.parametrize("policy", [[], "", 0, False])
+def test_sandboxed_tactic_rejects_falsey_non_mapping_policy(policy):
+    with pytest.raises(ValidationError):
+        SandboxedTactic(EchoTactic(), policy=policy)
 
 
 def test_sandboxed_tactic_isolates_policy_object():
