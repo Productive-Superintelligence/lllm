@@ -106,6 +106,19 @@ def test_sandboxed_tactic_rejects_falsey_non_mapping_policy(policy):
         SandboxedTactic(EchoTactic(), policy=policy)
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["timeout_seconds", "max_input_bytes", "max_output_bytes"],
+)
+@pytest.mark.parametrize("value", [False, True])
+def test_sandbox_policy_rejects_boolean_numeric_limits(field, value):
+    with pytest.raises(ValidationError, match=field):
+        SandboxPolicy(**{field: value})
+
+    with pytest.raises(ValidationError, match=field):
+        SandboxedTactic(EchoTactic(), policy={field: value})
+
+
 def test_sandboxed_tactic_isolates_policy_object():
     policy = SandboxPolicy(max_input_bytes=100, allowed_metadata_keys=("tenant",))
     tactic = SandboxedTactic(EchoTactic(), policy=policy)

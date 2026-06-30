@@ -6,7 +6,7 @@ import asyncio
 import json
 from typing import Any
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from .protocol import CallContext, Tactic, TacticError
 
@@ -34,6 +34,18 @@ class SandboxPolicy(BaseModel):
     max_input_bytes: int | None = Field(default=None, gt=0)
     max_output_bytes: int | None = Field(default=None, gt=0)
     allowed_metadata_keys: tuple[str, ...] | None = None
+
+    @field_validator(
+        "timeout_seconds",
+        "max_input_bytes",
+        "max_output_bytes",
+        mode="before",
+    )
+    @classmethod
+    def _reject_bool_numeric_limits(cls, value: Any, info: ValidationInfo) -> Any:
+        if isinstance(value, bool):
+            raise ValueError(f"{info.field_name} must be numeric, not boolean")
+        return value
 
 
 class SandboxedTactic(Tactic[Any, Any]):
