@@ -308,6 +308,83 @@ def test_invoke_cost_rejects_bool_numeric_fields(field, value):
         InvokeCost(**{field: value})
 
 
+def test_message_cost_defaults_total_tokens_from_prompt_and_completion_tokens():
+    message = Message(
+        role=Role.USER,
+        content="hello",
+        name="user",
+        usage={"prompt_tokens": 2, "completion_tokens": 3},
+    )
+
+    cost = message.cost
+
+    assert cost.prompt_tokens == 2
+    assert cost.completion_tokens == 3
+    assert cost.total_tokens == 5
+
+
+@pytest.mark.parametrize("value", [False, True])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "input_cost_per_token",
+        "output_cost_per_token",
+        "cache_read_input_token_cost",
+        "prompt_cost",
+        "completion_cost",
+        "response_cost",
+    ],
+)
+def test_message_cost_rejects_bool_top_level_usage_fields(field, value):
+    message = Message(
+        role=Role.USER,
+        content="hello",
+        name="user",
+        usage={field: value},
+    )
+
+    with pytest.raises(ValueError, match=f"usage\\.{field}"):
+        message.cost
+
+
+@pytest.mark.parametrize("value", [False, True])
+@pytest.mark.parametrize(
+    ("section", "field"),
+    [
+        ("prompt_tokens_details", "cached_tokens"),
+        ("prompt_tokens_details", "audio_tokens"),
+        ("completion_tokens_details", "reasoning_tokens"),
+        ("completion_tokens_details", "audio_tokens"),
+    ],
+)
+def test_message_cost_rejects_bool_usage_detail_fields(section, field, value):
+    message = Message(
+        role=Role.USER,
+        content="hello",
+        name="user",
+        usage={section: {field: value}},
+    )
+
+    with pytest.raises(ValueError, match=f"usage\\.{section}\\.{field}"):
+        message.cost
+
+
+@pytest.mark.parametrize("field", ["prompt_tokens_details", "completion_tokens_details"])
+def test_message_cost_rejects_non_mapping_usage_details(field):
+    message = Message(
+        role=Role.USER,
+        content="hello",
+        name="user",
+        usage={field: ["cached_tokens", 1]},
+    )
+
+    with pytest.raises(ValueError, match=f"usage\\.{field}"):
+        message.cost
+
+
 @pytest.mark.parametrize("value", [False, True])
 def test_token_logprob_rejects_bool_numeric_fields(value):
     with pytest.raises(ValidationError, match="logprob"):

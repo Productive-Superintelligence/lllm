@@ -136,6 +136,30 @@ class InvokeCost(BaseModel):
         )
 
 
+def _usage_int(value: Any, label: str) -> int:
+    if isinstance(value, bool):
+        raise ValueError(f"{label} must not be boolean")
+    if not value:
+        return 0
+    return int(value)
+
+
+def _usage_float(value: Any, label: str) -> float:
+    if isinstance(value, bool):
+        raise ValueError(f"{label} must not be boolean")
+    if not value:
+        return 0.0
+    return float(value)
+
+
+def _usage_mapping(value: Any, label: str) -> Mapping[str, Any]:
+    if not value:
+        return {}
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{label} must be a mapping")
+    return value
+
+
 class FunctionCall(BaseModel):
     """One invocation of a native tool, including its result once executed."""
 
@@ -242,30 +266,69 @@ class Message(BaseModel):
     def cost(self) -> InvokeCost:
         if not self.usage:
             return InvokeCost()
-        prompt_tokens = int(self.usage.get("prompt_tokens", 0) or 0)
-        completion_tokens = int(self.usage.get("completion_tokens", 0) or 0)
-        prompt_details = self.usage.get("prompt_tokens_details", {}) or {}
-        completion_details = self.usage.get("completion_tokens_details", {}) or {}
+        prompt_tokens = _usage_int(
+            self.usage.get("prompt_tokens"),
+            "usage.prompt_tokens",
+        )
+        completion_tokens = _usage_int(
+            self.usage.get("completion_tokens"),
+            "usage.completion_tokens",
+        )
+        prompt_details = _usage_mapping(
+            self.usage.get("prompt_tokens_details"),
+            "usage.prompt_tokens_details",
+        )
+        completion_details = _usage_mapping(
+            self.usage.get("completion_tokens_details"),
+            "usage.completion_tokens_details",
+        )
         return InvokeCost(
             prompt_tokens=prompt_tokens,
             completion_tokens=completion_tokens,
-            total_tokens=int(
-                self.usage.get("total_tokens", prompt_tokens + completion_tokens) or 0
+            total_tokens=_usage_int(
+                self.usage.get("total_tokens", prompt_tokens + completion_tokens),
+                "usage.total_tokens",
             ),
-            cached_prompt_tokens=int(prompt_details.get("cached_tokens") or 0),
-            audio_prompt_tokens=int(prompt_details.get("audio_tokens") or 0),
-            reasoning_tokens=int(completion_details.get("reasoning_tokens") or 0),
-            audio_completion_tokens=int(completion_details.get("audio_tokens") or 0),
-            input_cost_per_token=float(self.usage.get("input_cost_per_token", 0.0) or 0.0),
-            output_cost_per_token=float(
-                self.usage.get("output_cost_per_token", 0.0) or 0.0
+            cached_prompt_tokens=_usage_int(
+                prompt_details.get("cached_tokens"),
+                "usage.prompt_tokens_details.cached_tokens",
             ),
-            cache_read_input_token_cost=float(
-                self.usage.get("cache_read_input_token_cost", 0.0) or 0.0
+            audio_prompt_tokens=_usage_int(
+                prompt_details.get("audio_tokens"),
+                "usage.prompt_tokens_details.audio_tokens",
             ),
-            prompt_cost=float(self.usage.get("prompt_cost", 0.0) or 0.0),
-            completion_cost=float(self.usage.get("completion_cost", 0.0) or 0.0),
-            cost=float(self.usage.get("response_cost", 0.0) or 0.0),
+            reasoning_tokens=_usage_int(
+                completion_details.get("reasoning_tokens"),
+                "usage.completion_tokens_details.reasoning_tokens",
+            ),
+            audio_completion_tokens=_usage_int(
+                completion_details.get("audio_tokens"),
+                "usage.completion_tokens_details.audio_tokens",
+            ),
+            input_cost_per_token=_usage_float(
+                self.usage.get("input_cost_per_token"),
+                "usage.input_cost_per_token",
+            ),
+            output_cost_per_token=_usage_float(
+                self.usage.get("output_cost_per_token"),
+                "usage.output_cost_per_token",
+            ),
+            cache_read_input_token_cost=_usage_float(
+                self.usage.get("cache_read_input_token_cost"),
+                "usage.cache_read_input_token_cost",
+            ),
+            prompt_cost=_usage_float(
+                self.usage.get("prompt_cost"),
+                "usage.prompt_cost",
+            ),
+            completion_cost=_usage_float(
+                self.usage.get("completion_cost"),
+                "usage.completion_cost",
+            ),
+            cost=_usage_float(
+                self.usage.get("response_cost"),
+                "usage.response_cost",
+            ),
         )
 
     def to_dict(self) -> dict[str, Any]:
