@@ -105,9 +105,9 @@ class ProxyTactic(Tactic[Any, Any]):
             service_ref=tactic.service_ref,
             examples=info.examples,
             metadata={
+                **self.proxy_metadata,
                 "proxied_tactic": tactic.tactic_name,
                 "proxied_runtime_kind": info.runtime_kind,
-                **self.proxy_metadata,
             },
         )
 

@@ -127,6 +127,23 @@ def test_proxy_tactic_records_success_and_runs_hooks():
     assert record.metadata["proxy"] == {"purpose": "test"}
 
 
+def test_proxy_tactic_preserves_canonical_info_metadata():
+    proxy = ProxyTactic(
+        EchoTactic(),
+        metadata={
+            "proxied_tactic": "spoofed",
+            "proxied_runtime_kind": "spoofed",
+            "purpose": "test",
+        },
+    )
+
+    assert proxy.info().metadata == {
+        "proxied_tactic": "echo",
+        "proxied_runtime_kind": "python",
+        "purpose": "test",
+    }
+
+
 @pytest.mark.parametrize("name", ["", "   "])
 def test_proxy_tactic_rejects_explicit_blank_names(name):
     with pytest.raises(ValueError, match="name"):
