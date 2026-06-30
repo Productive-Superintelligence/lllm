@@ -118,6 +118,23 @@ def test_create_refuses_non_empty_project_without_force(tmp_path):
         create_project("plain", "demo", directory=tmp_path)
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_create_rejects_coerced_force_flag_without_rewrite(tmp_path, value):
+    create_project("plain", "demo", directory=tmp_path)
+    readme = tmp_path / "demo" / "README.md"
+    original = readme.read_text(encoding="utf-8")
+
+    with pytest.raises(TypeError, match="force"):
+        create_project(
+            "plain",
+            "demo",
+            directory=tmp_path,
+            force=value,  # type: ignore[arg-type]
+        )
+
+    assert readme.read_text(encoding="utf-8") == original
+
+
 def test_create_rejects_names_without_letters_or_numbers(tmp_path):
     with pytest.raises(ValueError, match="letter or number"):
         create_project("plain", "___", directory=tmp_path)

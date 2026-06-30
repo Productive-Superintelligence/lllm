@@ -35,12 +35,13 @@ def create_project(
     belongs to PsiHub.
     """
 
+    force_value = _bool_value("force", force)
     if template not in {"plain", "pydantic-ai", "native"}:
         raise ValueError("template must be one of: plain, pydantic-ai, native")
     project_slug = _slug(name)
     package_name = _package_name(project_slug)
     root = Path(_path_value(directory, "directory")) / project_slug
-    if root.exists() and any(root.iterdir()) and not force:
+    if root.exists() and any(root.iterdir()) and not force_value:
         raise FileExistsError(f"Project directory is not empty: {root}")
 
     files = _template_files(template, project_slug=project_slug, package_name=package_name)
@@ -48,7 +49,7 @@ def create_project(
     for relative, content in files.items():
         target = root / relative
         target.parent.mkdir(parents=True, exist_ok=True)
-        if target.exists() and not force:
+        if target.exists() and not force_value:
             raise FileExistsError(f"File already exists: {target}")
         target.write_text(content, encoding="utf-8")
         created.append(target)
@@ -58,6 +59,12 @@ def create_project(
         template=template,
         files=tuple(created),
     )
+
+
+def _bool_value(label: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{label} must be a boolean.")
+    return value
 
 
 def _template_files(
