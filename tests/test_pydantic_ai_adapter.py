@@ -240,6 +240,21 @@ def test_pydantic_ai_config_rejects_bytes_for_package_metadata(field_name):
     assert exc_info.value.errors()[0]["type"] == "string_type"
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_pydantic_ai_config_rejects_non_bool_context_metadata_flag(value):
+    with pytest.raises(ValidationError):
+        PydanticAITacticConfig.model_validate({"include_context_metadata": value})
+
+
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_pydantic_ai_adapter_rejects_non_bool_context_metadata_override(value):
+    with pytest.raises(TypeError, match="include_context_metadata"):
+        PydanticAITactic.from_agent(
+            FakeAgent(),
+            include_context_metadata=value,  # type: ignore[arg-type]
+        )
+
+
 @pytest.mark.parametrize("run_kwargs", [[], [("suffix", "ok")], "bad", 123])
 def test_pydantic_ai_adapter_rejects_non_mapping_run_kwargs(run_kwargs):
     with pytest.raises(TypeError, match="run_kwargs"):

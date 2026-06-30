@@ -10,7 +10,7 @@ import inspect
 from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr
 
 from ..protocol import CallContext, Tactic, TacticInfo
 from ..protocol._validation import copy_boundary_value
@@ -40,6 +40,14 @@ def _copy_runtime_kwargs(value: Any) -> dict[str, Any]:
     return {key: _copy_runtime_value(item) for key, item in value.items()}
 
 
+def _optional_bool_value(value: Any, label: str) -> bool | None:
+    if value is None:
+        return None
+    if not isinstance(value, bool):
+        raise TypeError(f"{label} must be a boolean.")
+    return value
+
+
 class PydanticAITacticConfig(BaseModel):
     """Adapter options. Extra fields are left for application code."""
 
@@ -50,7 +58,7 @@ class PydanticAITacticConfig(BaseModel):
     input_type: Any = None
     output_type: Any = None
     stream_mode: StreamMode = "output"
-    include_context_metadata: bool = True
+    include_context_metadata: StrictBool = True
     run_kwargs: dict[str, Any] = Field(default_factory=dict)
     input_mapper: Callable[[Any], Any] | None = None
     output_mapper: Callable[[Any], Any] | None = None
@@ -101,10 +109,14 @@ class PydanticAITactic(Tactic[Any, Any]):
         self.input_mode = input_mode or cfg.input_mode
         self.result_mode = result_mode or cfg.result_mode
         self.stream_mode = stream_mode or cfg.stream_mode
+        context_metadata = _optional_bool_value(
+            include_context_metadata,
+            "include_context_metadata",
+        )
         self.include_context_metadata = (
             cfg.include_context_metadata
-            if include_context_metadata is None
-            else include_context_metadata
+            if context_metadata is None
+            else context_metadata
         )
         self.run_kwargs = _copy_runtime_kwargs(cfg.run_kwargs if run_kwargs is None else run_kwargs)
         self.input_mapper = input_mapper or cfg.input_mapper
