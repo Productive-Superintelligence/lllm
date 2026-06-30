@@ -282,6 +282,31 @@ def test_custom_endpoint_discovery_rejects_duplicate_names_and_routes():
         custom_endpoints(EquivalentRouteTemplateTactic())
 
 
+def test_custom_endpoint_discovery_does_not_evaluate_properties():
+    class PropertyTactic(EchoTactic):
+        @property
+        def expensive_metadata(self):
+            raise AssertionError("property should not be evaluated")
+
+        @endpoint.post("/property-act", name="property_act")
+        async def property_act(self, input_value, *, context=None):
+            return {"acted": input_value.text}
+
+    endpoints = custom_endpoints(PropertyTactic())
+    app = create_tactic_app(PropertyTactic())
+    response = request(
+        app,
+        "POST",
+        "/property-act",
+        json={"input": {"text": "go"}},
+    )
+
+    endpoint_names = {spec.name for spec, _method in endpoints}
+    assert "property_act" in endpoint_names
+    assert response.status_code == 200
+    assert response.json() == {"acted": "go"}
+
+
 def request(app, method, path, **kwargs):
     async def run():
         transport = httpx.ASGITransport(app=app)

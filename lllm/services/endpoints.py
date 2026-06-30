@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import inspect
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -138,9 +139,13 @@ def custom_endpoints(obj: Any) -> list[tuple[EndpointSpec, Callable[..., Any]]]:
     for attr_name in dir(obj):
         if attr_name.startswith("_"):
             continue
-        value = getattr(obj, attr_name)
-        spec = getattr(value, "__lllm_endpoint__", None)
+        try:
+            raw_value = inspect.getattr_static(obj, attr_name)
+        except AttributeError:
+            continue
+        spec = _endpoint_spec(raw_value)
         if isinstance(spec, EndpointSpec):
+            value = getattr(obj, attr_name)
             discovered.append((spec, value))
     _validate_endpoint_collection(discovered)
     discovered.sort(key=lambda item: item[0].name)
@@ -153,6 +158,15 @@ def endpoint_route_key(spec: EndpointSpec) -> tuple[str, str]:
 
 def endpoint_path_key(path: str) -> str:
     return _ROUTE_PARAMETER_RE.sub("{}", path)
+
+
+def _endpoint_spec(value: Any) -> EndpointSpec | None:
+    spec = getattr(value, "__lllm_endpoint__", None)
+    if isinstance(spec, EndpointSpec):
+        return spec
+    descriptor_value = getattr(value, "__func__", None)
+    spec = getattr(descriptor_value, "__lllm_endpoint__", None)
+    return spec if isinstance(spec, EndpointSpec) else None
 
 
 def _validate_endpoint_collection(
