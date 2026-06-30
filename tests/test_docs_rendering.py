@@ -586,6 +586,7 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
 
     assert "- navigation.sections" in config
     assert "- navigation.indexes" in config
+    assert "- navigation.expand" not in config
     assert "- navigation.tabs.sticky" not in config
     assert "scheme: slate" not in config
     assert "material/weather-night" not in config
