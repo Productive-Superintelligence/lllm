@@ -15,6 +15,11 @@ from .protocol import Tactic
 from .runtimes import as_tactic
 from .services import create_tactic_app
 
+LOG_LEVELS = {"critical", "debug", "error", "info", "trace", "warning"}
+LOG_LEVEL_ERROR = (
+    "serve log level must be one of: critical, debug, error, info, trace, warning"
+)
+
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="lllm")
@@ -57,6 +62,7 @@ def main(argv: list[str] | None = None) -> int:
         try:
             host = _serve_host(args.host)
             port = _serve_port(args.port)
+            log_level = _serve_log_level(args.log_level)
         except ValueError as exc:
             parser.error(str(exc))
 
@@ -65,7 +71,7 @@ def main(argv: list[str] | None = None) -> int:
 
         import uvicorn
 
-        uvicorn.run(app, host=host, port=port, log_level=args.log_level)
+        uvicorn.run(app, host=host, port=port, log_level=log_level)
         return 0
 
     if args.command == "create":
@@ -168,6 +174,20 @@ def _serve_port(value: int) -> int:
     ):
         raise ValueError("serve port must be an integer between 1 and 65535")
     return value
+
+
+def _serve_log_level(value: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or any(ch.isspace() for ch in value)
+    ):
+        raise ValueError(LOG_LEVEL_ERROR)
+    log_level = value.lower()
+    if log_level not in LOG_LEVELS:
+        raise ValueError(LOG_LEVEL_ERROR)
+    return log_level
 
 
 def _can_call_without_args(value: Any) -> bool:

@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from lllm.cli import _serve_host, load_tactic_entrypoint, main
+from lllm.cli import _serve_host, _serve_log_level, load_tactic_entrypoint, main
 from lllm.create import create_project
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -194,6 +194,9 @@ def test_cli_create_rejects_malformed_project_inputs(args, capsys):
         ["serve", "missing.module:build_tactic", "--host", "localhost:8000"],
         ["serve", "missing.module:build_tactic", "--port", "0"],
         ["serve", "missing.module:build_tactic", "--port", "70000"],
+        ["serve", "missing.module:build_tactic", "--log-level", ""],
+        ["serve", "missing.module:build_tactic", "--log-level", " debug "],
+        ["serve", "missing.module:build_tactic", "--log-level", "verbose"],
     ],
 )
 def test_cli_serve_rejects_malformed_bindings_before_import(args, capsys):
@@ -208,6 +211,11 @@ def test_cli_serve_rejects_malformed_bindings_before_import(args, capsys):
 
 def test_serve_host_accepts_bare_ipv6_addresses():
     assert _serve_host("::1") == "::1"
+
+
+def test_serve_log_level_normalizes_known_values():
+    assert _serve_log_level("INFO") == "info"
+    assert _serve_log_level("trace") == "trace"
 
 
 @pytest.mark.parametrize(
