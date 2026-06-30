@@ -20,7 +20,15 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Optional, Union, get_args, get_origin, get_type_hints
 
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr, StrictBool, StrictStr
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    PrivateAttr,
+    StrictBool,
+    StrictStr,
+    field_validator,
+)
 
 from ...parsers import (
     BaseParser,
@@ -90,6 +98,28 @@ class InvokeCost(BaseModel):
     completion_cost: float = 0.0
     cost: float = 0.0
 
+    @field_validator(
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "cached_prompt_tokens",
+        "reasoning_tokens",
+        "audio_prompt_tokens",
+        "audio_completion_tokens",
+        "input_cost_per_token",
+        "output_cost_per_token",
+        "cache_read_input_token_cost",
+        "prompt_cost",
+        "completion_cost",
+        "cost",
+        mode="before",
+    )
+    @classmethod
+    def _reject_bool_numeric_fields(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("usage cost fields must not be boolean")
+        return value
+
     def __add__(self, other: "InvokeCost") -> "InvokeCost":
         return InvokeCost(
             prompt_tokens=self.prompt_tokens + other.prompt_tokens,
@@ -151,6 +181,22 @@ class TokenLogprob(BaseModel):
     top_logprobs: list["TokenLogprob"] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="allow")
+
+    @field_validator("logprob", mode="before")
+    @classmethod
+    def _reject_bool_logprob(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("logprob must not be boolean")
+        return value
+
+    @field_validator("bytes", mode="before")
+    @classmethod
+    def _reject_bool_bytes(cls, value: Any) -> Any:
+        if isinstance(value, (list, tuple)) and any(
+            isinstance(item, bool) for item in value
+        ):
+            raise ValueError("bytes must contain integers, not booleans")
+        return value
 
     def model_post_init(self, __context: Any) -> None:
         self.bytes = copy.deepcopy(self.bytes)

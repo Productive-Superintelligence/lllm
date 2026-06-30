@@ -8,6 +8,7 @@ from lllm.runtimes.native import (
     Dialog,
     Function,
     FunctionCall,
+    InvokeCost,
     Message,
     ParseError,
     Prompt,
@@ -281,6 +282,39 @@ def test_native_models_reject_bytes_for_text_fields(label, factory):
         factory()
 
     assert any(error["type"] == "string_type" for error in exc_info.value.errors()), label
+
+
+@pytest.mark.parametrize("value", [False, True])
+@pytest.mark.parametrize(
+    "field",
+    [
+        "prompt_tokens",
+        "completion_tokens",
+        "total_tokens",
+        "cached_prompt_tokens",
+        "reasoning_tokens",
+        "audio_prompt_tokens",
+        "audio_completion_tokens",
+        "input_cost_per_token",
+        "output_cost_per_token",
+        "cache_read_input_token_cost",
+        "prompt_cost",
+        "completion_cost",
+        "cost",
+    ],
+)
+def test_invoke_cost_rejects_bool_numeric_fields(field, value):
+    with pytest.raises(ValidationError, match=field):
+        InvokeCost(**{field: value})
+
+
+@pytest.mark.parametrize("value", [False, True])
+def test_token_logprob_rejects_bool_numeric_fields(value):
+    with pytest.raises(ValidationError, match="logprob"):
+        TokenLogprob(token="hello", logprob=value)
+
+    with pytest.raises(ValidationError, match="bytes"):
+        TokenLogprob(token="hello", bytes=[value])
 
 
 def test_dialog_put_prompt_fork_and_roundtrip_lineage():
