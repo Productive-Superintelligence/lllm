@@ -370,6 +370,15 @@ def test_single_tactic_app_accepts_envelope_and_raw_json():
     assert raw.json()["output"] == {"text": "WORLD"}
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_create_service_app_rejects_coerced_single_route_flag(value):
+    with pytest.raises(TypeError, match="expose_single_tactic_routes"):
+        create_service_app(
+            [EchoTactic()],
+            expose_single_tactic_routes=value,  # type: ignore[arg-type]
+        )
+
+
 def test_multi_tactic_service_lists_and_runs_named_tactics():
     app = create_service_app([EchoTactic(), StreamTactic()])
 

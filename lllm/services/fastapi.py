@@ -101,6 +101,10 @@ def create_service_app(
 ):
     """Create a FastAPI app exposing one or more tactics."""
 
+    expose_single_tactic_routes_value = _bool_value(
+        "expose_single_tactic_routes",
+        expose_single_tactic_routes,
+    )
     try:
         from fastapi import FastAPI, HTTPException, Request
         from fastapi.responses import StreamingResponse
@@ -171,7 +175,7 @@ def create_service_app(
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint="stream", context=context) from exc
 
-    if len(tactic_map) == 1 and expose_single_tactic_routes:
+    if len(tactic_map) == 1 and expose_single_tactic_routes_value:
         only = next(iter(tactic_map.values()))
 
         @app.get("/info")
@@ -229,7 +233,7 @@ def create_service_app(
 
     reserved_routes = _reserved_routes(
         tactic_map,
-        expose_single_tactic_routes=expose_single_tactic_routes,
+        expose_single_tactic_routes=expose_single_tactic_routes_value,
     )
     seen_custom_routes: dict[tuple[str, str], str] = {}
     for tactic in tactic_map.values():
@@ -619,6 +623,12 @@ def _is_iterable(value: Any) -> bool:
     if isinstance(value, (str, bytes, bytearray, Mapping, BaseModel)):
         return False
     return hasattr(value, "__iter__")
+
+
+def _bool_value(label: str, value: Any) -> bool:
+    if not isinstance(value, bool):
+        raise TypeError(f"{label} must be a boolean.")
+    return value
 
 
 def _invoke_custom(method: Any, input_value: Any, *, context: CallContext) -> Any:
