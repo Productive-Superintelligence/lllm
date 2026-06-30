@@ -298,6 +298,15 @@ def test_native_dialog_rejects_non_mapping_message_metadata(metadata):
         dialog.put_prompt(prompt, metadata=metadata)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("prompt_args", [[], [("topic", "tests")], "bad", 123])
+def test_dialog_put_prompt_rejects_non_mapping_prompt_args(prompt_args):
+    dialog = Dialog()
+    prompt = Prompt(path="draft", prompt="Write about {topic}.")
+
+    with pytest.raises(TypeError, match="prompt_args"):
+        dialog.put_prompt(prompt, prompt_args=prompt_args)  # type: ignore[arg-type]
+
+
 def test_default_tag_parser_extracts_prompt_outputs():
     parser = DefaultTagParser(
         xml_tags=["answer"],

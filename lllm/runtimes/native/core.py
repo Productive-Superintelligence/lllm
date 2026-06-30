@@ -387,7 +387,7 @@ class Dialog:
         role: Role = Role.USER,
         metadata: dict[str, Any] | None = None,
     ) -> Message:
-        content = prompt(**dict(prompt_args or {}))
+        content = prompt(**_optional_mapping("prompt_args", prompt_args))
         message = Message(
             role=role,
             content=content,
@@ -752,10 +752,14 @@ class Prompt(BaseModel):
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
+    return _optional_mapping("metadata", value)
+
+
+def _optional_mapping(label: str, value: Any) -> dict[str, Any]:
     if value is None:
         return {}
     if not isinstance(value, Mapping):
-        raise TypeError("metadata must be a mapping.")
+        raise TypeError(f"{label} must be a mapping.")
     return copy.deepcopy(dict(value))
 
 
