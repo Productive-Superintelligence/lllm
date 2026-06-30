@@ -46,16 +46,25 @@ def is_sensitive_metadata_key(key: object) -> bool:
     normalized = _normalize_metadata_key(key)
     if not normalized:
         return False
+    compact = normalized.replace("_", "")
     if normalized.endswith(("_ref", "_refs", "_reference", "_references")):
+        return False
+    if compact.endswith(("ref", "refs", "reference", "references")):
         return False
     parts = normalized.split("_")
     if "api" in parts and "key" in parts:
+        return True
+    if compact.endswith("apikey"):
         return True
     if "authorization" in parts or "credential" in parts or "credentials" in parts:
         return True
     if "password" in parts or "secret" in parts:
         return True
+    if compact.endswith(("password", "secret")):
+        return True
     if normalized == "token" or normalized.endswith("_token"):
+        return True
+    if compact == "token" or compact.endswith("token"):
         return True
     return False
 

@@ -348,19 +348,25 @@ def test_public_boundary_value_filters_secret_metadata_keys():
         {
             "api_key": "raw-key",
             "apiKey": "raw-camel-key",
+            "apikey": "raw-compact-key",
             "api_key_ref": "credentials/openai",
             "apiKeyRef": "credentials/camel-openai",
+            "apikeyref": "credentials/compact-openai",
             "clientSecret": "raw-camel-secret",
+            "clientsecret": "raw-compact-secret",
             "clientSecretRef": "credentials/camel-secret",
+            "clientsecretref": "credentials/compact-secret",
             "headers": {
                 "authorization": "Bearer raw-token",
                 "xAuthToken": "raw-camel-token",
+                "xauthtoken": "raw-compact-token",
                 "x-policy": "demo",
             },
             "items": [
                 {
                     "access_token": "raw-token",
                     "accessToken": "raw-camel-token",
+                    "accesstoken": "raw-compact-token",
                     "name": "safe",
                 }
             ],
@@ -370,7 +376,9 @@ def test_public_boundary_value_filters_secret_metadata_keys():
     assert public == {
         "api_key_ref": "credentials/openai",
         "apiKeyRef": "credentials/camel-openai",
+        "apikeyref": "credentials/compact-openai",
         "clientSecretRef": "credentials/camel-secret",
+        "clientsecretref": "credentials/compact-secret",
         "headers": {"x-policy": "demo"},
         "items": [{"name": "safe"}],
     }
