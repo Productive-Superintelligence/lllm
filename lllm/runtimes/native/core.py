@@ -428,7 +428,8 @@ class Dialog:
         return child
 
     def overview(self, *, max_length: int = 100, remove_tail: bool = False) -> str:
-        messages = self._messages[:-1] if remove_tail else self._messages
+        remove_tail_value = _bool_value("remove_tail", remove_tail)
+        messages = self._messages[:-1] if remove_tail_value else self._messages
         rows = []
         for index, message in enumerate(messages):
             content = str(message.content)

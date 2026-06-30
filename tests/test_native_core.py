@@ -313,6 +313,16 @@ def test_dialog_put_prompt_fork_and_roundtrip_lineage():
     assert restored_child.messages[-1].content == "hello"
 
 
+@pytest.mark.parametrize("value", ["false", "true", 0, 1])
+def test_dialog_overview_rejects_coerced_remove_tail_flag(value):
+    dialog = Dialog(owner="agent")
+    dialog.put_text("first")
+    dialog.put_text("second")
+
+    with pytest.raises(TypeError, match="remove_tail"):
+        dialog.overview(remove_tail=value)  # type: ignore[arg-type]
+
+
 def test_native_prompt_and_message_metadata_are_isolated():
     prompt_metadata = {"nested": {"value": 1}}
     addon_args = {"settings": {"tone": "careful"}}
