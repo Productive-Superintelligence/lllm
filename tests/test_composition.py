@@ -334,6 +334,26 @@ def test_remote_tactic_rejects_non_mapping_metadata(metadata):
 
 
 @pytest.mark.parametrize(
+    "timeout",
+    [False, True, "1", 0, -1, float("inf"), float("nan")],
+)
+def test_remote_tactic_rejects_invalid_timeouts(timeout):
+    with pytest.raises(ValueError, match="timeout"):
+        RemoteTactic(  # type: ignore[arg-type]
+            "http://testserver/run",
+            timeout=timeout,
+        )
+
+
+def test_remote_tactic_accepts_positive_timeout_or_none():
+    remote = RemoteTactic("http://testserver/run", timeout=1)
+    no_timeout = RemoteTactic("http://testserver/run", timeout=None)
+
+    assert remote.timeout == 1.0
+    assert no_timeout.timeout is None
+
+
+@pytest.mark.parametrize(
     "url",
     [
         None,

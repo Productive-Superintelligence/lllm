@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
 from typing import Any
 from urllib.parse import urlsplit
@@ -69,7 +70,7 @@ class RemoteTactic(Tactic[Any, Any]):
         self.url = _run_url(url)
         self.stream_url = _stream_url(url)
         self.info_url = _info_url(url)
-        self.timeout = timeout
+        self.timeout = _timeout_value(timeout)
         self.transport = transport
         self.async_transport = async_transport
         self.input_type = input_type
@@ -343,6 +344,17 @@ def _optional_token_value(value: Any, label: str) -> str | None:
     if value is None:
         return None
     return token_value(value, label)
+
+
+def _timeout_value(value: Any) -> float | None:
+    if value is None:
+        return None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError("timeout must be a positive number or None.")
+    amount = float(value)
+    if not math.isfinite(amount) or amount <= 0:
+        raise ValueError("timeout must be a positive number or None.")
+    return amount
 
 
 def _iter_sse_events(lines: Iterable[Any]) -> Iterator[TacticEvent]:
