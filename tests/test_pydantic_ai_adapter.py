@@ -173,6 +173,32 @@ def test_pydantic_ai_adapter_accepts_package_metadata_from_config():
     assert info.metadata == {"source": "config"}
 
 
+def test_pydantic_ai_adapter_info_does_not_evaluate_optional_properties():
+    class OptionalPropertyAgent(FakeAgent):
+        @property
+        def run_stream(self):
+            raise AssertionError("run_stream property should not be evaluated")
+
+        @property
+        def run_stream_sync(self):
+            raise AssertionError("run_stream_sync property should not be evaluated")
+
+        @property
+        def run_stream_events(self):
+            raise AssertionError("run_stream_events property should not be evaluated")
+
+        @property
+        def output_json_schema(self):
+            raise AssertionError("schema property should not be evaluated")
+
+    tactic = PydanticAITactic.from_agent(OptionalPropertyAgent(), input_type=str)
+    info = tactic.info()
+
+    assert tactic.capabilities() == {"run", "arun"}
+    assert info.capabilities == ("arun", "run")
+    assert info.output_schema == {"type": "string"}
+
+
 def test_pydantic_ai_config_isolates_mutable_inputs():
     provider_settings = {"timeout": 30}
     run_kwargs = {

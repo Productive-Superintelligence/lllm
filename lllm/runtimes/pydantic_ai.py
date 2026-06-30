@@ -217,9 +217,12 @@ class PydanticAITactic(Tactic[Any, Any]):
 
     def capabilities(self) -> set[str]:
         supported = {"run", "arun"}
-        if hasattr(self.agent, "run_stream") or hasattr(self.agent, "run_stream_sync"):
+        if _has_static_callable(self.agent, "run_stream") or _has_static_callable(
+            self.agent,
+            "run_stream_sync",
+        ):
             supported.add("stream")
-        if hasattr(self.agent, "run_stream_events"):
+        if _has_static_callable(self.agent, "run_stream_events"):
             supported.add("events")
         return supported
 
@@ -378,6 +381,8 @@ def _select_stream(value: Any, mode: StreamMode):
 
 
 def _agent_output_json_schema(agent: Any) -> dict[str, Any] | None:
+    if not _has_static_callable(agent, "output_json_schema"):
+        return None
     method = getattr(agent, "output_json_schema", None)
     if not callable(method):
         return None
@@ -386,6 +391,15 @@ def _agent_output_json_schema(agent: Any) -> dict[str, Any] | None:
     except Exception:
         return None
     return schema if isinstance(schema, dict) else None
+
+
+def _has_static_callable(value: Any, name: str) -> bool:
+    try:
+        attribute = inspect.getattr_static(value, name)
+    except AttributeError:
+        return False
+    descriptor_value = getattr(attribute, "__func__", attribute)
+    return callable(descriptor_value)
 
 
 def _kwargs_to_task(input_schema: Any, kwargs: dict[str, Any]) -> Any:
