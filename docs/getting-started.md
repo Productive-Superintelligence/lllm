@@ -5,6 +5,14 @@ offline echo example so the path works without provider keys.
 
 ## Install
 
+From PyPI:
+
+```bash
+python -m pip install lllm-core
+```
+
+The distribution name is `lllm-core`; the Python import remains `lllm`.
+
 For local development:
 
 ```bash

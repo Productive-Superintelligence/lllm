@@ -13,6 +13,18 @@ PsiHub package, and composed later through refs and local config.
 ## Install
 
 ```bash
+pip install lllm-core
+```
+
+The PyPI distribution is `lllm-core`; the import package remains `lllm`:
+
+```python
+import lllm
+```
+
+For local development:
+
+```bash
 pip install -e ".[dev]"
 ```
 
