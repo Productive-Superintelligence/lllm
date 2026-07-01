@@ -7,14 +7,21 @@
 
 [lllm.one](https://lllm.one){ .psi-domain }
 
-LLLM is the protocol and service layer for reusable agentic tactics. It keeps
-the public contract small: wrap focused logic, expose it as a service, describe
-it for packages, and let the runtime underneath remain runtime-owned.
+LLLM is the protocol and service layer for reusable agentic tactics. The center
+model is deliberately small: a `Tactic` is a typed unit of work that can run in
+process, stream results, sit behind a FastAPI service, and be described as a
+PsiHub package resource.
+
+LLLM is not a model runtime. Pydantic AI, native LLLM objects, plain Python,
+and future adapters keep owning execution details such as tools, provider
+settings, tracing, eval hooks, and workflow state. LLLM gives those runtimes a
+stable boundary that other services, workers, coding agents, and package tools
+can understand.
 
 <div class="psi-tiles">
   <div class="psi-tile">
     <strong>Tactic</strong>
-    Typed unit of work with local, async, stream, and service-ready call paths.
+    Typed work boundary with local, async, streaming, and service-ready call paths.
   </div>
   <div class="psi-tile">
     <strong>Runtime</strong>
@@ -22,7 +29,7 @@ it for packages, and let the runtime underneath remain runtime-owned.
   </div>
   <div class="psi-tile">
     <strong>Service</strong>
-    FastAPI exposes tactics through predictable envelopes and error shapes.
+    FastAPI exposes `/run`, `/stream`, and `/info` with stable envelopes.
   </div>
   <div class="psi-tile">
     <strong>Package</strong>
@@ -57,26 +64,60 @@ class EchoTactic(Tactic[EchoInput, EchoOutput]):
 assert EchoTactic().run({"text": "hello"}).text == "HELLO"
 ```
 
-## Shape
+Expose the same boundary through FastAPI:
 
-<div class="psi-flow">
-  <div>Caller</div>
-  <div>FastAPI service</div>
-  <div>Tactic</div>
-  <div>Runtime adapter</div>
-  <div>PsiHub metadata</div>
-</div>
+```python
+from lllm.services import create_tactic_app
+
+app = create_tactic_app(EchoTactic())
+```
+
+```bash
+uvicorn app:app --reload
+curl -X POST http://127.0.0.1:8000/run \
+  -H 'content-type: application/json' \
+  -d '{"input":{"text":"hello"}}'
+```
+
+## Shape
 
 ```mermaid
 flowchart LR
-  A["App or coding agent"] --> B["LLLM service"]
-  B --> C["Tactic"]
-  C --> D["Pydantic AI / native / Python"]
-  C --> E["PsiHub refs and cards"]
+  A["App, worker, robot, or coding agent"] --> B["LLLM service"]
+  B --> C["Tactic protocol"]
+  C --> D["Pydantic AI adapter"]
+  C --> E["Native adapter"]
+  C --> F["Plain Python tactic"]
+  C --> G["PsiHub tactic metadata"]
+  G --> H["Cards, refs, config templates"]
 ```
+
+The important part is that every edge meets the same tactic contract. A caller
+does not need to know whether the underlying implementation is a fake offline
+test agent, a Pydantic AI agent with tools, a native prompt/dialog workflow, or
+a remote HTTP service.
+
+## What LLLM Owns
+
+- `Tactic`, `TacticInfo`, `CallContext`, and `TacticEvent`.
+- Local, async, streaming, proxy, and sandbox wrappers at the tactic boundary.
+- FastAPI service adapters and remote tactic clients.
+- Metadata helpers that export tactics to PsiHub package resources.
+- Ref resolution for local or remote tactic bindings.
+
+## What Stays Outside
+
+- Model/provider execution, tools, evals, tracing, and durable workflow state.
+- Package storage, validation, cards, agent cards, and config templates.
+- Semantic channels, event logs, artifacts, snapshots, and local stores.
+- Service launch decisions and operational orchestration.
+
+That split is the point: LLLM makes agentic work reusable without forcing every
+runtime and every package to become the same framework.
 
 ## Next
 
 - Start with [Getting Started](getting-started.md).
 - Learn the center model in [Tactics](concepts/tactics.md).
+- Expose the boundary through [Services](concepts/services.md).
 - Follow the first tutorial in [First Tactic](tutorials/first-tactic.md).

@@ -47,6 +47,14 @@ tactic = PydanticAITactic(
 )
 ```
 
+```mermaid
+flowchart TD
+  I["BriefInput"] --> T["PydanticAITactic"]
+  T --> M["metadata and run kwargs"]
+  T --> A["Pydantic AI agent call"]
+  A --> O["BriefOutput"]
+```
+
 When a Pydantic model reaches the adapter, the default `input_mode="auto"`
 sends JSON to the agent. Use `input_mode="dict"` or `input_mode="python"` when
 your agent expects those shapes instead.

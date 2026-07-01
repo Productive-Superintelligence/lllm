@@ -1,5 +1,5 @@
-{# Keep the Material source link chrome without fetching GitHub facts. #}
-<a href="{{ config.repo_url }}" title="{{ lang.t('source') }}" class="md-source">
+{# Keep Material's source component hook so GitHub facts can load. #}
+<a href="{{ config.repo_url }}" title="{{ lang.t('source') }}" class="md-source" data-md-component="source">
   <div class="md-source__icon md-icon">
     {% set icon = config.theme.icon.repo or "fontawesome/brands/git-alt" %}
     {% include ".icons/" ~ icon ~ ".svg" %}

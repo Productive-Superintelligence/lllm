@@ -1,147 +1,80 @@
-"""Native runtime boundary.
+"""Preserved native LLLM runtime.
 
-The full native runtime is intentionally kept out of the protocol layer. This
-minimal adapter preserves a clean tactic boundary for native-style objects while
-the larger native runtime is ported intentionally under this package.
+The v2 public architecture is protocol-first, but the original native runtime
+is kept here for transparent agent/dialog/prompt machinery, tactic registries,
+invokers, proxies, and research workflows that need to inspect the inside of
+an agent turn.
 """
 
 from __future__ import annotations
 
-import inspect
+from importlib import import_module
 from typing import Any
 
-from ...protocol import CallContext, Tactic
-from .core import (
-    APITypes,
-    APIType,
-    BaseParser,
-    DefaultTagParser,
-    Dialog,
-    DialogTreeNode,
-    Function,
-    FunctionCall,
-    InvokeCost,
-    Message,
-    Modalities,
-    Modality,
-    ParseError,
-    Prompt,
-    Role,
-    Roles,
-    StringFormatterRenderer,
-    TokenLogprob,
-    find_md_blocks,
-    find_xml_blocks,
-    tool,
+from .adapter import NativeTacticAdapter
+from .core import Runtime, Tactic, TacticCallSession, TacticContext, tactictool
+
+_LAZY_ATTRS: dict[str, tuple[str, str]] = {
+    "APITypes": (".core", "APITypes"),
+    "APIType": (".core", "APIType"),
+    "Agent": (".core", "Agent"),
+    "AgentCallSession": (".core", "AgentCallSession"),
+    "AgentException": (".core", "AgentException"),
+    "AgentSpec": (".core", "AgentSpec"),
+    "BaseHandler": (".core", "BaseHandler"),
+    "BaseParser": (".core", "BaseParser"),
+    "BaseRenderer": (".core", "BaseRenderer"),
+    "DefaultSimpleHandler": (".core", "DefaultSimpleHandler"),
+    "DefaultTagParser": (".core", "DefaultTagParser"),
+    "Dialog": (".core", "Dialog"),
+    "DialogTreeNode": (".core", "DialogTreeNode"),
+    "Function": (".core", "Function"),
+    "FunctionCall": (".core", "FunctionCall"),
+    "InvokeCost": (".core", "InvokeCost"),
+    "InvokeResult": (".core", "InvokeResult"),
+    "Invokers": (".core", "Invokers"),
+    "MCP": (".core", "MCP"),
+    "Message": (".core", "Message"),
+    "Modalities": (".core", "Modalities"),
+    "Modality": (".core", "Modality"),
+    "NativeTactic": (".core", "NativeTactic"),
+    "ParseError": (".core", "ParseError"),
+    "Prompt": (".core", "Prompt"),
+    "Registry": (".core", "Registry"),
+    "Role": (".core", "Role"),
+    "Roles": (".core", "Roles"),
+    "StringFormatterRenderer": (".core", "StringFormatterRenderer"),
+    "TokenLogprob": (".core", "TokenLogprob"),
+    "find_md_blocks": (".core", "find_md_blocks"),
+    "find_xml_blocks": (".core", "find_xml_blocks"),
+    "parse_agent_configs": (".core", "parse_agent_configs"),
+    "register_prompt": (".core", "register_prompt"),
+    "tactic_as_function": (".core", "tactic_as_function"),
+    "tool": (".core", "tool"),
+}
+
+__all__ = sorted(
+    {
+        "NativeTacticAdapter",
+        "Runtime",
+        "Tactic",
+        "TacticCallSession",
+        "TacticContext",
+        "tactictool",
+        *_LAZY_ATTRS,
+    }
 )
 
 
-class NativeTacticAdapter(Tactic[Any, Any]):
-    """Wrap a native-style object that exposes ``call``, ``run``, or ``arun``."""
-
-    runtime_kind = "native"
-
-    def __init__(
-        self,
-        native: Any,
-        *,
-        name: str | None = None,
-        description: str | None = None,
-        input_type: Any = None,
-        output_type: Any = None,
-        package_ref: str | None = None,
-        service_ref: str | None = None,
-        examples: list[dict[str, Any]] | None = None,
-        metadata: dict[str, Any] | None = None,
-    ) -> None:
-        self.native = native
-        self.input_type = input_type or getattr(native, "input_type", None) or getattr(
-            native,
-            "input_model",
-            None,
-        )
-        self.output_type = output_type or getattr(native, "output_type", None)
-        tactic_name = (
-            name
-            if name is not None
-            else getattr(native, "name", None) or type(native).__name__
-        )
-        super().__init__(
-            name=tactic_name,
-            description=(
-                description
-                if description is not None
-                else inspect.getdoc(native) or ""
-            ),
-            package_ref=package_ref,
-            service_ref=service_ref,
-            examples=examples,
-            metadata=metadata,
-        )
-
-    def _run(
-        self,
-        input_value: Any,
-        *,
-        context: CallContext | None = None,
-        **kwargs: Any,
-    ) -> Any:
-        method = getattr(self.native, "run", None) or getattr(self.native, "call", None)
-        if method is None:
-            raise TypeError("Native object must define run() or call().")
-        return _call_native(method, input_value, context=context, kwargs=kwargs)
-
-    async def _arun(
-        self,
-        input_value: Any,
-        *,
-        context: CallContext | None = None,
-        **kwargs: Any,
-    ) -> Any:
-        method = getattr(self.native, "arun", None)
-        if method is None:
-            return await super()._arun(input_value, context=context, **kwargs)
-        result = _call_native(method, input_value, context=context, kwargs=kwargs)
-        if inspect.isawaitable(result):
-            return await result
-        return result
+def __getattr__(name: str) -> Any:
+    if name in _LAZY_ATTRS:
+        module_name, attr_name = _LAZY_ATTRS[name]
+        module = import_module(module_name, __name__)
+        value = getattr(module, attr_name)
+        globals()[name] = value
+        return value
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-def _call_native(
-    method: Any,
-    input_value: Any,
-    *,
-    context: CallContext | None,
-    kwargs: dict[str, Any],
-) -> Any:
-    signature = inspect.signature(method)
-    call_kwargs = dict(kwargs)
-    if context is not None and "context" in signature.parameters:
-        call_kwargs.setdefault("context", context)
-    return method(input_value, **call_kwargs)
-
-
-__all__ = [
-    "APITypes",
-    "APIType",
-    "BaseParser",
-    "DefaultTagParser",
-    "Dialog",
-    "DialogTreeNode",
-    "Function",
-    "FunctionCall",
-    "InvokeCost",
-    "Message",
-    "Modalities",
-    "Modality",
-    "NativeTacticAdapter",
-    "ParseError",
-    "Prompt",
-    "Role",
-    "Roles",
-    "StringFormatterRenderer",
-    "TokenLogprob",
-    "find_md_blocks",
-    "find_xml_blocks",
-    "tool",
-]
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(__all__))

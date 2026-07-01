@@ -4,6 +4,7 @@ import pytest
 from pydantic import ValidationError
 
 from lllm.runtimes.native import (
+    Agent,
     DefaultTagParser,
     Dialog,
     Function,
@@ -13,9 +14,12 @@ from lllm.runtimes.native import (
     ParseError,
     Prompt,
     Role,
+    Runtime,
+    Tactic,
     TokenLogprob,
     find_md_blocks,
     find_xml_blocks,
+    tactictool,
     tool,
 )
 
@@ -31,6 +35,58 @@ def test_prompt_renders_extends_and_reports_metadata():
 
     assert child.path == "draft/brief"
     assert child(topic="tests") == "Briefly: tests"
+
+
+def test_native_runtime_prompt_registry_is_restored():
+    runtime = Runtime()
+    prompt = Prompt(path="draft", prompt="Write about {topic}.")
+
+    runtime.register_prompt(prompt)
+
+    assert runtime.get_prompt("draft")(topic="native runtime") == (
+        "Write about native runtime."
+    )
+
+
+def test_native_agent_alias_dialog_management_is_restored():
+    system = Prompt(path="agent/system", prompt="You are {style}.")
+    agent = Agent(
+        name="planner",
+        system_prompt=system,
+        model="fake-model",
+        llm_invoker=object(),
+    )
+
+    agent.open("main", prompt_args={"style": "careful"})
+    agent.receive("hello", name="operator")
+    agent.fork("main", "retry", last_n=1, first_k=1)
+
+    assert agent.active_alias == "retry"
+    assert sorted(agent.dialogs) == ["main", "retry"]
+    assert agent.current_dialog.parent is agent.dialogs["main"]
+    assert agent.current_dialog.head.content == "You are careful."
+    assert agent.current_dialog.tail.content == "hello"
+
+
+def test_native_tactic_as_tool_uses_v2_callable_bridge():
+    class EchoTactic(Tactic):
+        name = "echo"
+        input_type = str
+        output_type = str
+
+        @tactictool("shout", description="Uppercase text")
+        def shout(self, text: str) -> str:
+            return text.upper()
+
+        def call(self, task: str) -> str:
+            return f"echo: {task}"
+
+    tactic = EchoTactic()
+    tool_fn = tactic.as_tool()
+
+    assert tactic("hello") == "echo: hello"
+    assert tool_fn(task="hello") == "echo: hello"
+    assert tool_fn.__name__ == "echo"
 
 
 def test_tool_schema_and_execution_preserve_function_call_result():

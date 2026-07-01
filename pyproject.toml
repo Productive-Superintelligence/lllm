@@ -18,7 +18,21 @@ dependencies = [
 client = ["httpx>=0.27"]
 server = ["fastapi>=0.115", "uvicorn>=0.30"]
 pydantic-ai = ["pydantic-ai"]
-native = []
+native = [
+    "litellm>=1.82.3",
+    "requests>=2.31.0",
+    "filelock>=3.13.0",
+    "Pillow>=10.0.0",
+]
+sandbox = [
+    "nbformat>=5.10.0",
+    "jupyter-client>=8.6.0",
+]
+tools = [
+    "openai>=1.40.0",
+    "tqdm>=4.66.0",
+    "playwright>=1.45.0",
+]
 docs = ["mkdocs-material>=9.5"]
 dev = [
     "pytest>=8.0",
@@ -33,6 +47,15 @@ all = [
     "fastapi>=0.115",
     "uvicorn>=0.30",
     "pydantic-ai",
+    "litellm>=1.82.3",
+    "requests>=2.31.0",
+    "filelock>=3.13.0",
+    "Pillow>=10.0.0",
+    "nbformat>=5.10.0",
+    "jupyter-client>=8.6.0",
+    "openai>=1.40.0",
+    "tqdm>=4.66.0",
+    "playwright>=1.45.0",
 ]
 
 [project.scripts]
@@ -49,6 +72,7 @@ include = ["lllm*"]
 
 [tool.setuptools.package-data]
 lllm = ["py.typed"]
+"lllm.runtimes.native.proxies.builtin" = ["*.json", "*.md"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

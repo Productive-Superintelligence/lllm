@@ -1,7 +1,7 @@
 site_name: LLLM
 site_description: Protocol and service layer for reusable agentic tactics.
 site_url: https://lllm.one/
-repo_name: GitHub
+repo_name: Productive-Superintelligence/lllm
 repo_url: https://github.com/Productive-Superintelligence/lllm
 edit_uri: edit/v2/docs/
 copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
@@ -19,7 +19,6 @@ theme:
       primary: white
       accent: black
   features:
-    - navigation.tabs
     - navigation.sections
     - navigation.indexes
     - navigation.instant
@@ -32,17 +31,18 @@ theme:
     - search.highlight
 
 nav:
-  - Overview: index.md
-  - Getting Started: getting-started.md
-  - Concepts:
-      - Tactics: concepts/tactics.md
-      - Services: concepts/services.md
-      - Packages: concepts/packages.md
-      - Runtime Boundary: concepts/runtime-boundary.md
-  - Guides:
-      - Pydantic AI: guides/pydantic-ai.md
-      - Native Runtime: guides/native-runtime.md
-      - Composition: guides/composition.md
+  - Overview:
+      - Overview: index.md
+      - Getting Started: getting-started.md
+      - Concepts:
+          - Tactics: concepts/tactics.md
+          - Services: concepts/services.md
+          - Packages: concepts/packages.md
+          - Runtime Boundary: concepts/runtime-boundary.md
+      - Guides:
+          - Pydantic AI: guides/pydantic-ai.md
+          - Native Runtime: guides/native-runtime.md
+          - Composition: guides/composition.md
   - Tutorials:
       - Protocol Level:
           - First Tactic: tutorials/first-tactic.md

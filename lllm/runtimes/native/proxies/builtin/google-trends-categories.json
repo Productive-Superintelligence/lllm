@@ -1,0 +1,4534 @@
+[
+  {
+    "category_id": "0",
+    "category_description": "All categories"
+  },
+  {
+    "category_id": "3",
+    "category_description": "Arts & Entertainment"
+  },
+  {
+    "category_id": "184",
+    "category_description": "Celebrities & Entertainment News"
+  },
+  {
+    "category_id": "316",
+    "category_description": "Comics & Animation"
+  },
+  {
+    "category_id": "1104",
+    "category_description": "Animated Films"
+  },
+  {
+    "category_id": "317",
+    "category_description": "Anime & Manga"
+  },
+  {
+    "category_id": "319",
+    "category_description": "Cartoons"
+  },
+  {
+    "category_id": "318",
+    "category_description": "Comics"
+  },
+  {
+    "category_id": "612",
+    "category_description": "Entertainment Industry"
+  },
+  {
+    "category_id": "1116",
+    "category_description": "Film & TV Industry"
+  },
+  {
+    "category_id": "1108",
+    "category_description": "Film & TV Awards"
+  },
+  {
+    "category_id": "1117",
+    "category_description": "Film & TV Production"
+  },
+  {
+    "category_id": "1115",
+    "category_description": "Recording Industry"
+  },
+  {
+    "category_id": "1113",
+    "category_description": "Music Awards"
+  },
+  {
+    "category_id": "1114",
+    "category_description": "Record Labels"
+  },
+  {
+    "category_id": "569",
+    "category_description": "Events & Listings"
+  },
+  {
+    "category_id": "188",
+    "category_description": "Clubs & Nightlife"
+  },
+  {
+    "category_id": "891",
+    "category_description": "Concerts & Music Festivals"
+  },
+  {
+    "category_id": "1086",
+    "category_description": "Film Festivals"
+  },
+  {
+    "category_id": "1273",
+    "category_description": "Live Sporting Events"
+  },
+  {
+    "category_id": "1085",
+    "category_description": "Movie Listings & Theater Showtimes"
+  },
+  {
+    "category_id": "614",
+    "category_description": "Ticket Sales"
+  },
+  {
+    "category_id": "539",
+    "category_description": "Fun & Trivia"
+  },
+  {
+    "category_id": "1173",
+    "category_description": "Dress-Up & Fashion Games"
+  },
+  {
+    "category_id": "447",
+    "category_description": "Flash-Based Entertainment"
+  },
+  {
+    "category_id": "1174",
+    "category_description": "Fun Tests & Silly Surveys"
+  },
+  {
+    "category_id": "182",
+    "category_description": "Humor"
+  },
+  {
+    "category_id": "1095",
+    "category_description": "Comedy Films"
+  },
+  {
+    "category_id": "895",
+    "category_description": "Live Comedy"
+  },
+  {
+    "category_id": "1180",
+    "category_description": "Political Humor"
+  },
+  {
+    "category_id": "1244",
+    "category_description": "Spoofs & Satire"
+  },
+  {
+    "category_id": "1047",
+    "category_description": "TV Comedies"
+  },
+  {
+    "category_id": "34",
+    "category_description": "Movies"
+  },
+  {
+    "category_id": "1097",
+    "category_description": "Action & Adventure Films"
+  },
+  {
+    "category_id": "1101",
+    "category_description": "Martial Arts Films"
+  },
+  {
+    "category_id": "1100",
+    "category_description": "Superhero Films"
+  },
+  {
+    "category_id": "1099",
+    "category_description": "Western Films"
+  },
+  {
+    "category_id": "360",
+    "category_description": "Bollywood & South Asian Film"
+  },
+  {
+    "category_id": "1102",
+    "category_description": "Classic Films"
+  },
+  {
+    "category_id": "1098",
+    "category_description": "Silent Films"
+  },
+  {
+    "category_id": "1103",
+    "category_description": "Cult & Indie Films"
+  },
+  {
+    "category_id": "1072",
+    "category_description": "Documentary Films"
+  },
+  {
+    "category_id": "1094",
+    "category_description": "Drama Films"
+  },
+  {
+    "category_id": "210",
+    "category_description": "DVD & Video Shopping"
+  },
+  {
+    "category_id": "1145",
+    "category_description": "DVD & Video Rentals"
+  },
+  {
+    "category_id": "1291",
+    "category_description": "Family Films"
+  },
+  {
+    "category_id": "615",
+    "category_description": "Horror Films"
+  },
+  {
+    "category_id": "213",
+    "category_description": "Movie Memorabilia"
+  },
+  {
+    "category_id": "1106",
+    "category_description": "Movie Reference"
+  },
+  {
+    "category_id": "1107",
+    "category_description": "Movie Reviews & Previews"
+  },
+  {
+    "category_id": "1105",
+    "category_description": "Musical Films"
+  },
+  {
+    "category_id": "1310",
+    "category_description": "Romance Films"
+  },
+  {
+    "category_id": "616",
+    "category_description": "Science Fiction & Fantasy Films"
+  },
+  {
+    "category_id": "1096",
+    "category_description": "Thriller, Crime & Mystery Films"
+  },
+  {
+    "category_id": "35",
+    "category_description": "Music & Audio"
+  },
+  {
+    "category_id": "217",
+    "category_description": "CD & Audio Shopping"
+  },
+  {
+    "category_id": "586",
+    "category_description": "Classical Music"
+  },
+  {
+    "category_id": "1185",
+    "category_description": "Opera"
+  },
+  {
+    "category_id": "587",
+    "category_description": "Country Music"
+  },
+  {
+    "category_id": "588",
+    "category_description": "Dance & Electronic Music"
+  },
+  {
+    "category_id": "1022",
+    "category_description": "Experimental & Industrial Music"
+  },
+  {
+    "category_id": "1023",
+    "category_description": "Folk & Traditional Music"
+  },
+  {
+    "category_id": "589",
+    "category_description": "Jazz & Blues"
+  },
+  {
+    "category_id": "1040",
+    "category_description": "Blues"
+  },
+  {
+    "category_id": "42",
+    "category_description": "Jazz"
+  },
+  {
+    "category_id": "1285",
+    "category_description": "Latin Pop"
+  },
+  {
+    "category_id": "218",
+    "category_description": "Music Art & Memorabilia"
+  },
+  {
+    "category_id": "1087",
+    "category_description": "Music Education & Instruction"
+  },
+  {
+    "category_id": "1024",
+    "category_description": "Music Equipment & Technology"
+  },
+  {
+    "category_id": "1025",
+    "category_description": "DJ Resources & Equipment"
+  },
+  {
+    "category_id": "1026",
+    "category_description": "Music Recording Technology"
+  },
+  {
+    "category_id": "216",
+    "category_description": "Musical Instruments"
+  },
+  {
+    "category_id": "1327",
+    "category_description": "Drums & Percussion"
+  },
+  {
+    "category_id": "1325",
+    "category_description": "Guitars"
+  },
+  {
+    "category_id": "1326",
+    "category_description": "Pianos & Keyboards"
+  },
+  {
+    "category_id": "1091",
+    "category_description": "Samples & Sound Libraries"
+  },
+  {
+    "category_id": "1027",
+    "category_description": "Music Reference"
+  },
+  {
+    "category_id": "1028",
+    "category_description": "Music Composition & Theory"
+  },
+  {
+    "category_id": "892",
+    "category_description": "Sheet Music"
+  },
+  {
+    "category_id": "617",
+    "category_description": "Song Lyrics & Tabs"
+  },
+  {
+    "category_id": "220",
+    "category_description": "Music Streams & Downloads"
+  },
+  {
+    "category_id": "1021",
+    "category_description": "Pop Music"
+  },
+  {
+    "category_id": "215",
+    "category_description": "Radio"
+  },
+  {
+    "category_id": "809",
+    "category_description": "Podcasting"
+  },
+  {
+    "category_id": "1186",
+    "category_description": "Talk Radio"
+  },
+  {
+    "category_id": "1020",
+    "category_description": "Religious Music"
+  },
+  {
+    "category_id": "585",
+    "category_description": "Christian & Gospel Music"
+  },
+  {
+    "category_id": "590",
+    "category_description": "Rock Music"
+  },
+  {
+    "category_id": "1037",
+    "category_description": "Classic Rock & Oldies"
+  },
+  {
+    "category_id": "1035",
+    "category_description": "Hard Rock & Progressive"
+  },
+  {
+    "category_id": "1038",
+    "category_description": "Indie & Alternative Music"
+  },
+  {
+    "category_id": "1036",
+    "category_description": "Metal (Music)"
+  },
+  {
+    "category_id": "1041",
+    "category_description": "Punk (Music)"
+  },
+  {
+    "category_id": "893",
+    "category_description": "Soundtracks"
+  },
+  {
+    "category_id": "592",
+    "category_description": "Urban & Hip-Hop"
+  },
+  {
+    "category_id": "1030",
+    "category_description": "Rap & Hip-Hop"
+  },
+  {
+    "category_id": "1242",
+    "category_description": "Reggaeton"
+  },
+  {
+    "category_id": "1039",
+    "category_description": "Soul & R&B"
+  },
+  {
+    "category_id": "618",
+    "category_description": "Vocals & Show Tunes"
+  },
+  {
+    "category_id": "593",
+    "category_description": "World Music"
+  },
+  {
+    "category_id": "1208",
+    "category_description": "African Music"
+  },
+  {
+    "category_id": "1034",
+    "category_description": "Arab & Middle Eastern Music"
+  },
+  {
+    "category_id": "1033",
+    "category_description": "East Asian Music"
+  },
+  {
+    "category_id": "591",
+    "category_description": "Latin American Music"
+  },
+  {
+    "category_id": "1287",
+    "category_description": "Brazilian Music"
+  },
+  {
+    "category_id": "1286",
+    "category_description": "Salsa & Tropical Music"
+  },
+  {
+    "category_id": "1031",
+    "category_description": "Reggae & Caribbean Music"
+  },
+  {
+    "category_id": "1032",
+    "category_description": "South Asian Music"
+  },
+  {
+    "category_id": "33",
+    "category_description": "Offbeat"
+  },
+  {
+    "category_id": "538",
+    "category_description": "Edgy & Bizarre"
+  },
+  {
+    "category_id": "449",
+    "category_description": "Occult & Paranormal"
+  },
+  {
+    "category_id": "613",
+    "category_description": "Online Media"
+  },
+  {
+    "category_id": "105",
+    "category_description": "Online Games"
+  },
+  {
+    "category_id": "935",
+    "category_description": "Massive Multiplayer"
+  },
+  {
+    "category_id": "1222",
+    "category_description": "Online Image Galleries"
+  },
+  {
+    "category_id": "978",
+    "category_description": "Photo & Image Sharing"
+  },
+  {
+    "category_id": "320",
+    "category_description": "Photo Rating Sites"
+  },
+  {
+    "category_id": "574",
+    "category_description": "Stock Photography"
+  },
+  {
+    "category_id": "211",
+    "category_description": "Online Video"
+  },
+  {
+    "category_id": "979",
+    "category_description": "Video Sharing"
+  },
+  {
+    "category_id": "301",
+    "category_description": "Web Portals"
+  },
+  {
+    "category_id": "575",
+    "category_description": "Webcams & Virtual Tours"
+  },
+  {
+    "category_id": "23",
+    "category_description": "Performing Arts"
+  },
+  {
+    "category_id": "894",
+    "category_description": "Acting & Theater"
+  },
+  {
+    "category_id": "1243",
+    "category_description": "Broadway & Musical Theater"
+  },
+  {
+    "category_id": "581",
+    "category_description": "Dance"
+  },
+  {
+    "category_id": "36",
+    "category_description": "TV & Video"
+  },
+  {
+    "category_id": "1055",
+    "category_description": "TV Commercials"
+  },
+  {
+    "category_id": "1187",
+    "category_description": "TV Guides & Reference"
+  },
+  {
+    "category_id": "359",
+    "category_description": "TV Networks & Stations"
+  },
+  {
+    "category_id": "358",
+    "category_description": "TV Shows & Programs"
+  },
+  {
+    "category_id": "1193",
+    "category_description": "TV Dramas"
+  },
+  {
+    "category_id": "1111",
+    "category_description": "TV Crime & Legal Shows"
+  },
+  {
+    "category_id": "1194",
+    "category_description": "TV Medical Shows"
+  },
+  {
+    "category_id": "357",
+    "category_description": "TV Soap Operas"
+  },
+  {
+    "category_id": "1110",
+    "category_description": "TV Family-Oriented Shows"
+  },
+  {
+    "category_id": "1050",
+    "category_description": "TV Game Shows"
+  },
+  {
+    "category_id": "1049",
+    "category_description": "TV Reality Shows"
+  },
+  {
+    "category_id": "1112",
+    "category_description": "TV Sci-Fi & Fantasy Shows"
+  },
+  {
+    "category_id": "1048",
+    "category_description": "TV Talk Shows"
+  },
+  {
+    "category_id": "24",
+    "category_description": "Visual Art & Design"
+  },
+  {
+    "category_id": "477",
+    "category_description": "Architecture"
+  },
+  {
+    "category_id": "1361",
+    "category_description": "Art & Craft Supplies"
+  },
+  {
+    "category_id": "1195",
+    "category_description": "Arts Education"
+  },
+  {
+    "category_id": "653",
+    "category_description": "Design"
+  },
+  {
+    "category_id": "1300",
+    "category_description": "CAD & CAM"
+  },
+  {
+    "category_id": "654",
+    "category_description": "Graphic Design"
+  },
+  {
+    "category_id": "655",
+    "category_description": "Industrial & Product Design"
+  },
+  {
+    "category_id": "656",
+    "category_description": "Interior Design"
+  },
+  {
+    "category_id": "1167",
+    "category_description": "Painting"
+  },
+  {
+    "category_id": "439",
+    "category_description": "Photographic & Digital Arts"
+  },
+  {
+    "category_id": "573",
+    "category_description": "Camera & Photo Equipment"
+  },
+  {
+    "category_id": "1384",
+    "category_description": "Binoculars, Telescopes & Optical Devices"
+  },
+  {
+    "category_id": "306",
+    "category_description": "Cameras & Camcorders"
+  },
+  {
+    "category_id": "308",
+    "category_description": "Camcorders"
+  },
+  {
+    "category_id": "1383",
+    "category_description": "Camera Lenses"
+  },
+  {
+    "category_id": "307",
+    "category_description": "Cameras"
+  },
+  {
+    "category_id": "577",
+    "category_description": "Photo & Video Software"
+  },
+  {
+    "category_id": "1315",
+    "category_description": "Video File Formats & Codecs"
+  },
+  {
+    "category_id": "47",
+    "category_description": "Autos & Vehicles"
+  },
+  {
+    "category_id": "1190",
+    "category_description": "Automotive Industry"
+  },
+  {
+    "category_id": "1191",
+    "category_description": "Bicycles & Accessories"
+  },
+  {
+    "category_id": "1140",
+    "category_description": "Boats & Watercraft"
+  },
+  {
+    "category_id": "1213",
+    "category_description": "Campers & RVs"
+  },
+  {
+    "category_id": "1013",
+    "category_description": "Classic Vehicles"
+  },
+  {
+    "category_id": "1214",
+    "category_description": "Commercial Vehicles"
+  },
+  {
+    "category_id": "1215",
+    "category_description": "Cargo Trucks & Trailers"
+  },
+  {
+    "category_id": "806",
+    "category_description": "Custom & Performance Vehicles"
+  },
+  {
+    "category_id": "810",
+    "category_description": "Hybrid & Alternative Vehicles"
+  },
+  {
+    "category_id": "1380",
+    "category_description": "Electric & Plug-In Vehicles"
+  },
+  {
+    "category_id": "1317",
+    "category_description": "Microcars & City Cars"
+  },
+  {
+    "category_id": "273",
+    "category_description": "Motorcycles"
+  },
+  {
+    "category_id": "148",
+    "category_description": "Off-Road Vehicles"
+  },
+  {
+    "category_id": "1147",
+    "category_description": "Personal Aircraft"
+  },
+  {
+    "category_id": "1212",
+    "category_description": "Scooters & Mopeds"
+  },
+  {
+    "category_id": "610",
+    "category_description": "Trucks & SUVs"
+  },
+  {
+    "category_id": "1057",
+    "category_description": "SUVs"
+  },
+  {
+    "category_id": "1056",
+    "category_description": "Trucks"
+  },
+  {
+    "category_id": "1058",
+    "category_description": "Vans & Minivans"
+  },
+  {
+    "category_id": "815",
+    "category_description": "Vehicle Brands"
+  },
+  {
+    "category_id": "820",
+    "category_description": "Acura"
+  },
+  {
+    "category_id": "821",
+    "category_description": "Audi"
+  },
+  {
+    "category_id": "1059",
+    "category_description": "Bentley"
+  },
+  {
+    "category_id": "822",
+    "category_description": "BMW"
+  },
+  {
+    "category_id": "1060",
+    "category_description": "Buick"
+  },
+  {
+    "category_id": "823",
+    "category_description": "Cadillac"
+  },
+  {
+    "category_id": "826",
+    "category_description": "Chevrolet"
+  },
+  {
+    "category_id": "833",
+    "category_description": "Chrysler"
+  },
+  {
+    "category_id": "834",
+    "category_description": "Citroën"
+  },
+  {
+    "category_id": "836",
+    "category_description": "Dodge"
+  },
+  {
+    "category_id": "1061",
+    "category_description": "Ferrari"
+  },
+  {
+    "category_id": "838",
+    "category_description": "Fiat"
+  },
+  {
+    "category_id": "840",
+    "category_description": "Ford"
+  },
+  {
+    "category_id": "896",
+    "category_description": "GM-Daewoo"
+  },
+  {
+    "category_id": "842",
+    "category_description": "GMC"
+  },
+  {
+    "category_id": "843",
+    "category_description": "Honda"
+  },
+  {
+    "category_id": "1062",
+    "category_description": "Hummer"
+  },
+  {
+    "category_id": "845",
+    "category_description": "Hyundai"
+  },
+  {
+    "category_id": "1378",
+    "category_description": "Isuzu"
+  },
+  {
+    "category_id": "1063",
+    "category_description": "Jaguar"
+  },
+  {
+    "category_id": "846",
+    "category_description": "Jeep"
+  },
+  {
+    "category_id": "848",
+    "category_description": "Kia"
+  },
+  {
+    "category_id": "1064",
+    "category_description": "Lamborghini"
+  },
+  {
+    "category_id": "1065",
+    "category_description": "Land Rover"
+  },
+  {
+    "category_id": "849",
+    "category_description": "Lexus"
+  },
+  {
+    "category_id": "850",
+    "category_description": "Lincoln"
+  },
+  {
+    "category_id": "1066",
+    "category_description": "Maserati"
+  },
+  {
+    "category_id": "851",
+    "category_description": "Mazda"
+  },
+  {
+    "category_id": "852",
+    "category_description": "Mercedes-Benz"
+  },
+  {
+    "category_id": "853",
+    "category_description": "Mercury"
+  },
+  {
+    "category_id": "1067",
+    "category_description": "Mini"
+  },
+  {
+    "category_id": "854",
+    "category_description": "Mitsubishi"
+  },
+  {
+    "category_id": "855",
+    "category_description": "Nissan"
+  },
+  {
+    "category_id": "1377",
+    "category_description": "Infiniti"
+  },
+  {
+    "category_id": "856",
+    "category_description": "Peugeot"
+  },
+  {
+    "category_id": "857",
+    "category_description": "Pontiac"
+  },
+  {
+    "category_id": "858",
+    "category_description": "Porsche"
+  },
+  {
+    "category_id": "859",
+    "category_description": "Renault-Samsung"
+  },
+  {
+    "category_id": "1068",
+    "category_description": "Rolls-Royce"
+  },
+  {
+    "category_id": "897",
+    "category_description": "Saab"
+  },
+  {
+    "category_id": "860",
+    "category_description": "Saturn"
+  },
+  {
+    "category_id": "861",
+    "category_description": "Subaru"
+  },
+  {
+    "category_id": "1070",
+    "category_description": "Suzuki"
+  },
+  {
+    "category_id": "863",
+    "category_description": "Toyota"
+  },
+  {
+    "category_id": "1069",
+    "category_description": "Scion"
+  },
+  {
+    "category_id": "898",
+    "category_description": "Vauxhall-Opel"
+  },
+  {
+    "category_id": "865",
+    "category_description": "Volkswagen"
+  },
+  {
+    "category_id": "867",
+    "category_description": "Volvo"
+  },
+  {
+    "category_id": "1294",
+    "category_description": "Vehicle Codes & Driving Laws"
+  },
+  {
+    "category_id": "968",
+    "category_description": "Drunk Driving Law"
+  },
+  {
+    "category_id": "170",
+    "category_description": "Vehicle Licensing & Registration"
+  },
+  {
+    "category_id": "138",
+    "category_description": "Vehicle Maintenance"
+  },
+  {
+    "category_id": "89",
+    "category_description": "Vehicle Parts & Accessories"
+  },
+  {
+    "category_id": "1217",
+    "category_description": "Auto Exterior"
+  },
+  {
+    "category_id": "1218",
+    "category_description": "Auto Interior"
+  },
+  {
+    "category_id": "1188",
+    "category_description": "Car Electronics"
+  },
+  {
+    "category_id": "230",
+    "category_description": "Car Audio"
+  },
+  {
+    "category_id": "1189",
+    "category_description": "Car Video"
+  },
+  {
+    "category_id": "794",
+    "category_description": "GPS & Navigation"
+  },
+  {
+    "category_id": "1216",
+    "category_description": "Engine & Transmission"
+  },
+  {
+    "category_id": "1269",
+    "category_description": "Vehicle Fuels & Lubricants"
+  },
+  {
+    "category_id": "438",
+    "category_description": "Vehicle Wheels & Tires"
+  },
+  {
+    "category_id": "473",
+    "category_description": "Vehicle Shopping"
+  },
+  {
+    "category_id": "1268",
+    "category_description": "Fuel Economy & Gas Prices"
+  },
+  {
+    "category_id": "1267",
+    "category_description": "Vehicle Specs, Reviews & Comparisons"
+  },
+  {
+    "category_id": "803",
+    "category_description": "Vehicle Shows"
+  },
+  {
+    "category_id": "44",
+    "category_description": "Beauty & Fitness"
+  },
+  {
+    "category_id": "1219",
+    "category_description": "Beauty Pageants"
+  },
+  {
+    "category_id": "239",
+    "category_description": "Body Art"
+  },
+  {
+    "category_id": "1220",
+    "category_description": "Cosmetic Procedures"
+  },
+  {
+    "category_id": "238",
+    "category_description": "Cosmetic Surgery"
+  },
+  {
+    "category_id": "147",
+    "category_description": "Cosmetology & Beauty Professionals"
+  },
+  {
+    "category_id": "143",
+    "category_description": "Face & Body Care"
+  },
+  {
+    "category_id": "244",
+    "category_description": "Hygiene & Toiletries"
+  },
+  {
+    "category_id": "234",
+    "category_description": "Make-Up & Cosmetics"
+  },
+  {
+    "category_id": "242",
+    "category_description": "Perfumes & Fragrances"
+  },
+  {
+    "category_id": "93",
+    "category_description": "Skin & Nail Care"
+  },
+  {
+    "category_id": "144",
+    "category_description": "Unwanted Body & Facial Hair Removal"
+  },
+  {
+    "category_id": "185",
+    "category_description": "Fashion & Style"
+  },
+  {
+    "category_id": "98",
+    "category_description": "Fashion Designers & Collections"
+  },
+  {
+    "category_id": "1155",
+    "category_description": "Fashion Modeling"
+  },
+  {
+    "category_id": "94",
+    "category_description": "Fitness"
+  },
+  {
+    "category_id": "241",
+    "category_description": "Bodybuilding"
+  },
+  {
+    "category_id": "611",
+    "category_description": "Yoga & Pilates"
+  },
+  {
+    "category_id": "146",
+    "category_description": "Hair Care"
+  },
+  {
+    "category_id": "235",
+    "category_description": "Hair Loss"
+  },
+  {
+    "category_id": "145",
+    "category_description": "Spas & Beauty Services"
+  },
+  {
+    "category_id": "557",
+    "category_description": "Massage Therapy"
+  },
+  {
+    "category_id": "236",
+    "category_description": "Weight Loss"
+  },
+  {
+    "category_id": "22",
+    "category_description": "Books & Literature"
+  },
+  {
+    "category_id": "690",
+    "category_description": "Biographies & Quotations"
+  },
+  {
+    "category_id": "355",
+    "category_description": "Book Retailers"
+  },
+  {
+    "category_id": "1183",
+    "category_description": "Children's Literature"
+  },
+  {
+    "category_id": "608",
+    "category_description": "E-Books"
+  },
+  {
+    "category_id": "540",
+    "category_description": "Fan Fiction"
+  },
+  {
+    "category_id": "1184",
+    "category_description": "Literary Classics"
+  },
+  {
+    "category_id": "412",
+    "category_description": "Magazines"
+  },
+  {
+    "category_id": "565",
+    "category_description": "Poetry"
+  },
+  {
+    "category_id": "1177",
+    "category_description": "Writers Resources"
+  },
+  {
+    "category_id": "12",
+    "category_description": "Business & Industrial"
+  },
+  {
+    "category_id": "25",
+    "category_description": "Advertising & Marketing"
+  },
+  {
+    "category_id": "83",
+    "category_description": "Marketing Services"
+  },
+  {
+    "category_id": "1309",
+    "category_description": "Loyalty Cards & Programs"
+  },
+  {
+    "category_id": "327",
+    "category_description": "Public Relations"
+  },
+  {
+    "category_id": "84",
+    "category_description": "Search Engine Optimization & Marketing"
+  },
+  {
+    "category_id": "328",
+    "category_description": "Telemarketing"
+  },
+  {
+    "category_id": "356",
+    "category_description": "Aerospace & Defense"
+  },
+  {
+    "category_id": "669",
+    "category_description": "Defense Industry"
+  },
+  {
+    "category_id": "668",
+    "category_description": "Space Technology"
+  },
+  {
+    "category_id": "46",
+    "category_description": "Agriculture & Forestry"
+  },
+  {
+    "category_id": "748",
+    "category_description": "Agricultural Equipment"
+  },
+  {
+    "category_id": "747",
+    "category_description": "Aquaculture"
+  },
+  {
+    "category_id": "749",
+    "category_description": "Crops & Seed"
+  },
+  {
+    "category_id": "621",
+    "category_description": "Food Production"
+  },
+  {
+    "category_id": "750",
+    "category_description": "Forestry"
+  },
+  {
+    "category_id": "751",
+    "category_description": "Horticulture"
+  },
+  {
+    "category_id": "752",
+    "category_description": "Livestock"
+  },
+  {
+    "category_id": "799",
+    "category_description": "Business Education"
+  },
+  {
+    "category_id": "1138",
+    "category_description": "Business Finance"
+  },
+  {
+    "category_id": "1160",
+    "category_description": "Commercial Lending"
+  },
+  {
+    "category_id": "1139",
+    "category_description": "Investment Banking"
+  },
+  {
+    "category_id": "620",
+    "category_description": "Risk Management"
+  },
+  {
+    "category_id": "905",
+    "category_description": "Venture Capital"
+  },
+  {
+    "category_id": "784",
+    "category_description": "Business News"
+  },
+  {
+    "category_id": "1179",
+    "category_description": "Company News"
+  },
+  {
+    "category_id": "1240",
+    "category_description": "Company Earnings"
+  },
+  {
+    "category_id": "1241",
+    "category_description": "Mergers & Acquisitions"
+  },
+  {
+    "category_id": "1164",
+    "category_description": "Economy News"
+  },
+  {
+    "category_id": "1163",
+    "category_description": "Financial Markets"
+  },
+  {
+    "category_id": "1165",
+    "category_description": "Fiscal Policy News"
+  },
+  {
+    "category_id": "1159",
+    "category_description": "Business Operations"
+  },
+  {
+    "category_id": "336",
+    "category_description": "Business Plans & Presentations"
+  },
+  {
+    "category_id": "157",
+    "category_description": "Human Resources"
+  },
+  {
+    "category_id": "723",
+    "category_description": "Compensation & Benefits"
+  },
+  {
+    "category_id": "331",
+    "category_description": "Corporate Training"
+  },
+  {
+    "category_id": "724",
+    "category_description": "Payroll Services"
+  },
+  {
+    "category_id": "330",
+    "category_description": "Recruitment & Staffing"
+  },
+  {
+    "category_id": "338",
+    "category_description": "Management"
+  },
+  {
+    "category_id": "721",
+    "category_description": "Business Process"
+  },
+  {
+    "category_id": "1360",
+    "category_description": "Project Management"
+  },
+  {
+    "category_id": "1359",
+    "category_description": "Project Management Software"
+  },
+  {
+    "category_id": "722",
+    "category_description": "Strategic Planning"
+  },
+  {
+    "category_id": "801",
+    "category_description": "Supply Chain Management"
+  },
+  {
+    "category_id": "329",
+    "category_description": "Business Services"
+  },
+  {
+    "category_id": "1162",
+    "category_description": "Consulting"
+  },
+  {
+    "category_id": "334",
+    "category_description": "Corporate Events"
+  },
+  {
+    "category_id": "335",
+    "category_description": "Trade Shows & Conventions"
+  },
+  {
+    "category_id": "340",
+    "category_description": "E-Commerce Services"
+  },
+  {
+    "category_id": "280",
+    "category_description": "Merchant Services & Payment Systems"
+  },
+  {
+    "category_id": "726",
+    "category_description": "Fire & Security Services"
+  },
+  {
+    "category_id": "800",
+    "category_description": "Knowledge Management"
+  },
+  {
+    "category_id": "28",
+    "category_description": "Office Services"
+  },
+  {
+    "category_id": "337",
+    "category_description": "Office & Facilities Management"
+  },
+  {
+    "category_id": "95",
+    "category_description": "Office Supplies"
+  },
+  {
+    "category_id": "1375",
+    "category_description": "Business Cards & Stationary"
+  },
+  {
+    "category_id": "333",
+    "category_description": "Office Furniture"
+  },
+  {
+    "category_id": "1330",
+    "category_description": "Printers, Copiers & Fax"
+  },
+  {
+    "category_id": "1331",
+    "category_description": "Copiers"
+  },
+  {
+    "category_id": "1332",
+    "category_description": "Fax Machines"
+  },
+  {
+    "category_id": "1333",
+    "category_description": "Ink & Toner"
+  },
+  {
+    "category_id": "494",
+    "category_description": "Printers"
+  },
+  {
+    "category_id": "495",
+    "category_description": "Scanners"
+  },
+  {
+    "category_id": "718",
+    "category_description": "Outsourcing"
+  },
+  {
+    "category_id": "576",
+    "category_description": "Photo & Video Services"
+  },
+  {
+    "category_id": "719",
+    "category_description": "Physical Asset Management"
+  },
+  {
+    "category_id": "720",
+    "category_description": "Quality Control & Tracking"
+  },
+  {
+    "category_id": "1076",
+    "category_description": "Signage"
+  },
+  {
+    "category_id": "725",
+    "category_description": "Writing & Editing Services"
+  },
+  {
+    "category_id": "288",
+    "category_description": "Chemicals Industry"
+  },
+  {
+    "category_id": "670",
+    "category_description": "Agrochemicals"
+  },
+  {
+    "category_id": "671",
+    "category_description": "Cleaning Agents"
+  },
+  {
+    "category_id": "672",
+    "category_description": "Coatings & Adhesives"
+  },
+  {
+    "category_id": "673",
+    "category_description": "Dyes & Pigments"
+  },
+  {
+    "category_id": "674",
+    "category_description": "Plastics & Polymers"
+  },
+  {
+    "category_id": "48",
+    "category_description": "Construction & Maintenance"
+  },
+  {
+    "category_id": "650",
+    "category_description": "Building Materials & Supplies"
+  },
+  {
+    "category_id": "827",
+    "category_description": "Doors & Windows"
+  },
+  {
+    "category_id": "828",
+    "category_description": "HVAC & Climate Control"
+  },
+  {
+    "category_id": "829",
+    "category_description": "Nails Screws & Fasteners"
+  },
+  {
+    "category_id": "830",
+    "category_description": "Plumbing Fixtures & Equipment"
+  },
+  {
+    "category_id": "831",
+    "category_description": "Wood & Plastics"
+  },
+  {
+    "category_id": "651",
+    "category_description": "Civil Engineering"
+  },
+  {
+    "category_id": "652",
+    "category_description": "Construction Consulting & Contracting"
+  },
+  {
+    "category_id": "686",
+    "category_description": "Urban & Regional Planning"
+  },
+  {
+    "category_id": "233",
+    "category_description": "Energy & Utilities"
+  },
+  {
+    "category_id": "658",
+    "category_description": "Electricity"
+  },
+  {
+    "category_id": "954",
+    "category_description": "Nuclear Energy"
+  },
+  {
+    "category_id": "659",
+    "category_description": "Oil & Gas"
+  },
+  {
+    "category_id": "657",
+    "category_description": "Renewable & Alternative Energy"
+  },
+  {
+    "category_id": "660",
+    "category_description": "Waste Management"
+  },
+  {
+    "category_id": "1307",
+    "category_description": "Recycling"
+  },
+  {
+    "category_id": "1349",
+    "category_description": "Water Supply & Treatment"
+  },
+  {
+    "category_id": "77",
+    "category_description": "Enterprise Technology"
+  },
+  {
+    "category_id": "341",
+    "category_description": "Customer Relationship Management (CRM)"
+  },
+  {
+    "category_id": "343",
+    "category_description": "Data Management"
+  },
+  {
+    "category_id": "342",
+    "category_description": "Enterprise Resource Planning (ERP)"
+  },
+  {
+    "category_id": "955",
+    "category_description": "Hospitality Industry"
+  },
+  {
+    "category_id": "956",
+    "category_description": "Event Planning"
+  },
+  {
+    "category_id": "957",
+    "category_description": "Food Service"
+  },
+  {
+    "category_id": "121",
+    "category_description": "Grocery & Food Retailers"
+  },
+  {
+    "category_id": "816",
+    "category_description": "Restaurant Supply"
+  },
+  {
+    "category_id": "287",
+    "category_description": "Industrial Materials & Equipment"
+  },
+  {
+    "category_id": "1152",
+    "category_description": "Fluid Handling"
+  },
+  {
+    "category_id": "839",
+    "category_description": "Valves Hoses & Fittings"
+  },
+  {
+    "category_id": "835",
+    "category_description": "Generators"
+  },
+  {
+    "category_id": "837",
+    "category_description": "Heavy Machinery"
+  },
+  {
+    "category_id": "49",
+    "category_description": "Manufacturing"
+  },
+  {
+    "category_id": "661",
+    "category_description": "Factory Automation"
+  },
+  {
+    "category_id": "606",
+    "category_description": "Metals & Mining"
+  },
+  {
+    "category_id": "255",
+    "category_description": "Pharmaceuticals & Biotech"
+  },
+  {
+    "category_id": "1176",
+    "category_description": "Printing & Publishing"
+  },
+  {
+    "category_id": "332",
+    "category_description": "Document & Printing Services"
+  },
+  {
+    "category_id": "1204",
+    "category_description": "Journalism & News Industry"
+  },
+  {
+    "category_id": "1199",
+    "category_description": "Professional & Trade Associations"
+  },
+  {
+    "category_id": "841",
+    "category_description": "Retail Trade"
+  },
+  {
+    "category_id": "844",
+    "category_description": "Retail Equipment & Technology"
+  },
+  {
+    "category_id": "551",
+    "category_description": "Small Business"
+  },
+  {
+    "category_id": "1200",
+    "category_description": "Business Formation"
+  },
+  {
+    "category_id": "727",
+    "category_description": "Home Office"
+  },
+  {
+    "category_id": "552",
+    "category_description": "MLM & Business Opportunities"
+  },
+  {
+    "category_id": "566",
+    "category_description": "Textiles & Nonwovens"
+  },
+  {
+    "category_id": "50",
+    "category_description": "Transportation & Logistics"
+  },
+  {
+    "category_id": "662",
+    "category_description": "Aviation"
+  },
+  {
+    "category_id": "664",
+    "category_description": "Distribution & Logistics"
+  },
+  {
+    "category_id": "289",
+    "category_description": "Freight & Trucking"
+  },
+  {
+    "category_id": "354",
+    "category_description": "Import & Export"
+  },
+  {
+    "category_id": "1150",
+    "category_description": "Mail & Package Delivery"
+  },
+  {
+    "category_id": "663",
+    "category_description": "Couriers & Messengers"
+  },
+  {
+    "category_id": "665",
+    "category_description": "Maritime Transport"
+  },
+  {
+    "category_id": "291",
+    "category_description": "Moving & Relocation"
+  },
+  {
+    "category_id": "290",
+    "category_description": "Packaging"
+  },
+  {
+    "category_id": "1306",
+    "category_description": "Parking"
+  },
+  {
+    "category_id": "1245",
+    "category_description": "Airport Parking & Transportation"
+  },
+  {
+    "category_id": "1347",
+    "category_description": "Public Storage"
+  },
+  {
+    "category_id": "666",
+    "category_description": "Rail Transport"
+  },
+  {
+    "category_id": "667",
+    "category_description": "Urban Transport"
+  },
+  {
+    "category_id": "5",
+    "category_description": "Computers & Electronics"
+  },
+  {
+    "category_id": "30",
+    "category_description": "Computer Hardware"
+  },
+  {
+    "category_id": "717",
+    "category_description": "Computer Components"
+  },
+  {
+    "category_id": "741",
+    "category_description": "Chips & Processors"
+  },
+  {
+    "category_id": "226",
+    "category_description": "Computer Memory"
+  },
+  {
+    "category_id": "740",
+    "category_description": "Sound & Video Cards"
+  },
+  {
+    "category_id": "496",
+    "category_description": "Computer Drives & Storage"
+  },
+  {
+    "category_id": "1321",
+    "category_description": "CD & DVD Drives & Burners"
+  },
+  {
+    "category_id": "1322",
+    "category_description": "CD & DVD Storage Media"
+  },
+  {
+    "category_id": "1323",
+    "category_description": "Data Backup & Recovery"
+  },
+  {
+    "category_id": "1318",
+    "category_description": "Flash Drives & Memory Cards"
+  },
+  {
+    "category_id": "1320",
+    "category_description": "Hard Drives"
+  },
+  {
+    "category_id": "1319",
+    "category_description": "Memory Card Readers"
+  },
+  {
+    "category_id": "729",
+    "category_description": "Network Storage"
+  },
+  {
+    "category_id": "312",
+    "category_description": "Computer Peripherals"
+  },
+  {
+    "category_id": "487",
+    "category_description": "Computer Monitors & Displays"
+  },
+  {
+    "category_id": "493",
+    "category_description": "Input Devices"
+  },
+  {
+    "category_id": "728",
+    "category_description": "Computer Servers"
+  },
+  {
+    "category_id": "309",
+    "category_description": "Desktop Computers"
+  },
+  {
+    "category_id": "739",
+    "category_description": "Hardware Modding & Tuning"
+  },
+  {
+    "category_id": "310",
+    "category_description": "Laptops & Notebooks"
+  },
+  {
+    "category_id": "1277",
+    "category_description": "Tablet PCs"
+  },
+  {
+    "category_id": "314",
+    "category_description": "Computer Security"
+  },
+  {
+    "category_id": "315",
+    "category_description": "Antivirus & Malware"
+  },
+  {
+    "category_id": "344",
+    "category_description": "Network Security"
+  },
+  {
+    "category_id": "78",
+    "category_description": "Consumer Electronics"
+  },
+  {
+    "category_id": "361",
+    "category_description": "Audio Equipment"
+  },
+  {
+    "category_id": "1396",
+    "category_description": "Headphones"
+  },
+  {
+    "category_id": "227",
+    "category_description": "MP3 & Portable Media Players"
+  },
+  {
+    "category_id": "1158",
+    "category_description": "Speakers"
+  },
+  {
+    "category_id": "91",
+    "category_description": "Stereo Systems & Components"
+  },
+  {
+    "category_id": "1192",
+    "category_description": "Electronic Accessories"
+  },
+  {
+    "category_id": "362",
+    "category_description": "Gadgets & Portable Electronics"
+  },
+  {
+    "category_id": "1324",
+    "category_description": "E-Book Readers"
+  },
+  {
+    "category_id": "1046",
+    "category_description": "Handheld Game Consoles"
+  },
+  {
+    "category_id": "228",
+    "category_description": "PDAs & Handhelds"
+  },
+  {
+    "category_id": "899",
+    "category_description": "Game Systems & Consoles"
+  },
+  {
+    "category_id": "1043",
+    "category_description": "Nintendo"
+  },
+  {
+    "category_id": "1044",
+    "category_description": "Sony PlayStation"
+  },
+  {
+    "category_id": "1045",
+    "category_description": "Xbox"
+  },
+  {
+    "category_id": "229",
+    "category_description": "TV & Video Equipment"
+  },
+  {
+    "category_id": "1393",
+    "category_description": "DVRs & Set-Top Boxes"
+  },
+  {
+    "category_id": "1157",
+    "category_description": "Home Theater Systems"
+  },
+  {
+    "category_id": "1334",
+    "category_description": "Projectors & Screens"
+  },
+  {
+    "category_id": "305",
+    "category_description": "Televisions"
+  },
+  {
+    "category_id": "1354",
+    "category_description": "HDTVs"
+  },
+  {
+    "category_id": "1356",
+    "category_description": "LCD TVs"
+  },
+  {
+    "category_id": "1355",
+    "category_description": "Plasma TVs"
+  },
+  {
+    "category_id": "1357",
+    "category_description": "Projection TVs"
+  },
+  {
+    "category_id": "492",
+    "category_description": "Video Players & Recorders"
+  },
+  {
+    "category_id": "1394",
+    "category_description": "Blu-Ray Players & Recorders"
+  },
+  {
+    "category_id": "1395",
+    "category_description": "DVD Players & Recorders"
+  },
+  {
+    "category_id": "434",
+    "category_description": "Electronics & Electrical"
+  },
+  {
+    "category_id": "900",
+    "category_description": "Data Sheets & Electronics Reference"
+  },
+  {
+    "category_id": "743",
+    "category_description": "Electromechanical Devices"
+  },
+  {
+    "category_id": "742",
+    "category_description": "Electronic Components"
+  },
+  {
+    "category_id": "744",
+    "category_description": "Optoelectronics & Fiber"
+  },
+  {
+    "category_id": "745",
+    "category_description": "Power Supplies"
+  },
+  {
+    "category_id": "746",
+    "category_description": "Test & Measurement"
+  },
+  {
+    "category_id": "311",
+    "category_description": "Networking"
+  },
+  {
+    "category_id": "488",
+    "category_description": "Data Formats & Protocols"
+  },
+  {
+    "category_id": "1298",
+    "category_description": "Distributed & Parallel Computing"
+  },
+  {
+    "category_id": "347",
+    "category_description": "Network Monitoring & Management"
+  },
+  {
+    "category_id": "346",
+    "category_description": "Networking Equipment"
+  },
+  {
+    "category_id": "1279",
+    "category_description": "VPN & Remote Access"
+  },
+  {
+    "category_id": "31",
+    "category_description": "Programming"
+  },
+  {
+    "category_id": "731",
+    "category_description": "C & C++"
+  },
+  {
+    "category_id": "802",
+    "category_description": "Developer Jobs"
+  },
+  {
+    "category_id": "730",
+    "category_description": "Development Tools"
+  },
+  {
+    "category_id": "732",
+    "category_description": "Java"
+  },
+  {
+    "category_id": "733",
+    "category_description": "Scripting Languages"
+  },
+  {
+    "category_id": "734",
+    "category_description": "Windows & .NET"
+  },
+  {
+    "category_id": "32",
+    "category_description": "Software"
+  },
+  {
+    "category_id": "498",
+    "category_description": "Business & Productivity Software"
+  },
+  {
+    "category_id": "1341",
+    "category_description": "Accounting & Financial Software"
+  },
+  {
+    "category_id": "1358",
+    "category_description": "Calendar & Scheduling Software"
+  },
+  {
+    "category_id": "1346",
+    "category_description": "Presentation Software"
+  },
+  {
+    "category_id": "1344",
+    "category_description": "Spreadsheet Software"
+  },
+  {
+    "category_id": "1345",
+    "category_description": "Word Processing Software"
+  },
+  {
+    "category_id": "225",
+    "category_description": "Device Drivers"
+  },
+  {
+    "category_id": "804",
+    "category_description": "Educational Software"
+  },
+  {
+    "category_id": "901",
+    "category_description": "Freeware & Shareware"
+  },
+  {
+    "category_id": "807",
+    "category_description": "Internet Software"
+  },
+  {
+    "category_id": "808",
+    "category_description": "Content Management"
+  },
+  {
+    "category_id": "304",
+    "category_description": "Internet Clients & Browsers"
+  },
+  {
+    "category_id": "902",
+    "category_description": "Proxying & Filtering"
+  },
+  {
+    "category_id": "1109",
+    "category_description": "Mobile Apps & Add-Ons"
+  },
+  {
+    "category_id": "532",
+    "category_description": "Ringtones & Mobile Goodies"
+  },
+  {
+    "category_id": "497",
+    "category_description": "Multimedia Software"
+  },
+  {
+    "category_id": "1089",
+    "category_description": "Audio & Music Software"
+  },
+  {
+    "category_id": "1092",
+    "category_description": "Audio Files Formats & Codecs"
+  },
+  {
+    "category_id": "1088",
+    "category_description": "Desktop Publishing"
+  },
+  {
+    "category_id": "805",
+    "category_description": "Fonts"
+  },
+  {
+    "category_id": "486",
+    "category_description": "Graphics & Animation Software"
+  },
+  {
+    "category_id": "1090",
+    "category_description": "Media Players"
+  },
+  {
+    "category_id": "313",
+    "category_description": "Open Source"
+  },
+  {
+    "category_id": "303",
+    "category_description": "Operating Systems"
+  },
+  {
+    "category_id": "736",
+    "category_description": "Linux & Unix"
+  },
+  {
+    "category_id": "735",
+    "category_description": "Mac OS"
+  },
+  {
+    "category_id": "1382",
+    "category_description": "Mobile OS"
+  },
+  {
+    "category_id": "737",
+    "category_description": "Windows OS"
+  },
+  {
+    "category_id": "224",
+    "category_description": "Software Utilities"
+  },
+  {
+    "category_id": "1142",
+    "category_description": "Web Apps & Online Tools"
+  },
+  {
+    "category_id": "567",
+    "category_description": "Technical Support"
+  },
+  {
+    "category_id": "785",
+    "category_description": "Technology News"
+  },
+  {
+    "category_id": "7",
+    "category_description": "Finance"
+  },
+  {
+    "category_id": "278",
+    "category_description": "Accounting & Auditing"
+  },
+  {
+    "category_id": "1283",
+    "category_description": "Tax Preparation & Planning"
+  },
+  {
+    "category_id": "37",
+    "category_description": "Banking"
+  },
+  {
+    "category_id": "279",
+    "category_description": "Credit & Lending"
+  },
+  {
+    "category_id": "468",
+    "category_description": "Auto Financing"
+  },
+  {
+    "category_id": "813",
+    "category_description": "College Financing"
+  },
+  {
+    "category_id": "811",
+    "category_description": "Credit Cards"
+  },
+  {
+    "category_id": "812",
+    "category_description": "Debt Management"
+  },
+  {
+    "category_id": "466",
+    "category_description": "Home Financing"
+  },
+  {
+    "category_id": "814",
+    "category_description": "Currencies & Foreign Exchange"
+  },
+  {
+    "category_id": "903",
+    "category_description": "Financial Planning"
+  },
+  {
+    "category_id": "1282",
+    "category_description": "Grants & Financial Assistance"
+  },
+  {
+    "category_id": "38",
+    "category_description": "Insurance"
+  },
+  {
+    "category_id": "467",
+    "category_description": "Auto Insurance"
+  },
+  {
+    "category_id": "249",
+    "category_description": "Health Insurance"
+  },
+  {
+    "category_id": "465",
+    "category_description": "Home Insurance"
+  },
+  {
+    "category_id": "107",
+    "category_description": "Investing"
+  },
+  {
+    "category_id": "904",
+    "category_description": "Commodities & Futures Trading"
+  },
+  {
+    "category_id": "619",
+    "category_description": "Retirement & Pension"
+  },
+  {
+    "category_id": "71",
+    "category_description": "Food & Drink"
+  },
+  {
+    "category_id": "277",
+    "category_description": "Alcoholic Beverages"
+  },
+  {
+    "category_id": "404",
+    "category_description": "Beer"
+  },
+  {
+    "category_id": "406",
+    "category_description": "Liquor"
+  },
+  {
+    "category_id": "405",
+    "category_description": "Wine"
+  },
+  {
+    "category_id": "906",
+    "category_description": "Candy & Sweets"
+  },
+  {
+    "category_id": "122",
+    "category_description": "Cooking & Recipes"
+  },
+  {
+    "category_id": "907",
+    "category_description": "Baked Goods"
+  },
+  {
+    "category_id": "908",
+    "category_description": "Fruits & Vegetables"
+  },
+  {
+    "category_id": "909",
+    "category_description": "Meat & Seafood"
+  },
+  {
+    "category_id": "910",
+    "category_description": "Soups & Stews"
+  },
+  {
+    "category_id": "825",
+    "category_description": "Vegetarian Cuisine"
+  },
+  {
+    "category_id": "911",
+    "category_description": "World Cuisines"
+  },
+  {
+    "category_id": "912",
+    "category_description": "Asian Cuisine"
+  },
+  {
+    "category_id": "913",
+    "category_description": "Latin American Cuisine"
+  },
+  {
+    "category_id": "914",
+    "category_description": "Mediterranean Cuisine"
+  },
+  {
+    "category_id": "915",
+    "category_description": "North American Cuisine"
+  },
+  {
+    "category_id": "297",
+    "category_description": "Culinary Training"
+  },
+  {
+    "category_id": "560",
+    "category_description": "Non-Alcoholic Beverages"
+  },
+  {
+    "category_id": "916",
+    "category_description": "Coffee & Tea"
+  },
+  {
+    "category_id": "276",
+    "category_description": "Restaurants"
+  },
+  {
+    "category_id": "917",
+    "category_description": "Dining Guides"
+  },
+  {
+    "category_id": "918",
+    "category_description": "Fast Food"
+  },
+  {
+    "category_id": "8",
+    "category_description": "Games"
+  },
+  {
+    "category_id": "919",
+    "category_description": "Arcade & Coin-Op Games"
+  },
+  {
+    "category_id": "920",
+    "category_description": "Board Games"
+  },
+  {
+    "category_id": "921",
+    "category_description": "Chess & Abstract Strategy Games"
+  },
+  {
+    "category_id": "922",
+    "category_description": "Miniatures & Wargaming"
+  },
+  {
+    "category_id": "39",
+    "category_description": "Card Games"
+  },
+  {
+    "category_id": "923",
+    "category_description": "Collectible Card Games"
+  },
+  {
+    "category_id": "924",
+    "category_description": "Poker & Casino Games"
+  },
+  {
+    "category_id": "41",
+    "category_description": "Computer & Video Games"
+  },
+  {
+    "category_id": "1311",
+    "category_description": "Action & Platform Games"
+  },
+  {
+    "category_id": "925",
+    "category_description": "Adventure Games"
+  },
+  {
+    "category_id": "926",
+    "category_description": "Casual Games"
+  },
+  {
+    "category_id": "927",
+    "category_description": "Driving & Racing Games"
+  },
+  {
+    "category_id": "928",
+    "category_description": "Fighting Games"
+  },
+  {
+    "category_id": "1343",
+    "category_description": "Gaming Media & Reference"
+  },
+  {
+    "category_id": "381",
+    "category_description": "Game Cheats & Hints"
+  },
+  {
+    "category_id": "929",
+    "category_description": "Music & Dance Games"
+  },
+  {
+    "category_id": "930",
+    "category_description": "Shooter Games"
+  },
+  {
+    "category_id": "931",
+    "category_description": "Simulation Games"
+  },
+  {
+    "category_id": "932",
+    "category_description": "Sports Games"
+  },
+  {
+    "category_id": "933",
+    "category_description": "Strategy Games"
+  },
+  {
+    "category_id": "1342",
+    "category_description": "Video Game Emulation"
+  },
+  {
+    "category_id": "1146",
+    "category_description": "Video Game Retailers"
+  },
+  {
+    "category_id": "1290",
+    "category_description": "Family-Oriented Games & Activities"
+  },
+  {
+    "category_id": "1397",
+    "category_description": "Drawing & Coloring"
+  },
+  {
+    "category_id": "936",
+    "category_description": "Party Games"
+  },
+  {
+    "category_id": "937",
+    "category_description": "Puzzles & Brainteasers"
+  },
+  {
+    "category_id": "622",
+    "category_description": "Roleplaying Games"
+  },
+  {
+    "category_id": "938",
+    "category_description": "Table Games"
+  },
+  {
+    "category_id": "939",
+    "category_description": "Billiards"
+  },
+  {
+    "category_id": "940",
+    "category_description": "Table Tennis"
+  },
+  {
+    "category_id": "45",
+    "category_description": "Health"
+  },
+  {
+    "category_id": "623",
+    "category_description": "Aging & Geriatrics"
+  },
+  {
+    "category_id": "624",
+    "category_description": "Alzheimer's Disease"
+  },
+  {
+    "category_id": "499",
+    "category_description": "Alternative & Natural Medicine"
+  },
+  {
+    "category_id": "1239",
+    "category_description": "Acupuncture & Chinese Medicine"
+  },
+  {
+    "category_id": "1238",
+    "category_description": "Cleansing & Detoxification"
+  },
+  {
+    "category_id": "419",
+    "category_description": "Health Conditions"
+  },
+  {
+    "category_id": "625",
+    "category_description": "AIDS & HIV"
+  },
+  {
+    "category_id": "626",
+    "category_description": "Allergies"
+  },
+  {
+    "category_id": "628",
+    "category_description": "Arthritis"
+  },
+  {
+    "category_id": "429",
+    "category_description": "Cancer"
+  },
+  {
+    "category_id": "629",
+    "category_description": "Cold & Flu"
+  },
+  {
+    "category_id": "630",
+    "category_description": "Diabetes"
+  },
+  {
+    "category_id": "1211",
+    "category_description": "Ear Nose & Throat"
+  },
+  {
+    "category_id": "571",
+    "category_description": "Eating Disorders"
+  },
+  {
+    "category_id": "1328",
+    "category_description": "Endocrine Conditions"
+  },
+  {
+    "category_id": "1329",
+    "category_description": "Thyroid Conditions"
+  },
+  {
+    "category_id": "941",
+    "category_description": "Genetic Disorders"
+  },
+  {
+    "category_id": "638",
+    "category_description": "GERD & Digestive Disorders"
+  },
+  {
+    "category_id": "559",
+    "category_description": "Heart & Hypertension"
+  },
+  {
+    "category_id": "632",
+    "category_description": "Infectious Diseases"
+  },
+  {
+    "category_id": "1262",
+    "category_description": "Parasites & Parasitic Diseases"
+  },
+  {
+    "category_id": "421",
+    "category_description": "Sexually Transmitted Diseases"
+  },
+  {
+    "category_id": "1263",
+    "category_description": "Vaccines & Immunizations"
+  },
+  {
+    "category_id": "817",
+    "category_description": "Injury"
+  },
+  {
+    "category_id": "942",
+    "category_description": "Neurological Disorders"
+  },
+  {
+    "category_id": "818",
+    "category_description": "Obesity"
+  },
+  {
+    "category_id": "819",
+    "category_description": "Pain Management"
+  },
+  {
+    "category_id": "631",
+    "category_description": "Headaches & Migraines"
+  },
+  {
+    "category_id": "824",
+    "category_description": "Respiratory Conditions"
+  },
+  {
+    "category_id": "627",
+    "category_description": "Asthma"
+  },
+  {
+    "category_id": "420",
+    "category_description": "Skin Conditions"
+  },
+  {
+    "category_id": "633",
+    "category_description": "Sleep Disorders"
+  },
+  {
+    "category_id": "254",
+    "category_description": "Health Education & Medical Training"
+  },
+  {
+    "category_id": "252",
+    "category_description": "Health Foundations & Medical Research"
+  },
+  {
+    "category_id": "1253",
+    "category_description": "Health News"
+  },
+  {
+    "category_id": "1256",
+    "category_description": "Health Policy"
+  },
+  {
+    "category_id": "251",
+    "category_description": "Medical Devices & Equipment"
+  },
+  {
+    "category_id": "1352",
+    "category_description": "Assistive Technology"
+  },
+  {
+    "category_id": "1353",
+    "category_description": "Mobility Equipment & Accessories"
+  },
+  {
+    "category_id": "256",
+    "category_description": "Medical Facilities & Services"
+  },
+  {
+    "category_id": "634",
+    "category_description": "Doctors' Offices"
+  },
+  {
+    "category_id": "250",
+    "category_description": "Hospitals & Treatment Centers"
+  },
+  {
+    "category_id": "635",
+    "category_description": "Medical Procedures"
+  },
+  {
+    "category_id": "943",
+    "category_description": "Medical Tests & Exams"
+  },
+  {
+    "category_id": "944",
+    "category_description": "Surgery"
+  },
+  {
+    "category_id": "500",
+    "category_description": "Physical Therapy"
+  },
+  {
+    "category_id": "253",
+    "category_description": "Medical Literature & Resources"
+  },
+  {
+    "category_id": "945",
+    "category_description": "Medical Photos & Illustration"
+  },
+  {
+    "category_id": "636",
+    "category_description": "Men's Health"
+  },
+  {
+    "category_id": "202",
+    "category_description": "Erectile Dysfunction"
+  },
+  {
+    "category_id": "437",
+    "category_description": "Mental Health"
+  },
+  {
+    "category_id": "639",
+    "category_description": "Anxiety & Stress"
+  },
+  {
+    "category_id": "640",
+    "category_description": "Depression"
+  },
+  {
+    "category_id": "641",
+    "category_description": "Learning & Developmental Disabilities"
+  },
+  {
+    "category_id": "642",
+    "category_description": "ADD & ADHD"
+  },
+  {
+    "category_id": "418",
+    "category_description": "Nursing"
+  },
+  {
+    "category_id": "649",
+    "category_description": "Assisted Living & Long Term Care"
+  },
+  {
+    "category_id": "456",
+    "category_description": "Nutrition"
+  },
+  {
+    "category_id": "457",
+    "category_description": "Special & Restricted Diets"
+  },
+  {
+    "category_id": "643",
+    "category_description": "Cholesterol Issues"
+  },
+  {
+    "category_id": "237",
+    "category_description": "Vitamins & Supplements"
+  },
+  {
+    "category_id": "245",
+    "category_description": "Oral & Dental Care"
+  },
+  {
+    "category_id": "645",
+    "category_description": "Pediatrics"
+  },
+  {
+    "category_id": "248",
+    "category_description": "Pharmacy"
+  },
+  {
+    "category_id": "646",
+    "category_description": "Drugs & Medications"
+  },
+  {
+    "category_id": "947",
+    "category_description": "Public Health"
+  },
+  {
+    "category_id": "644",
+    "category_description": "Occupational Health & Safety"
+  },
+  {
+    "category_id": "946",
+    "category_description": "Poisons & Overdoses"
+  },
+  {
+    "category_id": "195",
+    "category_description": "Reproductive Health"
+  },
+  {
+    "category_id": "198",
+    "category_description": "Birth Control"
+  },
+  {
+    "category_id": "647",
+    "category_description": "Infertility"
+  },
+  {
+    "category_id": "558",
+    "category_description": "OBGYN"
+  },
+  {
+    "category_id": "401",
+    "category_description": "Pregnancy & Maternity"
+  },
+  {
+    "category_id": "536",
+    "category_description": "Sex Education & Counseling"
+  },
+  {
+    "category_id": "1236",
+    "category_description": "Sexual Enhancement"
+  },
+  {
+    "category_id": "257",
+    "category_description": "Substance Abuse"
+  },
+  {
+    "category_id": "1351",
+    "category_description": "Drug & Alcohol Testing"
+  },
+  {
+    "category_id": "1350",
+    "category_description": "Drug & Alcohol Treatment"
+  },
+  {
+    "category_id": "1237",
+    "category_description": "Smoking & Smoking Cessation"
+  },
+  {
+    "category_id": "1235",
+    "category_description": "Steroids & Performance-Enhancing Drugs"
+  },
+  {
+    "category_id": "246",
+    "category_description": "Vision Care"
+  },
+  {
+    "category_id": "1224",
+    "category_description": "Eyeglasses & Contacts"
+  },
+  {
+    "category_id": "648",
+    "category_description": "Women's Health"
+  },
+  {
+    "category_id": "65",
+    "category_description": "Hobbies & Leisure"
+  },
+  {
+    "category_id": "64",
+    "category_description": "Antiques & Collectibles"
+  },
+  {
+    "category_id": "1016",
+    "category_description": "Bowling"
+  },
+  {
+    "category_id": "189",
+    "category_description": "Clubs & Organizations"
+  },
+  {
+    "category_id": "1276",
+    "category_description": "Contests, Awards & Prizes"
+  },
+  {
+    "category_id": "364",
+    "category_description": "Lottery & Sweepstakes"
+  },
+  {
+    "category_id": "284",
+    "category_description": "Crafts"
+  },
+  {
+    "category_id": "1230",
+    "category_description": "Fiber & Textile Arts"
+  },
+  {
+    "category_id": "458",
+    "category_description": "Cycling"
+  },
+  {
+    "category_id": "688",
+    "category_description": "Outdoors"
+  },
+  {
+    "category_id": "568",
+    "category_description": "Equestrian"
+  },
+  {
+    "category_id": "462",
+    "category_description": "Fishing"
+  },
+  {
+    "category_id": "542",
+    "category_description": "Hiking & Camping"
+  },
+  {
+    "category_id": "461",
+    "category_description": "Hunting & Shooting"
+  },
+  {
+    "category_id": "786",
+    "category_description": "Paintball"
+  },
+  {
+    "category_id": "66",
+    "category_description": "Pets & Animals"
+  },
+  {
+    "category_id": "882",
+    "category_description": "Animal Products & Services"
+  },
+  {
+    "category_id": "883",
+    "category_description": "Animal Welfare"
+  },
+  {
+    "category_id": "379",
+    "category_description": "Pet Food & Supplies"
+  },
+  {
+    "category_id": "380",
+    "category_description": "Veterinarians"
+  },
+  {
+    "category_id": "563",
+    "category_description": "Pets"
+  },
+  {
+    "category_id": "884",
+    "category_description": "Birds"
+  },
+  {
+    "category_id": "885",
+    "category_description": "Cats"
+  },
+  {
+    "category_id": "886",
+    "category_description": "Dogs"
+  },
+  {
+    "category_id": "607",
+    "category_description": "Exotic Pets"
+  },
+  {
+    "category_id": "887",
+    "category_description": "Fish & Aquaria"
+  },
+  {
+    "category_id": "888",
+    "category_description": "Horses"
+  },
+  {
+    "category_id": "889",
+    "category_description": "Rabbits & Rodents"
+  },
+  {
+    "category_id": "890",
+    "category_description": "Reptiles & Amphibians"
+  },
+  {
+    "category_id": "119",
+    "category_description": "Wildlife"
+  },
+  {
+    "category_id": "1278",
+    "category_description": "Insects & Entomology"
+  },
+  {
+    "category_id": "1009",
+    "category_description": "Zoos-Aquariums-Preserves"
+  },
+  {
+    "category_id": "787",
+    "category_description": "Radio Control & Modeling"
+  },
+  {
+    "category_id": "999",
+    "category_description": "Recreational Aviation"
+  },
+  {
+    "category_id": "541",
+    "category_description": "Running & Walking"
+  },
+  {
+    "category_id": "977",
+    "category_description": "Special Occasions"
+  },
+  {
+    "category_id": "70",
+    "category_description": "Gifts & Special Event Items"
+  },
+  {
+    "category_id": "100",
+    "category_description": "Cards & Greetings"
+  },
+  {
+    "category_id": "323",
+    "category_description": "Flowers"
+  },
+  {
+    "category_id": "99",
+    "category_description": "Gifts"
+  },
+  {
+    "category_id": "324",
+    "category_description": "Party & Holiday Supplies"
+  },
+  {
+    "category_id": "678",
+    "category_description": "Holidays & Seasonal Events"
+  },
+  {
+    "category_id": "1270",
+    "category_description": "Birthdays & Name Days"
+  },
+  {
+    "category_id": "1246",
+    "category_description": "Carnival & Mardi Gras"
+  },
+  {
+    "category_id": "1274",
+    "category_description": "Christian Holidays"
+  },
+  {
+    "category_id": "1078",
+    "category_description": "Christmas"
+  },
+  {
+    "category_id": "1123",
+    "category_description": "Easter"
+  },
+  {
+    "category_id": "1079",
+    "category_description": "Halloween & October 31st"
+  },
+  {
+    "category_id": "1275",
+    "category_description": "Islamic Holidays"
+  },
+  {
+    "category_id": "1124",
+    "category_description": "Jewish Holidays"
+  },
+  {
+    "category_id": "1271",
+    "category_description": "New Year"
+  },
+  {
+    "category_id": "1125",
+    "category_description": "Thanksgiving"
+  },
+  {
+    "category_id": "1122",
+    "category_description": "Valentine's Day"
+  },
+  {
+    "category_id": "293",
+    "category_description": "Weddings"
+  },
+  {
+    "category_id": "502",
+    "category_description": "Subcultures & Niche Interests"
+  },
+  {
+    "category_id": "503",
+    "category_description": "Goth Subculture"
+  },
+  {
+    "category_id": "676",
+    "category_description": "Science Fiction & Fantasy"
+  },
+  {
+    "category_id": "1002",
+    "category_description": "Water Activities"
+  },
+  {
+    "category_id": "459",
+    "category_description": "Boating"
+  },
+  {
+    "category_id": "1305",
+    "category_description": "Diving & Underwater Activities"
+  },
+  {
+    "category_id": "689",
+    "category_description": "Surf & Swim"
+  },
+  {
+    "category_id": "118",
+    "category_description": "Water Sports"
+  },
+  {
+    "category_id": "11",
+    "category_description": "Home & Garden"
+  },
+  {
+    "category_id": "948",
+    "category_description": "Bed & Bath"
+  },
+  {
+    "category_id": "1365",
+    "category_description": "Bathroom"
+  },
+  {
+    "category_id": "1366",
+    "category_description": "Bedroom"
+  },
+  {
+    "category_id": "1369",
+    "category_description": "Bedding & Bed Linens"
+  },
+  {
+    "category_id": "1367",
+    "category_description": "Beds & Headboards"
+  },
+  {
+    "category_id": "1368",
+    "category_description": "Mattresses"
+  },
+  {
+    "category_id": "472",
+    "category_description": "Domestic Services"
+  },
+  {
+    "category_id": "949",
+    "category_description": "Cleaning Supplies & Services"
+  },
+  {
+    "category_id": "269",
+    "category_description": "Gardening & Landscaping"
+  },
+  {
+    "category_id": "271",
+    "category_description": "Home Appliances"
+  },
+  {
+    "category_id": "1293",
+    "category_description": "Major Kitchen Appliances"
+  },
+  {
+    "category_id": "1292",
+    "category_description": "Small Kitchen Appliances"
+  },
+  {
+    "category_id": "1371",
+    "category_description": "Water Filters & Purifiers"
+  },
+  {
+    "category_id": "270",
+    "category_description": "Home Furnishings"
+  },
+  {
+    "category_id": "1363",
+    "category_description": "Clocks"
+  },
+  {
+    "category_id": "272",
+    "category_description": "Lamps & Lighting"
+  },
+  {
+    "category_id": "1362",
+    "category_description": "Rugs & Carpets"
+  },
+  {
+    "category_id": "1370",
+    "category_description": "Sofas & Chairs"
+  },
+  {
+    "category_id": "158",
+    "category_description": "Home Improvement"
+  },
+  {
+    "category_id": "950",
+    "category_description": "Construction & Power Tools"
+  },
+  {
+    "category_id": "832",
+    "category_description": "Flooring"
+  },
+  {
+    "category_id": "1232",
+    "category_description": "House Painting & Finishing"
+  },
+  {
+    "category_id": "1153",
+    "category_description": "Plumbing"
+  },
+  {
+    "category_id": "1175",
+    "category_description": "Roofing"
+  },
+  {
+    "category_id": "1348",
+    "category_description": "Home Storage & Shelving"
+  },
+  {
+    "category_id": "137",
+    "category_description": "Homemaking & Interior Decor"
+  },
+  {
+    "category_id": "951",
+    "category_description": "Kitchen & Dining"
+  },
+  {
+    "category_id": "120",
+    "category_description": "Cookware & Diningware"
+  },
+  {
+    "category_id": "1373",
+    "category_description": "Cutlery & Cutting Accessories"
+  },
+  {
+    "category_id": "1364",
+    "category_description": "Laundry"
+  },
+  {
+    "category_id": "1372",
+    "category_description": "Nursery & Playroom"
+  },
+  {
+    "category_id": "471",
+    "category_description": "Pest Control"
+  },
+  {
+    "category_id": "952",
+    "category_description": "Swimming Pools & Spas"
+  },
+  {
+    "category_id": "953",
+    "category_description": "Yard & Patio"
+  },
+  {
+    "category_id": "13",
+    "category_description": "Internet & Telecom"
+  },
+  {
+    "category_id": "385",
+    "category_description": "Communications Equipment"
+  },
+  {
+    "category_id": "1182",
+    "category_description": "Radio Equipment"
+  },
+  {
+    "category_id": "394",
+    "category_description": "Email & Messaging"
+  },
+  {
+    "category_id": "1381",
+    "category_description": "Microblogging"
+  },
+  {
+    "category_id": "1379",
+    "category_description": "Text & Instant Messaging"
+  },
+  {
+    "category_id": "386",
+    "category_description": "Voice & Video Chat"
+  },
+  {
+    "category_id": "382",
+    "category_description": "Mobile & Wireless"
+  },
+  {
+    "category_id": "1171",
+    "category_description": "Mobile & Wireless Accessories"
+  },
+  {
+    "category_id": "1170",
+    "category_description": "Bluetooth Accessories"
+  },
+  {
+    "category_id": "390",
+    "category_description": "Mobile Phones"
+  },
+  {
+    "category_id": "1071",
+    "category_description": "Smart Phones"
+  },
+  {
+    "category_id": "485",
+    "category_description": "Search Engines"
+  },
+  {
+    "category_id": "1234",
+    "category_description": "People Search"
+  },
+  {
+    "category_id": "383",
+    "category_description": "Service Providers"
+  },
+  {
+    "category_id": "501",
+    "category_description": "Cable & Satellite Providers"
+  },
+  {
+    "category_id": "104",
+    "category_description": "ISPs"
+  },
+  {
+    "category_id": "384",
+    "category_description": "Phone Service Providers"
+  },
+  {
+    "category_id": "389",
+    "category_description": "Calling Cards"
+  },
+  {
+    "category_id": "392",
+    "category_description": "Teleconferencing"
+  },
+  {
+    "category_id": "302",
+    "category_description": "Web Services"
+  },
+  {
+    "category_id": "326",
+    "category_description": "Affiliate Programs"
+  },
+  {
+    "category_id": "422",
+    "category_description": "Web Design & Development"
+  },
+  {
+    "category_id": "53",
+    "category_description": "Web Hosting & Domain Registration"
+  },
+  {
+    "category_id": "675",
+    "category_description": "Web Stats & Analytics"
+  },
+  {
+    "category_id": "958",
+    "category_description": "Jobs & Education"
+  },
+  {
+    "category_id": "74",
+    "category_description": "Education"
+  },
+  {
+    "category_id": "1289",
+    "category_description": "Academic Conferences & Publications"
+  },
+  {
+    "category_id": "1015",
+    "category_description": "Alumni & Reunions"
+  },
+  {
+    "category_id": "372",
+    "category_description": "Colleges & Universities"
+  },
+  {
+    "category_id": "367",
+    "category_description": "Distance Learning"
+  },
+  {
+    "category_id": "1012",
+    "category_description": "Early Childhood Education"
+  },
+  {
+    "category_id": "1266",
+    "category_description": "Foreign Language Study"
+  },
+  {
+    "category_id": "791",
+    "category_description": "Homeschooling"
+  },
+  {
+    "category_id": "792",
+    "category_description": "Legal Education"
+  },
+  {
+    "category_id": "371",
+    "category_description": "Primary & Secondary Schooling (K-12)"
+  },
+  {
+    "category_id": "1118",
+    "category_description": "Special Education"
+  },
+  {
+    "category_id": "373",
+    "category_description": "Standardized & Admissions Tests"
+  },
+  {
+    "category_id": "1308",
+    "category_description": "Study Abroad"
+  },
+  {
+    "category_id": "700",
+    "category_description": "Teaching & Classroom Resources"
+  },
+  {
+    "category_id": "1388",
+    "category_description": "Training & Certification"
+  },
+  {
+    "category_id": "369",
+    "category_description": "Vocational & Continuing Education"
+  },
+  {
+    "category_id": "1229",
+    "category_description": "Computer Education"
+  },
+  {
+    "category_id": "60",
+    "category_description": "Jobs"
+  },
+  {
+    "category_id": "959",
+    "category_description": "Career Resources & Planning"
+  },
+  {
+    "category_id": "960",
+    "category_description": "Job Listings"
+  },
+  {
+    "category_id": "961",
+    "category_description": "Resumes & Portfolios"
+  },
+  {
+    "category_id": "19",
+    "category_description": "Law & Government"
+  },
+  {
+    "category_id": "76",
+    "category_description": "Government"
+  },
+  {
+    "category_id": "1075",
+    "category_description": "Courts & Judiciary"
+  },
+  {
+    "category_id": "962",
+    "category_description": "Embassies & Consulates"
+  },
+  {
+    "category_id": "963",
+    "category_description": "Executive Branch"
+  },
+  {
+    "category_id": "1387",
+    "category_description": "Government Agencies"
+  },
+  {
+    "category_id": "1385",
+    "category_description": "Government Contracting & Procurement"
+  },
+  {
+    "category_id": "1221",
+    "category_description": "Intelligence & Counterterrorism"
+  },
+  {
+    "category_id": "964",
+    "category_description": "Legislative Branch"
+  },
+  {
+    "category_id": "1386",
+    "category_description": "Lobbying"
+  },
+  {
+    "category_id": "965",
+    "category_description": "Multilateral Organizations"
+  },
+  {
+    "category_id": "1161",
+    "category_description": "Public Finance"
+  },
+  {
+    "category_id": "1316",
+    "category_description": "Public Policy"
+  },
+  {
+    "category_id": "1314",
+    "category_description": "Drug Laws & Policy"
+  },
+  {
+    "category_id": "1313",
+    "category_description": "Immigration Policy & Border Issues"
+  },
+  {
+    "category_id": "521",
+    "category_description": "International Relations"
+  },
+  {
+    "category_id": "702",
+    "category_description": "Royalty"
+  },
+  {
+    "category_id": "966",
+    "category_description": "State & Local Government"
+  },
+  {
+    "category_id": "555",
+    "category_description": "Visa & Immigration"
+  },
+  {
+    "category_id": "75",
+    "category_description": "Legal"
+  },
+  {
+    "category_id": "427",
+    "category_description": "Accident & Personal Injury Law"
+  },
+  {
+    "category_id": "423",
+    "category_description": "Bankruptcy"
+  },
+  {
+    "category_id": "1272",
+    "category_description": "Business & Corporate Law"
+  },
+  {
+    "category_id": "967",
+    "category_description": "Constitutional Law & Civil Rights"
+  },
+  {
+    "category_id": "424",
+    "category_description": "Criminal Law"
+  },
+  {
+    "category_id": "522",
+    "category_description": "Family Law"
+  },
+  {
+    "category_id": "426",
+    "category_description": "Intellectual Property"
+  },
+  {
+    "category_id": "701",
+    "category_description": "Labor & Employment Law"
+  },
+  {
+    "category_id": "969",
+    "category_description": "Legal Services"
+  },
+  {
+    "category_id": "970",
+    "category_description": "Product Liability"
+  },
+  {
+    "category_id": "366",
+    "category_description": "Military"
+  },
+  {
+    "category_id": "1247",
+    "category_description": "Air Force"
+  },
+  {
+    "category_id": "1248",
+    "category_description": "Army"
+  },
+  {
+    "category_id": "1250",
+    "category_description": "Marines"
+  },
+  {
+    "category_id": "1288",
+    "category_description": "Military History"
+  },
+  {
+    "category_id": "1249",
+    "category_description": "Navy"
+  },
+  {
+    "category_id": "793",
+    "category_description": "Veterans"
+  },
+  {
+    "category_id": "166",
+    "category_description": "Public Safety"
+  },
+  {
+    "category_id": "704",
+    "category_description": "Crime & Justice"
+  },
+  {
+    "category_id": "1181",
+    "category_description": "Corporate & Financial Crime"
+  },
+  {
+    "category_id": "1312",
+    "category_description": "Gangs & Organized Crime"
+  },
+  {
+    "category_id": "1284",
+    "category_description": "Prisons & Corrections"
+  },
+  {
+    "category_id": "168",
+    "category_description": "Emergency Services"
+  },
+  {
+    "category_id": "535",
+    "category_description": "Law Enforcement"
+  },
+  {
+    "category_id": "705",
+    "category_description": "Security Products & Services"
+  },
+  {
+    "category_id": "508",
+    "category_description": "Social Services"
+  },
+  {
+    "category_id": "511",
+    "category_description": "Counseling Services"
+  },
+  {
+    "category_id": "706",
+    "category_description": "Welfare & Unemployment"
+  },
+  {
+    "category_id": "16",
+    "category_description": "News"
+  },
+  {
+    "category_id": "112",
+    "category_description": "Broadcast & Network News"
+  },
+  {
+    "category_id": "507",
+    "category_description": "Gossip & Tabloid News"
+  },
+  {
+    "category_id": "1259",
+    "category_description": "Scandals & Investigations"
+  },
+  {
+    "category_id": "572",
+    "category_description": "Local News"
+  },
+  {
+    "category_id": "408",
+    "category_description": "Newspapers"
+  },
+  {
+    "category_id": "396",
+    "category_description": "Politics"
+  },
+  {
+    "category_id": "398",
+    "category_description": "Campaigns & Elections"
+  },
+  {
+    "category_id": "410",
+    "category_description": "Left-Wing Politics"
+  },
+  {
+    "category_id": "1203",
+    "category_description": "Media Critics & Watchdogs"
+  },
+  {
+    "category_id": "1201",
+    "category_description": "Opinion & Commentary"
+  },
+  {
+    "category_id": "1202",
+    "category_description": "Political Polls & Surveys"
+  },
+  {
+    "category_id": "409",
+    "category_description": "Right-Wing Politics"
+  },
+  {
+    "category_id": "1077",
+    "category_description": "Sports News"
+  },
+  {
+    "category_id": "63",
+    "category_description": "Weather"
+  },
+  {
+    "category_id": "1209",
+    "category_description": "World News"
+  },
+  {
+    "category_id": "299",
+    "category_description": "Online Communities"
+  },
+  {
+    "category_id": "504",
+    "category_description": "Blogging Resources & Services"
+  },
+  {
+    "category_id": "55",
+    "category_description": "Dating & Personals"
+  },
+  {
+    "category_id": "546",
+    "category_description": "Matrimonial Services"
+  },
+  {
+    "category_id": "102",
+    "category_description": "Personals"
+  },
+  {
+    "category_id": "321",
+    "category_description": "File Sharing & Hosting"
+  },
+  {
+    "category_id": "191",
+    "category_description": "Forum & Chat Providers"
+  },
+  {
+    "category_id": "43",
+    "category_description": "Online Goodies"
+  },
+  {
+    "category_id": "1223",
+    "category_description": "Clip Art & Animated GIFs"
+  },
+  {
+    "category_id": "578",
+    "category_description": "Skins Themes & Wallpapers"
+  },
+  {
+    "category_id": "847",
+    "category_description": "Social Network Apps & Add-Ons"
+  },
+  {
+    "category_id": "582",
+    "category_description": "Online Journals & Personal Sites"
+  },
+  {
+    "category_id": "275",
+    "category_description": "Photo & Video Sharing"
+  },
+  {
+    "category_id": "529",
+    "category_description": "Social Networks"
+  },
+  {
+    "category_id": "972",
+    "category_description": "Virtual Worlds"
+  },
+  {
+    "category_id": "14",
+    "category_description": "People & Society"
+  },
+  {
+    "category_id": "677",
+    "category_description": "Disabled & Special Needs"
+  },
+  {
+    "category_id": "56",
+    "category_description": "Ethnic & Identity Groups"
+  },
+  {
+    "category_id": "579",
+    "category_description": "Africans & Diaspora"
+  },
+  {
+    "category_id": "547",
+    "category_description": "African-Americans"
+  },
+  {
+    "category_id": "556",
+    "category_description": "Arabs & Middle Easterners"
+  },
+  {
+    "category_id": "1257",
+    "category_description": "Asians & Diaspora"
+  },
+  {
+    "category_id": "549",
+    "category_description": "East Asians & Diaspora"
+  },
+  {
+    "category_id": "528",
+    "category_description": "South Asians & Diaspora"
+  },
+  {
+    "category_id": "580",
+    "category_description": "Southeast Asians & Pacific Islanders"
+  },
+  {
+    "category_id": "1205",
+    "category_description": "Discrimination & Identity Relations"
+  },
+  {
+    "category_id": "682",
+    "category_description": "Eastern Europeans"
+  },
+  {
+    "category_id": "973",
+    "category_description": "Expatriate Communities"
+  },
+  {
+    "category_id": "113",
+    "category_description": "Gay-Lesbian-Bisexual-Transgender"
+  },
+  {
+    "category_id": "681",
+    "category_description": "Indigenous Peoples"
+  },
+  {
+    "category_id": "171",
+    "category_description": "Native Americans"
+  },
+  {
+    "category_id": "550",
+    "category_description": "Jewish Culture"
+  },
+  {
+    "category_id": "548",
+    "category_description": "Latinos & Latin-Americans"
+  },
+  {
+    "category_id": "683",
+    "category_description": "Western Europeans"
+  },
+  {
+    "category_id": "1131",
+    "category_description": "Family & Relationships"
+  },
+  {
+    "category_id": "1304",
+    "category_description": "Etiquette"
+  },
+  {
+    "category_id": "1132",
+    "category_description": "Family"
+  },
+  {
+    "category_id": "400",
+    "category_description": "Ancestry & Genealogy"
+  },
+  {
+    "category_id": "1231",
+    "category_description": "Baby & Pet Names"
+  },
+  {
+    "category_id": "58",
+    "category_description": "Parenting"
+  },
+  {
+    "category_id": "974",
+    "category_description": "Adoption"
+  },
+  {
+    "category_id": "1374",
+    "category_description": "Babies & Toddlers"
+  },
+  {
+    "category_id": "115",
+    "category_description": "Baby Care & Hygiene"
+  },
+  {
+    "category_id": "403",
+    "category_description": "Child Care"
+  },
+  {
+    "category_id": "402",
+    "category_description": "Youth Camps"
+  },
+  {
+    "category_id": "1134",
+    "category_description": "Friendship"
+  },
+  {
+    "category_id": "1133",
+    "category_description": "Marriage"
+  },
+  {
+    "category_id": "1261",
+    "category_description": "Divorce & Separation"
+  },
+  {
+    "category_id": "1135",
+    "category_description": "Romance"
+  },
+  {
+    "category_id": "1260",
+    "category_description": "Troubled Relationships"
+  },
+  {
+    "category_id": "154",
+    "category_description": "Kids & Teens"
+  },
+  {
+    "category_id": "679",
+    "category_description": "Children's Interests"
+  },
+  {
+    "category_id": "680",
+    "category_description": "Teen Interests"
+  },
+  {
+    "category_id": "59",
+    "category_description": "Religion & Belief"
+  },
+  {
+    "category_id": "448",
+    "category_description": "Astrology & Divination"
+  },
+  {
+    "category_id": "862",
+    "category_description": "Buddhism"
+  },
+  {
+    "category_id": "864",
+    "category_description": "Christianity"
+  },
+  {
+    "category_id": "866",
+    "category_description": "Hinduism"
+  },
+  {
+    "category_id": "868",
+    "category_description": "Islam"
+  },
+  {
+    "category_id": "869",
+    "category_description": "Judaism"
+  },
+  {
+    "category_id": "1258",
+    "category_description": "Pagan & Esoteric Traditions"
+  },
+  {
+    "category_id": "1296",
+    "category_description": "Places of Worship"
+  },
+  {
+    "category_id": "1251",
+    "category_description": "Scientology"
+  },
+  {
+    "category_id": "870",
+    "category_description": "Self-Help & Motivational"
+  },
+  {
+    "category_id": "975",
+    "category_description": "Skeptics & Non-Believers"
+  },
+  {
+    "category_id": "101",
+    "category_description": "Spirituality"
+  },
+  {
+    "category_id": "1340",
+    "category_description": "Theology & Religious Study"
+  },
+  {
+    "category_id": "298",
+    "category_description": "Seniors & Retirement"
+  },
+  {
+    "category_id": "54",
+    "category_description": "Social Issues & Advocacy"
+  },
+  {
+    "category_id": "57",
+    "category_description": "Charity & Philanthropy"
+  },
+  {
+    "category_id": "82",
+    "category_description": "Environmental Issues"
+  },
+  {
+    "category_id": "1255",
+    "category_description": "Climate Change & Global Warming"
+  },
+  {
+    "category_id": "1166",
+    "category_description": "Housing & Development"
+  },
+  {
+    "category_id": "1280",
+    "category_description": "Human Rights & Liberties"
+  },
+  {
+    "category_id": "1127",
+    "category_description": "Poverty & Hunger"
+  },
+  {
+    "category_id": "1281",
+    "category_description": "Privacy Issues"
+  },
+  {
+    "category_id": "976",
+    "category_description": "Reproductive Rights"
+  },
+  {
+    "category_id": "1301",
+    "category_description": "Same-Sex Marriage"
+  },
+  {
+    "category_id": "703",
+    "category_description": "Work & Labor Issues"
+  },
+  {
+    "category_id": "1121",
+    "category_description": "Unions & Labor Movement"
+  },
+  {
+    "category_id": "509",
+    "category_description": "Social Sciences"
+  },
+  {
+    "category_id": "1302",
+    "category_description": "Communications & Media Studies"
+  },
+  {
+    "category_id": "1303",
+    "category_description": "Public Speaking"
+  },
+  {
+    "category_id": "510",
+    "category_description": "Demographics"
+  },
+  {
+    "category_id": "520",
+    "category_description": "Economics"
+  },
+  {
+    "category_id": "543",
+    "category_description": "Psychology"
+  },
+  {
+    "category_id": "29",
+    "category_description": "Real Estate"
+  },
+  {
+    "category_id": "378",
+    "category_description": "Apartments & Residential Rentals"
+  },
+  {
+    "category_id": "1178",
+    "category_description": "Commercial & Investment Real Estate"
+  },
+  {
+    "category_id": "687",
+    "category_description": "Property Development"
+  },
+  {
+    "category_id": "463",
+    "category_description": "Property Inspections & Appraisals"
+  },
+  {
+    "category_id": "425",
+    "category_description": "Property Management"
+  },
+  {
+    "category_id": "96",
+    "category_description": "Real Estate Agencies"
+  },
+  {
+    "category_id": "1080",
+    "category_description": "Real Estate Listings"
+  },
+  {
+    "category_id": "1081",
+    "category_description": "Timeshares & Vacation Properties"
+  },
+  {
+    "category_id": "533",
+    "category_description": "Reference"
+  },
+  {
+    "category_id": "527",
+    "category_description": "Directories & Listings"
+  },
+  {
+    "category_id": "377",
+    "category_description": "Business & Personal Listings"
+  },
+  {
+    "category_id": "980",
+    "category_description": "General Reference"
+  },
+  {
+    "category_id": "691",
+    "category_description": "Calculators & Reference Tools"
+  },
+  {
+    "category_id": "692",
+    "category_description": "Dictionaries & Encyclopedias"
+  },
+  {
+    "category_id": "374",
+    "category_description": "Educational Resources"
+  },
+  {
+    "category_id": "693",
+    "category_description": "Forms Guides & Templates"
+  },
+  {
+    "category_id": "1137",
+    "category_description": "Legal Forms"
+  },
+  {
+    "category_id": "694",
+    "category_description": "How-To, DIY & Expert Content"
+  },
+  {
+    "category_id": "1136",
+    "category_description": "Public Records"
+  },
+  {
+    "category_id": "695",
+    "category_description": "Time & Calendars"
+  },
+  {
+    "category_id": "1084",
+    "category_description": "Geographic Reference"
+  },
+  {
+    "category_id": "1014",
+    "category_description": "City & Local Guides"
+  },
+  {
+    "category_id": "268",
+    "category_description": "Maps"
+  },
+  {
+    "category_id": "685",
+    "category_description": "Traffic & Public Transit"
+  },
+  {
+    "category_id": "474",
+    "category_description": "Humanities"
+  },
+  {
+    "category_id": "433",
+    "category_description": "History"
+  },
+  {
+    "category_id": "609",
+    "category_description": "Myth & Folklore"
+  },
+  {
+    "category_id": "1093",
+    "category_description": "Philosophy"
+  },
+  {
+    "category_id": "108",
+    "category_description": "Language Resources"
+  },
+  {
+    "category_id": "1264",
+    "category_description": "Foreign Language Resources"
+  },
+  {
+    "category_id": "1265",
+    "category_description": "Translation Tools & Resources"
+  },
+  {
+    "category_id": "375",
+    "category_description": "Libraries & Museums"
+  },
+  {
+    "category_id": "1233",
+    "category_description": "Technical Reference"
+  },
+  {
+    "category_id": "174",
+    "category_description": "Science"
+  },
+  {
+    "category_id": "435",
+    "category_description": "Astronomy"
+  },
+  {
+    "category_id": "440",
+    "category_description": "Biological Sciences"
+  },
+  {
+    "category_id": "788",
+    "category_description": "Anatomy"
+  },
+  {
+    "category_id": "981",
+    "category_description": "Flora & Fauna"
+  },
+  {
+    "category_id": "982",
+    "category_description": "Genetics"
+  },
+  {
+    "category_id": "1226",
+    "category_description": "Neuroscience"
+  },
+  {
+    "category_id": "505",
+    "category_description": "Chemistry"
+  },
+  {
+    "category_id": "1227",
+    "category_description": "Computer Science"
+  },
+  {
+    "category_id": "1299",
+    "category_description": "Machine Learning & Artificial Intelligence"
+  },
+  {
+    "category_id": "1168",
+    "category_description": "Earth Sciences"
+  },
+  {
+    "category_id": "1254",
+    "category_description": "Atmospheric Science"
+  },
+  {
+    "category_id": "443",
+    "category_description": "Geology"
+  },
+  {
+    "category_id": "1169",
+    "category_description": "Paleontology"
+  },
+  {
+    "category_id": "441",
+    "category_description": "Water & Marine Sciences"
+  },
+  {
+    "category_id": "442",
+    "category_description": "Ecology & Environment"
+  },
+  {
+    "category_id": "231",
+    "category_description": "Engineering & Technology"
+  },
+  {
+    "category_id": "1141",
+    "category_description": "Robotics"
+  },
+  {
+    "category_id": "436",
+    "category_description": "Mathematics"
+  },
+  {
+    "category_id": "1252",
+    "category_description": "Statistics"
+  },
+  {
+    "category_id": "444",
+    "category_description": "Physics"
+  },
+  {
+    "category_id": "445",
+    "category_description": "Scientific Equipment"
+  },
+  {
+    "category_id": "446",
+    "category_description": "Scientific Institutions"
+  },
+  {
+    "category_id": "18",
+    "category_description": "Shopping"
+  },
+  {
+    "category_id": "68",
+    "category_description": "Apparel"
+  },
+  {
+    "category_id": "1228",
+    "category_description": "Apparel Services"
+  },
+  {
+    "category_id": "983",
+    "category_description": "Athletic Apparel"
+  },
+  {
+    "category_id": "984",
+    "category_description": "Casual Apparel"
+  },
+  {
+    "category_id": "428",
+    "category_description": "T-Shirts"
+  },
+  {
+    "category_id": "985",
+    "category_description": "Children's Clothing"
+  },
+  {
+    "category_id": "124",
+    "category_description": "Clothing Accessories"
+  },
+  {
+    "category_id": "350",
+    "category_description": "Gems & Jewelry"
+  },
+  {
+    "category_id": "986",
+    "category_description": "Handbags & Purses"
+  },
+  {
+    "category_id": "987",
+    "category_description": "Watches"
+  },
+  {
+    "category_id": "988",
+    "category_description": "Costumes"
+  },
+  {
+    "category_id": "989",
+    "category_description": "Eyewear"
+  },
+  {
+    "category_id": "697",
+    "category_description": "Footwear"
+  },
+  {
+    "category_id": "990",
+    "category_description": "Formal Wear"
+  },
+  {
+    "category_id": "991",
+    "category_description": "Headwear"
+  },
+  {
+    "category_id": "992",
+    "category_description": "Men's Clothing"
+  },
+  {
+    "category_id": "993",
+    "category_description": "Outerwear"
+  },
+  {
+    "category_id": "994",
+    "category_description": "Sleepwear"
+  },
+  {
+    "category_id": "995",
+    "category_description": "Swimwear"
+  },
+  {
+    "category_id": "530",
+    "category_description": "Undergarments"
+  },
+  {
+    "category_id": "996",
+    "category_description": "Uniforms & Workwear"
+  },
+  {
+    "category_id": "997",
+    "category_description": "Women's Clothing"
+  },
+  {
+    "category_id": "292",
+    "category_description": "Auctions"
+  },
+  {
+    "category_id": "61",
+    "category_description": "Classifieds"
+  },
+  {
+    "category_id": "69",
+    "category_description": "Consumer Resources"
+  },
+  {
+    "category_id": "97",
+    "category_description": "Consumer Advocacy & Protection"
+  },
+  {
+    "category_id": "365",
+    "category_description": "Coupons & Discount Offers"
+  },
+  {
+    "category_id": "450",
+    "category_description": "Customer Services"
+  },
+  {
+    "category_id": "451",
+    "category_description": "Warranties & Service Contracts"
+  },
+  {
+    "category_id": "353",
+    "category_description": "Product Reviews & Price Comparisons"
+  },
+  {
+    "category_id": "352",
+    "category_description": "Price Comparisons"
+  },
+  {
+    "category_id": "1143",
+    "category_description": "Entertainment Media"
+  },
+  {
+    "category_id": "1144",
+    "category_description": "Entertainment Media Rentals"
+  },
+  {
+    "category_id": "696",
+    "category_description": "Luxury Goods"
+  },
+  {
+    "category_id": "73",
+    "category_description": "Mass Merchants & Department Stores"
+  },
+  {
+    "category_id": "531",
+    "category_description": "Shopping Portals & Search Engines"
+  },
+  {
+    "category_id": "263",
+    "category_description": "Sporting Goods"
+  },
+  {
+    "category_id": "1083",
+    "category_description": "Sports Memorabilia"
+  },
+  {
+    "category_id": "1210",
+    "category_description": "Swap Meets & Outdoor Markets"
+  },
+  {
+    "category_id": "123",
+    "category_description": "Tobacco Products"
+  },
+  {
+    "category_id": "432",
+    "category_description": "Toys"
+  },
+  {
+    "category_id": "1225",
+    "category_description": "Wholesalers & Liquidators"
+  },
+  {
+    "category_id": "20",
+    "category_description": "Sports"
+  },
+  {
+    "category_id": "1073",
+    "category_description": "College Sports"
+  },
+  {
+    "category_id": "514",
+    "category_description": "Combat Sports"
+  },
+  {
+    "category_id": "515",
+    "category_description": "Boxing"
+  },
+  {
+    "category_id": "516",
+    "category_description": "Martial Arts"
+  },
+  {
+    "category_id": "512",
+    "category_description": "Wrestling"
+  },
+  {
+    "category_id": "554",
+    "category_description": "Extreme Sports"
+  },
+  {
+    "category_id": "1206",
+    "category_description": "Drag & Street Racing"
+  },
+  {
+    "category_id": "1207",
+    "category_description": "Stunts & Dangerous Feats"
+  },
+  {
+    "category_id": "998",
+    "category_description": "Fantasy Sports"
+  },
+  {
+    "category_id": "1000",
+    "category_description": "Individual Sports"
+  },
+  {
+    "category_id": "261",
+    "category_description": "Golf"
+  },
+  {
+    "category_id": "519",
+    "category_description": "Gymnastics"
+  },
+  {
+    "category_id": "262",
+    "category_description": "Racquet Sports"
+  },
+  {
+    "category_id": "1376",
+    "category_description": "Tennis"
+  },
+  {
+    "category_id": "1126",
+    "category_description": "Skate Sports"
+  },
+  {
+    "category_id": "518",
+    "category_description": "Track & Field"
+  },
+  {
+    "category_id": "180",
+    "category_description": "Motor Sports"
+  },
+  {
+    "category_id": "1082",
+    "category_description": "Sports Coaching & Training"
+  },
+  {
+    "category_id": "1001",
+    "category_description": "Team Sports"
+  },
+  {
+    "category_id": "258",
+    "category_description": "American Football"
+  },
+  {
+    "category_id": "259",
+    "category_description": "Baseball"
+  },
+  {
+    "category_id": "264",
+    "category_description": "Basketball"
+  },
+  {
+    "category_id": "534",
+    "category_description": "Cheerleading"
+  },
+  {
+    "category_id": "296",
+    "category_description": "Cricket"
+  },
+  {
+    "category_id": "1017",
+    "category_description": "Handball"
+  },
+  {
+    "category_id": "260",
+    "category_description": "Hockey"
+  },
+  {
+    "category_id": "517",
+    "category_description": "Rugby"
+  },
+  {
+    "category_id": "294",
+    "category_description": "Soccer"
+  },
+  {
+    "category_id": "699",
+    "category_description": "Volleyball"
+  },
+  {
+    "category_id": "265",
+    "category_description": "Winter Sports"
+  },
+  {
+    "category_id": "1149",
+    "category_description": "Ice Skating"
+  },
+  {
+    "category_id": "1148",
+    "category_description": "Skiing & Snowboarding"
+  },
+  {
+    "category_id": "1198",
+    "category_description": "World Sports Competitions"
+  },
+  {
+    "category_id": "513",
+    "category_description": "Olympics"
+  },
+  {
+    "category_id": "67",
+    "category_description": "Travel"
+  },
+  {
+    "category_id": "203",
+    "category_description": "Air Travel"
+  },
+  {
+    "category_id": "708",
+    "category_description": "Bus & Rail"
+  },
+  {
+    "category_id": "205",
+    "category_description": "Car Rental & Taxi Services"
+  },
+  {
+    "category_id": "1339",
+    "category_description": "Carpooling & Ridesharing"
+  },
+  {
+    "category_id": "206",
+    "category_description": "Cruises & Charters"
+  },
+  {
+    "category_id": "179",
+    "category_description": "Hotels & Accommodations"
+  },
+  {
+    "category_id": "1003",
+    "category_description": "Luggage & Travel Accessories"
+  },
+  {
+    "category_id": "1004",
+    "category_description": "Specialty Travel"
+  },
+  {
+    "category_id": "707",
+    "category_description": "Adventure Travel"
+  },
+  {
+    "category_id": "1389",
+    "category_description": "Agritourism"
+  },
+  {
+    "category_id": "1005",
+    "category_description": "Ecotourism"
+  },
+  {
+    "category_id": "1390",
+    "category_description": "Sightseeing Tours"
+  },
+  {
+    "category_id": "1391",
+    "category_description": "Vineyards & Wine Tourism"
+  },
+  {
+    "category_id": "208",
+    "category_description": "Tourist Destinations"
+  },
+  {
+    "category_id": "1074",
+    "category_description": "Beaches & Islands"
+  },
+  {
+    "category_id": "1006",
+    "category_description": "Historical Sites & Buildings"
+  },
+  {
+    "category_id": "1120",
+    "category_description": "Lakes & Rivers"
+  },
+  {
+    "category_id": "1119",
+    "category_description": "Mountain & Ski Resorts"
+  },
+  {
+    "category_id": "1007",
+    "category_description": "Regional Parks & Gardens"
+  },
+  {
+    "category_id": "1008",
+    "category_description": "Theme Parks"
+  },
+  {
+    "category_id": "1010",
+    "category_description": "Travel Agencies & Services"
+  },
+  {
+    "category_id": "1392",
+    "category_description": "Tourist Boards & Visitor Centers"
+  },
+  {
+    "category_id": "1019",
+    "category_description": "Vacation Offers"
+  },
+  {
+    "category_id": "1011",
+    "category_description": "Travel Guides & Travelogues"
+  }
+]

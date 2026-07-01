@@ -197,7 +197,11 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
                     metric["labelColor"],
                     metric["labelFill"],
                 }
-            assert console_errors == []
+            assert [
+                message
+                for message in console_errors
+                if "Failed to load resource" not in message
+            ] == []
             page.close()
         browser.close()
 
@@ -241,7 +245,9 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
                   fontFamily: style.fontFamily,
                   fontWeight: style.fontWeight,
                   height: rect.height,
+                  component: element.getAttribute("data-md-component") || "",
                   src: element.getAttribute("src") || "",
+                  text: element.textContent.trim().replace(/\\s+/g, " "),
                   width: rect.width,
                 };
               };
@@ -269,7 +275,18 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
                 headerLogo: inspect(
                   ".md-header__button.md-logo img, .md-header__button.md-logo svg"
                 ),
+                drawerSections: inspect(".psi-drawer-sections"),
+                headerNav: inspect(".psi-header-nav"),
+                headerNavLinks: [...document.querySelectorAll(".psi-header-nav__link")]
+                  .map((element) => element.textContent.trim().replace(/\\s+/g, " ")),
                 palette: inspect(".md-header__option[data-md-component='palette']"),
+                sidebarText: document
+                  .querySelector(".md-sidebar--primary .md-nav--primary > .md-nav__list")
+                  ?.innerText.trim().replace(/\\s+/g, " ") || "",
+                source: inspect(".md-header__source .md-source"),
+                sourceRepository: document
+                  .querySelector(".md-header__source .md-source__repository")
+                  ?.textContent.trim().replace(/\\s+/g, " ") || "",
                 tabs: inspect(".md-tabs"),
                 title: inspect(".md-header__title"),
                 brandImages,
@@ -277,11 +294,18 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
             }
             """
         )
+        page.goto(
+            (site_dir / "tutorials" / "first-tactic" / "index.html").as_uri(),
+            wait_until="domcontentloaded",
+        )
+        tutorial_sidebar = page.locator(
+            ".md-sidebar--primary .md-nav--primary > .md-nav__list"
+        ).inner_text()
         page.close()
         browser.close()
 
     assert metrics["header"]["backgroundColor"] == "rgb(255, 255, 255)"
-    assert metrics["tabs"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["tabs"] is None
     assert metrics["footer"]["backgroundColor"] == "rgb(255, 255, 255)"
     assert metrics["header"]["color"] == "rgb(5, 5, 5)"
     assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
@@ -291,6 +315,26 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
     assert metrics["palette"]["width"] == pytest.approx(0, abs=1)
     assert metrics["palette"]["height"] == pytest.approx(0, abs=1)
+    assert metrics["drawerSections"]["display"] == "none"
+    assert metrics["headerNav"]["display"] == "flex"
+    assert metrics["headerNavLinks"] == [
+        "Overview",
+        "Tutorials",
+        "Reference",
+    ]
+    assert "Overview" in metrics["sidebarText"]
+    assert "Getting Started" in metrics["sidebarText"]
+    assert "Concepts" in metrics["sidebarText"]
+    assert "Guides" in metrics["sidebarText"]
+    assert "Tutorials" not in metrics["sidebarText"]
+    assert "Reference" not in metrics["sidebarText"]
+    assert "Protocol Level" in tutorial_sidebar
+    assert "Native Runtime" in tutorial_sidebar
+    assert "Pydantic Runtime" in tutorial_sidebar
+    assert "Tactics" not in tutorial_sidebar
+    assert "Service API" not in tutorial_sidebar
+    assert metrics["source"]["component"] == "source"
+    assert metrics["sourceRepository"].startswith("Productive-Superintelligence/lllm")
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
     assert metrics["footerMark"]["width"] == pytest.approx(100, abs=2)
     assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
@@ -392,6 +436,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
                 headerLogo: inspect(
                   ".md-header__button.md-logo img, .md-header__button.md-logo svg"
                 ),
+                headerNav: inspect(".psi-header-nav"),
                 mermaid: inspect(".md-typeset .mermaid"),
                 brandImages: images(".psi-brand img"),
                 mermaidSvgs: images(".md-typeset .mermaid svg"),
@@ -411,18 +456,23 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
                 }
                 const style = getComputedStyle(element);
                 const rect = element.getBoundingClientRect();
-                return {
-                  backgroundColor: style.backgroundColor,
-                  color: style.color,
-                  height: rect.height,
-                  src: element.getAttribute("src") || "",
-                  width: rect.width,
+                  return {
+                    backgroundColor: style.backgroundColor,
+                    color: style.color,
+                    display: style.display,
+                    height: rect.height,
+                    src: element.getAttribute("src") || "",
+                    width: rect.width,
                 };
               };
               return {
                 logo: inspect(
                   ".md-nav__button.md-logo img, .md-nav__button.md-logo svg"
                 ),
+                sections: inspect(".psi-drawer-sections"),
+                sectionsText: document
+                  .querySelector(".psi-drawer-sections")
+                  ?.innerText.trim().replace(/\\s+/g, " ") || "",
                 title: inspect('.md-nav--primary .md-nav__title[for="__drawer"]'),
               };
             }
@@ -440,6 +490,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert metrics["headerLogo"]["src"] == "assets/logo.svg"
     assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
+    assert metrics["headerNav"]["display"] == "none"
     assert metrics["footer"]["height"] <= 72
     assert metrics["footerMark"]["width"] == pytest.approx(100, abs=2)
     assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
@@ -452,6 +503,11 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert drawer_metrics["logo"]["src"] == "assets/logo.svg"
     assert drawer_metrics["logo"]["width"] == pytest.approx(48, abs=1)
     assert drawer_metrics["logo"]["height"] == pytest.approx(48, abs=1)
+    assert drawer_metrics["sections"]["display"] == "grid"
+    assert "Overview" in drawer_metrics["sectionsText"]
+    assert "Tutorials" in drawer_metrics["sectionsText"]
+    assert "Reference" in drawer_metrics["sectionsText"]
+    assert "Getting Started" not in drawer_metrics["sectionsText"]
 
     visible_brands = [
         image for image in metrics["brandImages"] if image["display"] == "block"
@@ -504,6 +560,11 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "width: 2.4rem;" in custom_css
     assert ".md-search__form .md-icon svg" in custom_css
     assert "fill: currentcolor;" in custom_css
+    assert ".psi-header-nav" in custom_css
+    assert ".psi-header-nav__link" in custom_css
+    assert ".psi-drawer-sections" in custom_css
+    assert ".psi-drawer-sections__link" in custom_css
+    assert "overflow-x: auto;" in custom_css
     assert ".md-nav__button.md-logo" in custom_css
     assert ".psi-footer-wordmark" in custom_css
     assert 'background-image: url("../assets/lllm-logo-text-dark.png");' in custom_css
@@ -570,9 +631,16 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert "assets/logo.svg" in index_html
     assert "assets/lllm-logo-text-dark.png#only-light" in index_html
     assert "assets/lllm-logo-text-white.png#only-dark" in index_html
+    assert "psi-header-nav" in index_html
     assert "psi-footer-wordmark" in index_html
-    assert "<div class=\"md-source__repository\">\n    GitHub\n  </div>" in index_html
-    assert 'data-md-component="source"' not in index_html
+    assert (
+        "<div class=\"md-source__repository\">\n"
+        "    Productive-Superintelligence/lllm\n"
+        "  </div>"
+        in index_html
+    )
+    assert 'data-md-component="source"' in index_html
+    assert 'class="md-tabs"' not in index_html
     assert 'src="/assets/lllm-logo-text-dark.png"' not in index_html
 
     readme = (ROOT / "README.md").read_text(encoding="utf-8")
@@ -587,9 +655,13 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
     assert "- navigation.sections" in config
     assert "- navigation.indexes" in config
     assert "- navigation.expand" not in config
+    assert "- navigation.tabs" not in config
     assert "- navigation.tabs.sticky" not in config
     assert "scheme: slate" not in config
     assert "material/weather-night" not in config
+    assert "  - Overview:\n      - Overview: index.md\n      - Getting Started:" in config
+    assert "      - Concepts:" in config
+    assert "      - Guides:" in config
     assert "  - Tutorials:\n      - Protocol Level:" in config
     assert "      - Native Runtime:" in config
     assert "      - Pydantic Runtime:" in config

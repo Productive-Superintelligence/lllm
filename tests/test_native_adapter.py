@@ -1,7 +1,8 @@
 import pytest
 from pydantic import BaseModel
 
-from lllm.runtimes.native import NativeTacticAdapter
+from lllm.runtimes.native import FunctionCall, NativeTacticAdapter, tactic_as_function
+from lllm.runtimes.python import as_tactic
 
 
 class AddInput(BaseModel):
@@ -43,3 +44,17 @@ def test_native_adapter_keeps_native_object_behind_boundary():
 def test_native_adapter_rejects_explicit_blank_names(name):
     with pytest.raises(ValueError, match="name"):
         NativeTacticAdapter(NativeAdd(), name=name)
+
+
+def test_protocol_tactic_can_be_native_function_tool():
+    def add(task: AddInput) -> int:
+        return task.left + task.right
+
+    tactic = as_tactic(add, name="adder")
+    function = tactic_as_function(tactic, parameter_mode="kwargs")
+    call = function(FunctionCall(name=function.name, arguments={"left": 2, "right": 4}))
+
+    assert function.name == "adder"
+    assert function.required == ["left", "right"]
+    assert call.success
+    assert call.result == 6
