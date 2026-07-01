@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
-from .protocol._validation import copy_boundary_value, mapping_field_value
+from .protocol._validation import copy_boundary_value, mapping_field_value, token_value
 
 
 class ParseError(ValueError):
@@ -129,13 +129,10 @@ def _require_text(value: Any, *, label: str = "text") -> str:
 
 
 def _require_tag(value: Any, *, label: str = "tag") -> str:
-    if not isinstance(value, str):
-        raise TypeError(f"{label} must be a string")
-    if not value.strip():
-        raise ValueError(f"{label} must be a non-empty string")
-    if any(character.isspace() for character in value):
-        raise ValueError(f"{label} must not contain whitespace")
-    return value
+    tag = token_value(value, label)
+    if any(character in tag for character in "<>`"):
+        raise ValueError(f"{label} must not contain tag delimiters")
+    return tag
 
 
 __all__ = [
