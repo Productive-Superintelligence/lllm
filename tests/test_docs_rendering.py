@@ -671,7 +671,28 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
     assert "      - Refs And Resolution: protocol/refs-resolution.md" in config
     assert "  - Runtime:\n      - Runtime: runtime/index.md" in config
     assert "      - Pydantic AI: runtime/pydantic-ai.md" in config
-    assert "      - Native Runtime: runtime/native.md" in config
+    assert "      - Native Runtime:\n          - Overview: runtime/native.md" in config
+    assert "          - Core Primitives:" in config
+    assert "              - Prompt And Dialog: runtime/native/prompt-dialog.md" in config
+    assert "              - Parsers And Tools: runtime/native/parsers-tools.md" in config
+    assert "          - Agent Runtime:" in config
+    assert "              - Agent Loop: runtime/native/agent-loop.md" in config
+    assert (
+        "              - Registry And Invokers: runtime/native/registry-invokers.md"
+        in config
+    )
+    assert "          - Tactics:" in config
+    assert "              - Native Tactics: runtime/native/tactics.md" in config
+    assert "              - V2 Adapter: runtime/native/adapter.md" in config
+    assert "          - Surroundings:" in config
+    assert (
+        "              - Proxies, Skills, And Sandbox: runtime/native/proxies-skills-sandbox.md"
+        in config
+    )
+    assert (
+        "              - Boundary And Verification: runtime/native/boundary-verification.md"
+        in config
+    )
     assert "  - Tutorials:\n      - Protocol Level:" in config
     assert "      - Runtime:" in config
     assert "          - First Tactic: tutorials/first-tactic.md" in config
@@ -705,41 +726,33 @@ def test_native_preservation_audit_documents_port_cut_defer_status():
 
 
 def test_native_runtime_doc_preserves_restored_v1_surfaces():
-    native = (ROOT / "docs" / "runtime" / "native.md").read_text(encoding="utf-8")
+    native_root = ROOT / "docs" / "runtime" / "native"
+    pages = {
+        "overview": ROOT / "docs" / "runtime" / "native.md",
+        "prompt_dialog": native_root / "prompt-dialog.md",
+        "parsers_tools": native_root / "parsers-tools.md",
+        "agent_loop": native_root / "agent-loop.md",
+        "registry_invokers": native_root / "registry-invokers.md",
+        "tactics": native_root / "tactics.md",
+        "adapter": native_root / "adapter.md",
+        "proxies": native_root / "proxies-skills-sandbox.md",
+        "boundary": native_root / "boundary-verification.md",
+    }
+    texts = {name: path.read_text(encoding="utf-8") for name, path in pages.items()}
 
-    expected_top_sections = [
-        "## Overview",
-        "## Core Primitives",
-        "## Agent Runtime",
-        "## Native Tactics",
-        "## Packages And Surroundings",
-        "## Boundary And Verification",
-    ]
-    for section in expected_top_sections:
-        assert section in native
-
-    expected_subsections = [
-        "### Restored V1 Surface",
-        "### Architecture",
-        "### Prompt Contract",
-        "#### Tools",
-        "#### MCP Servers",
-        "### Parsing And Repair",
-        "### Dialog And Message Model",
-        "### Agent Call Flow",
-        "### Context Management",
-        "### Invokers And Streaming",
-        "### Agent-Backed Tactics",
-        "### Tactics As Tools",
-        "### Crossing Into V2",
-        "### Runtime Registry And Packages",
-        "### Proxies And Interpreter Tools",
-        "### Skills",
-        "### Sandbox And Computer Use",
-        "### V2 Boundary",
-    ]
-    for subsection in expected_subsections:
-        assert subsection in native
+    assert "# Native Runtime" in texts["overview"]
+    assert "[Prompt And Dialog](native/prompt-dialog.md)" in texts["overview"]
+    assert "[Parsers And Tools](native/parsers-tools.md)" in texts["overview"]
+    assert "[Agent Loop](native/agent-loop.md)" in texts["overview"]
+    assert "[Native Tactics](native/tactics.md)" in texts["overview"]
+    assert "# Prompt And Dialog" in texts["prompt_dialog"]
+    assert "# Parsers And Tools" in texts["parsers_tools"]
+    assert "# Agent Loop" in texts["agent_loop"]
+    assert "# Registry And Invokers" in texts["registry_invokers"]
+    assert "# Native Tactics" in texts["tactics"]
+    assert "# V2 Adapter" in texts["adapter"]
+    assert "# Proxies, Skills, And Sandbox" in texts["proxies"]
+    assert "# Boundary And Verification" in texts["boundary"]
 
     expected_terms = [
         "`AgentCallSession`",
@@ -754,8 +767,9 @@ def test_native_runtime_doc_preserves_restored_v1_surfaces():
         "native package discovery still reads `lllm.toml`",
         "PsiHub owns `psi.toml`",
     ]
+    all_native_text = "\n".join(texts.values())
     for term in expected_terms:
-        assert term in native
+        assert term in all_native_text
 
 
 def test_service_api_reference_matches_error_envelope():

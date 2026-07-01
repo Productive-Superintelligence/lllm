@@ -49,7 +49,20 @@ nav:
   - Runtime:
       - Runtime: runtime/index.md
       - Pydantic AI: runtime/pydantic-ai.md
-      - Native Runtime: runtime/native.md
+      - Native Runtime:
+          - Overview: runtime/native.md
+          - Core Primitives:
+              - Prompt And Dialog: runtime/native/prompt-dialog.md
+              - Parsers And Tools: runtime/native/parsers-tools.md
+          - Agent Runtime:
+              - Agent Loop: runtime/native/agent-loop.md
+              - Registry And Invokers: runtime/native/registry-invokers.md
+          - Tactics:
+              - Native Tactics: runtime/native/tactics.md
+              - V2 Adapter: runtime/native/adapter.md
+          - Surroundings:
+              - Proxies, Skills, And Sandbox: runtime/native/proxies-skills-sandbox.md
+              - Boundary And Verification: runtime/native/boundary-verification.md
       - Plain Python: runtime/python.md
   - Tutorials:
       - Protocol Level:
