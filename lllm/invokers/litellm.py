@@ -41,10 +41,24 @@ AZURE_REQUIRED_ENV_VARS = [
     "AZURE_API_VERSION",
 ]
 
+# Amazon Bedrock credentials come from the standard AWS chain (env vars, shared
+# config/credentials file, or an assumed role). Presence of any of these is a
+# strong signal that a Bedrock provider is configured.
+AWS_BEDROCK_ENV_VARS = [
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
+    "AWS_PROFILE",
+    "AWS_REGION",
+    "AWS_DEFAULT_REGION",
+    "AWS_BEARER_TOKEN_BEDROCK",
+]
+
 ALL_ENV_VARS = [
     *VERTEXAI_REQUIRED_ENV_VARS,
     *NVIDIA_NIM_REQUIRED_ENV_VARS,
     *AZURE_REQUIRED_ENV_VARS,
+    *AWS_BEDROCK_ENV_VARS,
     *PROVIDER_APIKEYS,
 ]
 
