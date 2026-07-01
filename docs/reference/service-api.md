@@ -23,6 +23,7 @@ treated consistently. Cookie-style keys such as `cookie`, `set-cookie`, and
 `sessionCookie` are treated as secret-shaped metadata.
 SSE stream event metadata is filtered with the same public boundary before it
 is written to the response; event data remains the tactic output.
+Metadata maps must use string keys, including nested maps.
 
 Error envelopes are stable across protocol and runtime failures.
 

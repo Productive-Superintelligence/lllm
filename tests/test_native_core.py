@@ -555,6 +555,36 @@ def test_native_dialog_rejects_non_mapping_message_metadata(metadata):
         dialog.put_prompt(prompt, metadata=metadata)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {b"owner": "tests"},
+        {"nested": {b"owner": "tests"}},
+    ],
+)
+def test_native_dialog_rejects_non_string_message_metadata_keys(metadata):
+    dialog = Dialog()
+    prompt = Prompt(path="draft", prompt="Write.")
+
+    with pytest.raises(TypeError, match="metadata"):
+        dialog.put_text("hello", metadata=metadata)  # type: ignore[arg-type]
+
+    with pytest.raises(TypeError, match="metadata"):
+        dialog.put_prompt(prompt, metadata=metadata)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: Prompt(path="draft", prompt="Write.", metadata={b"owner": "tests"}),
+        lambda: Message(role=Role.USER, name="user", content="hello", metadata={1: "bad"}),
+    ],
+)
+def test_native_metadata_models_reject_non_string_keys(factory):
+    with pytest.raises(ValidationError, match="metadata"):
+        factory()
+
+
 @pytest.mark.parametrize("prompt_args", [[], [("topic", "tests")], "bad", 123])
 def test_dialog_put_prompt_rejects_non_mapping_prompt_args(prompt_args):
     dialog = Dialog()

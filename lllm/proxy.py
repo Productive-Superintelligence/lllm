@@ -10,7 +10,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
 from .protocol import CallContext, Tactic, TacticEvent, TacticUnsupportedError
-from .protocol._validation import copy_boundary_value, optional_mapping_value, token_value
+from .protocol._validation import (
+    copy_boundary_value,
+    metadata_field_value,
+    optional_metadata_mapping_value,
+    token_value,
+)
 
 ValueHook = Callable[[Any, CallContext], Any]
 ErrorHook = Callable[[BaseException, CallContext], Any]
@@ -37,6 +42,11 @@ class ProxyRecord(BaseModel):
         self.input_value = copy_boundary_value(self.input_value)
         self.output_value = copy_boundary_value(self.output_value)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
 
     @field_validator("started_at", "ended_at", "latency_ms", mode="before")
     @classmethod
@@ -390,7 +400,7 @@ def _call_context(value: Any) -> CallContext:
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
-    return optional_mapping_value("metadata", value)
+    return optional_metadata_mapping_value("metadata", value)
 
 
 def _bool_value(label: str, value: Any) -> bool:

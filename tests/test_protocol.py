@@ -346,6 +346,8 @@ def test_tactic_metadata_tokens_allow_common_separators():
 def test_public_boundary_value_filters_secret_metadata_keys():
     public = public_boundary_value(
         {
+            b"api_key": "raw-bytes-key",
+            1: "raw-int-key",
             "api_key": "raw-key",
             "apiKey": "raw-camel-key",
             "apikey": "raw-compact-key",
@@ -363,6 +365,7 @@ def test_public_boundary_value_filters_secret_metadata_keys():
             "clientSecretRef": "credentials/camel-secret",
             "clientsecretref": "credentials/compact-secret",
             "headers": {
+                b"authorization": "raw-bytes-nested",
                 "authorization": "Bearer raw-token",
                 "set-cookie": "nested-cookie",
                 "sessionCookie": "nested-session-cookie",
@@ -509,6 +512,37 @@ def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
 
 @pytest.mark.parametrize("metadata", [[], [("owner", "tests")], "bad", 123])
 def test_tactic_constructor_rejects_non_mapping_metadata(metadata):
+    with pytest.raises(TypeError, match="metadata"):
+        EchoTactic(metadata=metadata)  # type: ignore[arg-type]
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: CallContext(metadata={b"api_key": "raw"}),
+        lambda: CallContext(metadata={"headers": {b"api_key": "raw"}}),
+        lambda: TacticEvent(metadata={b"trace": "demo"}),
+        lambda: TacticInfo(name="echo", metadata={b"owner": "tests"}),
+        lambda: CallTrace(
+            request_id="req",
+            tactic="echo",
+            metadata={"headers": {1: "bad"}},
+        ),
+    ],
+)
+def test_protocol_metadata_models_reject_non_string_keys(factory):
+    with pytest.raises(ValidationError, match="metadata"):
+        factory()
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {b"owner": "tests"},
+        {"nested": {b"owner": "tests"}},
+    ],
+)
+def test_tactic_constructor_rejects_non_string_metadata_keys(metadata):
     with pytest.raises(TypeError, match="metadata"):
         EchoTactic(metadata=metadata)  # type: ignore[arg-type]
 

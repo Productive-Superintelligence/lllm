@@ -24,6 +24,7 @@ passwords, cookies, `authorization`, credentials, camelCase variants such as
 `apiKey`, `accessToken`, `clientSecret`, and `sessionCookie`, kebab-case
 variants such as `set-cookie`, or collapsed lowercase variants such as
 `apikey`, `accesstoken`, and `clientsecret` in exported examples or metadata.
+Metadata maps must use string keys, including nested maps.
 
 PsiHub owns `psi.toml`, package validation, local hub storage, generated cards,
 agent cards, downloads, and config templates.

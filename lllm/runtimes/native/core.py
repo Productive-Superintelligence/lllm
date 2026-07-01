@@ -37,7 +37,12 @@ from ...parsers import (
     find_md_blocks,
     find_xml_blocks,
 )
-from ...protocol._validation import copy_boundary_value, optional_mapping_value
+from ...protocol._validation import (
+    copy_boundary_value,
+    metadata_field_value,
+    optional_mapping_value,
+    optional_metadata_mapping_value,
+)
 
 
 class Role(str, Enum):
@@ -253,6 +258,11 @@ class Message(BaseModel):
         self.usage = copy_boundary_value(self.usage)
         self.metadata = copy_boundary_value(self.metadata)
         self.vectors = copy.deepcopy(self.vectors)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
 
     @property
     def sanitized_name(self) -> str:
@@ -795,6 +805,11 @@ class Prompt(BaseModel):
         self.addon_args = copy_boundary_value(self.addon_args)
         self.function_list = copy.deepcopy(self.function_list)
 
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
+
     @property
     def functions(self) -> dict[str, Function]:
         return {
@@ -878,7 +893,7 @@ class Prompt(BaseModel):
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
-    return _optional_mapping("metadata", value)
+    return optional_metadata_mapping_value("metadata", value)
 
 
 def _optional_mapping(label: str, value: Any) -> dict[str, Any]:

@@ -13,7 +13,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 
 from ..protocol import CallContext, Tactic, TacticInfo
-from ..protocol._validation import copy_boundary_value
+from ..protocol._validation import copy_boundary_value, metadata_field_value
 
 InputMode = Literal["auto", "json", "dict", "python", "text"]
 ResultMode = Literal["output", "result"]
@@ -79,6 +79,11 @@ class PydanticAITacticConfig(BaseModel):
         self.run_kwargs = _copy_runtime_kwargs(self.run_kwargs)
         self.examples = copy_boundary_value(self.examples)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
 
 
 class PydanticAITactic(Tactic[Any, Any]):

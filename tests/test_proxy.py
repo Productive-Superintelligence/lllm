@@ -208,6 +208,32 @@ def test_proxy_tactic_rejects_non_mapping_metadata(metadata):
         ProxyTactic(EchoTactic(), metadata=metadata)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {b"purpose": "test"},
+        {"headers": {b"x-policy": "demo"}},
+    ],
+)
+def test_proxy_tactic_rejects_non_string_metadata_keys(metadata):
+    with pytest.raises(TypeError, match="metadata"):
+        ProxyTactic(EchoTactic(), metadata=metadata)  # type: ignore[arg-type]
+
+
+def test_proxy_record_rejects_non_string_metadata_keys():
+    with pytest.raises(ValidationError, match="metadata"):
+        ProxyRecord(
+            request_id="req",
+            proxy="proxy",
+            tactic="echo",
+            state="success",
+            started_at=1.0,
+            ended_at=2.0,
+            latency_ms=1000.0,
+            metadata={"headers": {b"x-policy": "demo"}},
+        )
+
+
 @pytest.mark.parametrize("value", ["false", "true", 0, 1])
 @pytest.mark.parametrize("flag", ["capture_inputs", "capture_outputs"])
 def test_proxy_tactic_rejects_coerced_capture_flags(flag, value):

@@ -184,6 +184,26 @@ def test_resolver_bind_url_rejects_non_mapping_metadata():
     assert resolver.refs() == ()
 
 
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {b"label": "direct"},
+        {"headers": {b"x-policy": "demo"}},
+    ],
+)
+def test_resolver_bind_url_rejects_non_string_metadata_keys(metadata):
+    resolver = TacticResolver()
+
+    with pytest.raises(TacticRefError, match="metadata"):
+        resolver.bind_url(
+            REF,
+            "http://testserver/tactics/echo",
+            metadata=metadata,  # type: ignore[arg-type]
+        )
+
+    assert resolver.refs() == ()
+
+
 def test_resolver_bind_url_rejects_secret_metadata_keys():
     resolver = TacticResolver()
 
@@ -349,6 +369,21 @@ def test_remote_tactic_rejects_non_mapping_metadata(metadata):
         RemoteTactic(  # type: ignore[arg-type]
             "http://testserver/run",
             metadata=metadata,
+        )
+
+
+@pytest.mark.parametrize(
+    "metadata",
+    [
+        {b"labels": ["remote"]},
+        {"headers": {b"x-policy": "demo"}},
+    ],
+)
+def test_remote_tactic_rejects_non_string_metadata_keys(metadata):
+    with pytest.raises(TypeError, match="metadata"):
+        RemoteTactic(
+            "http://testserver/run",
+            metadata=metadata,  # type: ignore[arg-type]
         )
 
 

@@ -5,9 +5,9 @@ from __future__ import annotations
 import uuid
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field, StrictStr, model_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator, model_validator
 
-from ._validation import copy_boundary_value, token_value
+from ._validation import copy_boundary_value, metadata_field_value, token_value
 
 
 class CallContext(BaseModel):
@@ -39,6 +39,11 @@ class CallContext(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.metadata = copy_boundary_value(self.metadata)
         self.tags = copy_boundary_value(self.tags)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
 
     @model_validator(mode="after")
     def _validate_identifiers(self) -> "CallContext":

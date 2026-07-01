@@ -8,7 +8,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
 
-from ._validation import copy_boundary_value, token_value
+from ._validation import copy_boundary_value, metadata_field_value, token_value
 
 
 class TacticEvent(BaseModel):
@@ -23,6 +23,11 @@ class TacticEvent(BaseModel):
     def model_post_init(self, __context: Any) -> None:
         self.data = copy_boundary_value(self.data)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
 
     @field_validator("timestamp", mode="before")
     @classmethod

@@ -9,7 +9,11 @@ from typing import Any
 from urllib.parse import unquote, urlparse
 
 from ..protocol import CallContext, Tactic, TacticRef, TacticRefError
-from ..protocol._validation import copy_boundary_value, is_sensitive_metadata_key
+from ..protocol._validation import (
+    copy_boundary_value,
+    is_sensitive_metadata_key,
+    metadata_mapping_value,
+)
 from .client import RemoteTactic
 
 
@@ -183,7 +187,10 @@ def _metadata_mapping(value: Any, ref: str) -> dict[str, Any]:
         return {}
     if not isinstance(value, Mapping):
         raise TacticRefError(f"Tactic URL binding metadata must be a mapping: {ref}")
-    metadata = copy_boundary_value(value)
+    try:
+        metadata = metadata_mapping_value("Tactic URL binding metadata", value)
+    except TypeError as exc:
+        raise TacticRefError(f"{exc}: {ref}") from exc
     _reject_sensitive_metadata(metadata, ref)
     return metadata
 

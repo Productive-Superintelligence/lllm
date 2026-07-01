@@ -157,6 +157,15 @@ def test_service_dto_models_isolate_mutable_constructor_inputs():
     assert error.metadata == {"labels": ["error"]}
 
 
+def test_error_detail_rejects_non_string_metadata_keys():
+    with pytest.raises(ValidationError, match="metadata"):
+        ErrorDetail(
+            type="ValueError",
+            message="bad",
+            metadata={"headers": {b"x-policy": "demo"}},
+        )
+
+
 @pytest.mark.parametrize(
     "factory",
     [

@@ -254,6 +254,8 @@ keys such as `api_key`/`apiKey`/`apikey`, tokens,
 `accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
 credentials. Use local credential refs such as
 `api_key_ref`/`apiKeyRef`/`apikeyref` or auth hooks instead.
+Metadata maps must use string keys; direct Python metadata with non-string keys
+is rejected before Pydantic can coerce keys into text.
 
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
@@ -286,3 +288,4 @@ Runtime adapters such as `as_tactic`, `PydanticAITactic`, and
 `NativeTacticAdapter` accept package refs, service refs, descriptions, examples,
 and metadata so wrapper-created tactics can keep the same package-facing
 contract as subclassed tactics.
+Those metadata maps must use string keys, including nested maps.

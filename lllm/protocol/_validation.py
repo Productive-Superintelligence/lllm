@@ -31,7 +31,7 @@ def public_boundary_value(value: Any) -> Any:
         return {
             key: public_boundary_value(item)
             for key, item in value.items()
-            if not is_sensitive_metadata_key(key)
+            if isinstance(key, str) and not is_sensitive_metadata_key(key)
         }
     if isinstance(value, list):
         return [public_boundary_value(item) for item in value]
@@ -85,6 +85,48 @@ def optional_mapping_value(label: str, value: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise TypeError(f"{label} must be a mapping.")
     return {key: copy_boundary_value(item) for key, item in value.items()}
+
+
+def optional_metadata_mapping_value(label: str, value: Any) -> dict[str, Any]:
+    if value is None:
+        return {}
+    return metadata_mapping_value(label, value)
+
+
+def metadata_mapping_value(label: str, value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise TypeError(f"{label} must be a mapping.")
+    return _copy_metadata_mapping(label, value)
+
+
+def metadata_field_value(label: str, value: Any) -> dict[str, Any]:
+    try:
+        return metadata_mapping_value(label, value)
+    except TypeError as exc:
+        raise ValueError(str(exc)) from exc
+
+
+def _copy_metadata_mapping(label: str, value: Mapping[Any, Any]) -> dict[str, Any]:
+    copied: dict[str, Any] = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise TypeError(f"{label} keys must be strings.")
+        copied[key] = _copy_metadata_value(f"{label}.{key}", item)
+    return copied
+
+
+def _copy_metadata_value(label: str, value: Any) -> Any:
+    if isinstance(value, Mapping):
+        return _copy_metadata_mapping(label, value)
+    if isinstance(value, list):
+        return [_copy_metadata_value(label, item) for item in value]
+    if isinstance(value, tuple):
+        return tuple(_copy_metadata_value(label, item) for item in value)
+    if isinstance(value, set):
+        return {_copy_metadata_value(label, item) for item in value}
+    if isinstance(value, frozenset):
+        return frozenset(_copy_metadata_value(label, item) for item in value)
+    return deepcopy(value)
 
 
 def text_value(value: Any, label: str) -> str:

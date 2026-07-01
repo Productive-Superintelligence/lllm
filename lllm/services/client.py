@@ -17,7 +17,11 @@ from ..protocol import (
     TacticInfo,
     TacticServiceError,
 )
-from ..protocol._validation import copy_boundary_value, optional_mapping_value, token_value
+from ..protocol._validation import (
+    copy_boundary_value,
+    optional_metadata_mapping_value,
+    token_value,
+)
 
 
 class RemoteTacticError(TacticServiceError):
@@ -233,7 +237,7 @@ def _call_context(value: Any) -> CallContext:
 
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
-    return optional_mapping_value("metadata", value)
+    return optional_metadata_mapping_value("metadata", value)
 
 
 def _response_output(response: Any) -> Any:

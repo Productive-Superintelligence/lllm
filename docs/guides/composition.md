@@ -47,6 +47,8 @@ keys such as `api_key`/`apiKey`/`apikey`, tokens,
 `accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
 credentials. Use local credential refs such as
 `api_key_ref`/`apiKeyRef`/`apikeyref` or auth hooks instead.
+Metadata maps must use string keys; direct Python metadata with non-string keys
+is rejected before Pydantic can coerce keys into text.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them

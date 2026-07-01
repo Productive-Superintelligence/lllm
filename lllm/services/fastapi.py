@@ -6,11 +6,19 @@ import re
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
-from pydantic import BaseModel, Field, StrictStr, ValidationError, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    StrictStr,
+    ValidationError,
+    field_validator,
+    model_validator,
+)
 
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
 from ..protocol._validation import (
     copy_boundary_value,
+    metadata_field_value,
     public_boundary_value,
     token_value,
 )
@@ -67,6 +75,11 @@ class ErrorDetail(BaseModel):
 
     def model_post_init(self, __context: Any) -> None:
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("metadata", mode="before")
+    @classmethod
+    def _validate_metadata(cls, value: Any) -> Any:
+        return metadata_field_value("metadata", value)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "ErrorDetail":

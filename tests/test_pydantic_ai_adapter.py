@@ -240,6 +240,19 @@ def test_pydantic_ai_config_rejects_bytes_for_package_metadata(field_name):
     assert exc_info.value.errors()[0]["type"] == "string_type"
 
 
+def test_pydantic_ai_config_rejects_non_string_metadata_keys():
+    with pytest.raises(ValidationError, match="metadata"):
+        PydanticAITacticConfig(metadata={"headers": {b"x-policy": "demo"}})
+
+
+def test_pydantic_ai_adapter_rejects_non_string_metadata_keys():
+    with pytest.raises(TypeError, match="metadata"):
+        PydanticAITactic.from_agent(
+            FakeAgent(),
+            metadata={b"owner": "tests"},  # type: ignore[arg-type]
+        )
+
+
 @pytest.mark.parametrize("value", ["false", "true", 0, 1])
 def test_pydantic_ai_config_rejects_non_bool_context_metadata_flag(value):
     with pytest.raises(ValidationError):
