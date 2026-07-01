@@ -525,6 +525,36 @@ def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
         Tactic(**kwargs)
 
 
+@pytest.mark.parametrize(
+    "package_ref",
+    [
+        "not-a-ref",
+        "psi://demo/echo/channels/events",
+        "psi://demo/echo/tactics/echo?token=raw",
+        "psi://demo/echo/tactics/bad name",
+        "psi://demo/echo/tactics/echo%2Fhidden",
+    ],
+)
+def test_tactic_constructor_rejects_malformed_package_refs(package_ref):
+    with pytest.raises(ValueError, match="package_ref"):
+        EchoTactic(package_ref=package_ref)
+
+
+@pytest.mark.parametrize(
+    "package_ref",
+    [
+        "not-a-ref",
+        "psi://demo/echo/channels/events",
+        "psi://demo/echo/tactics/echo?token=raw",
+        "psi://demo/echo/tactics/bad name",
+        "psi://demo/echo/tactics/echo%2Fhidden",
+    ],
+)
+def test_tactic_info_rejects_malformed_package_refs(package_ref):
+    with pytest.raises(ValidationError, match="package_ref"):
+        TacticInfo(name="echo", package_ref=package_ref)
+
+
 @pytest.mark.parametrize("metadata", [[], [("owner", "tests")], "bad", 123])
 def test_tactic_constructor_rejects_non_mapping_metadata(metadata):
     with pytest.raises(TypeError, match="metadata"):

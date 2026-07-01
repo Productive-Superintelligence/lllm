@@ -77,3 +77,21 @@ class TacticRef:
 
     def __str__(self) -> str:
         return self.value
+
+
+def tactic_ref_value(value: str, label: str = "tactic ref") -> str:
+    """Return a normalized tactic ref string or raise ``ValueError``."""
+
+    try:
+        return str(TacticRef(value))
+    except TacticRefError as exc:
+        raise ValueError(f"{label} must be a valid tactic ref: {exc}") from exc
+
+
+def optional_tactic_ref_value(
+    value: str | None,
+    label: str = "tactic ref",
+) -> str | None:
+    if value is None:
+        return None
+    return tactic_ref_value(value, label)

@@ -1,5 +1,6 @@
 from types import MappingProxyType, SimpleNamespace
 
+import pytest
 from pydantic import BaseModel
 
 from lllm import Tactic, endpoint
@@ -181,3 +182,32 @@ def test_tactic_resource_accepts_nested_read_only_mapping_info_values():
     assert resource["output_schema"] == {"properties": {"text": {"type": "string"}}}
     assert resource["examples"] == ({"input": {"text": "forward"}},)
     assert resource["metadata"] == {"nested": {"labels": ["policy"]}}
+
+
+@pytest.mark.parametrize(
+    "package_ref",
+    [
+        "not-a-ref",
+        "psi://demo/echo/channels/events",
+        "psi://demo/echo/tactics/echo?token=raw",
+        "psi://demo/echo/tactics/bad name",
+    ],
+)
+def test_tactic_resource_rejects_malformed_package_refs(package_ref):
+    class CustomInfoTactic(PolicyTactic):
+        def info(self):
+            return SimpleNamespace(
+                name="policy",
+                description="",
+                runtime_kind="python",
+                capabilities=("run",),
+                input_schema=None,
+                output_schema=None,
+                package_ref=package_ref,
+                service_ref=None,
+                examples=[],
+                metadata={},
+            )
+
+    with pytest.raises(ValueError, match="package_ref"):
+        tactic_resource(CustomInfoTactic())

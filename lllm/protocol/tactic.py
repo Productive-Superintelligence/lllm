@@ -24,6 +24,7 @@ from ._validation import (
 from .context import CallContext
 from .errors import TacticUnsupportedError
 from .events import TacticEvent
+from .refs import optional_tactic_ref_value
 from .schema import SchemaRef, export_json_schema, type_name, validate_with_schema
 
 InputT = TypeVar("InputT")
@@ -137,6 +138,7 @@ class TacticInfo(BaseModel):
     def _validate_identity(self) -> "TacticInfo":
         path_segment_value(self.name, "name")
         token_value(self.runtime_kind, "runtime_kind")
+        self.package_ref = optional_tactic_ref_value(self.package_ref, "package_ref")
         for capability in self.capabilities:
             token_value(capability, "capabilities")
         return self
@@ -169,7 +171,10 @@ class Tactic(Generic[InputT, OutputT]):
         name_value = name if name is not None else self.name or type(self).__name__
         self._name = path_segment_value(name_value, "name")
         self._description = optional_text_value(description, "description")
-        self.package_ref = optional_text_value(package_ref, "package_ref")
+        self.package_ref = optional_tactic_ref_value(
+            optional_text_value(package_ref, "package_ref"),
+            "package_ref",
+        )
         self.service_ref = optional_text_value(service_ref, "service_ref")
         self.examples = _examples_list(examples)
         self.metadata = _metadata_mapping(metadata)

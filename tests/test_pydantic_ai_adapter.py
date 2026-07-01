@@ -240,6 +240,20 @@ def test_pydantic_ai_config_rejects_bytes_for_package_metadata(field_name):
     assert exc_info.value.errors()[0]["type"] == "string_type"
 
 
+@pytest.mark.parametrize(
+    "package_ref",
+    [
+        "not-a-ref",
+        "psi://demo/echo/channels/events",
+        "psi://demo/echo/tactics/echo?token=raw",
+        "psi://demo/echo/tactics/bad name",
+    ],
+)
+def test_pydantic_ai_config_rejects_malformed_package_refs(package_ref):
+    with pytest.raises(ValidationError, match="package_ref"):
+        PydanticAITacticConfig(package_ref=package_ref)
+
+
 def test_pydantic_ai_config_rejects_non_string_metadata_keys():
     with pytest.raises(ValidationError, match="metadata"):
         PydanticAITacticConfig(metadata={"headers": {b"x-policy": "demo"}})
