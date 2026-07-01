@@ -671,6 +671,28 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
         "          - Pydantic AI Compatibility: tutorials/pydantic-ai-compat.md"
         in config
     )
+    assert (
+        "      - Native Preservation Audit: reference/native-preservation.md"
+        in config
+    )
+
+
+def test_native_preservation_audit_documents_port_cut_defer_status():
+    audit = (ROOT / "docs" / "reference" / "native-preservation.md").read_text(
+        encoding="utf-8"
+    )
+
+    assert "# Native Preservation Audit" in audit
+    assert "## Ported" in audit
+    assert "## Adapted" in audit
+    assert "## Cut" in audit
+    assert "## Deferred" in audit
+    assert "`lllm.runtimes.native`" in audit
+    assert "`NativeTacticAdapter`" in audit
+    assert "`tactic_as_function()`" in audit
+    assert "PsiHub owns `psi.toml`" in audit
+    assert "Live native invoker behavior" in audit
+    assert "Jupyter sandbox behavior" in audit
 
 
 def test_service_api_reference_matches_error_envelope():

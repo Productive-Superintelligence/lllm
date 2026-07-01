@@ -56,6 +56,7 @@ nav:
   - Reference:
       - Protocol API: reference/protocol.md
       - Service API: reference/service-api.md
+      - Native Preservation Audit: reference/native-preservation.md
       - CLI: reference/cli.md
       - PsiHub Metadata: reference/psihub-metadata.md
 
