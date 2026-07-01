@@ -102,6 +102,7 @@ def test_tactic_resource_filters_secret_examples_and_metadata():
                         "text": "forward",
                         "headers": {
                             "authorization": "Bearer raw-example-auth",
+                            "cookie": "raw-example-cookie",
                             "x-api-key": "raw-example-key",
                             "xAuthToken": "raw-example-camel-token",
                             "x-policy": "safe-policy",
@@ -117,10 +118,12 @@ def test_tactic_resource_filters_secret_examples_and_metadata():
             metadata={
                 "api_key_ref": "credentials/openai",
                 "apiKeyRef": "credentials/camel-openai",
+                "cookieRef": "credentials/cookie",
                 "clientSecret": "raw-camel-secret",
                 "clientSecretRef": "credentials/camel-secret",
                 "headers": {
                     "authorization": "Bearer raw-metadata-auth",
+                    "set-cookie": "raw-metadata-cookie",
                     "xAuthToken": "raw-metadata-camel-token",
                     "x-policy": "safe-metadata-policy",
                 },
@@ -130,17 +133,20 @@ def test_tactic_resource_filters_secret_examples_and_metadata():
 
     rendered = str(resource["examples"]) + str(resource["metadata"])
     assert "raw-example-auth" not in rendered
+    assert "raw-example-cookie" not in rendered
     assert "raw-example-key" not in rendered
     assert "raw-example-camel-token" not in rendered
     assert "raw-camel-example-token" not in rendered
     assert "raw-example-password" not in rendered
     assert "raw-metadata-auth" not in rendered
+    assert "raw-metadata-cookie" not in rendered
     assert "raw-metadata-camel-token" not in rendered
     assert "raw-camel-secret" not in rendered
     assert "safe-policy" in rendered
     assert "safe-metadata-policy" in rendered
     assert resource["metadata"]["api_key_ref"] == "credentials/openai"
     assert resource["metadata"]["apiKeyRef"] == "credentials/camel-openai"
+    assert resource["metadata"]["cookieRef"] == "credentials/cookie"
     assert resource["metadata"]["clientSecretRef"] == "credentials/camel-secret"
 
 
