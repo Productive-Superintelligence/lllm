@@ -44,6 +44,10 @@ plain Python, Pydantic AI, native, or remote tactics. It checks request metadata
 before the call, input/output payload sizes around the call, and async/service
 deadlines with `asyncio.wait_for`.
 
+Metadata allowlist keys are plain string tokens such as `tenant`,
+`x-api-key`, or `trace.id`; blank keys, bytes, whitespace, percent escapes, and
+path separators are rejected at policy construction time.
+
 This is not OS-level isolation. Use containers, separate processes, or a real
 security sandbox for untrusted code. The LLLM sandbox wrapper is for reusable
 service guardrails and predictable error types.

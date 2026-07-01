@@ -146,7 +146,9 @@ sandboxed = SandboxedTactic(
 ```
 
 Use them for payload budgets, request-metadata allowlists, and async/service
-deadlines. They are not OS-level isolation for untrusted code.
+deadlines. Metadata allowlist keys must be plain string tokens, without
+whitespace, percent escapes, or path separators. They are not OS-level
+isolation for untrusted code.
 
 ## Native Prompt/Dialog Core
 

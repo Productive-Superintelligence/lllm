@@ -9,6 +9,7 @@ from typing import Any
 from pydantic import BaseModel, Field, ValidationInfo, field_validator
 
 from .protocol import CallContext, Tactic, TacticError
+from .protocol._validation import token_value
 
 
 class SandboxError(TacticError):
@@ -46,6 +47,23 @@ class SandboxPolicy(BaseModel):
         if isinstance(value, bool):
             raise ValueError(f"{info.field_name} must be numeric, not boolean")
         return value
+
+    @field_validator("allowed_metadata_keys", mode="before")
+    @classmethod
+    def _validate_allowed_metadata_keys(cls, value: Any) -> Any:
+        if value is None:
+            return value
+        if isinstance(value, (str, bytes)) or not isinstance(value, (list, tuple)):
+            raise ValueError(
+                "allowed_metadata_keys must be a sequence of metadata key strings"
+            )
+        keys: list[str] = []
+        for key in value:
+            try:
+                keys.append(token_value(key, "allowed_metadata_keys item"))
+            except TypeError as exc:
+                raise ValueError(str(exc)) from exc
+        return tuple(keys)
 
 
 class SandboxedTactic(Tactic[Any, Any]):

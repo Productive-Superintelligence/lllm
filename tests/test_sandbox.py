@@ -119,6 +119,38 @@ def test_sandbox_policy_rejects_boolean_numeric_limits(field, value):
         SandboxedTactic(EchoTactic(), policy={field: value})
 
 
+@pytest.mark.parametrize(
+    "allowed_metadata_keys",
+    [
+        "tenant",
+        b"tenant",
+        [b"tenant"],
+        [""],
+        ["   "],
+        ["bad key"],
+        ["bad/key"],
+        ["bad%20key"],
+    ],
+)
+def test_sandbox_policy_rejects_malformed_allowed_metadata_keys(
+    allowed_metadata_keys,
+):
+    with pytest.raises(ValidationError, match="allowed_metadata_keys"):
+        SandboxPolicy(allowed_metadata_keys=allowed_metadata_keys)
+
+    with pytest.raises(ValidationError, match="allowed_metadata_keys"):
+        SandboxedTactic(
+            EchoTactic(),
+            policy={"allowed_metadata_keys": allowed_metadata_keys},
+        )
+
+
+def test_sandbox_policy_accepts_plain_allowed_metadata_keys():
+    policy = SandboxPolicy(allowed_metadata_keys=["tenant", "x-api-key", "trace.id"])
+
+    assert policy.allowed_metadata_keys == ("tenant", "x-api-key", "trace.id")
+
+
 def test_sandboxed_tactic_isolates_policy_object():
     policy = SandboxPolicy(max_input_bytes=100, allowed_metadata_keys=("tenant",))
     tactic = SandboxedTactic(EchoTactic(), policy=policy)
