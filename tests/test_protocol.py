@@ -559,6 +559,18 @@ def test_tactic_constructor_rejects_non_mapping_examples(examples):
         EchoTactic(examples=examples)  # type: ignore[list-item]
 
 
+@pytest.mark.parametrize(
+    "examples",
+    [
+        [{b"input": "hello"}],
+        [{"input": {b"text": "hello"}}],
+    ],
+)
+def test_tactic_constructor_rejects_non_string_example_keys(examples):
+    with pytest.raises(TypeError, match="examples"):
+        EchoTactic(examples=examples)  # type: ignore[list-item]
+
+
 @pytest.mark.parametrize("examples", ["", 0, False, (), {"input": "hello"}])
 def test_tactic_info_rejects_non_list_examples(examples):
     with pytest.raises(TypeError, match="examples"):
@@ -567,6 +579,18 @@ def test_tactic_info_rejects_non_list_examples(examples):
 
 @pytest.mark.parametrize("examples", [["bad"], [123], [None]])
 def test_tactic_info_rejects_non_mapping_examples(examples):
+    with pytest.raises(TypeError, match="examples"):
+        TacticInfo(name="echo", examples=examples)  # type: ignore[list-item]
+
+
+@pytest.mark.parametrize(
+    "examples",
+    [
+        [{b"input": "hello"}],
+        [{"input": {b"text": "hello"}}],
+    ],
+)
+def test_tactic_info_rejects_non_string_example_keys(examples):
     with pytest.raises(TypeError, match="examples"):
         TacticInfo(name="echo", examples=examples)  # type: ignore[list-item]
 

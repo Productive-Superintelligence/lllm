@@ -137,6 +137,18 @@ def test_default_tag_parser_accepts_nested_read_only_mapping_parser_args():
     assert parser.parser_args == {"mode": {"levels": ["strict"]}}
 
 
+@pytest.mark.parametrize(
+    "parser_args",
+    [
+        {b"mode": "strict"},
+        {"mode": {b"level": "strict"}},
+    ],
+)
+def test_default_tag_parser_rejects_non_string_parser_arg_keys(parser_args):
+    with pytest.raises(ValidationError, match="parser_args"):
+        DefaultTagParser(parser_args=parser_args)
+
+
 def test_default_tag_parser_can_back_plain_tactic_boundary():
     parser = DefaultTagParser(required_xml_tags=["answer"], signal_tags=["DONE"])
 

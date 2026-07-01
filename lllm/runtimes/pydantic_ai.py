@@ -13,7 +13,11 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
 
 from ..protocol import CallContext, Tactic, TacticInfo
-from ..protocol._validation import copy_boundary_value, metadata_field_value
+from ..protocol._validation import (
+    copy_boundary_value,
+    mapping_sequence_field_value,
+    metadata_field_value,
+)
 
 InputMode = Literal["auto", "json", "dict", "python", "text"]
 ResultMode = Literal["output", "result"]
@@ -83,9 +87,9 @@ class PydanticAITacticConfig(BaseModel):
     @field_validator("examples", mode="before")
     @classmethod
     def _validate_examples_list(cls, value: Any) -> Any:
-        if value is None or isinstance(value, list):
+        if value is None:
             return value
-        raise ValueError("examples must be a list.")
+        return mapping_sequence_field_value("examples", value)
 
     def model_post_init(self, __context: Any) -> None:
         self.run_kwargs = _copy_runtime_kwargs(self.run_kwargs)

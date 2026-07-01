@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, StrictStr, field_validator, model_validat
 
 from ._validation import (
     copy_boundary_value,
+    mapping_sequence_value,
     metadata_field_value,
     optional_metadata_mapping_value,
     optional_text_value,
@@ -122,11 +123,7 @@ class TacticInfo(BaseModel):
     @field_validator("examples", mode="before")
     @classmethod
     def _validate_examples(cls, value: Any) -> Any:
-        if not isinstance(value, list):
-            raise TypeError("examples must be a list.")
-        if not all(isinstance(example, Mapping) for example in value):
-            raise TypeError("examples must contain mappings.")
-        return value
+        return mapping_sequence_value("examples", value)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticInfo":
@@ -347,9 +344,4 @@ def _metadata_mapping(value: Any) -> dict[str, Any]:
 def _examples_list(value: Any) -> list[dict[str, Any]]:
     if value is None:
         return []
-    if not isinstance(value, list):
-        raise TypeError("examples must be a list.")
-    for example in value:
-        if not isinstance(example, Mapping):
-            raise TypeError("examples must contain mappings.")
-    return copy_boundary_value(value)
+    return mapping_sequence_value("examples", value)

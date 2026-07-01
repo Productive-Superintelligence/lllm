@@ -39,6 +39,8 @@ from ...parsers import (
 )
 from ...protocol._validation import (
     copy_boundary_value,
+    mapping_field_value,
+    mapping_sequence_field_value,
     metadata_field_value,
     optional_mapping_value,
     optional_metadata_mapping_value,
@@ -263,6 +265,18 @@ class Message(BaseModel):
         self.usage = copy_boundary_value(self.usage)
         self.metadata = copy_boundary_value(self.metadata)
         self.vectors = copy.deepcopy(self.vectors)
+
+    @field_validator("content", mode="before")
+    @classmethod
+    def _validate_content(cls, value: Any) -> Any:
+        if isinstance(value, (list, tuple)):
+            return mapping_sequence_field_value("content", value)
+        return value
+
+    @field_validator("parsed", "usage", mode="before")
+    @classmethod
+    def _validate_public_maps(cls, value: Any, info: Any) -> Any:
+        return mapping_field_value(info.field_name, value)
 
     @field_validator("metadata", mode="before")
     @classmethod
@@ -820,6 +834,11 @@ class Prompt(BaseModel):
     def _validate_metadata(cls, value: Any) -> Any:
         return metadata_field_value("metadata", value)
 
+    @field_validator("addon_args", mode="before")
+    @classmethod
+    def _validate_addon_args(cls, value: Any) -> Any:
+        return mapping_field_value("addon_args", value)
+
     @property
     def functions(self) -> dict[str, Function]:
         return {
@@ -911,12 +930,7 @@ def _optional_mapping(label: str, value: Any) -> dict[str, Any]:
 
 
 def _mapping_field_value(label: str, value: Any) -> dict[str, Any]:
-    if not isinstance(value, Mapping):
-        raise ValueError(f"{label} must be a mapping.")
-    try:
-        return optional_mapping_value(label, value)
-    except TypeError as exc:
-        raise ValueError(str(exc)) from exc
+    return mapping_field_value(label, value)
 
 
 def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:

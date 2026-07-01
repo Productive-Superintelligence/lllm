@@ -131,6 +131,38 @@ def test_native_tool_maps_reject_non_string_keys(factory):
         factory()
 
 
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: Message(
+            role=Role.USER,
+            name="user",
+            content=[{b"type": "text", "text": "hello"}],
+        ),
+        lambda: Message(
+            role=Role.USER,
+            name="user",
+            content="hello",
+            parsed={b"answer": "hello"},
+        ),
+        lambda: Message(
+            role=Role.USER,
+            name="user",
+            content="hello",
+            usage={"prompt_tokens_details": {b"cached_tokens": 1}},
+        ),
+        lambda: Prompt(
+            path="draft",
+            prompt="Write.",
+            addon_args={"settings": {b"tone": "careful"}},
+        ),
+    ],
+)
+def test_native_public_maps_reject_non_string_keys(factory):
+    with pytest.raises(ValidationError):
+        factory()
+
+
 @pytest.mark.parametrize("value", ["false", "true", 0, 1])
 def test_native_function_rejects_coerced_boolean_flags(value):
     with pytest.raises(ValidationError):

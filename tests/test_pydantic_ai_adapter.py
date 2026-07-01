@@ -253,6 +253,19 @@ def test_pydantic_ai_adapter_rejects_non_string_metadata_keys():
         )
 
 
+def test_pydantic_ai_config_rejects_non_string_example_keys():
+    with pytest.raises(ValidationError, match="examples"):
+        PydanticAITacticConfig(examples=[{"input": {b"text": "hi"}}])
+
+
+def test_pydantic_ai_adapter_rejects_non_string_example_keys():
+    with pytest.raises(TypeError, match="examples"):
+        PydanticAITactic.from_agent(
+            FakeAgent(),
+            examples=[{b"input": "hi"}],  # type: ignore[list-item]
+        )
+
+
 @pytest.mark.parametrize("value", ["false", "true", 0, 1])
 def test_pydantic_ai_config_rejects_non_bool_context_metadata_flag(value):
     with pytest.raises(ValidationError):

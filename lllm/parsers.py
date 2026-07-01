@@ -7,7 +7,7 @@ from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
-from .protocol._validation import copy_boundary_value
+from .protocol._validation import copy_boundary_value, mapping_field_value
 
 
 class ParseError(ValueError):
@@ -73,6 +73,11 @@ class DefaultTagParser(BaseParser, BaseModel):
             except TypeError as exc:
                 raise ValueError(str(exc)) from exc
         return validated
+
+    @field_validator("parser_args", mode="before")
+    @classmethod
+    def _validate_parser_args(cls, value: Any) -> Any:
+        return mapping_field_value("parser_args", value)
 
     def model_post_init(self, __context: Any) -> None:
         self.xml_tags = copy_boundary_value(self.xml_tags)
