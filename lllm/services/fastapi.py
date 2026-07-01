@@ -423,9 +423,13 @@ def _normalize_tactics(
     if isinstance(tactics, Mapping):
         for name, tactic in tactics.items():
             _add_tactic(normalized, name, tactic)
+        if not normalized:
+            raise ValueError("create_service_app requires at least one tactic.")
         return normalized
     for tactic in tactics:
-        _add_tactic(normalized, tactic.tactic_name, tactic)
+        _add_tactic(normalized, _require_tactic(tactic).tactic_name, tactic)
+    if not normalized:
+        raise ValueError("create_service_app requires at least one tactic.")
     return normalized
 
 
@@ -434,10 +438,17 @@ def _add_tactic(
     name: Any,
     tactic: Tactic[Any, Any],
 ) -> None:
+    tactic = _require_tactic(tactic)
     _require_route_segment("tactic.name", name)
     if name in tactics:
         raise ValueError(f"Duplicate tactic.name route: {name}")
     tactics[name] = tactic
+
+
+def _require_tactic(value: Any) -> Tactic[Any, Any]:
+    if not isinstance(value, Tactic):
+        raise ValueError("create_service_app tactics must be Tactic instances.")
+    return value
 
 
 def _require_route_segment(field_name: str, value: Any) -> None:

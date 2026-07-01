@@ -559,6 +559,21 @@ def test_service_rejects_path_control_tactic_route_names():
             create_service_app({name: EchoTactic()})
 
 
+@pytest.mark.parametrize(
+    "tactics",
+    [
+        {},
+        [],
+        {"echo": object()},
+        [object()],
+        "bad",
+    ],
+)
+def test_create_service_app_rejects_invalid_tactic_collections(tactics):
+    with pytest.raises(ValueError, match="tactic"):
+        create_service_app(tactics)  # type: ignore[arg-type]
+
+
 def test_service_rejects_duplicate_sequence_tactic_route_names():
     with pytest.raises(ValueError, match="Duplicate tactic.name"):
         create_service_app([EchoTactic(), EchoTactic()])
