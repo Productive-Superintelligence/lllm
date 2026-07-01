@@ -2,7 +2,10 @@ import importlib.util
 import re
 from pathlib import Path
 
+from fastapi.testclient import TestClient
+
 from lllm import CallContext
+from lllm.services import create_tactic_app
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +66,39 @@ def test_native_dialog_example_builds_transcript_and_retry_branch():
     assert dialog.tail.metadata["function_call"]["result"] == "Native Core"
     assert retry.parent is not None
     assert retry.depth == 1
+
+
+def test_native_service_example_runs_locally_and_over_http():
+    module = load_module(
+        ROOT / "examples" / "native_service" / "tactics.py",
+        "native_service_tactics",
+    )
+    tactic = module.build_tactic()
+
+    output = tactic.run(
+        {"topic": "native services", "audience": "operators"},
+        context=CallContext(trace_id="trace-native"),
+    )
+
+    assert output.title == "Native Services Brief"
+    assert output.trace_id == "trace-native"
+    assert output.transcript[0].role == "system"
+    assert output.transcript[-1].name == "native-brief"
+    assert tactic.info().runtime_kind == "native"
+    assert tactic.info().metadata == {"example": "native-service"}
+
+    client = TestClient(create_tactic_app(tactic))
+    response = client.post(
+        "/run",
+        json={
+            "input": {"topic": "native services", "audience": "operators"},
+            "context": {"trace_id": "trace-http"},
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["output"]["trace_id"] == "trace-http"
+    assert response.json()["output"]["transcript"][0]["role"] == "system"
 
 
 def test_structured_pydantic_ai_example_runs_streams_and_builds_tool():

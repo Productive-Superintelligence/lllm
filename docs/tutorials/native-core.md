@@ -21,6 +21,7 @@ python -m pip install -e ".[dev,native]"
 
 ```text
 examples/native_dialog/demo.py
+examples/native_service/tactics.py
 tests/test_native_core.py
 tests/test_native_adapter.py
 ```
@@ -302,3 +303,39 @@ Expected output:
 
 Next, wrap a native workflow with `NativeTacticAdapter` when it needs to cross
 the package or service boundary.
+
+## Serve A Native Workflow
+
+`examples/native_service/tactics.py` shows the same idea as a service-ready
+tactic. The native object is still a native `Tactic`, so it can build prompts,
+dialogs, tools, and agent sessions internally. The adapter exposes only the v2
+contract.
+
+```python
+from lllm.runtimes.native import NativeTacticAdapter
+
+public_tactic = NativeTacticAdapter(
+    native_tactic,
+    package_ref="psi://demo/native-service/tactics/native-brief",
+    run_kwargs={"tone": "precise"},
+)
+```
+
+Serve it with the normal service helper:
+
+```python
+from lllm.services import create_tactic_app
+
+app = create_tactic_app(public_tactic)
+```
+
+Then call `/run` with a protocol envelope:
+
+```bash
+curl -X POST http://127.0.0.1:8000/run \
+  -H 'content-type: application/json' \
+  -d '{"input":{"topic":"native services"},"context":{"trace_id":"trace-demo"}}'
+```
+
+The returned payload is a typed v2 output, but the transcript was produced by
+native `Prompt` and `Dialog` objects behind the boundary.

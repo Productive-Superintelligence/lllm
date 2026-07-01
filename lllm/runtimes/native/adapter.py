@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Mapping
 from typing import Any
 
 from ...protocol import CallContext, Tactic
+from ...protocol._validation import copy_boundary_value
 
 
 class NativeTacticAdapter(Tactic[Any, Any]):
@@ -25,8 +27,14 @@ class NativeTacticAdapter(Tactic[Any, Any]):
         service_ref: str | None = None,
         examples: list[dict[str, Any]] | None = None,
         metadata: dict[str, Any] | None = None,
+        run_kwargs: Mapping[str, Any] | None = None,
+        include_context_metadata: bool = True,
     ) -> None:
         self.native = native
+        self.run_kwargs = _runtime_kwargs(run_kwargs)
+        if not isinstance(include_context_metadata, bool):
+            raise TypeError("include_context_metadata must be a boolean.")
+        self.include_context_metadata = include_context_metadata
         self.input_type = input_type or getattr(native, "input_type", None) or getattr(
             native,
             "input_model",
@@ -63,7 +71,15 @@ class NativeTacticAdapter(Tactic[Any, Any]):
         **kwargs: Any,
     ) -> Any:
         method = _select_sync_method(self.native)
-        return _call_native(method, input_value, context=context, kwargs=kwargs)
+        return _call_native(
+            self.native,
+            method,
+            input_value,
+            context=context,
+            run_kwargs=self.run_kwargs,
+            call_kwargs=kwargs,
+            include_context_metadata=self.include_context_metadata,
+        )
 
     async def _arun(
         self,
@@ -75,10 +91,39 @@ class NativeTacticAdapter(Tactic[Any, Any]):
         method = _select_async_method(self.native)
         if method is None:
             return await super()._arun(input_value, context=context, **kwargs)
-        result = _call_native(method, input_value, context=context, kwargs=kwargs)
+        result = _call_native(
+            self.native,
+            method,
+            input_value,
+            context=context,
+            run_kwargs=self.run_kwargs,
+            call_kwargs=kwargs,
+            include_context_metadata=self.include_context_metadata,
+        )
         if inspect.isawaitable(result):
             return await result
         return result
+
+    def stream(
+        self,
+        input_value: Any,
+        *,
+        context: CallContext | None = None,
+        **kwargs: Any,
+    ):
+        method = getattr(self.native, "stream", None)
+        if method is None:
+            return super().stream(input_value, context=context, **kwargs)
+        result = _call_native(
+            self.native,
+            method,
+            input_value,
+            context=context,
+            run_kwargs=self.run_kwargs,
+            call_kwargs=kwargs,
+            include_context_metadata=self.include_context_metadata,
+        )
+        yield from _iter_native_stream(result)
 
     def capabilities(self) -> set[str]:
         supported = {"run", "arun"}
@@ -115,17 +160,28 @@ def _select_async_method(native: Any) -> Any | None:
 
 
 def _call_native(
+    native: Any,
     method: Any,
     input_value: Any,
     *,
     context: CallContext | None,
-    kwargs: dict[str, Any],
+    run_kwargs: Mapping[str, Any],
+    call_kwargs: dict[str, Any],
+    include_context_metadata: bool,
 ) -> Any:
     signature = inspect.signature(method)
-    call_kwargs = dict(kwargs)
-    if context is not None and _accepts_keyword(signature, "context"):
-        call_kwargs.setdefault("context", context)
-    return method(input_value, **call_kwargs)
+    merged_kwargs = _runtime_kwargs(run_kwargs)
+    merged_kwargs.update(_runtime_kwargs(call_kwargs))
+    if context is not None and _accepts_context(native, signature):
+        merged_kwargs.setdefault("context", context)
+    if (
+        include_context_metadata
+        and context is not None
+        and "metadata" not in merged_kwargs
+        and _accepts_keyword(signature, "metadata")
+    ):
+        merged_kwargs["metadata"] = _context_metadata(context)
+    return method(input_value, **merged_kwargs)
 
 
 def _is_native_tactic(value: Any) -> bool:
@@ -145,6 +201,30 @@ def _has_static_callable(value: Any, name: str) -> bool:
     return callable(descriptor_value)
 
 
+def _accepts_context(native: Any, signature: inspect.Signature) -> bool:
+    if _accepts_explicit_keyword(signature, "context"):
+        return True
+    if _is_native_tactic(native):
+        call = getattr(native, "call", None)
+        if call is None:
+            return False
+        try:
+            return _accepts_keyword(inspect.signature(call), "context")
+        except (TypeError, ValueError):
+            return False
+    return _accepts_keyword(signature, "context")
+
+
+def _accepts_explicit_keyword(signature: inspect.Signature, name: str) -> bool:
+    parameter = signature.parameters.get(name)
+    if parameter is None:
+        return False
+    return parameter.kind in {
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+        inspect.Parameter.KEYWORD_ONLY,
+    }
+
+
 def _accepts_keyword(signature: inspect.Signature, name: str) -> bool:
     if name in signature.parameters:
         return True
@@ -152,6 +232,49 @@ def _accepts_keyword(signature: inspect.Signature, name: str) -> bool:
         parameter.kind is inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
+
+
+def _runtime_kwargs(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    if value is None:
+        return {}
+    if not isinstance(value, Mapping):
+        raise TypeError("run_kwargs must be a mapping.")
+    copied: dict[str, Any] = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise TypeError("run_kwargs keys must be strings.")
+        copied[key] = copy_boundary_value(item)
+    return copied
+
+
+def _context_metadata(context: CallContext) -> dict[str, Any]:
+    metadata = copy_boundary_value(context.metadata)
+    metadata.setdefault("lllm_request_id", context.request_id)
+    if context.trace_id is not None:
+        metadata.setdefault("lllm_trace_id", context.trace_id)
+    if context.span_id is not None:
+        metadata.setdefault("lllm_span_id", context.span_id)
+    if context.package_ref is not None:
+        metadata.setdefault("lllm_package_ref", context.package_ref)
+    if context.service_ref is not None:
+        metadata.setdefault("lllm_service_ref", context.service_ref)
+    if context.tactic_ref is not None:
+        metadata.setdefault("lllm_tactic_ref", context.tactic_ref)
+    if context.endpoint is not None:
+        metadata.setdefault("lllm_endpoint", context.endpoint)
+    if context.tags:
+        metadata.setdefault("lllm_tags", dict(context.tags))
+    return metadata
+
+
+def _iter_native_stream(result: Any):
+    if hasattr(result, "__iter__") and not isinstance(
+        result,
+        (str, bytes, bytearray, dict),
+    ):
+        yield from result
+        return
+    yield result
 
 
 __all__ = ["NativeTacticAdapter"]

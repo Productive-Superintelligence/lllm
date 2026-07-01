@@ -198,6 +198,39 @@ public_tactic = NativeTacticAdapter(
 The service layer sees the v2 `TacticInfo`. Native prompts, dialogs, sessions,
 and invokers stay behind the adapter.
 
+### Runtime-Owned Surroundings
+
+`NativeTacticAdapter` borrows the useful part of the Pydantic AI adapter:
+runtime-owned kwargs and call metadata can pass through the wrapper without
+becoming protocol concepts.
+
+```python
+from lllm import CallContext
+from lllm.runtimes.native import NativeTacticAdapter
+
+tactic = NativeTacticAdapter(
+    native_tactic,
+    run_kwargs={"tone": "precise"},
+)
+
+result = tactic.run(
+    {"topic": "native services"},
+    context=CallContext(trace_id="trace-1", metadata={"caller": "demo"}),
+)
+```
+
+If the native method accepts `context`, it receives the `CallContext`. If it
+accepts `metadata`, the adapter adds safe LLLM metadata such as request id,
+trace id, refs, endpoint, and tags. This matches the Pydantic AI surrounding
+features pattern while keeping native independent from Pydantic AI itself.
+
+The runnable example in `examples/native_service/` serves an offline native
+prompt/dialog workflow through the v2 FastAPI API:
+
+```bash
+uvicorn app:app --app-dir examples/native_service --reload
+```
+
 ## Tactics As Native Tools
 
 Native can also consume a v2 protocol tactic as a prompt tool:

@@ -169,6 +169,8 @@ retry = dialog.fork(last_n=1, first_k=1)
 Use these pieces for native runtime transcripts, prompt templates, tool schemas,
 and forked histories. Wrap executable native agents with `NativeTacticAdapter`
 when they need to cross the reusable tactic boundary.
+`examples/native_service/` shows an offline native prompt/dialog workflow
+served through the same FastAPI API as ordinary tactics.
 
 ## Create A Project
 

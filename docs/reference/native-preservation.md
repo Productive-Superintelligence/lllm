@@ -48,6 +48,7 @@ Some restored pieces were changed so they fit the v2 design:
 | `core.py` collapsed primitive file | Replaced by restored `core/` package. | Python cannot have both `core.py` and `core/`; v1 structure carries the real native runtime. |
 | Native imports | Top-level `lllm.runtimes.native` and `core` use lazy exports. | Importing `lllm` should not import LiteLLM, Jupyter, Exa, OpenAI, or other optional integrations. |
 | Native-to-v2 boundary | `NativeTacticAdapter` lives in `lllm.runtimes.native.adapter`. | Keeps v2 protocol `Tactic` separate from native `Tactic`. |
+| Runtime-owned kwargs and metadata | `NativeTacticAdapter` accepts `run_kwargs` and optional context-metadata forwarding. | Mirrors the useful Pydantic AI surrounding-features bridge without importing Pydantic AI. |
 | Protocol tactic as native tool | `tactic_as_function()` wraps a protocol tactic as native `Function`. | Reuses the callable-tool idea without making native depend on Pydantic AI internals. |
 | Native model validation | Tool names, public maps, metadata, usage, and mutable inputs use v2 boundary hardening. | Preserves native architecture while keeping public model behavior safe and copy-stable. |
 | Optional extras | Restored `native`, `sandbox`, and `tools` extras. | Keeps native features available without making the public protocol heavy. |
@@ -77,7 +78,7 @@ more focused verification before they can be considered complete:
 | Live native invoker behavior | Add opt-in LiteLLM/live-provider tests that do not print or store secrets. |
 | Builtin proxy integrations | Add pseudo-data tests for request/response/error mapping and opt-in live API examples where credentials exist. |
 | Jupyter sandbox behavior | Add timeout/error/artifact/output-capture tests behind sandbox dependencies. |
-| Native service examples | Add a runnable native-agent service example once live provider behavior is tested. |
+| Live native-agent service examples | Add an opt-in live provider service example once live invoker behavior is tested. |
 | Shared utility extraction | Move parser/proxy/sandbox helpers out of native only when they are clearly useful to Pydantic AI and plain Python tactics without adding complexity. |
 | Native streaming/events | Expose only when a clean native implementation exists; otherwise report unsupported capability. |
 
@@ -94,6 +95,9 @@ Current checkpoint coverage includes:
 - native agent named-dialog management;
 - native `Tactic.as_tool()` compatibility with v2 callable-tool wrapping;
 - `NativeTacticAdapter` protocol boundary behavior;
+- `NativeTacticAdapter` runtime kwargs, context forwarding, metadata injection,
+  and native stream bridging;
+- offline native service example through FastAPI `/run`;
 - protocol tactic to native `Function` bridge.
 
 The checkpoint also passed full LLLM tests, strict docs build, package build,
