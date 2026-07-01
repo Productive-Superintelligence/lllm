@@ -248,9 +248,9 @@ use `url`; `store`, `path`, and serialized `object` targets belong to other
 layers or direct in-process registration. URL bindings must not include
 embedded credentials, and binding metadata must not include raw secret-shaped
 keys such as `api_key`/`apiKey`/`apikey`, tokens,
-`accessToken`/`accesstoken`, passwords, `authorization`, or credentials. Use
-local credential refs such as `api_key_ref`/`apiKeyRef`/`apikeyref` or auth
-hooks instead.
+`accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
+credentials. Use local credential refs such as
+`api_key_ref`/`apiKeyRef`/`apikeyref` or auth hooks instead.
 
 Remote service failures raise `RemoteTacticError` with `status_code`,
 `error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
@@ -275,7 +275,7 @@ package cards can show domain routes and concrete calls alongside the portable
 changing the tactic protocol. Public service info and PsiHub metadata exports
 filter raw secret-shaped keys from examples and user metadata, including
 `api_key`/`apiKey`/`apikey`, tokens, `accessToken`/`accesstoken`, passwords,
-`authorization`, and credentials, while preserving local refs such as
+cookies, `authorization`, and credentials, while preserving local refs such as
 `api_key_ref`, `apiKeyRef`, and `apikeyref`.
 SSE stream event metadata goes through the same public filter before it is
 written to the response; event data is left as the tactic output.

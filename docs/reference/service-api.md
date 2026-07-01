@@ -19,7 +19,8 @@ user metadata while preserving local credential refs such as
 `api_key_ref`/`apiKeyRef`/`apikeyref`. Snake_case, kebab-case, camelCase, and
 collapsed lowercase secret keys such as `api_key`, `x-api-key`, `apiKey`,
 `apikey`, `accessToken`, `accesstoken`, `clientSecret`, and `clientsecret` are
-treated consistently.
+treated consistently. Cookie-style keys such as `cookie`, `set-cookie`, and
+`sessionCookie` are treated as secret-shaped metadata.
 SSE stream event metadata is filtered with the same public boundary before it
 is written to the response; event data remains the tactic output.
 

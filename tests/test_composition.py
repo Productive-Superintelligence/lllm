@@ -193,7 +193,10 @@ def test_resolver_bind_url_rejects_secret_metadata_keys():
             "http://testserver/tactics/echo",
             metadata={
                 "api_key_ref": "credentials/openai",
-                "headers": {"xauthtoken": "Bearer raw-token"},
+                "headers": {
+                    "set-cookie": "session=raw",
+                    "xauthtoken": "Bearer raw-token",
+                },
             },
         )
 

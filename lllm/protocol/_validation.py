@@ -62,6 +62,10 @@ def is_sensitive_metadata_key(key: object) -> bool:
         return True
     if compact.endswith(("password", "secret")):
         return True
+    if "cookie" in parts:
+        return True
+    if compact == "cookie" or compact.endswith("cookie"):
+        return True
     if normalized == "token" or normalized.endswith("_token"):
         return True
     if compact == "token" or compact.endswith("token"):

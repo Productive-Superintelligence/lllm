@@ -69,8 +69,12 @@ class SecretEventStreamTactic(Tactic[str, str]):
                 "api_key_ref": "credentials/openai",
                 "apiKeyRef": "credentials/camel-openai",
                 "apikeyref": "credentials/compact-openai",
+                "cookie_ref": "credentials/cookie",
+                "cookieRef": "credentials/camel-cookie",
+                "cookieref": "credentials/compact-cookie",
                 "headers": {
                     "authorization": "Bearer raw",
+                    "sessionCookie": "raw-session-cookie",
                     "xAuthToken": "raw-camel-token",
                     "xauthtoken": "raw-compact-token",
                     "x-policy": "safe-policy",
@@ -467,6 +471,7 @@ def test_service_info_filters_secret_examples_and_metadata():
                     "text": "hello",
                     "headers": {
                         "authorization": "Bearer raw-example-auth",
+                        "cookie": "raw-example-cookie",
                         "x-api-key": "raw-example-key",
                         "xAuthToken": "raw-example-camel-token",
                         "x-policy": "safe-policy",
@@ -483,6 +488,7 @@ def test_service_info_filters_secret_examples_and_metadata():
             "clientSecretRef": "credentials/camel-secret",
             "headers": {
                 "authorization": "Bearer raw-metadata-auth",
+                "set-cookie": "raw-metadata-cookie",
                 "xAuthToken": "raw-metadata-camel-token",
                 "x-policy": "safe-metadata-policy",
             },
@@ -497,10 +503,12 @@ def test_service_info_filters_secret_examples_and_metadata():
         text = json.dumps(payload, sort_keys=True)
         assert "raw-example-auth" not in text
         assert "raw-example-key" not in text
+        assert "raw-example-cookie" not in text
         assert "raw-example-camel-token" not in text
         assert "raw-camel-example-token" not in text
         assert "raw-example-password" not in text
         assert "raw-metadata-auth" not in text
+        assert "raw-metadata-cookie" not in text
         assert "raw-metadata-camel-token" not in text
         assert "raw-camel-secret" not in text
         assert "safe-policy" in text
@@ -561,6 +569,7 @@ def test_stream_endpoint_filters_secret_event_metadata():
     assert "raw-camel-key" not in rendered
     assert "raw-compact-key" not in rendered
     assert "Bearer raw" not in rendered
+    assert "raw-session-cookie" not in rendered
     assert "raw-camel-token" not in rendered
     assert "raw-compact-token" not in rendered
     assert chunks[0]["data"] == "hello"
@@ -568,6 +577,9 @@ def test_stream_endpoint_filters_secret_event_metadata():
         "api_key_ref": "credentials/openai",
         "apiKeyRef": "credentials/camel-openai",
         "apikeyref": "credentials/compact-openai",
+        "cookie_ref": "credentials/cookie",
+        "cookieRef": "credentials/camel-cookie",
+        "cookieref": "credentials/compact-cookie",
         "headers": {"x-policy": "safe-policy"},
     }
 
