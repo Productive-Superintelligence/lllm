@@ -568,6 +568,43 @@ def test_remote_tactic_error_rejects_malformed_request_id_tokens(request_id):
         RemoteTacticError(500, request_id=request_id)
 
 
+@pytest.mark.parametrize(
+    "tactic",
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad/tactic",
+        "bad:tactic",
+        "bad\\tactic",
+        "bad%2Ftactic",
+    ),
+)
+def test_remote_tactic_error_rejects_malformed_tactic_names(tactic):
+    with pytest.raises(ValueError, match="tactic"):
+        RemoteTacticError(500, tactic=tactic)
+
+
+@pytest.mark.parametrize(
+    "endpoint",
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad endpoint",
+        "bad/endpoint",
+        "bad:endpoint",
+        "bad\\endpoint",
+        "bad%2Fendpoint",
+    ),
+)
+def test_remote_tactic_error_rejects_malformed_endpoint_tokens(endpoint):
+    with pytest.raises(ValueError, match="endpoint"):
+        RemoteTacticError(500, endpoint=endpoint)
+
+
 def test_remote_tactic_ignores_non_string_error_payload_fields():
     def handler(request: httpx.Request) -> httpx.Response:
         assert request.method == "POST"
@@ -615,6 +652,8 @@ def test_remote_tactic_ignores_malformed_error_payload_tokens():
                     "error": {
                         "type": "bad type",
                         "message": "still readable",
+                        "tactic": "bad/tactic",
+                        "endpoint": "bad/endpoint",
                         "request_id": "bad id",
                     }
                 }
@@ -633,6 +672,8 @@ def test_remote_tactic_ignores_malformed_error_payload_tokens():
     assert exc_info.value.status_code == 500
     assert exc_info.value.error_type is None
     assert exc_info.value.message == "still readable"
+    assert exc_info.value.tactic is None
+    assert exc_info.value.endpoint is None
     assert exc_info.value.request_id is None
 
 

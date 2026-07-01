@@ -20,6 +20,7 @@ from ..protocol import (
 from ..protocol._validation import (
     copy_boundary_value,
     optional_metadata_mapping_value,
+    path_segment_value,
     token_value,
 )
 
@@ -40,8 +41,8 @@ class RemoteTacticError(TacticServiceError):
     ) -> None:
         self.status_code = _status_code_value(status_code)
         self.error_type = _optional_token_value(error_type, "error_type")
-        self.tactic = _optional_text_value(tactic, "tactic")
-        self.endpoint = _optional_text_value(endpoint, "endpoint")
+        self.tactic = _optional_path_segment_value(tactic, "tactic")
+        self.endpoint = _optional_token_value(endpoint, "endpoint")
         self.request_id = _optional_token_value(request_id, "request_id")
         self.detail = detail
         self.message = _optional_text_value(message, "message") or _detail_message(detail)
@@ -292,8 +293,8 @@ def _remote_error(response: Any) -> RemoteTacticError:
         response.status_code,
         error_type=_error_token_field(error, "type"),
         message=_error_text_field(error, "message"),
-        tactic=_error_text_field(error, "tactic"),
-        endpoint=_error_text_field(error, "endpoint"),
+        tactic=_error_path_segment_field(error, "tactic"),
+        endpoint=_error_token_field(error, "endpoint"),
         request_id=_error_token_field(error, "request_id"),
         detail=data,
     )
@@ -336,12 +337,28 @@ def _error_token_field(error: Any, field_name: str) -> str | None:
         return None
 
 
+def _error_path_segment_field(error: Any, field_name: str) -> str | None:
+    value = _error_text_field(error, field_name)
+    if value is None:
+        return None
+    try:
+        return path_segment_value(value, f"error.{field_name}")
+    except ValueError:
+        return None
+
+
 def _optional_text_value(value: Any, label: str) -> str | None:
     if value is None:
         return None
     if not isinstance(value, str):
         raise TypeError(f"{label} must be a string.")
     return value
+
+
+def _optional_path_segment_value(value: Any, label: str) -> str | None:
+    if value is None:
+        return None
+    return path_segment_value(value, label)
 
 
 def _optional_token_value(value: Any, label: str) -> str | None:

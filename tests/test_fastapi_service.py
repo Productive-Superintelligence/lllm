@@ -235,6 +235,45 @@ def test_service_dto_models_reject_malformed_request_id_tokens(value):
         ErrorDetail(type="ValueError", message="bad", request_id=value)
 
 
+@pytest.mark.parametrize(
+    "value",
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad/tactic",
+        "bad:tactic",
+        "bad\\tactic",
+        "bad%2Ftactic",
+    ),
+)
+def test_service_dto_models_reject_malformed_tactic_names(value):
+    with pytest.raises(ValidationError):
+        RunResponse(output={}, request_id="req", tactic=value)
+    with pytest.raises(ValidationError):
+        ErrorDetail(type="ValueError", message="bad", tactic=value)
+
+
+@pytest.mark.parametrize(
+    "value",
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad endpoint",
+        "bad/endpoint",
+        "bad:endpoint",
+        "bad\\endpoint",
+        "bad%2Fendpoint",
+    ),
+)
+def test_service_error_detail_rejects_malformed_endpoint_tokens(value):
+    with pytest.raises(ValidationError):
+        ErrorDetail(type="ValueError", message="bad", endpoint=value)
+
+
 def test_service_error_detail_allows_common_type_tokens():
     response = RunResponse(output={}, request_id="req-1", tactic="echo")
     error = ErrorDetail(type="InvalidResponse", message="bad", request_id="req.1")
@@ -282,6 +321,9 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post("/act", name=""),
         lambda: endpoint.post("/act", name=123),
         lambda: endpoint.post("/act", name="bad name"),
+        lambda: endpoint.post("/act", name="bad/name"),
+        lambda: endpoint.post("/act", name="bad:name"),
+        lambda: endpoint.post("/act", name="bad\\name"),
         lambda: endpoint.post("/act", name="bad%2Fname"),
         lambda: endpoint.post("/act", mode="batch"),
         lambda: endpoint.post("/act", description=123),
@@ -289,6 +331,9 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post("/act", tags=(123,)),
         lambda: endpoint.post("/act", tags=("",)),
         lambda: endpoint.post("/act", tags=("bad tag",)),
+        lambda: endpoint.post("/act", tags=("bad/tag",)),
+        lambda: endpoint.post("/act", tags=("bad:tag",)),
+        lambda: endpoint.post("/act", tags=("bad\\tag",)),
         lambda: endpoint.post("/act", tags=("bad%2Ftag",)),
         lambda: EndpointSpec(method=" POST ", path="/act", name="act"),
         lambda: EndpointSpec(method="TRACE", path="/act", name="act"),

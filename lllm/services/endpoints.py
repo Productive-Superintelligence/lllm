@@ -261,12 +261,18 @@ def _endpoint_path(path: str) -> str:
 
 
 def _metadata_name(name: str, label: str) -> str:
-    if not isinstance(name, str) or not name:
-        raise ValueError(f"{label} must be a non-empty string")
-    if "%" in name:
-        raise ValueError(f"{label} must not contain percent escapes")
-    if any(ch.isspace() for ch in name):
-        raise ValueError(f"{label} must not contain whitespace")
+    if (
+        not isinstance(name, str)
+        or not name.strip()
+        or name in {".", ".."}
+        or "%" in name
+        or any(ch.isspace() for ch in name)
+        or any(ch in name for ch in "/:\\")
+    ):
+        raise ValueError(
+            f"{label} must be a non-empty token without whitespace, "
+            "percent escapes, or path separators"
+        )
     return name
 
 

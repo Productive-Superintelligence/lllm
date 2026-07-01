@@ -20,6 +20,7 @@ from ..protocol._validation import (
     copy_boundary_value,
     mapping_field_value,
     metadata_field_value,
+    path_segment_value,
     public_boundary_value,
     token_value,
 )
@@ -68,6 +69,7 @@ class RunResponse(BaseModel):
     @model_validator(mode="after")
     def _validate_request_id(self) -> "RunResponse":
         token_value(self.request_id, "request_id")
+        path_segment_value(self.tactic, "tactic")
         return self
 
 
@@ -92,6 +94,10 @@ class ErrorDetail(BaseModel):
     @model_validator(mode="after")
     def _validate_identity(self) -> "ErrorDetail":
         token_value(self.type, "error.type")
+        if self.tactic is not None:
+            path_segment_value(self.tactic, "tactic")
+        if self.endpoint is not None:
+            token_value(self.endpoint, "endpoint")
         if self.request_id is not None:
             token_value(self.request_id, "request_id")
         return self
