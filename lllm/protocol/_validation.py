@@ -84,7 +84,12 @@ def optional_mapping_value(label: str, value: Any) -> dict[str, Any]:
         return {}
     if not isinstance(value, Mapping):
         raise TypeError(f"{label} must be a mapping.")
-    return {key: copy_boundary_value(item) for key, item in value.items()}
+    copied: dict[str, Any] = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise TypeError(f"{label} keys must be strings.")
+        copied[key] = copy_boundary_value(item)
+    return copied
 
 
 def optional_metadata_mapping_value(label: str, value: Any) -> dict[str, Any]:

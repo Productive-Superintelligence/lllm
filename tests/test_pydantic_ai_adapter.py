@@ -284,6 +284,22 @@ def test_pydantic_ai_adapter_rejects_non_mapping_run_kwargs(run_kwargs):
         )
 
 
+@pytest.mark.parametrize("run_kwargs", [{b"suffix": "ok"}, {1: "ok"}])
+def test_pydantic_ai_adapter_rejects_non_string_run_kwarg_keys(run_kwargs):
+    with pytest.raises(TypeError, match="run_kwargs"):
+        PydanticAITactic.from_agent(
+            FakeAgent(),
+            input_type=str,
+            run_kwargs=run_kwargs,  # type: ignore[arg-type]
+        )
+
+
+@pytest.mark.parametrize("run_kwargs", [{b"suffix": "ok"}, {1: "ok"}])
+def test_pydantic_ai_config_rejects_non_string_run_kwarg_keys(run_kwargs):
+    with pytest.raises(ValidationError, match="run_kwargs"):
+        PydanticAITacticConfig(run_kwargs=run_kwargs)  # type: ignore[arg-type]
+
+
 def test_pydantic_ai_adapter_supports_async_streams():
     tactic = PydanticAITactic.from_agent(
         FakeStreamAgent(),

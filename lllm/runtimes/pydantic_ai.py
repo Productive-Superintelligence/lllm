@@ -37,7 +37,19 @@ def _copy_runtime_value(value: Any) -> Any:
 def _copy_runtime_kwargs(value: Any) -> dict[str, Any]:
     if not isinstance(value, Mapping):
         raise TypeError("run_kwargs must be a mapping.")
-    return {key: _copy_runtime_value(item) for key, item in value.items()}
+    copied: dict[str, Any] = {}
+    for key, item in value.items():
+        if not isinstance(key, str):
+            raise TypeError("run_kwargs keys must be strings.")
+        copied[key] = _copy_runtime_value(item)
+    return copied
+
+
+def _run_kwargs_field_value(value: Any) -> dict[str, Any]:
+    try:
+        return _copy_runtime_kwargs(value)
+    except TypeError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def _optional_bool_value(value: Any, label: str) -> bool | None:
@@ -79,6 +91,11 @@ class PydanticAITacticConfig(BaseModel):
         self.run_kwargs = _copy_runtime_kwargs(self.run_kwargs)
         self.examples = copy_boundary_value(self.examples)
         self.metadata = copy_boundary_value(self.metadata)
+
+    @field_validator("run_kwargs", mode="before")
+    @classmethod
+    def _validate_run_kwargs(cls, value: Any) -> Any:
+        return _run_kwargs_field_value(value)
 
     @field_validator("metadata", mode="before")
     @classmethod

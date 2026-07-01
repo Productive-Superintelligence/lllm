@@ -901,7 +901,12 @@ def _optional_mapping(label: str, value: Any) -> dict[str, Any]:
 
 
 def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:
-    entries = _optional_mapping(label, value)
+    try:
+        entries = _optional_mapping(label, value)
+    except TypeError as exc:
+        if "keys must be strings" in str(exc):
+            raise TypeError(f"{label} keys and values must be strings.") from exc
+        raise
     if not all(
         isinstance(entry_key, str) and isinstance(entry_value, str)
         for entry_key, entry_value in entries.items()
