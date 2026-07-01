@@ -18,6 +18,7 @@ from pydantic import (
 from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
 from ..protocol._validation import (
     copy_boundary_value,
+    mapping_field_value,
     metadata_field_value,
     public_boundary_value,
     token_value,
@@ -45,6 +46,13 @@ class RunRequest(BaseModel):
         self.input = copy_boundary_value(self.input)
         self.task = copy_boundary_value(self.task)
         self.context = copy_boundary_value(self.context)
+
+    @field_validator("context", mode="before")
+    @classmethod
+    def _validate_context(cls, value: Any) -> Any:
+        if value is None:
+            return value
+        return mapping_field_value("context", value)
 
 
 class RunResponse(BaseModel):

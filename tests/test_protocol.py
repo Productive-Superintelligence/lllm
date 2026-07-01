@@ -184,6 +184,21 @@ def test_protocol_info_and_trace_models_isolate_mutable_inputs():
 @pytest.mark.parametrize(
     "factory",
     [
+        lambda: TacticInfo(name="echo", input_schema={b"type": "string"}),
+        lambda: TacticInfo(
+            name="echo",
+            output_schema={"properties": {b"text": {"type": "string"}}},
+        ),
+    ],
+)
+def test_tactic_info_rejects_non_string_schema_keys(factory):
+    with pytest.raises(ValidationError):
+        factory()
+
+
+@pytest.mark.parametrize(
+    "factory",
+    [
         lambda: CallContext(request_id=b"req"),
         lambda: CallContext(caller=b"caller"),
         lambda: CallContext(tags={b"kind": "demo"}),

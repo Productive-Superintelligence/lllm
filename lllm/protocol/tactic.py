@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field, StrictStr, field_validator, model_validat
 
 from ._validation import (
     copy_boundary_value,
+    mapping_field_value,
     mapping_sequence_value,
     metadata_field_value,
     optional_metadata_mapping_value,
@@ -124,6 +125,13 @@ class TacticInfo(BaseModel):
     @classmethod
     def _validate_examples(cls, value: Any) -> Any:
         return mapping_sequence_value("examples", value)
+
+    @field_validator("input_schema", "output_schema", mode="before")
+    @classmethod
+    def _validate_schema_maps(cls, value: Any, info: Any) -> Any:
+        if value is None:
+            return value
+        return mapping_field_value(info.field_name, value)
 
     @model_validator(mode="after")
     def _validate_identity(self) -> "TacticInfo":

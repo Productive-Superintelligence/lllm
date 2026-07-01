@@ -157,6 +157,18 @@ def test_service_dto_models_isolate_mutable_constructor_inputs():
     assert error.metadata == {"labels": ["error"]}
 
 
+@pytest.mark.parametrize(
+    "context",
+    [
+        {b"metadata": {"labels": ["request"]}},
+        {"metadata": {b"labels": ["request"]}},
+    ],
+)
+def test_run_request_rejects_non_string_context_keys(context):
+    with pytest.raises(ValidationError, match="context"):
+        RunRequest(input={"text": "hello"}, context=context)
+
+
 def test_error_detail_rejects_non_string_metadata_keys():
     with pytest.raises(ValidationError, match="metadata"):
         ErrorDetail(
