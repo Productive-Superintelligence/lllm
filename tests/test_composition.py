@@ -386,6 +386,8 @@ def test_remote_tactic_accepts_positive_timeout_or_none():
         "http://test server/run",
         "http://user@testserver/run",
         "http://user:pass@testserver/run",
+        "http://testserver;session=demo/run",
+        "http://testserver/run;session=demo",
         "http://testserver/run?env=dev",
         "http://testserver/run#dev",
     ],
@@ -1193,6 +1195,8 @@ def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_pat
             "ftp://service",
             "http://",
             "http://user:pass@127.0.0.1:8000/tactics/echo",
+            "http://127.0.0.1:8000;session=demo/tactics/echo",
+            "http://127.0.0.1:8000/tactics/echo;session=demo",
             "http://127.0.0.1:8000/tactics/echo?env=dev",
             "http://127.0.0.1:8000/tactics/echo#dev",
         )

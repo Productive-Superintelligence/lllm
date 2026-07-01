@@ -235,7 +235,7 @@ tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 ```
 
 Tactic refs are strict package resource identifiers:
-`psi://org/package/tactics/name` with no query string or fragment.
+`psi://org/package/tactics/name` with no params, query string, or fragment.
 Shared config may include non-tactic refs from known PSI resource sections,
 including `schemas`, `services`, `channels`, `snapshots`, `runs`, `configs`,
 `docs`, `examples`, and `assets`, but malformed refs and unknown resource
@@ -245,8 +245,9 @@ bindings; legacy top-level extras still work, and explicit metadata table
 values win on duplicate keys. Tactic URL bindings must not also declare a
 `store`, `path`, or `object` target. Tactic refs with a concrete target must
 use `url`; `store`, `path`, and serialized `object` targets belong to other
-layers or direct in-process registration. URL bindings must not include
-embedded credentials, and binding metadata must not include raw secret-shaped
+layers or direct in-process registration. URL bindings must not include URL
+params, query strings, fragments, or embedded credentials, and binding metadata
+must not include raw secret-shaped
 keys such as `api_key`/`apiKey`/`apikey`, tokens,
 `accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
 credentials. Use local credential refs such as
