@@ -12,7 +12,9 @@ Custom endpoints declared with `@endpoint.*` are mounted alongside these
 portable routes. They must use unique method/path pairs and must not shadow
 reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
 `/tactics/{name}/run`. Endpoint paths, names, and tags must avoid whitespace
-and percent escapes; paths must also avoid `//` network-path prefixes.
+and percent escapes; paths must also avoid `//` network-path prefixes, empty
+or dot segments, backslashes, colons, semicolon path params, query strings, and
+fragments.
 
 Public info endpoints filter raw secret-shaped keys from tactic examples and
 user metadata while preserving local credential refs such as

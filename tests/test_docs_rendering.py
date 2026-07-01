@@ -615,6 +615,8 @@ def test_service_api_reference_matches_error_envelope():
     assert "Endpoint paths, names, and tags must avoid whitespace" in reference
     assert "percent escapes" in reference
     assert "network-path prefixes" in reference
+    assert "dot segments" in reference
+    assert "semicolon path params" in reference
     assert '"type": "TacticInputError"' not in reference
 
 

@@ -257,7 +257,14 @@ def _endpoint_path(path: str) -> str:
         raise ValueError("endpoint path must not be a network-path reference")
     if "://" in path or "?" in path or "#" in path:
         raise ValueError("endpoint path must be a route path, not a URL or query")
-    return path if path.startswith("/") else f"/{path}"
+    if any(ch in path for ch in "\\:;"):
+        raise ValueError(
+            "endpoint path must not contain backslashes, colons, or path params"
+        )
+    normalized = path if path.startswith("/") else f"/{path}"
+    if any(part in {"", ".", ".."} for part in normalized.split("/")[1:]):
+        raise ValueError("endpoint path must not contain empty or dot segments")
+    return normalized
 
 
 def _metadata_name(name: str, label: str) -> str:
