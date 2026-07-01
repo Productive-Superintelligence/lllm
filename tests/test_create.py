@@ -157,6 +157,18 @@ def test_create_rejects_malformed_name_and_directory_values(tmp_path):
             create_project("plain", "demo", directory=directory)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize("name", ["class", "async", "def"])
+def test_create_prefixes_python_keyword_package_names(tmp_path, name):
+    result = create_project("plain", name, directory=tmp_path)
+
+    assert result.path.name == name
+    assert result.package_name == f"tactic_{name}"
+    assert _import_generated_client(result.path, result.package_name)
+    assert _run_generated_service_app(result.path, result.package_name)["run"][
+        "output"
+    ] == {"text": "HELLO"}
+
+
 def test_cli_create_project(tmp_path, capsys):
     code = main(["create", "plain", "cli-demo", "--directory", str(tmp_path)])
 

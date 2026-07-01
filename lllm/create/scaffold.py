@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import keyword
 import os
 import re
 import textwrap
@@ -405,7 +406,7 @@ def _package_name(project_slug: str) -> str:
     package = re.sub(r"[^A-Za-z0-9_]+", "_", project_slug).strip("_")
     if not package:
         package = "lllm_tactic"
-    if package[0].isdigit():
+    if package[0].isdigit() or keyword.iskeyword(package):
         package = f"tactic_{package}"
     return package
 
