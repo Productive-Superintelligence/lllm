@@ -130,6 +130,7 @@ def test_sandbox_policy_rejects_boolean_numeric_limits(field, value):
         ["bad key"],
         ["bad/key"],
         ["bad%20key"],
+        ["bad;key"],
     ],
 )
 def test_sandbox_policy_rejects_malformed_allowed_metadata_keys(

@@ -209,7 +209,7 @@ def path_segment_value(value: Any, label: str) -> str:
         not text.strip()
         or text in {".", ".."}
         or "%" in text
-        or any(ch in text for ch in "/:\\")
+        or any(ch in text for ch in "/:\\;")
     ):
         raise ValueError(
             f"{label} must be a non-empty name without percent escapes "
@@ -225,7 +225,7 @@ def token_value(value: Any, label: str) -> str:
         or text in {".", ".."}
         or "%" in text
         or any(ch.isspace() for ch in text)
-        or any(ch in text for ch in "/:\\")
+        or any(ch in text for ch in "/:\\;")
     ):
         raise ValueError(
             f"{label} must be a non-empty token without whitespace, "

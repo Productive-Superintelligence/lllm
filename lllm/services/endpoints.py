@@ -274,7 +274,7 @@ def _metadata_name(name: str, label: str) -> str:
         or name in {".", ".."}
         or "%" in name
         or any(ch.isspace() for ch in name)
-        or any(ch in name for ch in "/:\\")
+        or any(ch in name for ch in "/:\\;")
     ):
         raise ValueError(
             f"{label} must be a non-empty token without whitespace, "

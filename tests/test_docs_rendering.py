@@ -627,7 +627,8 @@ def test_protocol_reference_documents_identifier_rules():
 
     assert "Tactic names may contain display\nspaces" in reference
     assert "must avoid percent escapes, `.`, `..`, `/`" in reference
-    assert "`\\`, and `:`" in reference
+    assert "`\\`, `:`, and" in reference
+    assert "`;`" in reference
     assert "Token-style fields" in reference
     assert "`service_ref` values" in reference
     assert "psi://.../services/..." in reference

@@ -232,7 +232,7 @@ def _is_tactic_config_ref(ref: str) -> bool:
             or "%" in segment
             or not decoded.strip()
             or any(ch.isspace() for ch in decoded)
-            or any(ch in decoded for ch in "/\\:")
+            or any(ch in decoded for ch in "/\\:;")
         ):
             raise TacticRefError(
                 f"Ref binding key must use plain path segments: {ref}"

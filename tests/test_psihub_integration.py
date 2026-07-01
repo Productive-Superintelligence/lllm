@@ -191,6 +191,7 @@ def test_tactic_resource_accepts_nested_read_only_mapping_info_values():
         "psi://demo/echo/channels/events",
         "psi://demo/echo/tactics/echo?token=raw",
         "psi://demo/echo/tactics/bad name",
+        "psi://demo/echo/tactics/echo;name",
     ],
 )
 def test_tactic_resource_rejects_malformed_package_refs(package_ref):
@@ -227,6 +228,7 @@ def test_tactic_resource_rejects_malformed_package_refs(package_ref):
         "psi://demo/echo/tactics/echo",
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
+        "psi://demo/echo/services/api;name",
     ],
 )
 def test_tactic_resource_rejects_malformed_service_refs(service_ref):

@@ -54,7 +54,7 @@ class TacticRef:
             decoded_segment = unquote(segment)
             if (
                 decoded_segment in {".", ".."}
-                or any(ch in decoded_segment for ch in "/:\\")
+                or any(ch in decoded_segment for ch in "/:\\;")
                 or "%" in segment
             ):
                 raise TacticRefError(
@@ -145,7 +145,7 @@ def service_ref_value(value: str, label: str = "service_ref") -> str:
         decoded_segment = unquote(segment)
         if (
             decoded_segment in {".", ".."}
-            or any(ch in decoded_segment for ch in "/:\\")
+            or any(ch in decoded_segment for ch in "/:\\;")
             or "%" in segment
         ):
             raise ValueError(f"{label} contains an invalid segment.")

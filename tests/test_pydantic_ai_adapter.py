@@ -247,6 +247,7 @@ def test_pydantic_ai_config_rejects_bytes_for_package_metadata(field_name):
         "psi://demo/echo/channels/events",
         "psi://demo/echo/tactics/echo?token=raw",
         "psi://demo/echo/tactics/bad name",
+        "psi://demo/echo/tactics/echo;name",
     ],
 )
 def test_pydantic_ai_config_rejects_malformed_package_refs(package_ref):
@@ -268,6 +269,7 @@ def test_pydantic_ai_config_rejects_malformed_package_refs(package_ref):
         "psi://demo/echo/tactics/echo",
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
+        "psi://demo/echo/services/api;name",
     ],
 )
 def test_pydantic_ai_config_rejects_malformed_service_refs(service_ref):

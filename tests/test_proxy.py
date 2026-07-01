@@ -364,6 +364,7 @@ def test_proxy_record_rejects_bytes_for_text_fields(factory):
         "bad:type",
         "bad\\type",
         "bad%2Ftype",
+        "bad;type",
     ),
 )
 def test_proxy_record_rejects_malformed_error_type_tokens(error_type):
@@ -392,6 +393,7 @@ def test_proxy_record_rejects_malformed_error_type_tokens(error_type):
         "bad:id",
         "bad\\id",
         "bad%2Fid",
+        "bad;id",
     ),
 )
 def test_proxy_record_rejects_malformed_request_id_tokens(request_id):

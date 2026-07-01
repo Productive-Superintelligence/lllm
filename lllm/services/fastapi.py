@@ -464,7 +464,7 @@ def _require_route_segment(field_name: str, value: Any) -> None:
         or value in {".", ".."}
         or "%" in value
         or any(ch.isspace() for ch in value)
-        or any(ch in value for ch in "/:\\")
+        or any(ch in value for ch in "/:\\;")
     ):
         raise ValueError(f"{field_name} must be a non-empty path segment.")
 

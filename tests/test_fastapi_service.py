@@ -207,6 +207,7 @@ def test_service_dto_models_reject_bytes_for_string_fields(factory):
         "bad:type",
         "bad\\type",
         "bad%2Ftype",
+        "bad;type",
     ),
 )
 def test_service_error_detail_rejects_malformed_type_tokens(value):
@@ -226,6 +227,7 @@ def test_service_error_detail_rejects_malformed_type_tokens(value):
         "bad:id",
         "bad\\id",
         "bad%2Fid",
+        "bad;id",
     ),
 )
 def test_service_dto_models_reject_malformed_request_id_tokens(value):
@@ -246,6 +248,7 @@ def test_service_dto_models_reject_malformed_request_id_tokens(value):
         "bad:tactic",
         "bad\\tactic",
         "bad%2Ftactic",
+        "bad;tactic",
     ),
 )
 def test_service_dto_models_reject_malformed_tactic_names(value):
@@ -267,6 +270,7 @@ def test_service_dto_models_reject_malformed_tactic_names(value):
         "bad:endpoint",
         "bad\\endpoint",
         "bad%2Fendpoint",
+        "bad;endpoint",
     ),
 )
 def test_service_error_detail_rejects_malformed_endpoint_tokens(value):
@@ -331,6 +335,7 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post("/act", name="bad:name"),
         lambda: endpoint.post("/act", name="bad\\name"),
         lambda: endpoint.post("/act", name="bad%2Fname"),
+        lambda: endpoint.post("/act", name="bad;name"),
         lambda: endpoint.post("/act", mode="batch"),
         lambda: endpoint.post("/act", description=123),
         lambda: endpoint.post("/act", tags="policy"),
@@ -341,6 +346,7 @@ def test_endpoint_decorator_normalizes_relative_paths():
         lambda: endpoint.post("/act", tags=("bad:tag",)),
         lambda: endpoint.post("/act", tags=("bad\\tag",)),
         lambda: endpoint.post("/act", tags=("bad%2Ftag",)),
+        lambda: endpoint.post("/act", tags=("bad;tag",)),
         lambda: EndpointSpec(method=" POST ", path="/act", name="act"),
         lambda: EndpointSpec(method="TRACE", path="/act", name="act"),
     ],

@@ -107,6 +107,9 @@ def test_tactic_ref_rejects_non_string_or_empty_values(value):
         "psi://demo/echo pkg/tactics/echo",
         "psi://demo/echo/tact ics/echo",
         "psi://demo/echo/tactics/echo name",
+        "psi://demo;org/echo/tactics/echo",
+        "psi://demo/echo;pkg/tactics/echo",
+        "psi://demo/echo/tactics/echo;name",
         "psi://demo%2Forg/echo/tactics/echo",
         "psi://demo/echo%2Fpkg/tactics/echo",
         "psi://demo/echo/tactics/echo%2Fname",
@@ -576,6 +579,7 @@ def test_remote_tactic_error_rejects_invalid_status_codes(status_code):
         "bad:type",
         "bad\\type",
         "bad%2Ftype",
+        "bad;type",
     ),
 )
 def test_remote_tactic_error_rejects_malformed_error_type_tokens(error_type):
@@ -595,6 +599,7 @@ def test_remote_tactic_error_rejects_malformed_error_type_tokens(error_type):
         "bad:id",
         "bad\\id",
         "bad%2Fid",
+        "bad;id",
     ),
 )
 def test_remote_tactic_error_rejects_malformed_request_id_tokens(request_id):
@@ -613,6 +618,7 @@ def test_remote_tactic_error_rejects_malformed_request_id_tokens(request_id):
         "bad:tactic",
         "bad\\tactic",
         "bad%2Ftactic",
+        "bad;tactic",
     ),
 )
 def test_remote_tactic_error_rejects_malformed_tactic_names(tactic):
@@ -632,6 +638,7 @@ def test_remote_tactic_error_rejects_malformed_tactic_names(tactic):
         "bad:endpoint",
         "bad\\endpoint",
         "bad%2Fendpoint",
+        "bad;endpoint",
     ),
 )
 def test_remote_tactic_error_rejects_malformed_endpoint_tokens(endpoint):
@@ -1184,6 +1191,9 @@ url = "http://127.0.0.1:8000/tactics/echo"
         "psi://demo/echo/channels/events#latest",
         "psi://demo/echo/channels/bad name",
         "psi://demo/echo/channels/events%2Fhidden",
+        "psi://demo;org/echo/channels/events",
+        "psi://demo/echo;pkg/channels/events",
+        "psi://demo/echo/channels/events;name",
         "psi://demo/echo/widgets/item",
     ],
 )

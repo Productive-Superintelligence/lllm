@@ -273,6 +273,7 @@ def test_tactic_name_fields_allow_display_names_with_spaces():
         "bad:id",
         "bad\\id",
         "bad%2Fid",
+        "bad;id",
     ),
 )
 def test_call_identifiers_reject_malformed_tokens(value):
@@ -298,6 +299,7 @@ def test_call_identifiers_reject_malformed_tokens(value):
         "bad:kind",
         "bad\\kind",
         "bad%2Fkind",
+        "bad;kind",
     ),
 )
 def test_tactic_event_rejects_malformed_identity_tokens(value):
@@ -319,6 +321,7 @@ def test_tactic_event_rejects_malformed_identity_tokens(value):
         "bad:capability",
         "bad\\capability",
         "bad%2Fcapability",
+        "bad;capability",
     ),
 )
 def test_tactic_info_rejects_malformed_metadata_tokens(value):
@@ -344,6 +347,7 @@ def test_tactic_info_rejects_malformed_metadata_tokens(value):
         "bad:endpoint",
         "bad\\endpoint",
         "bad%2Fendpoint",
+        "bad;endpoint",
     ),
 )
 def test_call_context_rejects_malformed_endpoint_tokens(endpoint):
@@ -358,6 +362,7 @@ def test_call_context_rejects_malformed_endpoint_tokens(endpoint):
         "psi://demo/echo/services/api",
         "psi://demo/echo/tactics/bad name",
         "psi://demo/echo/tactics/bad%2Fname",
+        "psi://demo/echo/tactics/bad;name",
     ),
 )
 def test_call_context_rejects_malformed_tactic_refs(tactic_ref):
@@ -574,6 +579,9 @@ def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
         "psi://demo/echo/tactics/echo?token=raw",
         "psi://demo/echo/tactics/bad name",
         "psi://demo/echo/tactics/echo%2Fhidden",
+        "psi://demo;org/echo/tactics/echo",
+        "psi://demo/echo;pkg/tactics/echo",
+        "psi://demo/echo/tactics/echo;name",
     ],
 )
 def test_tactic_constructor_rejects_malformed_package_refs(package_ref):
@@ -589,6 +597,9 @@ def test_tactic_constructor_rejects_malformed_package_refs(package_ref):
         "psi://demo/echo/tactics/echo?token=raw",
         "psi://demo/echo/tactics/bad name",
         "psi://demo/echo/tactics/echo%2Fhidden",
+        "psi://demo;org/echo/tactics/echo",
+        "psi://demo/echo;pkg/tactics/echo",
+        "psi://demo/echo/tactics/echo;name",
     ],
 )
 def test_tactic_info_rejects_malformed_package_refs(package_ref):
@@ -617,6 +628,9 @@ def test_tactic_info_rejects_malformed_package_refs(package_ref):
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
         "psi://demo/echo/services/api%2Fhidden",
+        "psi://demo;org/echo/services/api",
+        "psi://demo/echo;pkg/services/api",
+        "psi://demo/echo/services/api;name",
     ],
 )
 def test_tactic_constructor_rejects_malformed_service_refs(service_ref):
@@ -645,6 +659,9 @@ def test_tactic_constructor_rejects_malformed_service_refs(service_ref):
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
         "psi://demo/echo/services/api%2Fhidden",
+        "psi://demo;org/echo/services/api",
+        "psi://demo/echo;pkg/services/api",
+        "psi://demo/echo/services/api;name",
     ],
 )
 def test_tactic_info_rejects_malformed_service_refs(service_ref):
@@ -674,6 +691,7 @@ def test_service_ref_fields_accept_service_refs_and_http_urls():
         "psi://demo/echo/tactics/echo",
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
+        "psi://demo/echo/services/api;name",
         "http://user:pass@service",
         "http://service?env=dev",
         "http://service/base//api",

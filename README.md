@@ -237,7 +237,8 @@ tactic = resolver.resolve("psi://demo/echo/tactics/echo")
 ```
 
 Tactic refs are strict package resource identifiers:
-`psi://org/package/tactics/name` with no params, query string, or fragment.
+`psi://org/package/tactics/name` with no semicolon params, query string,
+fragment, or path-control separators in ref segments.
 Shared config may include non-tactic refs from known PSI resource sections,
 including `schemas`, `services`, `channels`, `snapshots`, `runs`, `configs`,
 `docs`, `examples`, and `assets`, but malformed refs and unknown resource

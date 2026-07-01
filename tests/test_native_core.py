@@ -60,6 +60,7 @@ def test_tool_schema_and_execution_preserve_function_call_result():
         "bad:name",
         "bad\\name",
         "bad%2Fname",
+        "bad;name",
     ],
 )
 def test_native_function_names_reject_malformed_tokens(name):

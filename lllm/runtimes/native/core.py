@@ -760,7 +760,7 @@ def _validate_tool_name(value: str, label: str) -> None:
         or value in {".", ".."}
         or "%" in value
         or any(ch.isspace() for ch in value)
-        or any(ch in value for ch in "/:\\")
+        or any(ch in value for ch in "/:\\;")
     ):
         raise ValueError(
             f"{label} must be a non-empty token without whitespace, "
