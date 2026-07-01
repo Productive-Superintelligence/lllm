@@ -825,6 +825,15 @@ def test_invalid_request_context_returns_stable_error_envelope():
         "/run",
         json={"input": {"text": "hello"}, "context": {"tactic_ref": 0}},
     )
+    bad_tactic_ref_string = request(
+        app,
+        "POST",
+        "/run",
+        json={
+            "input": {"text": "hello"},
+            "context": {"tactic_ref": "psi://demo/echo/services/api"},
+        },
+    )
 
     assert bad_context.status_code == 400
     context_detail = bad_context.json()["detail"]["error"]
@@ -852,6 +861,11 @@ def test_invalid_request_context_returns_stable_error_envelope():
     assert tactic_ref_detail["type"] == "SchemaError"
     assert tactic_ref_detail["endpoint"] == "run"
     assert "context" in tactic_ref_detail["message"]
+    assert bad_tactic_ref_string.status_code == 400
+    tactic_ref_string_detail = bad_tactic_ref_string.json()["detail"]["error"]
+    assert tactic_ref_string_detail["type"] == "SchemaError"
+    assert tactic_ref_string_detail["endpoint"] == "run"
+    assert "context" in tactic_ref_string_detail["message"]
 
 
 def test_single_tactic_openapi_includes_default_and_custom_routes():

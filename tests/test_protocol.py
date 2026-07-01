@@ -332,8 +332,47 @@ def test_tactic_info_rejects_malformed_metadata_tokens(value):
         CallTrace(request_id="req", tactic="echo", error_type=value)
 
 
+@pytest.mark.parametrize(
+    "endpoint",
+    (
+        "",
+        "   ",
+        ".",
+        "..",
+        "bad endpoint",
+        "bad/endpoint",
+        "bad:endpoint",
+        "bad\\endpoint",
+        "bad%2Fendpoint",
+    ),
+)
+def test_call_context_rejects_malformed_endpoint_tokens(endpoint):
+    with pytest.raises(ValidationError, match="endpoint"):
+        CallContext(endpoint=endpoint)
+
+
+@pytest.mark.parametrize(
+    "tactic_ref",
+    (
+        "not-a-ref",
+        "psi://demo/echo/services/api",
+        "psi://demo/echo/tactics/bad name",
+        "psi://demo/echo/tactics/bad%2Fname",
+    ),
+)
+def test_call_context_rejects_malformed_tactic_refs(tactic_ref):
+    with pytest.raises(ValidationError, match="tactic_ref"):
+        CallContext(tactic_ref=tactic_ref)
+
+
 def test_tactic_metadata_tokens_allow_common_separators():
-    context = CallContext(request_id="req-1", trace_id="trace.1", span_id="span_1")
+    context = CallContext(
+        request_id="req-1",
+        trace_id="trace.1",
+        span_id="span_1",
+        tactic_ref="psi://demo/echo/tactics/run",
+        endpoint="custom.endpoint",
+    )
     event = TacticEvent(id="event-1", kind="tool-call")
     info = TacticInfo(
         name="echo",
@@ -344,6 +383,8 @@ def test_tactic_metadata_tokens_allow_common_separators():
     assert context.request_id == "req-1"
     assert context.trace_id == "trace.1"
     assert context.span_id == "span_1"
+    assert context.tactic_ref == "psi://demo/echo/tactics/run"
+    assert context.endpoint == "custom.endpoint"
     assert event.id == "event-1"
     assert event.kind == "tool-call"
     assert info.runtime_kind == "pydantic-ai"
