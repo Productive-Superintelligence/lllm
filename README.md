@@ -248,8 +248,9 @@ values win on duplicate keys. Tactic URL bindings must not also declare a
 `store`, `path`, or `object` target. Tactic refs with a concrete target must
 use `url`; `store`, `path`, and serialized `object` targets belong to other
 layers or direct in-process registration. URL bindings must not include URL
-params, query strings, fragments, or embedded credentials, and binding metadata
-must not include raw secret-shaped
+params, query strings, fragments, embedded credentials, percent escapes,
+backslashes, colons, empty segments, or dot segments in URL paths, and binding
+metadata must not include raw secret-shaped
 keys such as `api_key`/`apiKey`/`apikey`, tokens,
 `accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
 credentials. Use local credential refs such as

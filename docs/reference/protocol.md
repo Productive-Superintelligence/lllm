@@ -21,4 +21,5 @@ error types must also avoid whitespace.
 `package_ref` values point at `psi://.../tactics/...` tactic refs.
 `service_ref` values must either point at `psi://.../services/...` service refs
 or use absolute HTTP(S) service URLs without embedded credentials, URL params,
-queries, or fragments.
+queries, fragments, percent escapes, backslashes, colons, empty path segments,
+or dot segments.

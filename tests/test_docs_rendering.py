@@ -631,6 +631,7 @@ def test_protocol_reference_documents_identifier_rules():
     assert "Token-style fields" in reference
     assert "`service_ref` values" in reference
     assert "psi://.../services/..." in reference
+    assert "empty path segments" in reference
 
 
 def test_psihub_metadata_reference_names_json_schemas():
@@ -666,6 +667,7 @@ def test_composition_guide_documents_mixed_local_config():
     assert "must not also declare a `store`" in guide
     assert "`store`, `path`, or `object` target" in guide
     assert "percent escapes" in guide
+    assert "dot segments" in guide
 
 
 def test_public_text_does_not_use_staging_name():

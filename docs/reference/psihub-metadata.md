@@ -19,7 +19,8 @@ Metadata can include:
 
 Package refs use `psi://.../tactics/...`; service refs use either
 `psi://.../services/...` or absolute HTTP(S) service URLs without embedded
-credentials, URL params, queries, or fragments.
+credentials, URL params, queries, fragments, percent escapes, backslashes,
+colons, empty path segments, or dot segments.
 
 `tactic_resource()` filters raw secret-shaped keys from examples and user
 metadata before exporting public metadata. Keep local credential refs such as

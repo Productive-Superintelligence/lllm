@@ -607,6 +607,12 @@ def test_tactic_info_rejects_malformed_package_refs(package_ref):
         "http://service/base;session=demo",
         "http://service?env=dev",
         "http://service#dev",
+        "http://service/base//api",
+        "http://service/./api",
+        "http://service/base/../api",
+        "http://service/base%2Fapi",
+        "http://service/base\\api",
+        "http://service/base:api",
         "psi://demo/echo/tactics/echo",
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
@@ -629,6 +635,12 @@ def test_tactic_constructor_rejects_malformed_service_refs(service_ref):
         "http://service/base;session=demo",
         "http://service?env=dev",
         "http://service#dev",
+        "http://service/base//api",
+        "http://service/./api",
+        "http://service/base/../api",
+        "http://service/base%2Fapi",
+        "http://service/base\\api",
+        "http://service/base:api",
         "psi://demo/echo/tactics/echo",
         "psi://demo/echo/services/api?token=raw",
         "psi://demo/echo/services/bad name",
@@ -643,9 +655,14 @@ def test_tactic_info_rejects_malformed_service_refs(service_ref):
 def test_service_ref_fields_accept_service_refs_and_http_urls():
     psi_ref = "psi://demo/echo/services/api"
     http_ref = "http://service/base"
+    trailing_slash_http_ref = "http://service/base/"
 
     assert EchoTactic(service_ref=psi_ref).info().service_ref == psi_ref
     assert TacticInfo(name="echo", service_ref=http_ref).service_ref == http_ref
+    assert (
+        TacticInfo(name="echo", service_ref=trailing_slash_http_ref).service_ref
+        == trailing_slash_http_ref
+    )
     assert CallContext(service_ref=psi_ref).service_ref == psi_ref
     assert CallContext(service_ref=http_ref).service_ref == http_ref
 
@@ -659,6 +676,10 @@ def test_service_ref_fields_accept_service_refs_and_http_urls():
         "psi://demo/echo/services/bad name",
         "http://user:pass@service",
         "http://service?env=dev",
+        "http://service/base//api",
+        "http://service/base%2Fapi",
+        "http://service/base\\api",
+        "http://service/base:api",
     ],
 )
 def test_call_context_rejects_malformed_service_refs(service_ref):

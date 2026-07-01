@@ -120,6 +120,7 @@ def service_ref_value(value: str, label: str = "service_ref") -> str:
             raise ValueError(
                 f"{label} must not include URL params, query, or fragment."
             )
+        _validate_http_service_url_path(parsed.netloc, parsed.path, label)
         return value
     if parsed.scheme != "psi":
         raise ValueError(f"{label} must be a psi:// service ref or HTTP(S) URL.")
@@ -149,6 +150,22 @@ def service_ref_value(value: str, label: str = "service_ref") -> str:
         ):
             raise ValueError(f"{label} contains an invalid segment.")
     return value
+
+
+def _validate_http_service_url_path(netloc: str, path: str, label: str) -> None:
+    if "%" in netloc or "%" in path:
+        raise ValueError(f"{label} must not contain percent escapes.")
+    if any(ch in path for ch in "\\:"):
+        raise ValueError(
+            f"{label} URL path must not contain backslashes or colons."
+        )
+    if path in {"", "/"}:
+        return
+    if "//" in path:
+        raise ValueError(f"{label} URL path must not contain empty segments.")
+    trimmed = path.rstrip("/")
+    if any(part in {".", ".."} for part in trimmed.split("/")[1:]):
+        raise ValueError(f"{label} URL path must not contain dot segments.")
 
 
 def optional_service_ref_value(

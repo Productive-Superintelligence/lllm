@@ -155,6 +155,26 @@ def test_resolver_bind_url_rejects_malformed_service_urls():
     assert resolver.refs() == ()
 
 
+@pytest.mark.parametrize(
+    "url",
+    [
+        "http://testserver/tactics//echo",
+        "http://testserver/./run",
+        "http://testserver/tactics/../run",
+        "http://testserver/tactics/echo%2Frun",
+        "http://testserver/tactics\\echo",
+        "http://testserver/tactics:echo",
+    ],
+)
+def test_resolver_bind_url_rejects_ambiguous_service_url_paths(url):
+    resolver = TacticResolver()
+
+    with pytest.raises(TacticRefError, match="url"):
+        resolver.bind_url(REF, url)
+
+    assert resolver.refs() == ()
+
+
 def test_resolver_bind_url_preserves_metadata_with_canonical_ref():
     resolver = TacticResolver()
     resolver.bind_url(
@@ -425,11 +445,25 @@ def test_remote_tactic_accepts_positive_timeout_or_none():
         "http://testserver/run;session=demo",
         "http://testserver/run?env=dev",
         "http://testserver/run#dev",
+        "http://testserver/tactics//echo",
+        "http://testserver/./run",
+        "http://testserver/tactics/../run",
+        "http://testserver/tactics/echo%2Frun",
+        "http://testserver/tactics\\echo",
+        "http://testserver/tactics:echo",
     ],
 )
 def test_remote_tactic_rejects_malformed_service_urls(url):
     with pytest.raises(ValueError, match="url"):
         RemoteTactic(url)  # type: ignore[arg-type]
+
+
+def test_remote_tactic_allows_trailing_slash_service_urls():
+    remote = RemoteTactic("http://testserver/tactics/echo/")
+
+    assert remote.url == "http://testserver/tactics/echo/run"
+    assert remote.stream_url == "http://testserver/tactics/echo/stream"
+    assert remote.info_url == "http://testserver/tactics/echo/info"
 
 
 @pytest.mark.parametrize("name", ["", "   "])
@@ -1275,6 +1309,12 @@ def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_pat
             "http://127.0.0.1:8000/tactics/echo;session=demo",
             "http://127.0.0.1:8000/tactics/echo?env=dev",
             "http://127.0.0.1:8000/tactics/echo#dev",
+            "http://127.0.0.1:8000/tactics//echo",
+            "http://127.0.0.1:8000/./tactics/echo",
+            "http://127.0.0.1:8000/tactics/../echo",
+            "http://127.0.0.1:8000/tactics/echo%2Frun",
+            "http://127.0.0.1:8000/tactics\\echo",
+            "http://127.0.0.1:8000/tactics:echo",
         )
     ):
         config_dir = tmp_path / f"workspace-url-{index}" / ".psi"
@@ -1282,13 +1322,16 @@ def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_pat
         (config_dir / "config.toml").write_text(
             f"""
 [refs."{REF}"]
-url = "{url}"
+url = {json.dumps(url)}
 """.lstrip(),
             encoding="utf-8",
         )
 
         with pytest.raises(
             TacticRefError,
-            match="absolute http|embedded credentials|query or fragment",
+            match=(
+                "absolute http|embedded credentials|query or fragment|"
+                "percent escapes|empty segments|dot segments|backslashes|colons"
+            ),
         ):
             TacticResolver.from_config(config_dir.parent)

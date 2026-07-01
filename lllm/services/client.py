@@ -531,7 +531,22 @@ def _service_url(url: str) -> str:
         or parsed.fragment
     ):
         raise ValueError("url must not include URL params, query or fragment parts")
+    _validate_service_url_path(parsed.netloc, parsed.path)
     return value
+
+
+def _validate_service_url_path(netloc: str, path: str) -> None:
+    if "%" in netloc or "%" in path:
+        raise ValueError("url must not contain percent escapes")
+    if any(ch in path for ch in "\\:"):
+        raise ValueError("url path must not contain backslashes or colons")
+    if path in {"", "/"}:
+        return
+    if "//" in path:
+        raise ValueError("url path must not contain empty segments")
+    trimmed = path.rstrip("/")
+    if any(part in {".", ".."} for part in trimmed.split("/")[1:]):
+        raise ValueError("url path must not contain dot segments")
 
 
 def _name_from_url(url: str) -> str:
