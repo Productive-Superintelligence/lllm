@@ -10,8 +10,8 @@ lllm inspect examples.echo_service.tactics:build_tactic --json
 secret-shaped keys from examples and user metadata while preserving refs such as
 `api_key_ref`/`apiKeyRef`/`apikeyref`. Snake_case, kebab-case, camelCase, and
 collapsed lowercase secret keys such as `api_key`, `x-api-key`, `apiKey`,
-`apikey`, `accessToken`, `accesstoken`, `clientSecret`, and `clientsecret` are
-treated consistently.
+`apikey`, `accessToken`, `accesstoken`, `clientSecret`, `clientsecret`,
+`cookie`, `set-cookie`, and `sessionCookie` are treated consistently.
 
 Serve a tactic:
 

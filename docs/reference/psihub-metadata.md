@@ -20,8 +20,9 @@ Metadata can include:
 `tactic_resource()` filters raw secret-shaped keys from examples and user
 metadata before exporting public metadata. Keep local credential refs such as
 `api_key_ref`/`apiKeyRef`/`apikeyref`; do not place raw keys, tokens,
-passwords, `authorization`, credentials, camelCase variants such as `apiKey`,
-`accessToken`, and `clientSecret`, or collapsed lowercase variants such as
+passwords, cookies, `authorization`, credentials, camelCase variants such as
+`apiKey`, `accessToken`, `clientSecret`, and `sessionCookie`, kebab-case
+variants such as `set-cookie`, or collapsed lowercase variants such as
 `apikey`, `accesstoken`, and `clientsecret` in exported examples or metadata.
 
 PsiHub owns `psi.toml`, package validation, local hub storage, generated cards,

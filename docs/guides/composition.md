@@ -43,9 +43,9 @@ use `url`; `store`, `path`, and serialized `object` targets belong to other
 layers or direct in-process registration. URL bindings must not include
 embedded credentials, and binding metadata must not include raw secret-shaped
 keys such as `api_key`/`apiKey`/`apikey`, tokens,
-`accessToken`/`accesstoken`, passwords, `authorization`, or credentials. Use
-local credential refs such as `api_key_ref`/`apiKeyRef`/`apikeyref` or auth
-hooks instead.
+`accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
+credentials. Use local credential refs such as
+`api_key_ref`/`apiKeyRef`/`apikeyref` or auth hooks instead.
 Tactic ref segments are plain non-empty path segments; avoid whitespace,
 percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Config file paths and tactic URL bindings are read exactly; do not pad them
