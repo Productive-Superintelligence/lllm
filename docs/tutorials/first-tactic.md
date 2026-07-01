@@ -108,5 +108,7 @@ Expected output:
 ... passed
 ```
 
-Next, publish the tactic metadata through PsiHub or wrap it with a proxy or
-sandbox before serving it.
+Next, read the [Tactic Boundary](../protocol/tactic-boundary.md) for the
+protocol details, then try [Pydantic AI Runtime](pydantic-ai-runtime.md) or
+[Native Core](native-core.md) when the tactic should be backed by an agent
+runtime.

@@ -118,6 +118,6 @@ runtime and every package to become the same framework.
 ## Next
 
 - Start with [Getting Started](getting-started.md).
-- Learn the center model in [Tactics](concepts/tactics.md).
-- Expose the boundary through [Services](concepts/services.md).
+- Learn the protocol in [Protocol](protocol/index.md).
+- Choose an adapter in [Runtime](runtime/index.md).
 - Follow the first tutorial in [First Tactic](tutorials/first-tactic.md).

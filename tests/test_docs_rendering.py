@@ -319,18 +319,21 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["headerNav"]["display"] == "flex"
     assert metrics["headerNavLinks"] == [
         "Overview",
+        "Protocol",
+        "Runtime",
         "Tutorials",
         "Reference",
     ]
     assert "Overview" in metrics["sidebarText"]
     assert "Getting Started" in metrics["sidebarText"]
     assert "Concepts" in metrics["sidebarText"]
-    assert "Guides" in metrics["sidebarText"]
+    assert "Guides" not in metrics["sidebarText"]
+    assert "Protocol" not in metrics["sidebarText"]
+    assert "Runtime" not in metrics["sidebarText"]
     assert "Tutorials" not in metrics["sidebarText"]
     assert "Reference" not in metrics["sidebarText"]
     assert "Protocol Level" in tutorial_sidebar
-    assert "Native Runtime" in tutorial_sidebar
-    assert "Pydantic Runtime" in tutorial_sidebar
+    assert "Runtime" in tutorial_sidebar
     assert "Tactics" not in tutorial_sidebar
     assert "Service API" not in tutorial_sidebar
     assert metrics["source"]["component"] == "source"
@@ -661,14 +664,20 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
     assert "material/weather-night" not in config
     assert "  - Overview:\n      - Overview: index.md\n      - Getting Started:" in config
     assert "      - Concepts:" in config
-    assert "      - Guides:" in config
+    assert "  - Protocol:\n      - Protocol: protocol/index.md" in config
+    assert "      - Tactic Boundary: protocol/tactic-boundary.md" in config
+    assert "      - Service Boundary: protocol/service-boundary.md" in config
+    assert "      - Package Contract: protocol/package-contract.md" in config
+    assert "      - Refs And Resolution: protocol/refs-resolution.md" in config
+    assert "  - Runtime:\n      - Runtime: runtime/index.md" in config
+    assert "      - Pydantic AI: runtime/pydantic-ai.md" in config
+    assert "      - Native Runtime: runtime/native.md" in config
     assert "  - Tutorials:\n      - Protocol Level:" in config
-    assert "      - Native Runtime:" in config
-    assert "      - Pydantic Runtime:" in config
+    assert "      - Runtime:" in config
     assert "          - First Tactic: tutorials/first-tactic.md" in config
     assert "          - Native Core: tutorials/native-core.md" in config
     assert (
-        "          - Pydantic AI Compatibility: tutorials/pydantic-ai-compat.md"
+        "          - Pydantic AI Runtime: tutorials/pydantic-ai-runtime.md"
         in config
     )
     assert (

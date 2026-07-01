@@ -114,5 +114,6 @@ with the same LLLM envelope.
 - Use `RemoteTactic` when the implementation is already running as an HTTP
   service.
 
-Continue with [Tactics](concepts/tactics.md) for the protocol shape, then
+Continue with [Protocol](protocol/index.md) for the public boundary,
+[Runtime](runtime/index.md) for adapter choices, then
 [First Tactic](tutorials/first-tactic.md) for a step-by-step build.

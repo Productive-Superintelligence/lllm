@@ -3,6 +3,9 @@
 Goal: build a native prompt/dialog workflow, inspect its lineage, attach tools,
 and understand where the full native agent runtime begins.
 
+Read [Runtime / Native Runtime](../runtime/native.md) first if you want the
+architecture and agent-call diagrams before the hands-on walkthrough.
+
 ## Prerequisites
 
 For offline prompt, dialog, parser, registry, and tactic tests:

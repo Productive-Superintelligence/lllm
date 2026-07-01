@@ -39,20 +39,27 @@ nav:
           - Services: concepts/services.md
           - Packages: concepts/packages.md
           - Runtime Boundary: concepts/runtime-boundary.md
-      - Guides:
-          - Pydantic AI: guides/pydantic-ai.md
-          - Native Runtime: guides/native-runtime.md
-          - Composition: guides/composition.md
+  - Protocol:
+      - Protocol: protocol/index.md
+      - Tactic Boundary: protocol/tactic-boundary.md
+      - Service Boundary: protocol/service-boundary.md
+      - Package Contract: protocol/package-contract.md
+      - Refs And Resolution: protocol/refs-resolution.md
+      - Composition: guides/composition.md
+  - Runtime:
+      - Runtime: runtime/index.md
+      - Pydantic AI: runtime/pydantic-ai.md
+      - Native Runtime: runtime/native.md
+      - Plain Python: runtime/python.md
   - Tutorials:
       - Protocol Level:
           - First Tactic: tutorials/first-tactic.md
           - Proxies: tutorials/proxies.md
           - Sandboxes: tutorials/sandboxes.md
-      - Native Runtime:
+      - Runtime:
+          - Pydantic AI Runtime: tutorials/pydantic-ai-runtime.md
           - Native Core: tutorials/native-core.md
           - Parsers: tutorials/parsers.md
-      - Pydantic Runtime:
-          - Pydantic AI Compatibility: tutorials/pydantic-ai-compat.md
   - Reference:
       - Protocol API: reference/protocol.md
       - Service API: reference/service-api.md
