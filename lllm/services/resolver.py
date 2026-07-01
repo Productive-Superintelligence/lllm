@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import os
-import re
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
 from ..protocol import CallContext, Tactic, TacticRef, TacticRefError
-from ..protocol._validation import copy_boundary_value
+from ..protocol._validation import copy_boundary_value, is_sensitive_metadata_key
 from .client import RemoteTactic
 
 
@@ -192,7 +191,7 @@ def _metadata_mapping(value: Any, ref: str) -> dict[str, Any]:
 def _reject_sensitive_metadata(value: Any, ref: str) -> None:
     if isinstance(value, Mapping):
         for key, item in value.items():
-            if _is_sensitive_metadata_key(key):
+            if is_sensitive_metadata_key(key):
                 raise TacticRefError(
                     "Tactic URL binding metadata must not include raw secret "
                     f"key {key!r}: {ref}"
@@ -201,46 +200,6 @@ def _reject_sensitive_metadata(value: Any, ref: str) -> None:
     elif isinstance(value, (list, tuple)):
         for item in value:
             _reject_sensitive_metadata(item, ref)
-
-
-def _is_sensitive_metadata_key(key: object) -> bool:
-    if not isinstance(key, str):
-        return False
-    normalized = _normalize_metadata_key(key)
-    if not normalized:
-        return False
-    compact = normalized.replace("_", "")
-    if normalized.endswith(("_ref", "_refs", "_reference", "_references")):
-        return False
-    if compact.endswith(("ref", "refs", "reference", "references")):
-        return False
-    parts = normalized.split("_")
-    if "api" in parts and "key" in parts:
-        return True
-    if compact.endswith("apikey"):
-        return True
-    if "authorization" in parts or "credential" in parts or "credentials" in parts:
-        return True
-    if "password" in parts or "secret" in parts:
-        return True
-    if compact.endswith(("password", "secret")):
-        return True
-    if "cookie" in parts:
-        return True
-    if compact == "cookie" or compact.endswith("cookie"):
-        return True
-    if normalized == "token" or normalized.endswith("_token"):
-        return True
-    if compact == "token" or compact.endswith("token"):
-        return True
-    return False
-
-
-def _normalize_metadata_key(key: str) -> str:
-    with_word_breaks = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
-    with_word_breaks = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", with_word_breaks)
-    return re.sub(r"[^a-z0-9]+", "_", with_word_breaks.lower()).strip("_")
-
 
 def _is_tactic_config_ref(ref: str) -> bool:
     if not isinstance(ref, str) or not ref.strip():
