@@ -12,10 +12,14 @@ Metadata can include:
 
 - tactic name and runtime kind,
 - input and output JSON schemas,
-- package and service refs,
+- package refs and service refs,
 - examples,
 - custom endpoint metadata,
 - descriptions and user metadata.
+
+Package refs use `psi://.../tactics/...`; service refs use either
+`psi://.../services/...` or absolute HTTP(S) service URLs without embedded
+credentials, URL params, queries, or fragments.
 
 `tactic_resource()` filters raw secret-shaped keys from examples and user
 metadata before exporting public metadata. Keep local credential refs such as

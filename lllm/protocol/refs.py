@@ -95,3 +95,66 @@ def optional_tactic_ref_value(
     if value is None:
         return None
     return tactic_ref_value(value, label)
+
+
+def service_ref_value(value: str, label: str = "service_ref") -> str:
+    """Return a normalized service ref string or raise ``ValueError``."""
+
+    if not isinstance(value, str) or not value.strip():
+        raise ValueError(f"{label} must be a non-empty service ref.")
+    if any(ch.isspace() for ch in value):
+        raise ValueError(f"{label} must not contain whitespace.")
+    parsed = urlparse(value)
+    if parsed.scheme in {"http", "https"}:
+        if not parsed.netloc:
+            raise ValueError(f"{label} must be an absolute HTTP(S) URL.")
+        if parsed.username is not None or parsed.password is not None:
+            raise ValueError(f"{label} must not include embedded credentials.")
+        if (
+            ";" in parsed.netloc
+            or parsed.params
+            or ";" in parsed.path
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise ValueError(
+                f"{label} must not include URL params, query, or fragment."
+            )
+        return value
+    if parsed.scheme != "psi":
+        raise ValueError(f"{label} must be a psi:// service ref or HTTP(S) URL.")
+    if parsed.params or parsed.query or parsed.fragment:
+        raise ValueError(f"{label} must not include params, query, or fragment.")
+    raw_parts = parsed.path.split("/")
+    if (
+        not parsed.netloc
+        or len(raw_parts) != 4
+        or raw_parts[0] != ""
+        or any(not part for part in raw_parts[1:])
+    ):
+        raise ValueError(f"{label} must have shape psi://org/package/services/name.")
+    package, resource_kind, name = raw_parts[1:]
+    if resource_kind != "services":
+        raise ValueError(f"{label} must point at /services/.")
+    for segment in (parsed.netloc, package, resource_kind, name):
+        decoded_segment = unquote(segment)
+        if any(ch.isspace() for ch in decoded_segment):
+            raise ValueError(f"{label} contains a whitespace-bearing segment.")
+    for segment in (parsed.netloc, package, name):
+        decoded_segment = unquote(segment)
+        if (
+            decoded_segment in {".", ".."}
+            or any(ch in decoded_segment for ch in "/:\\")
+            or "%" in segment
+        ):
+            raise ValueError(f"{label} contains an invalid segment.")
+    return value
+
+
+def optional_service_ref_value(
+    value: str | None,
+    label: str = "service_ref",
+) -> str | None:
+    if value is None:
+        return None
+    return service_ref_value(value, label)

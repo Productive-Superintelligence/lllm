@@ -254,6 +254,23 @@ def test_pydantic_ai_config_rejects_malformed_package_refs(package_ref):
         PydanticAITacticConfig(package_ref=package_ref)
 
 
+@pytest.mark.parametrize(
+    "service_ref",
+    [
+        "not-a-ref",
+        "ftp://service",
+        "http://user:pass@service",
+        "http://service?env=dev",
+        "psi://demo/echo/tactics/echo",
+        "psi://demo/echo/services/api?token=raw",
+        "psi://demo/echo/services/bad name",
+    ],
+)
+def test_pydantic_ai_config_rejects_malformed_service_refs(service_ref):
+    with pytest.raises(ValidationError, match="service_ref"):
+        PydanticAITacticConfig(service_ref=service_ref)
+
+
 def test_pydantic_ai_config_rejects_non_string_metadata_keys():
     with pytest.raises(ValidationError, match="metadata"):
         PydanticAITacticConfig(metadata={"headers": {b"x-policy": "demo"}})

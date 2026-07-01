@@ -18,7 +18,7 @@ from ..protocol._validation import (
     mapping_sequence_field_value,
     metadata_field_value,
 )
-from ..protocol.refs import optional_tactic_ref_value
+from ..protocol.refs import optional_service_ref_value, optional_tactic_ref_value
 
 InputMode = Literal["auto", "json", "dict", "python", "text"]
 ResultMode = Literal["output", "result"]
@@ -111,6 +111,11 @@ class PydanticAITacticConfig(BaseModel):
     @classmethod
     def _validate_package_ref(cls, value: str | None) -> str | None:
         return optional_tactic_ref_value(value, "package_ref")
+
+    @field_validator("service_ref")
+    @classmethod
+    def _validate_service_ref(cls, value: str | None) -> str | None:
+        return optional_service_ref_value(value, "service_ref")
 
 
 class PydanticAITactic(Tactic[Any, Any]):

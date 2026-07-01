@@ -18,3 +18,7 @@ Identifier fields stay plain and portable. Tactic names may contain display
 spaces, but they must avoid percent escapes, `.`, `..`, `/`, `\`, and `:`.
 Token-style fields such as request ids, event kinds, runtime kinds, states, and
 error types must also avoid whitespace.
+`package_ref` values point at `psi://.../tactics/...` tactic refs.
+`service_ref` values must either point at `psi://.../services/...` service refs
+or use absolute HTTP(S) service URLs without embedded credentials, URL params,
+queries, or fragments.

@@ -8,7 +8,7 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator, model_validator
 
 from ._validation import copy_boundary_value, metadata_field_value, token_value
-from .refs import optional_tactic_ref_value
+from .refs import optional_service_ref_value, optional_tactic_ref_value
 
 
 class CallContext(BaseModel):
@@ -53,6 +53,8 @@ class CallContext(BaseModel):
             token_value(self.trace_id, "trace_id")
         if self.span_id is not None:
             token_value(self.span_id, "span_id")
+        if self.service_ref is not None:
+            self.service_ref = optional_service_ref_value(self.service_ref, "service_ref")
         if self.tactic_ref is not None:
             self.tactic_ref = optional_tactic_ref_value(self.tactic_ref, "tactic_ref")
         if self.endpoint is not None:

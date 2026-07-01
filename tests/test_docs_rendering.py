@@ -629,6 +629,8 @@ def test_protocol_reference_documents_identifier_rules():
     assert "must avoid percent escapes, `.`, `..`, `/`" in reference
     assert "`\\`, and `:`" in reference
     assert "Token-style fields" in reference
+    assert "`service_ref` values" in reference
+    assert "psi://.../services/..." in reference
 
 
 def test_psihub_metadata_reference_names_json_schemas():
@@ -637,6 +639,8 @@ def test_psihub_metadata_reference_names_json_schemas():
     )
 
     assert "input and output JSON schemas" in reference
+    assert "Package refs use `psi://.../tactics/...`" in reference
+    assert "service refs use either" in reference
     assert "input and output schema refs" not in reference
 
 

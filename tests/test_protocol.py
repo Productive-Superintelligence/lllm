@@ -596,6 +596,76 @@ def test_tactic_info_rejects_malformed_package_refs(package_ref):
         TacticInfo(name="echo", package_ref=package_ref)
 
 
+@pytest.mark.parametrize(
+    "service_ref",
+    [
+        "not-a-ref",
+        "ftp://service",
+        "http://",
+        "http://bad host",
+        "http://user:pass@service",
+        "http://service/base;session=demo",
+        "http://service?env=dev",
+        "http://service#dev",
+        "psi://demo/echo/tactics/echo",
+        "psi://demo/echo/services/api?token=raw",
+        "psi://demo/echo/services/bad name",
+        "psi://demo/echo/services/api%2Fhidden",
+    ],
+)
+def test_tactic_constructor_rejects_malformed_service_refs(service_ref):
+    with pytest.raises(ValueError, match="service_ref"):
+        EchoTactic(service_ref=service_ref)
+
+
+@pytest.mark.parametrize(
+    "service_ref",
+    [
+        "not-a-ref",
+        "ftp://service",
+        "http://",
+        "http://bad host",
+        "http://user:pass@service",
+        "http://service/base;session=demo",
+        "http://service?env=dev",
+        "http://service#dev",
+        "psi://demo/echo/tactics/echo",
+        "psi://demo/echo/services/api?token=raw",
+        "psi://demo/echo/services/bad name",
+        "psi://demo/echo/services/api%2Fhidden",
+    ],
+)
+def test_tactic_info_rejects_malformed_service_refs(service_ref):
+    with pytest.raises(ValidationError, match="service_ref"):
+        TacticInfo(name="echo", service_ref=service_ref)
+
+
+def test_service_ref_fields_accept_service_refs_and_http_urls():
+    psi_ref = "psi://demo/echo/services/api"
+    http_ref = "http://service/base"
+
+    assert EchoTactic(service_ref=psi_ref).info().service_ref == psi_ref
+    assert TacticInfo(name="echo", service_ref=http_ref).service_ref == http_ref
+    assert CallContext(service_ref=psi_ref).service_ref == psi_ref
+    assert CallContext(service_ref=http_ref).service_ref == http_ref
+
+
+@pytest.mark.parametrize(
+    "service_ref",
+    [
+        "not-a-ref",
+        "psi://demo/echo/tactics/echo",
+        "psi://demo/echo/services/api?token=raw",
+        "psi://demo/echo/services/bad name",
+        "http://user:pass@service",
+        "http://service?env=dev",
+    ],
+)
+def test_call_context_rejects_malformed_service_refs(service_ref):
+    with pytest.raises(ValidationError, match="service_ref"):
+        CallContext(service_ref=service_ref)
+
+
 @pytest.mark.parametrize("metadata", [[], [("owner", "tests")], "bad", 123])
 def test_tactic_constructor_rejects_non_mapping_metadata(metadata):
     with pytest.raises(TypeError, match="metadata"):

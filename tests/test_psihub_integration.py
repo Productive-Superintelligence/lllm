@@ -211,3 +211,35 @@ def test_tactic_resource_rejects_malformed_package_refs(package_ref):
 
     with pytest.raises(ValueError, match="package_ref"):
         tactic_resource(CustomInfoTactic())
+
+
+@pytest.mark.parametrize(
+    "service_ref",
+    [
+        "not-a-ref",
+        "ftp://service",
+        "http://user:pass@service",
+        "http://service?env=dev",
+        "psi://demo/echo/tactics/echo",
+        "psi://demo/echo/services/api?token=raw",
+        "psi://demo/echo/services/bad name",
+    ],
+)
+def test_tactic_resource_rejects_malformed_service_refs(service_ref):
+    class CustomInfoTactic(PolicyTactic):
+        def info(self):
+            return SimpleNamespace(
+                name="policy",
+                description="",
+                runtime_kind="python",
+                capabilities=("run",),
+                input_schema=None,
+                output_schema=None,
+                package_ref=None,
+                service_ref=service_ref,
+                examples=[],
+                metadata={},
+            )
+
+    with pytest.raises(ValueError, match="service_ref"):
+        tactic_resource(CustomInfoTactic())
