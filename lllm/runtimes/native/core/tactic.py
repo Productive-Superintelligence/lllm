@@ -433,22 +433,22 @@ class Tactic(ABC):
 
     @property
     def tactic_name(self) -> str:
-        """Compatibility name used by v2 tactic-tool adapters."""
+        """Compatibility name used by tactic-tool adapters."""
 
         return self.name or type(self).__name__
 
     def run(self, input_value: Any, **kwargs) -> Any:
-        """Compatibility alias for the v2-style sync tactic surface."""
+        """Compatibility alias for the protocol sync tactic surface."""
 
         return self.__call__(input_value, **kwargs)
 
     async def arun(self, input_value: Any, **kwargs) -> Any:
-        """Compatibility alias for the v2-style async tactic surface."""
+        """Compatibility alias for the protocol async tactic surface."""
 
         return await self.acall(input_value, **kwargs)
 
     def info(self) -> Any:
-        """Return a v2-compatible tactic info record."""
+        """Return a protocol-compatible tactic info record."""
 
         from ....protocol import TacticInfo
         from ....protocol.schema import export_json_schema

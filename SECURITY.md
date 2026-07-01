@@ -6,7 +6,7 @@ surfaces.
 
 ## Supported Versions
 
-The active `v2` branch receives security fixes during the redesign.
+The active `main` branch receives security fixes.
 
 ## Reporting A Vulnerability
 

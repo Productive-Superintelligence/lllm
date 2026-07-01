@@ -1,11 +1,11 @@
 # Native Runtime
 
-The native runtime is the restored LLLM v1 agent system inside the v2
+The native runtime is the restored LLLM agent system inside the
 protocol-first package. Use it when prompt rendering, parser repair, dialog
 lineage, tool-call interrupts, invoker traces, or agent sessions are part of
 the artifact you need to understand.
 
-The v2 boundary stays small: public packages and services expose typed
+The protocol boundary stays small: public packages and services expose typed
 tactics. Native keeps the transparent machinery behind that boundary.
 
 ```python
@@ -41,15 +41,15 @@ lllm.runtimes.native
 | Agent call loop, sessions, context management | [Agent Loop](native/agent-loop.md) |
 | Resource registry, package discovery, provider invokers | [Registry And Invokers](native/registry-invokers.md) |
 | Native tactic sessions and tactic-backed tools | [Native Tactics](native/tactics.md) |
-| Adapter boundary into the v2 protocol | [V2 Adapter](native/adapter.md) |
+| Adapter boundary into the protocol | [Protocol Adapter](native/adapter.md) |
 | Proxies, skills, Jupyter, computer-use helpers | [Proxies, Skills, And Sandbox](native/proxies-skills-sandbox.md) |
-| What was preserved, adapted, or kept out of public v2 | [Boundary And Verification](native/boundary-verification.md) |
+| What was preserved, adapted, or kept out of the public protocol | [Boundary And Verification](native/boundary-verification.md) |
 
 ## Architecture
 
 ```mermaid
 flowchart TD
-  C["Caller"] --> B["v2 Tactic boundary"]
+  C["Caller"] --> B["Tactic boundary"]
   B --> A["NativeTacticAdapter"]
   A --> N["native Tactic or native object"]
   N --> R["Runtime / Registry"]

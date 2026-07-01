@@ -20,8 +20,8 @@ agent.
 
 ## Agent Call Flow
 
-The v1 docs described an agent call as the place where runtime-specific work
-happens. In v2, that idea is preserved by keeping the Pydantic AI call inside
+The old docs described an agent call as the place where runtime-specific work
+happens. That idea is preserved by keeping the Pydantic AI call inside
 `PydanticAITactic`.
 
 ```mermaid

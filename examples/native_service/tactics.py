@@ -55,7 +55,7 @@ class OfflineBriefNative(Tactic):
         bullets = [
             f"Topic: {task.topic}",
             f"Audience: {task.audience}",
-            "Runtime: native prompt and dialog state behind a v2 tactic.",
+            "Runtime: native prompt and dialog state behind a protocol tactic.",
         ]
         dialog.put_text(
             "\n".join(f"- {bullet}" for bullet in bullets),

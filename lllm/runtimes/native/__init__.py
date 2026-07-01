@@ -1,6 +1,6 @@
 """Preserved native LLLM runtime.
 
-The v2 public architecture is protocol-first, but the original native runtime
+The public architecture is protocol-first, but the original native runtime
 is kept here for transparent agent/dialog/prompt machinery, tactic registries,
 invokers, proxies, and research workflows that need to inspect the inside of
 an agent turn.

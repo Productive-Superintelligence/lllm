@@ -9,5 +9,5 @@ This guide has moved into the Runtime section.
 
 The core rule is unchanged: the preserved native runtime owns prompts,
 dialogs, agents, invokers, tool interrupts, parser retries, and session traces.
-LLLM wraps that machinery as a service-ready `Tactic` when it crosses the v2
-boundary.
+LLLM exposes that machinery as a service-ready `Tactic` when it crosses the
+protocol boundary.

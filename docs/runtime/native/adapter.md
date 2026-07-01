@@ -1,7 +1,7 @@
-# V2 Adapter
+# Protocol Adapter
 
-`NativeTacticAdapter` exposes a native object as a v2 protocol tactic. The
-service layer sees v2 `TacticInfo`; native prompts, dialogs, sessions, and
+`NativeTacticAdapter` exposes a native object as a protocol tactic. The
+service layer sees `TacticInfo`; native prompts, dialogs, sessions, and
 invokers stay behind the adapter.
 
 ## Expose A Native Tactic

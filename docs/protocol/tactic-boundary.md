@@ -1,7 +1,7 @@
 # Tactic Boundary
 
-`Tactic` is LLLM's smallest compute boundary. It is the v2 replacement for the
-old docs' `Program` concept: a typed unit of work that can run locally, run
+`Tactic` is LLLM's smallest compute boundary. It replaces the old docs'
+`Program` concept: a typed unit of work that can run locally, run
 async, stream, sit behind a service, and publish a portable description.
 
 ## Minimal Tactic

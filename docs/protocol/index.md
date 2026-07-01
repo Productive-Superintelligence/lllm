@@ -59,9 +59,9 @@ HTTP service. It sends one shape and receives one shape.
 | `RemoteTactic` | HTTP client that still behaves like a tactic. |
 
 The old v1 docs used `Program` for the smallest compute boundary and
-`ServiceSpec` for the deployable surface. In v2, the center object is
-`Tactic`; services expose one or more tactics, and package metadata lives in
-PsiHub.
+`ServiceSpec` for the deployable surface. In the current protocol, the center
+object is `Tactic`; services expose one or more tactics, and package metadata
+lives in PsiHub.
 
 ## Call Shape
 

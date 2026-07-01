@@ -683,7 +683,7 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
     )
     assert "          - Tactics:" in config
     assert "              - Native Tactics: runtime/native/tactics.md" in config
-    assert "              - V2 Adapter: runtime/native/adapter.md" in config
+    assert "              - Protocol Adapter: runtime/native/adapter.md" in config
     assert "          - Surroundings:" in config
     assert (
         "              - Proxies, Skills, And Sandbox: runtime/native/proxies-skills-sandbox.md"
@@ -750,7 +750,7 @@ def test_native_runtime_doc_preserves_restored_v1_surfaces():
     assert "# Agent Loop" in texts["agent_loop"]
     assert "# Registry And Invokers" in texts["registry_invokers"]
     assert "# Native Tactics" in texts["tactics"]
-    assert "# V2 Adapter" in texts["adapter"]
+    assert "# Protocol Adapter" in texts["adapter"]
     assert "# Proxies, Skills, And Sandbox" in texts["proxies"]
     assert "# Boundary And Verification" in texts["boundary"]
 

@@ -2,7 +2,7 @@
 
 The v1 proxy, skills, sandbox, and computer-use surroundings are preserved
 inside native. They are useful for native agents but remain optional and do not
-reshape the public v2 tactic protocol.
+reshape the public tactic protocol.
 
 ## Proxies
 

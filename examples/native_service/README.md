@@ -1,6 +1,6 @@
 # Native Service Example
 
-This example serves an offline native prompt/dialog workflow through the v2
+This example serves an offline native prompt/dialog workflow through the
 FastAPI tactic API.
 
 ```bash

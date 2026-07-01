@@ -28,7 +28,7 @@ from lllm.runtimes.native import Prompt
 prompt = Prompt(
     path="research/summarize",
     prompt="Summarize {topic} for {audience}.",
-    metadata={"version": "v2"},
+    metadata={"revision": "current"},
 )
 
 text = prompt(topic="native runtime", audience="maintainers")

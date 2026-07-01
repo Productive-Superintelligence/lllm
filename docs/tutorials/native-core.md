@@ -252,12 +252,12 @@ assert tactic.as_tool()(task="hello") == "echo: hello"
 ```
 
 Use `NativeTactic` when the tactic should build an agent group from config.
-Use `NativeTacticAdapter` when that native object should cross the v2 service
-or package boundary.
+Use `NativeTacticAdapter` when that native object should cross the service or
+package boundary.
 
 ## Protocol Tactic As Native Function
 
-Native prompts can call a v2 protocol tactic through a `Function` wrapper:
+Native prompts can call a protocol tactic through a `Function`:
 
 ```python
 from pydantic import BaseModel
@@ -287,7 +287,7 @@ assert call.result == 6
 ```
 
 This is useful when native prompt/tool loops need to call logic that is already
-packaged as a v2 tactic.
+packaged as a protocol tactic.
 
 ## Verify
 
@@ -311,8 +311,8 @@ the package or service boundary.
 
 `examples/native_service/tactics.py` shows the same idea as a service-ready
 tactic. The native object is still a native `Tactic`, so it can build prompts,
-dialogs, tools, and agent sessions internally. The adapter exposes only the v2
-contract.
+dialogs, tools, and agent sessions internally. The adapter exposes only the
+protocol contract.
 
 ```python
 from lllm.runtimes.native import NativeTacticAdapter
@@ -340,5 +340,5 @@ curl -X POST http://127.0.0.1:8000/run \
   -d '{"input":{"topic":"native services"},"context":{"trace_id":"trace-demo"}}'
 ```
 
-The returned payload is a typed v2 output, but the transcript was produced by
-native `Prompt` and `Dialog` objects behind the boundary.
+The returned payload is a typed protocol output, but the transcript was
+produced by native `Prompt` and `Dialog` objects behind the boundary.

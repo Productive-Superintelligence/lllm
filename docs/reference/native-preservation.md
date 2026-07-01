@@ -5,12 +5,12 @@ protocol-first LLLM design.
 
 The rule for this port is simple: preserve native behavior inside
 `lllm.runtimes.native` when practical, but do not let native concepts reshape
-the public v2 `Tactic` protocol, FastAPI service contract, Pydantic AI adapter,
+the public `Tactic` protocol, FastAPI service contract, Pydantic AI adapter,
 or PsiHub package metadata.
 
 ## Summary
 
-| Area | Status | v2 Boundary |
+| Area | Status | Public Boundary |
 | --- | --- | --- |
 | Prompt/dialog/message model | Ported | Native-scoped under `lllm.runtimes.native.core`. |
 | Native `Agent` loop | Ported | Usable for native workflows; not part of protocol `Tactic`. |
@@ -41,19 +41,19 @@ The following v1 pieces are restored substantially as native runtime code:
 
 ## Adapted
 
-Some restored pieces were changed so they fit the v2 design:
+Some restored pieces were changed so they fit the protocol-first design:
 
 | Behavior | Adaptation | Reason |
 | --- | --- | --- |
 | `core.py` collapsed primitive file | Replaced by restored `core/` package. | Python cannot have both `core.py` and `core/`; v1 structure carries the real native runtime. |
 | Native imports | Top-level `lllm.runtimes.native` and `core` use lazy exports. | Importing `lllm` should not import LiteLLM, Jupyter, Exa, OpenAI, or other optional integrations. |
-| Native-to-v2 boundary | `NativeTacticAdapter` lives in `lllm.runtimes.native.adapter`. | Keeps v2 protocol `Tactic` separate from native `Tactic`. |
+| Native-to-protocol boundary | `NativeTacticAdapter` lives in `lllm.runtimes.native.adapter`. | Keeps protocol `Tactic` separate from native `Tactic`. |
 | Runtime-owned kwargs and metadata | `NativeTacticAdapter` accepts `run_kwargs` and optional context-metadata forwarding. | Mirrors the useful Pydantic AI surrounding-features bridge without importing Pydantic AI. |
 | Protocol tactic as native tool | `tactic_as_function()` wraps a protocol tactic as native `Function`. | Reuses the callable-tool idea without making native depend on Pydantic AI internals. |
-| Native model validation | Tool names, public maps, metadata, usage, and mutable inputs use v2 boundary hardening. | Preserves native architecture while keeping public model behavior safe and copy-stable. |
+| Native model validation | Tool names, public maps, metadata, usage, and mutable inputs use protocol boundary hardening. | Preserves native architecture while keeping public model behavior safe and copy-stable. |
 | Optional extras | Restored `native`, `sandbox`, and `tools` extras. | Keeps native features available without making the public protocol heavy. |
-| Builtin proxy module paths | Updated builtin proxy loader to `lllm.runtimes.native.proxies.builtin.*`. | v1 top-level proxy paths no longer match the v2 package layout. |
-| Native `Tactic` bridge helpers | Added `run`, `arun`, `tactic_name`, and `info()` compatibility aliases. | Allows existing v2 callable-tool and metadata helpers to wrap native tactics cleanly. |
+| Builtin proxy module paths | Updated builtin proxy loader to `lllm.runtimes.native.proxies.builtin.*`. | Old top-level proxy paths no longer match the package layout. |
+| Native `Tactic` bridge helpers | Added `run`, `arun`, `tactic_name`, and `info()` compatibility aliases. | Allows callable-tool and metadata helpers to wrap native tactics cleanly. |
 
 ## Cut
 
@@ -62,7 +62,7 @@ checkpoint. The port favors maximal preservation under the native boundary.
 
 The important cut is architectural rather than file-level:
 
-| Old Assumption | Cut From Public v2 | Reason |
+| Old Assumption | Kept Out Of The Public Protocol | Reason |
 | --- | --- | --- |
 | Native runtime as the center of LLLM | Public protocol layer | LLLM now centers on runtime-agnostic protocol `Tactic`. |
 | Native resource/package registry owning reusable package metadata | PsiHub package protocol | PsiHub owns `psi.toml`, validation, cards, local hub lifecycle, and ref/config metadata. |
@@ -93,7 +93,7 @@ Current checkpoint coverage includes:
 - dialog fork lineage and serialization roundtrip;
 - native runtime prompt registry;
 - native agent named-dialog management;
-- native `Tactic.as_tool()` compatibility with v2 callable-tool wrapping;
+- native `Tactic.as_tool()` compatibility with callable-tool wrapping;
 - `NativeTacticAdapter` protocol boundary behavior;
 - `NativeTacticAdapter` runtime kwargs, context forwarding, metadata injection,
   and native stream bridging;

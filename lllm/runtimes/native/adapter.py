@@ -1,4 +1,4 @@
-"""Adapters between preserved native objects and the v2 tactic protocol."""
+"""Adapters between preserved native objects and the tactic protocol."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from ...protocol._validation import copy_boundary_value
 
 
 class NativeTacticAdapter(Tactic[Any, Any]):
-    """Wrap a native-style object behind the v2 ``Tactic`` boundary."""
+    """Wrap a native-style object behind the protocol ``Tactic`` boundary."""
 
     runtime_kind = "native"
 

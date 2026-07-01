@@ -47,11 +47,11 @@ flowchart TD
 
 The old v1 docs called this the runtime adapter rule: keep framework features
 inside the framework, and expose only the typed boundary to the rest of Psi.
-That rule is still the heart of v2.
+That rule is still the heart of the current design.
 
 ## Runtime Comparison
 
-| Runtime | Use when | LLLM wrapper |
+| Runtime | Use when | LLLM boundary |
 | --- | --- | --- |
 | Pydantic AI | An agent owns model calls, tools, deps, tracing, evals, or graph state. | `PydanticAITactic` |
 | Native LLLM | Prompt/dialog lineage and agent-call internals matter. | `NativeTacticAdapter` |

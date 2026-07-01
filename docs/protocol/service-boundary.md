@@ -4,7 +4,7 @@ An LLLM service is the network face of one or more tactics. It is intentionally
 thin: FastAPI handles transport, the tactic handles work, and the protocol
 envelope keeps the call shape portable.
 
-The v1 docs introduced service specs as deployable program surfaces. In v2,
+The old docs introduced service specs as deployable program surfaces. Now,
 `create_tactic_app()` and `create_service_app()` expose tactic objects
 directly.
 

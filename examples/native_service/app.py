@@ -6,5 +6,5 @@ from tactics import build_tactic
 app = create_tactic_app(
     build_tactic(),
     title="LLLM Native Brief Service",
-    description="Offline native runtime example served through the v2 API.",
+    description="Offline native runtime example served through the tactic API.",
 )

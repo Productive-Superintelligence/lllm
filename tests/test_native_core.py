@@ -68,7 +68,7 @@ def test_native_agent_alias_dialog_management_is_restored():
     assert agent.current_dialog.tail.content == "hello"
 
 
-def test_native_tactic_as_tool_uses_v2_callable_bridge():
+def test_native_tactic_as_tool_uses_protocol_callable_bridge():
     class EchoTactic(Tactic):
         name = "echo"
         input_type = str

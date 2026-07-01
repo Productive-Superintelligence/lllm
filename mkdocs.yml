@@ -3,7 +3,7 @@ site_description: Protocol and service layer for reusable agentic tactics.
 site_url: https://lllm.one/
 repo_name: Productive-Superintelligence/lllm
 repo_url: https://github.com/Productive-Superintelligence/lllm
-edit_uri: edit/v2/docs/
+edit_uri: edit/main/docs/
 copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
 
 theme:
@@ -59,7 +59,7 @@ nav:
               - Registry And Invokers: runtime/native/registry-invokers.md
           - Tactics:
               - Native Tactics: runtime/native/tactics.md
-              - V2 Adapter: runtime/native/adapter.md
+              - Protocol Adapter: runtime/native/adapter.md
           - Surroundings:
               - Proxies, Skills, And Sandbox: runtime/native/proxies-skills-sandbox.md
               - Boundary And Verification: runtime/native/boundary-verification.md

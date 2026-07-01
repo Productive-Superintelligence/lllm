@@ -5,7 +5,7 @@ validation, cards, downloads, and local config templates. LLLM contributes
 tactic and service metadata that can be indexed there.
 
 The old v1 docs described packages as the place where programs, services,
-workers, channels, and launch profiles meet. That idea remains, but v2 keeps
+workers, channels, and launch profiles meet. That idea remains, but PSI keeps
 the ownership sharper:
 
 - LLLM owns tactics and tactic services.
