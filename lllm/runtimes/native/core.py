@@ -182,6 +182,11 @@ class FunctionCall(BaseModel):
         self.arguments = copy_boundary_value(self.arguments)
         self.result = copy_boundary_value(self.result)
 
+    @field_validator("arguments", mode="before")
+    @classmethod
+    def _validate_arguments(cls, value: Any) -> Any:
+        return _mapping_field_value("arguments", value)
+
     @property
     def success(self) -> bool:
         return self.error_message is None and self.result_str is not None
@@ -656,6 +661,11 @@ class Function(BaseModel):
         self.properties = copy_boundary_value(self.properties)
         self.required = copy.deepcopy(self.required)
 
+    @field_validator("properties", mode="before")
+    @classmethod
+    def _validate_properties(cls, value: Any) -> Any:
+        return _mapping_field_value("properties", value)
+
     def __call__(self, function_call: FunctionCall) -> FunctionCall:
         if self.function is None:
             raise RuntimeError(f"Function '{self.name}' has no implementation.")
@@ -898,6 +908,15 @@ def _metadata_mapping(value: Any) -> dict[str, Any]:
 
 def _optional_mapping(label: str, value: Any) -> dict[str, Any]:
     return optional_mapping_value(label, value)
+
+
+def _mapping_field_value(label: str, value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ValueError(f"{label} must be a mapping.")
+    try:
+        return optional_mapping_value(label, value)
+    except TypeError as exc:
+        raise ValueError(str(exc)) from exc
 
 
 def _optional_string_mapping(label: str, value: Any) -> dict[str, str]:

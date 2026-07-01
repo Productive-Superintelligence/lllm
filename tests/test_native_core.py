@@ -109,6 +109,28 @@ def test_native_function_property_descriptions_reject_non_string_entries(prop_de
         tool(prop_desc=prop_desc)(helper)  # type: ignore[arg-type]
 
 
+@pytest.mark.parametrize(
+    "factory",
+    [
+        lambda: FunctionCall(name="collect", arguments={b"value": "demo"}),
+        lambda: FunctionCall(name="collect", arguments={1: "demo"}),
+        lambda: Function(
+            name="collect",
+            description="Collect.",
+            properties={b"value": {"type": "string"}},
+        ),
+        lambda: Function(
+            name="collect",
+            description="Collect.",
+            properties={1: {"type": "string"}},
+        ),
+    ],
+)
+def test_native_tool_maps_reject_non_string_keys(factory):
+    with pytest.raises(ValidationError):
+        factory()
+
+
 @pytest.mark.parametrize("value", ["false", "true", 0, 1])
 def test_native_function_rejects_coerced_boolean_flags(value):
     with pytest.raises(ValidationError):
