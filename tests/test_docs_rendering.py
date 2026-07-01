@@ -704,6 +704,60 @@ def test_native_preservation_audit_documents_port_cut_defer_status():
     assert "Jupyter sandbox behavior" in audit
 
 
+def test_native_runtime_doc_preserves_restored_v1_surfaces():
+    native = (ROOT / "docs" / "runtime" / "native.md").read_text(encoding="utf-8")
+
+    expected_top_sections = [
+        "## Overview",
+        "## Core Primitives",
+        "## Agent Runtime",
+        "## Native Tactics",
+        "## Packages And Surroundings",
+        "## Boundary And Verification",
+    ]
+    for section in expected_top_sections:
+        assert section in native
+
+    expected_subsections = [
+        "### Restored V1 Surface",
+        "### Architecture",
+        "### Prompt Contract",
+        "#### Tools",
+        "#### MCP Servers",
+        "### Parsing And Repair",
+        "### Dialog And Message Model",
+        "### Agent Call Flow",
+        "### Context Management",
+        "### Invokers And Streaming",
+        "### Agent-Backed Tactics",
+        "### Tactics As Tools",
+        "### Crossing Into V2",
+        "### Runtime Registry And Packages",
+        "### Proxies And Interpreter Tools",
+        "### Skills",
+        "### Sandbox And Computer Use",
+        "### V2 Boundary",
+    ]
+    for subsection in expected_subsections:
+        assert subsection in native
+
+    expected_terms = [
+        "`AgentCallSession`",
+        "`TacticCallSession`",
+        "`DefaultTagParser`",
+        "`DefaultSimpleHandler`",
+        "`BaseStreamHandler`",
+        "`ProxyManager`",
+        "`AgentInterpreter`",
+        "`NativeTacticAdapter`",
+        "`tactic_as_function()`",
+        "native package discovery still reads `lllm.toml`",
+        "PsiHub owns `psi.toml`",
+    ]
+    for term in expected_terms:
+        assert term in native
+
+
 def test_service_api_reference_matches_error_envelope():
     reference = (ROOT / "docs" / "reference" / "service-api.md").read_text(
         encoding="utf-8"
