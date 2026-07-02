@@ -1,10 +1,10 @@
-site_name: Low-Level Language Models (LLLM)
+site_name: LLLM
 site_description: Protocol and service layer for reusable agentic tactics.
 site_url: https://lllm.one/
 repo_name: Productive-Superintelligence/lllm
 repo_url: https://github.com/Productive-Superintelligence/lllm
 edit_uri: edit/main/docs/
-copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">Low-Level Language Models (LLLM)</span></a>'
+copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
 
 theme:
   name: material
@@ -89,13 +89,13 @@ extra:
       title: Psi
       url: https://prosi.io/docs/
     - key: lllm
-      title: LLLM · Low-Level Language Models
+      title: LLLM
       url: https://lllm.one/
     - key: sssn
-      title: SSSN · Simple System of Systems Network
+      title: SSSN
       url: https://sssn.one/
     - key: aaax
-      title: AAAX · Advanced Autonomous Agent Executor
+      title: AAAX
       url: https://aaax.one/
   social:
     - icon: fontawesome/brands/github
