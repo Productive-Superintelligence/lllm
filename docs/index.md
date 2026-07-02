@@ -1,4 +1,4 @@
-# LLLM
+# LLLM Tactic Framework
 
 <p class="psi-brand">
   <img src="assets/lllm-logo-text-dark.png#only-light" alt="LLLM" />
@@ -7,10 +7,10 @@
 
 [lllm.one](https://lllm.one){ .psi-domain }
 
-LLLM is the protocol and service layer for reusable agentic tactics. The center
-model is deliberately small: a `Tactic` is a typed unit of work that can run in
-process, stream results, sit behind a FastAPI service, and be described as a
-PsiHub package resource.
+LLLM Tactic Framework is the protocol and service layer for reusable agentic
+tactics. The center model is deliberately small: a `Tactic` is a typed unit of
+work that can run in process, stream results, sit behind a FastAPI service, and
+be described as a PsiHub package resource.
 
 LLLM is not a model runtime. Pydantic AI, native LLLM objects, plain Python,
 and future adapters keep owning execution details such as tools, provider

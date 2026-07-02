@@ -1,10 +1,10 @@
-site_name: LLLM
+site_name: LLLM Tactic Framework
 site_description: Protocol and service layer for reusable agentic tactics.
 site_url: https://lllm.one/
 repo_name: Productive-Superintelligence/lllm
 repo_url: https://github.com/Productive-Superintelligence/lllm
 edit_uri: edit/main/docs/
-copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
+copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM Tactic Framework</span></a>'
 
 theme:
   name: material
@@ -86,19 +86,19 @@ extra:
   current_doc: lllm
   docs_switch:
     - key: lllm
-      title: LLLM
+      title: LLLM Tactic Framework
       url: https://lllm.one/
     - key: sssn
-      title: SSSN
+      title: SSSN Semantic Channel Network
       url: https://sssn.one/
     - key: aaax
-      title: AAAX
+      title: AAAX Agentic Application Shell
       url: https://aaax.one/
     - key: psihub
       title: PsiHub
       url: https://prosi.io/docs/hub/
     - key: psicli
-      title: PSI CLI
+      title: PsiCLI
       url: https://prosi.io/docs/cli/
   social:
     - icon: fontawesome/brands/github
