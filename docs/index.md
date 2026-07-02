@@ -118,6 +118,6 @@ runtime and every package to become the same framework.
 ## Next
 
 - Start with [Getting Started](getting-started.md).
-- Learn the protocol in [Protocol](protocol/index.md).
+- Learn the tactic contract in [Tactic](protocol/index.md).
 - Choose an adapter in [Runtime](runtime/index.md).
 - Follow the first tutorial in [First Tactic](tutorials/first-tactic.md).
