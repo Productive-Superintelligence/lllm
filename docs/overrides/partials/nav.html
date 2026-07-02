@@ -37,6 +37,14 @@
     {% for nav_item in nav.items %}
       {{ header_nav_target(nav_item) }}
     {% endfor %}
+    {% if config.extra.docs_switch %}
+      <span class="psi-drawer-sections__label">Docs</span>
+      {% for doc in config.extra.docs_switch %}
+        <a href="{{ doc.url }}" class="psi-drawer-sections__link{% if doc.key == config.extra.current_doc %} psi-drawer-sections__link--active{% endif %}">
+          {{ doc.title }}
+        </a>
+      {% endfor %}
+    {% endif %}
   </div>
   <ul class="md-nav__list" data-md-scrollfix>
     {% if active.item and active.item.children %}

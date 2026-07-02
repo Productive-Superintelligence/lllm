@@ -47,6 +47,20 @@
         {{ header_nav_link(nav_item) }}
       {% endfor %}
     </div>
+    {% if config.extra.docs_switch %}
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            {% for doc in config.extra.docs_switch %}
+              <a href="{{ doc.url }}" class="psi-doc-switch__link{% if doc.key == config.extra.current_doc %} psi-doc-switch__link--active{% endif %}">
+                {{ doc.title }}
+              </a>
+            {% endfor %}
+          </div>
+        </details>
+      </div>
+    {% endif %}
     {% if config.theme.palette %}
       {% if not config.theme.palette is mapping %}
         {% include "partials/palette.html" %}

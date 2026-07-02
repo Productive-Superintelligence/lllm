@@ -83,6 +83,23 @@ nav:
 extra:
   generator: false
   homepage: https://lllm.one/
+  current_doc: lllm
+  docs_switch:
+    - key: lllm
+      title: LLLM
+      url: https://lllm.one/
+    - key: sssn
+      title: SSSN
+      url: https://sssn.one/
+    - key: aaax
+      title: AAAX
+      url: https://aaax.one/
+    - key: psihub
+      title: PsiHub
+      url: https://prosi.io/docs/hub/
+    - key: psicli
+      title: PSI CLI
+      url: https://prosi.io/docs/cli/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/Productive-Superintelligence/lllm
