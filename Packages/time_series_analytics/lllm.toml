@@ -1,0 +1,13 @@
+[package]
+name = "time_series_analytics"
+version = "0.1.0"
+description = "Reusable time-series analysis package for LLLM."
+
+[prompts]
+paths = ["prompts"]
+
+[tactics]
+paths = ["tactics"]
+
+[configs]
+paths = ["configs"]

@@ -1,0 +1,26 @@
+tactic_type: time_series_analysis
+
+# Mixed-model setup: cheap/fast Haiku for profiling and synthesis, stronger
+# Sonnet only for the forecast-interpretation step where reasoning pays off.
+# (The numeric forecast itself is computed by a statistical model, not the LLM.)
+global:
+  model_name: bedrock/us.anthropic.claude-haiku-4-5-20251001-v1:0
+  model_args:
+    temperature: 0.2
+
+agent_configs:
+  - name: profiler
+    system_prompt_path: time_series_analytics:system/profiler
+    model_args:
+      temperature: 0.25
+
+  - name: forecaster
+    system_prompt_path: time_series_analytics:system/forecaster
+    model_name: bedrock/us.anthropic.claude-sonnet-4-5-20250929-v1:0
+    model_args:
+      temperature: 0.2
+
+  - name: synthesizer
+    system_prompt_path: time_series_analytics:system/synthesizer
+    model_args:
+      temperature: 0.1

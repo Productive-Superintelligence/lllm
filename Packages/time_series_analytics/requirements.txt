@@ -1,0 +1,16 @@
+# Runtime dependencies for the time_series_analytics package.
+# The `lllm` framework itself is provided by the parent repository and is not listed here.
+#
+# Install with:  pip install -r requirements.txt
+
+# --- LLLM framework runtime (LLM access) ---
+pydantic>=2
+pyyaml>=6
+litellm>=1.40
+boto3>=1.34            # Amazon Bedrock access via LiteLLM
+
+# --- Statistical forecasting / anomaly detection ---
+numpy>=1.26
+pandas>=2.0
+statsmodels>=0.14
+scipy>=1.11            # optional: exact prediction-interval z-values
