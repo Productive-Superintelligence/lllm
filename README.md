@@ -1,11 +1,11 @@
-# LLLM Tactic Framework
+# Low-Level Language Models (LLLM)
 
 <p align="center">
   <img src="assets/lllm-logo-text-dark.png" alt="LLLM" width="420">
 </p>
 
-LLLM Tactic Framework is a small protocol and service layer for reusable
-agentic tactics.
+Low-Level Language Models (LLLM) is a small protocol and service layer for
+reusable agentic tactics.
 
 The center model is `Tactic`: a typed, runtime-agnostic unit that does one
 thing well and can be called locally, exposed through FastAPI, described for a

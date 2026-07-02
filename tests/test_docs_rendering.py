@@ -530,7 +530,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
 
 def test_docs_keep_light_brand_styles(tmp_path):
     site_dir = build_docs(tmp_path)
-    custom_css = (site_dir / "stylesheets" / "custom.20260629.css").read_text(
+    custom_css = (site_dir / "stylesheets" / "custom.20260702.css").read_text(
         encoding="utf-8"
     )
     mermaid_js = (site_dir / "javascripts" / "mermaid-init.20260629.js").read_text(

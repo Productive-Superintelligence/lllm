@@ -212,7 +212,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .psi-header-nav__link:hover,
-.psi-header-nav__link:focus,
+.psi-header-nav__link:focus-visible,
 .psi-header-nav__link--active {
   border-bottom-color: var(--psi-ink);
   color: var(--psi-ink);
@@ -260,7 +260,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .psi-doc-switch details[open] summary,
 .psi-doc-switch summary:hover,
-.psi-doc-switch summary:focus {
+.psi-doc-switch summary:focus-visible {
   border-bottom-color: var(--psi-ink);
 }
 
@@ -286,7 +286,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .psi-doc-switch__link:hover,
-.psi-doc-switch__link:focus,
+.psi-doc-switch__link:focus-visible,
 .psi-doc-switch__link--active {
   background: var(--psi-soft);
   color: var(--psi-ink);
