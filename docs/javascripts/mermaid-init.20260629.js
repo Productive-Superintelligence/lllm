@@ -1,6 +1,6 @@
 (function () {
   var fontFamily =
-    "Roboto, -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif";
+    "Space Mono, SFMono-Regular, Consolas, Menlo, monospace";
   var initialized = false;
   var rendering = false;
   var renderAgain = false;

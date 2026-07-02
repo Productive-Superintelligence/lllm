@@ -341,8 +341,8 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
     assert metrics["footerMark"]["width"] == pytest.approx(100, abs=2)
     assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
-    assert "Roboto" in metrics["bodyFont"]
-    assert "Roboto Mono" in metrics["codeFont"]
+    assert "Newsreader" in metrics["bodyFont"]
+    assert "Space Mono" in metrics["codeFont"]
 
     visible_brands = [
         image for image in metrics["brandImages"] if image["display"] == "block"
@@ -497,8 +497,8 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert metrics["footer"]["height"] <= 72
     assert metrics["footerMark"]["width"] == pytest.approx(100, abs=2)
     assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
-    assert "Roboto" in metrics["bodyFont"]
-    assert "Roboto Mono" in metrics["codeFont"]
+    assert "Newsreader" in metrics["bodyFont"]
+    assert "Space Mono" in metrics["codeFont"]
     assert metrics["mermaid"]["width"] <= metrics["viewportWidth"]
     assert metrics["mermaidSvgs"][0]["width"] > metrics["viewportWidth"]
     assert drawer_metrics["title"]["backgroundColor"] == "rgb(255, 255, 255)"
@@ -547,11 +547,11 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-footer-meta__inner" in custom_css
     assert "display: flex;" in custom_css
     assert "justify-content: space-between;" in custom_css
-    assert '--md-text-font: "Roboto";' in custom_css
-    assert '--md-code-font: "Roboto Mono";' in custom_css
+    assert '--md-text-font: "Newsreader";' in custom_css
+    assert '--md-code-font: "Space Mono";' in custom_css
     assert "--md-text-font-family" in custom_css
-    assert '"Roboto Mono", SFMono-Regular' in custom_css
-    assert "-apple-system" in custom_css
+    assert '"Space Mono", SFMono-Regular' in custom_css
+    assert '"Newsreader", Georgia' in custom_css
     assert "--psi-brand-width: 20rem;" in custom_css
     assert "--psi-brand-height: 4.5rem;" in custom_css
     assert "--psi-brand-height: 3.25rem;" in custom_css
@@ -593,7 +593,7 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert ".md-typeset .mermaid marker path" in custom_css
     assert "var(--psi-diagram-ink)" in custom_css
     assert "var fontFamily" in mermaid_js
-    assert "Roboto, -apple-system, BlinkMacSystemFont" in mermaid_js
+    assert "Space Mono, SFMono-Regular" in mermaid_js
     assert "window.mermaid.startOnLoad = false" in mermaid_js
     assert 'securityLevel: "loose"' in mermaid_js
     assert "flowchart:" in mermaid_js
