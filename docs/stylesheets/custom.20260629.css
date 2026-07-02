@@ -1,11 +1,12 @@
 :root {
   --md-primary-fg-color: #ffffff;
   --md-accent-fg-color: #050505;
-  --md-text-font: "Roboto";
-  --md-code-font: "Roboto Mono";
+  --md-text-font: "Newsreader";
+  --md-code-font: "Space Mono";
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
+  --psi-paper: #fdfdfc;
   --psi-brand-width: 20rem;
   --psi-brand-height: 4.5rem;
   --psi-diagram-bg: #ffffff;
@@ -15,17 +16,17 @@
 }
 
 body {
-  --md-text-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
-    Helvetica, Arial, sans-serif;
-  --md-code-font-family: "Roboto Mono", SFMono-Regular, Consolas, Menlo,
+  --md-text-font-family: "Newsreader", Georgia, "Times New Roman", serif;
+  --md-code-font-family: "Space Mono", SFMono-Regular, Consolas, Menlo,
     monospace;
+  -webkit-font-smoothing: antialiased;
 }
 
 [data-md-color-scheme="default"] {
   --psi-ink: #050505;
   --psi-line: rgba(5, 5, 5, 0.08);
   --psi-soft: #f7f7f7;
-  --md-default-bg-color: #ffffff;
+  --md-default-bg-color: var(--psi-paper);
   --md-typeset-a-color: #050505;
   --md-accent-fg-color: #050505;
   --md-accent-fg-color--transparent: rgba(0, 0, 0, 0.1);
@@ -117,7 +118,7 @@ body {
   background-color: var(--md-default-bg-color);
   box-shadow: none;
   color: var(--psi-ink);
-  font-family: var(--md-text-font-family);
+  font-family: var(--md-code-font-family);
 }
 
 .md-header--shadow {
@@ -176,12 +177,12 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 
 .md-header__title {
   flex: 0 0 auto;
-  font-weight: 700;
+  font-weight: 400;
   max-width: 12rem;
 }
 
 .md-header__topic {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .psi-header-nav {
@@ -204,7 +205,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   color: var(--psi-ink);
   display: inline-flex;
   font-size: 0.7rem;
-  font-weight: 500;
+  font-weight: 400;
   height: 2.4rem;
   padding: 0 0.45rem;
   white-space: nowrap;
@@ -218,7 +219,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .psi-header-nav__link--active {
-  font-weight: 700;
+  font-weight: 400;
 }
 
 .psi-drawer-sections {
@@ -388,9 +389,32 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   width: 1px;
 }
 
+.md-typeset {
+  font-size: 0.82rem;
+  line-height: 1.72;
+}
+
 .md-typeset h1,
 .md-typeset h2 {
-  font-weight: 720;
+  font-style: italic;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+
+.md-typeset h3,
+.md-typeset h4 {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.md-typeset code,
+.md-typeset pre,
+.md-typeset kbd,
+.md-typeset table,
+.md-nav,
+.md-search,
+.md-footer {
+  font-family: var(--md-code-font-family);
 }
 
 .psi-brand {
@@ -469,12 +493,11 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-typeset .mermaid svg {
-  --mermaid-font-family: "Roboto", -apple-system, BlinkMacSystemFont,
-    Helvetica, Arial, sans-serif;
+  --mermaid-font-family: "Space Mono", SFMono-Regular, Consolas, Menlo,
+    monospace;
   color: var(--psi-diagram-ink);
   display: inline-block;
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
-    sans-serif !important;
+  font-family: "Space Mono", SFMono-Regular, Consolas, Menlo, monospace !important;
   height: auto;
   max-width: 100%;
   min-width: 0;
@@ -489,8 +512,7 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 }
 
 .md-typeset .mermaid svg * {
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
-    sans-serif !important;
+  font-family: "Space Mono", SFMono-Regular, Consolas, Menlo, monospace !important;
 }
 
 .md-typeset .mermaid .node rect,
@@ -523,16 +545,14 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
 .md-typeset .mermaid foreignObject * {
   color: var(--psi-diagram-ink) !important;
   fill: var(--psi-diagram-ink) !important;
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
-    sans-serif !important;
+  font-family: "Space Mono", SFMono-Regular, Consolas, Menlo, monospace !important;
   line-height: 1.2;
 }
 
 .md-typeset .mermaid text,
 .md-typeset .mermaid tspan {
   fill: var(--psi-diagram-ink) !important;
-  font-family: "Roboto", -apple-system, BlinkMacSystemFont, Helvetica, Arial,
-    sans-serif !important;
+  font-family: "Space Mono", SFMono-Regular, Consolas, Menlo, monospace !important;
 }
 
 .md-typeset .mermaid .edgeLabel rect,

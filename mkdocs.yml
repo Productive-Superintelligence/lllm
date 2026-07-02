@@ -12,8 +12,8 @@ theme:
   logo: assets/logo.svg
   favicon: assets/logo.svg
   font:
-    text: Roboto
-    code: Roboto Mono
+    text: Newsreader
+    code: Space Mono
   palette:
     - scheme: default
       primary: white
