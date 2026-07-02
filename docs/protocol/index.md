@@ -1,6 +1,6 @@
-# Protocol
+# Tactic
 
-LLLM's protocol is the small public contract that lets agentic work move
+LLLM's tactic protocol is the small public contract that lets agentic work move
 between Python objects, services, packages, and coding-agent workflows without
 dragging one runtime's internals everywhere.
 

@@ -39,8 +39,8 @@ nav:
           - Services: concepts/services.md
           - Packages: concepts/packages.md
           - Runtime Boundary: concepts/runtime-boundary.md
-  - Protocol:
-      - Protocol: protocol/index.md
+  - Tactic:
+      - Tactic: protocol/index.md
       - Tactic Boundary: protocol/tactic-boundary.md
       - Service Boundary: protocol/service-boundary.md
       - Package Contract: protocol/package-contract.md
@@ -65,7 +65,7 @@ nav:
               - Boundary And Verification: runtime/native/boundary-verification.md
       - Plain Python: runtime/python.md
   - Tutorials:
-      - Protocol Level:
+      - Tactic Level:
           - First Tactic: tutorials/first-tactic.md
           - Proxies: tutorials/proxies.md
           - Sandboxes: tutorials/sandboxes.md

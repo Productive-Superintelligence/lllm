@@ -319,7 +319,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["headerNav"]["display"] == "flex"
     assert metrics["headerNavLinks"] == [
         "Overview",
-        "Protocol",
+        "Tactic",
         "Runtime",
         "Tutorials",
         "Reference",
@@ -332,7 +332,7 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert "Runtime" not in metrics["sidebarText"]
     assert "Tutorials" not in metrics["sidebarText"]
     assert "Reference" not in metrics["sidebarText"]
-    assert "Protocol Level" in tutorial_sidebar
+    assert "Tactic Level" in tutorial_sidebar
     assert "Runtime" in tutorial_sidebar
     assert "Tactics" not in tutorial_sidebar
     assert "Service API" not in tutorial_sidebar
@@ -664,7 +664,7 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
     assert "material/weather-night" not in config
     assert "  - Overview:\n      - Overview: index.md\n      - Getting Started:" in config
     assert "      - Concepts:" in config
-    assert "  - Protocol:\n      - Protocol: protocol/index.md" in config
+    assert "  - Tactic:\n      - Tactic: protocol/index.md" in config
     assert "      - Tactic Boundary: protocol/tactic-boundary.md" in config
     assert "      - Service Boundary: protocol/service-boundary.md" in config
     assert "      - Package Contract: protocol/package-contract.md" in config
@@ -693,7 +693,7 @@ def test_docs_nav_keeps_foldable_tutorial_groups():
         "              - Boundary And Verification: runtime/native/boundary-verification.md"
         in config
     )
-    assert "  - Tutorials:\n      - Protocol Level:" in config
+    assert "  - Tutorials:\n      - Tactic Level:" in config
     assert "      - Runtime:" in config
     assert "          - First Tactic: tutorials/first-tactic.md" in config
     assert "          - Native Core: tutorials/native-core.md" in config
