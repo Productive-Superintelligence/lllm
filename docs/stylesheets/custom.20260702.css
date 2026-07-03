@@ -208,18 +208,22 @@ html [data-md-color-scheme="slate"] .md-nav--primary .md-nav__title[for="__drawe
   font-weight: 400;
   height: 2.4rem;
   padding: 0 0.45rem;
+  text-decoration: none;
   white-space: nowrap;
 }
 
 .psi-header-nav__link:hover,
-.psi-header-nav__link:focus-visible,
-.psi-header-nav__link--active {
-  border-bottom-color: var(--psi-ink);
+.psi-header-nav__link:focus-visible {
+  background: var(--psi-soft);
   color: var(--psi-ink);
+  text-decoration: none;
 }
 
 .psi-header-nav__link--active {
+  border-bottom-color: var(--psi-ink);
+  color: var(--psi-ink);
   font-weight: 400;
+  text-decoration: none;
 }
 
 .psi-doc-switch {
