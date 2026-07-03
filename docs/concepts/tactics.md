@@ -14,8 +14,7 @@ The boundary is intentionally narrower than an agent framework. It answers:
 ## Design Lineage
 
 The `Tactic` boundary was originally developed from the reusable reasoning units
-needed by Analytica: Soft Propositional Reasoning for Robust and Scalable
-LLM-Driven Analysis. Analytica decomposes complex societal, economic, political,
+needed by Analytica. Analytica decomposes complex societal, economic, political,
 and scientific questions into grounded subpropositions, runs specialized agents
 or tools over those subquestions, and synthesizes the results into a more stable
 analysis.
@@ -28,13 +27,12 @@ packaged, composed, audited, and reused by other systems.
 ## Applied Systems
 
 LLLM has also been applied in autonomous software-development systems such as
-Apeiron: A Scalable LLM-agentic Framework for Autonomous Full-lifecycle
-Demand-optimized Application Synthesis. Apeiron uses agentic components for
-full-lifecycle application synthesis, including demand modeling, computer-use
-agent evaluation, activity tracing, and locality-controlled iteration. That is
-the other side of the tactic design: the same small callable boundary can serve
-analysis agents, software-building agents, evaluators, tracers, tools, and
-deployment services without forcing them into one runtime.
+Apeiron. Apeiron uses agentic components for full-lifecycle application
+synthesis, including demand modeling, computer-use agent evaluation, activity
+tracing, and locality-controlled iteration. That is the other side of the
+tactic design: the same small callable boundary can serve analysis agents,
+software-building agents, evaluators, tracers, tools, and deployment services
+without forcing them into one runtime.
 
 ```python
 from pydantic import BaseModel
