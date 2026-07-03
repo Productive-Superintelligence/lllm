@@ -144,7 +144,7 @@ def create_service_app(
         raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
 
     tactic_map = _normalize_tactics(tactics)
-    app = FastAPI(title=title, description=description, version="0.1.0")
+    app = FastAPI(title=title, description=description, version="0.2.1")
     app.state.lllm_tactics = tactic_map
 
     @app.get("/health")
