@@ -6,6 +6,24 @@ dragging one runtime's internals everywhere.
 
 The protocol is not a model runtime. It is the boundary around work.
 
+## Design Concept
+
+LLLM tactics inherit their shape from analysis systems that split a hard
+question into smaller, typed reasoning steps. In Analytica, soft propositional
+reasoning decomposes societal, economic, political, and scientific questions
+into subpropositions, grounds them with agents and tools, and synthesizes the
+results for robust analysis.
+
+LLLM keeps the reusable part of that design: each tactic has an input contract,
+an output contract, optional streaming events, public metadata, and a service
+surface. The tactic protocol stays neutral, so the same boundary can wrap a
+forecasting analyst, a scientific grounder, a code tool, a robot monitor, a
+plain Python function, or a remote service.
+
+The same boundary has also been used in autonomous software-development work,
+including Apeiron's full-lifecycle demand-optimized application synthesis
+setting.
+
 <div class="psi-tiles">
   <div class="psi-tile">
     <strong>Tactic</strong>

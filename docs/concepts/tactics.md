@@ -11,6 +11,31 @@ The boundary is intentionally narrower than an agent framework. It answers:
 - how to call it locally or remotely,
 - how to describe it to services and packages.
 
+## Design Lineage
+
+The `Tactic` boundary was originally developed from the reusable reasoning units
+needed by Analytica: Soft Propositional Reasoning for Robust and Scalable
+LLM-Driven Analysis. Analytica decomposes complex societal, economic, political,
+and scientific questions into grounded subpropositions, runs specialized agents
+or tools over those subquestions, and synthesizes the results into a more stable
+analysis.
+
+LLLM generalizes that pattern. A tactic is not tied to soft propositional
+reasoning, forecasting, or any one agent architecture. It keeps the useful
+boundary: a typed unit of work that can be validated, streamed, served,
+packaged, composed, audited, and reused by other systems.
+
+## Applied Systems
+
+LLLM has also been applied in autonomous software-development systems such as
+Apeiron: A Scalable LLM-agentic Framework for Autonomous Full-lifecycle
+Demand-optimized Application Synthesis. Apeiron uses agentic components for
+full-lifecycle application synthesis, including demand modeling, computer-use
+agent evaluation, activity tracing, and locality-controlled iteration. That is
+the other side of the tactic design: the same small callable boundary can serve
+analysis agents, software-building agents, evaluators, tracers, tools, and
+deployment services without forcing them into one runtime.
+
 ```python
 from pydantic import BaseModel
 from lllm import Tactic
@@ -78,3 +103,13 @@ A tactic can hide:
 The caller still sees the same typed boundary. That is why LLLM composes well
 with PsiHub and SSSN: the package or channel layer can point at a tactic
 without inheriting the implementation runtime.
+
+## Reference
+
+- Cheng, Junyan, Kyle Richardson, and Peter Chin. "Analytica: Soft Propositional
+  Reasoning for Robust and Scalable LLM-Driven Analysis." *The Fourteenth
+  International Conference on Learning Representations (ICLR)*, 2026.
+- Cheng, Junyan, Ankit Srivastava, Jessie Zeng, Milenko Drinic, and Jack W.
+  Stokes. "Apeiron: A Scalable LLM-agentic Framework for Autonomous
+  Full-lifecycle Demand-optimized Application Synthesis." *Findings of the
+  Association for Computational Linguistics: ACL 2026*, 2026, pp. 3868-3899.
