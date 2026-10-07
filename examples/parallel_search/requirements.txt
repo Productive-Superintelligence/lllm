@@ -1,0 +1,1 @@
+pydantic-ai-slim[mcp,openai]>=1.107.7,<2

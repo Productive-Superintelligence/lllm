@@ -181,3 +181,12 @@ Executable offline examples:
 - `examples/pydantic_ai_tactic/surrounding_features.py`
 
 The examples use fake agents so the docs and tests run without provider keys.
+
+## Parallel Search MCP Example
+
+[`examples/parallel_search/`](https://github.com/Productive-Superintelligence/lllm/tree/main/examples/parallel_search)
+shows an opt-in agent with free, keyless Parallel web search and fetch over
+Streamable HTTP. It keeps MCP tools in Pydantic AI and exposes the agent through
+`PydanticAITactic`. Follow the example's installation and `--smoke` command to
+exercise real tools without model credentials, or choose a model for an answer.
+Model inference requires its own provider setup.
