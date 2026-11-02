@@ -629,6 +629,7 @@ def install_package(
         install_package("finance-toolkit-v1.2.zip", scope="project")
     """
     import re
+    import stat
     import shutil
     import tempfile
     import zipfile as _zipfile
@@ -655,6 +656,16 @@ def install_package(
         tmp = Path(_tmp)
 
         with _zipfile.ZipFile(zip_path) as zf:
+            for member in zf.infolist():
+                name = member.filename
+                if name.startswith("/") or ".." in Path(name).parts:
+                    raise ValueError(
+                        f"Refusing unsafe member in {zip_path.name}: {name}"
+                    )
+                if stat.S_ISLNK(member.external_attr >> 16):
+                    raise ValueError(
+                        f"Refusing symlink member in {zip_path.name}: {name}"
+                    )
             zf.extractall(tmp)
 
         # Locate the package root inside the extracted tree: the first
