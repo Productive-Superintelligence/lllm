@@ -6,17 +6,13 @@ from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from .endpoints import (
-    ENDPOINT_MODES,
-    ENDPOINT_SCOPES,
-    HTTP_METHODS,
     resource_extra as _resource_extra,
-    valid_endpoint_path,
     validate_endpoint_metadata as _validate_endpoint_metadata,
 )
 from .entrypoints import import_entrypoint
 from .files import has_symlink_component, is_relative_to
 from .files import validate_declared_file as _validate_declared_file
-from .manifest import load_manifest, manifest_path, require_path_value
+from .manifest import load_manifest, require_path_value
 from .models import PackageManifest, ValidationIssue, ValidationReport
 from .refs import parse_resource_ref
 

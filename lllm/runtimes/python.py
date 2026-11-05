@@ -136,3 +136,51 @@ def _accepts_kw(signature: inspect.Signature, name: str) -> bool:
         parameter.kind is inspect.Parameter.VAR_KEYWORD
         for parameter in signature.parameters.values()
     )
+
+
+def coerce_tactic(value: Any, *, name: str | None = None) -> Tactic[Any, Any]:
+    """Turn an imported entrypoint value into a tactic.
+
+    Accepts, in order: a ``Tactic`` subclass (instantiated) or instance; a
+    zero-argument factory returning any of the accepted shapes; an object with
+    a ``run`` method; or a plain callable, wrapped with :func:`as_tactic`.
+    ``name`` names the tactic when one has to be created.
+    """
+
+    kwargs: dict[str, Any] = {} if name is None else {"name": name}
+    if isinstance(value, type) and issubclass(value, Tactic):
+        return value(**kwargs)
+    if isinstance(value, Tactic):
+        return value
+    if callable(value) and _callable_without_args(value):
+        produced = value()
+        if isinstance(produced, type) and issubclass(produced, Tactic):
+            return produced(**kwargs)
+        if isinstance(produced, Tactic):
+            return produced
+        if callable(getattr(produced, "run", None)):
+            return as_tactic(produced.run, **kwargs)
+        if callable(produced):
+            return as_tactic(produced, **kwargs)
+    if callable(getattr(value, "run", None)):
+        return as_tactic(value.run, **kwargs)
+    if callable(value):
+        return as_tactic(value, **kwargs)
+    raise TypeError(f"Value does not resolve to a tactic or callable: {value!r}")
+
+
+def _callable_without_args(value: Any) -> bool:
+    try:
+        signature = inspect.signature(value)
+    except (TypeError, ValueError):
+        return False
+    return not any(
+        parameter.default is inspect.Parameter.empty
+        and parameter.kind
+        in {
+            inspect.Parameter.POSITIONAL_ONLY,
+            inspect.Parameter.POSITIONAL_OR_KEYWORD,
+            inspect.Parameter.KEYWORD_ONLY,
+        }
+        for parameter in signature.parameters.values()
+    )

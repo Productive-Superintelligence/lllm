@@ -10,7 +10,6 @@ from __future__ import annotations
 import argparse
 import importlib
 import ipaddress
-import inspect
 import json
 import sys
 from pathlib import Path
@@ -19,7 +18,7 @@ from typing import Any
 from .create import create_project
 from .hub import tactic_resource
 from .protocol import Tactic
-from .runtimes import as_tactic
+from .runtimes import coerce_tactic
 from .services import create_tactic_app
 
 LOG_LEVELS = {"critical", "debug", "error", "info", "trace", "warning"}
@@ -440,22 +439,12 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
     value: Any = module
     for part in attr_path.split("."):
         value = getattr(value, part)
-    if isinstance(value, type) and issubclass(value, Tactic):
-        return value()
-    if isinstance(value, Tactic):
-        return value
-    if callable(value):
-        if not _can_call_without_args(value):
-            return as_tactic(value)
-        produced = value()
-        if isinstance(produced, type) and issubclass(produced, Tactic):
-            return produced()
-        if isinstance(produced, Tactic):
-            return produced
-        if callable(produced):
-            return as_tactic(produced)
-        return as_tactic(value)
-    raise TypeError(f"Entrypoint did not resolve to a tactic or callable: {entrypoint}")
+    try:
+        return coerce_tactic(value)
+    except TypeError as exc:
+        raise TypeError(
+            f"Entrypoint did not resolve to a tactic or callable: {entrypoint}"
+        ) from exc
 
 
 def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic[Any, Any]:
@@ -513,21 +502,6 @@ def _serve_log_level(value: str) -> str:
     if log_level not in LOG_LEVELS:
         raise ValueError(LOG_LEVEL_ERROR)
     return log_level
-
-
-def _can_call_without_args(value: Any) -> bool:
-    try:
-        signature = inspect.signature(value)
-    except (TypeError, ValueError):
-        return False
-    for parameter in signature.parameters.values():
-        if parameter.default is inspect.Parameter.empty and parameter.kind in {
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            inspect.Parameter.KEYWORD_ONLY,
-        }:
-            return False
-    return True
 
 
 if __name__ == "__main__":

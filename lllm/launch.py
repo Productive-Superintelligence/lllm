@@ -10,7 +10,7 @@ from typing import Any
 from .credentials import ApiKeyRequirement, collect_manifest_api_key_requirements
 from .hub import import_entrypoint, load_manifest
 from .protocol import Tactic
-from .runtimes import as_tactic
+from .runtimes import coerce_tactic
 from .services import create_tactic_app
 
 
@@ -206,25 +206,10 @@ def _coerce_service_app(value: Any, *, label: str, allow_payload: bool) -> Any:
 
 
 def _coerce_tactic(value: Any, *, name: str) -> Any:
-    if isinstance(value, type) and issubclass(value, Tactic):
-        return value(name=name)
-    if isinstance(value, Tactic):
-        return value
-    if callable(value) and _can_call_without_args(value):
-        produced = value()
-        if isinstance(produced, type) and issubclass(produced, Tactic):
-            return produced(name=name)
-        if isinstance(produced, Tactic):
-            return produced
-        if _has_run_method(produced):
-            return as_tactic(produced.run, name=name)
-        if callable(produced):
-            return as_tactic(produced, name=name)
-    if _has_run_method(value):
-        return as_tactic(value.run, name=name)
-    if callable(value):
-        return as_tactic(value, name=name)
-    raise LaunchError(f"entrypoint did not resolve to a tactic: {name}")
+    try:
+        return coerce_tactic(value, name=name)
+    except TypeError as exc:
+        raise LaunchError(f"entrypoint did not resolve to a tactic: {name}") from exc
 
 
 def _tactic_to_app(value: Any, *, name: str) -> Any:

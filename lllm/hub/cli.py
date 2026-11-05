@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     get.add_argument("--dest", default=".")
     get.add_argument("--version")
 
-    list_packages = subcommands.add_parser("list", help="List local packages")
+    subcommands.add_parser("list", help="List local packages")
 
     card = subcommands.add_parser("card", help="Render a package card")
     card.add_argument("identifier")

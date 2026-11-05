@@ -951,3 +951,27 @@ def test_tactic_description_uses_user_docstrings_only():
     assert Undocumented().info().description == ""
     assert Documented().info().description == "Echo the text back."
     assert Inherits().info().description == "Echo the text back."
+
+
+def test_coerce_tactic_accepts_every_entrypoint_shape():
+    from lllm.runtimes import coerce_tactic
+
+    class Runner:
+        def run(self, value):
+            return value
+
+    def plain(value):
+        return value
+
+    def factory():
+        return EchoTactic()
+
+    assert isinstance(coerce_tactic(EchoTactic), EchoTactic)
+    instance = EchoTactic()
+    assert coerce_tactic(instance) is instance
+    assert isinstance(coerce_tactic(factory), EchoTactic)
+    assert coerce_tactic(plain, name="plain").info().name == "plain"
+    assert coerce_tactic(Runner(), name="runner").run(5) == 5
+    assert coerce_tactic(Runner, name="runner").run(6) == 6
+    with pytest.raises(TypeError):
+        coerce_tactic(42)

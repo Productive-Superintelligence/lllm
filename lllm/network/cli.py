@@ -41,7 +41,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--store", default=".lllm/network", help="Local store directory")
     subcommands = parser.add_subparsers(dest="command", required=True)
 
-    channels = subcommands.add_parser("channels", help="List channels")
+    subcommands.add_parser("channels", help="List channels")
 
     create_channel = subcommands.add_parser("create-channel", help="Create a channel")
     create_channel.add_argument("name")

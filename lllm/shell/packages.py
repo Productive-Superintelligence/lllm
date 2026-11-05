@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import inspect
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
@@ -306,15 +305,9 @@ class PackageTactic:
 
     def load(self) -> Any:
         if self._tactic is None:
-            from ..runtimes import as_tactic
-            from ..protocol import Tactic
-
-            value = _load_tactic(self.entrypoint, base_dir=self.base_dir, name=self.name)
-            if not isinstance(value, Tactic):
-                if not callable(value):
-                    raise TypeError(f"Tactic entrypoint is not callable: {self.entrypoint}")
-                value = as_tactic(value, name=self.name)
-            self._tactic = value
+            self._tactic = _load_tactic(
+                self.entrypoint, base_dir=self.base_dir, name=self.name
+            )
         return self._tactic
 
     async def __call__(
@@ -328,29 +321,9 @@ class PackageTactic:
 
 def _load_tactic(entrypoint: str, *, base_dir: Path, name: str) -> Any:
     from ..hub import import_entrypoint
-    from ..protocol import Tactic
-    from ..runtimes import as_tactic
+    from ..runtimes import coerce_tactic
 
-    value = import_entrypoint(entrypoint, base_dir=base_dir)
-    if isinstance(value, type) and issubclass(value, Tactic):
-        return value(name=name)
-    if isinstance(value, Tactic):
-        return value
-    if callable(value) and _can_call_without_args(value):
-        produced = value()
-        if isinstance(produced, type) and issubclass(produced, Tactic):
-            return produced(name=name)
-        if isinstance(produced, Tactic):
-            return produced
-        if hasattr(produced, "run") and callable(produced.run):
-            return as_tactic(produced.run, name=name)
-        if callable(produced):
-            return as_tactic(produced, name=name)
-    if hasattr(value, "run") and callable(value.run):
-        return as_tactic(value.run, name=name)
-    if callable(value):
-        return as_tactic(value, name=name)
-    return value
+    return coerce_tactic(import_entrypoint(entrypoint, base_dir=base_dir), name=name)
 
 
 def _channel_handler(store: Any, name: str) -> Handler:
@@ -416,68 +389,6 @@ def _resource_prefix(prefix: str | None) -> str | None:
 
 def _local_name(prefix: str | None, name: str) -> str:
     return f"{prefix}.{name}" if prefix else name
-
-
-def _can_call_without_args(value: Any) -> bool:
-    try:
-        signature = inspect.signature(value)
-    except (TypeError, ValueError):
-        return False
-    for parameter in signature.parameters.values():
-        if parameter.default is inspect.Parameter.empty and parameter.kind in {
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            inspect.Parameter.KEYWORD_ONLY,
-        }:
-            return False
-    return True
-
-
-def _call_plain_tactic(
-    tactic: Any,
-    input_value: Any,
-    *,
-    context: Mapping[str, Any] | None,
-) -> Any:
-    signature = _signature(tactic)
-    kwargs: dict[str, Any] = {}
-    if signature is not None and _accepts_context(signature):
-        kwargs["context"] = _call_context(context)
-    if signature is not None and not _can_accept_input(signature):
-        return tactic(**kwargs)
-    return tactic(input_value, **kwargs)
-
-
-def _signature(value: Any) -> inspect.Signature | None:
-    try:
-        return inspect.signature(value)
-    except (TypeError, ValueError):
-        return None
-
-
-def _accepts_context(signature: inspect.Signature) -> bool:
-    if "context" in signature.parameters:
-        return True
-    return any(
-        parameter.kind is inspect.Parameter.VAR_KEYWORD
-        for parameter in signature.parameters.values()
-    )
-
-
-def _can_accept_input(signature: inspect.Signature) -> bool:
-    for parameter in signature.parameters.values():
-        if parameter.name == "context":
-            continue
-        if parameter.kind in {
-            inspect.Parameter.POSITIONAL_ONLY,
-            inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            inspect.Parameter.KEYWORD_ONLY,
-        }:
-            return True
-    return any(
-        parameter.kind is inspect.Parameter.VAR_POSITIONAL
-        for parameter in signature.parameters.values()
-    )
 
 
 def _call_context(context: Mapping[str, Any] | None) -> Any:
