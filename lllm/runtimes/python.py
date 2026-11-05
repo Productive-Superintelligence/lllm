@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import inspect
 from collections.abc import Callable, Mapping
-from typing import Any
+from typing import Any, get_origin
 
 from ..protocol import CallContext, Tactic
 
@@ -149,20 +149,30 @@ def coerce_tactic(value: Any, *, name: str | None = None) -> Tactic[Any, Any]:
     """Turn an imported entrypoint value into a tactic.
 
     Accepts, in order: a ``Tactic`` subclass (instantiated) or instance; a
-    zero-argument factory returning any of the accepted shapes; an object with
-    a ``run`` method; or a plain callable, wrapped with :func:`as_tactic`.
-    ``name`` names the tactic when one has to be created.
+    factory returning any of the accepted shapes; an object with a ``run``
+    method; or a plain callable, a handler wrapped with :func:`as_tactic`.
+    ``name`` names the tactic when one has to be created; a ``Tactic``
+    subclass gets it only if its constructor takes ``name``.
+
+    A factory is called once, with no arguments, when the value is loaded; a
+    handler is called once per input. A class is a factory when it can be
+    constructed without arguments. Any other callable is a factory when it
+    takes no parameters at all, or when it can be called without arguments
+    and is annotated to return a ``Tactic`` or an ASGI app (a Starlette or
+    FastAPI application). Every other callable is a handler, so
+    ``def greet(name="world")`` answers each input instead of being called
+    once at load.
     """
 
     kwargs: dict[str, Any] = {} if name is None else {"name": name}
     if isinstance(value, type) and issubclass(value, Tactic):
-        return value(**kwargs)
+        return _instantiate(value, name)
     if isinstance(value, Tactic):
         return value
-    if callable(value) and _callable_without_args(value):
+    if _is_factory(value):
         produced = value()
         if isinstance(produced, type) and issubclass(produced, Tactic):
-            return produced(**kwargs)
+            return _instantiate(produced, name)
         if isinstance(produced, Tactic):
             return produced
         if callable(getattr(produced, "run", None)):
@@ -176,11 +186,50 @@ def coerce_tactic(value: Any, *, name: str | None = None) -> Tactic[Any, Any]:
     raise TypeError(f"Value does not resolve to a tactic or callable: {value!r}")
 
 
-def _callable_without_args(value: Any) -> bool:
+def _instantiate(cls: type[Tactic[Any, Any]], name: str | None) -> Tactic[Any, Any]:
+    if name is None:
+        return cls()
+    try:
+        takes_name = _accepts_kw(inspect.signature(cls), "name")
+    except (TypeError, ValueError):
+        takes_name = False
+    return cls(name=name) if takes_name else cls()
+
+
+def _is_factory(value: Any) -> bool:
+    """Whether an entrypoint value is a factory, per :func:`coerce_tactic`."""
+
     try:
         signature = inspect.signature(value)
     except (TypeError, ValueError):
         return False
+    if not _callable_without_args(signature):
+        return False
+    return (
+        isinstance(value, type)
+        or not signature.parameters
+        or _returns_tactic_or_app(value)
+    )
+
+
+def _returns_tactic_or_app(value: Any) -> bool:
+    try:
+        annotation = inspect.signature(value, eval_str=True).return_annotation
+    except Exception:  # an annotation that cannot be evaluated says nothing
+        return False
+    annotation = get_origin(annotation) or annotation
+    if not isinstance(annotation, type):
+        return False
+    if issubclass(annotation, Tactic):
+        return True
+    try:
+        from starlette.applications import Starlette
+    except ImportError:
+        return False
+    return issubclass(annotation, Starlette)
+
+
+def _callable_without_args(signature: inspect.Signature) -> bool:
     return not any(
         parameter.default is inspect.Parameter.empty
         and parameter.kind

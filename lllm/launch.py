@@ -11,7 +11,10 @@ from .credentials import ApiKeyRequirement, collect_manifest_api_key_requirement
 from .hub import import_entrypoint, load_manifest
 from .protocol import Tactic
 from .runtimes import coerce_tactic
+from .runtimes.python import _is_factory
 from .services import create_tactic_app
+
+_LAUNCHABLE_SECTIONS = ("services", "tactics", "channels", "runs")
 
 
 class LaunchError(ValueError):
@@ -34,7 +37,11 @@ def load_launch_app(
     resource: str | None = None,
     store: str | Path | None = None,
 ) -> LaunchApp:
-    """Resolve a package path, manifest path, or entrypoint to an ASGI app."""
+    """Resolve a package path, manifest path, or entrypoint to an ASGI app.
+
+    An entrypoint may name an ASGI app, a tactic, a factory, or a handler;
+    factories and handlers are told apart as in :func:`coerce_tactic`.
+    """
 
     target_text = _target_text(target)
     path = Path(target_text).expanduser()
@@ -54,12 +61,18 @@ def load_launch_api_key_requirements(
     *,
     resource: str | None = None,
 ) -> tuple[ApiKeyRequirement, ...]:
-    """Resolve API-key requirements declared by a launchable package."""
+    """Resolve API-key requirements declared by a launchable package.
+
+    A package with nothing to launch, such as a library, has only its
+    package-level requirements unless a ``resource`` is named.
+    """
 
     target_text = _target_text(target)
     path = Path(target_text).expanduser()
     if path.exists() or path.name == "lllm.toml":
         manifest = load_manifest(path)
+        if not (resource or manifest.package.primary or _first_resource(manifest)):
+            return collect_manifest_api_key_requirements(manifest)
         section, name = _package_resource(manifest, resource)
         return collect_manifest_api_key_requirements(
             manifest,
@@ -77,6 +90,18 @@ def _load_package_app(
 ) -> LaunchApp:
     manifest = load_manifest(path)
     section, name = _package_resource(manifest, resource)
+    if section not in _LAUNCHABLE_SECTIONS:
+        launchable = [
+            f"{kind}.{item}"
+            for kind in _LAUNCHABLE_SECTIONS
+            for item in getattr(manifest, kind)
+        ]
+        detail = (
+            f"launchable resources: {', '.join(launchable)}"
+            if launchable
+            else "the package declares no services, tactics, channels, or runs"
+        )
+        raise LaunchError(f"resource {section}.{name} cannot be launched; {detail}")
     port = _resource_port(manifest, section, name)
     label = f"{manifest.identifier}:{section}.{name}"
     base_dir = manifest.base_dir
@@ -115,56 +140,54 @@ def _load_package_app(
             "run resources with multiple services need an explicit --resource services.NAME"
         )
 
-    raise LaunchError(
-        f"resource {section}.{name} is package metadata, not a launchable service"
-    )
-
 
 def _package_resource(manifest: Any, resource: str | None) -> tuple[str, str]:
-    selected = resource or manifest.package.primary
+    selected = resource or manifest.package.primary or _first_resource(manifest)
     if not selected:
-        selected = _first_resource(manifest)
+        raise LaunchError("package does not declare a launchable resource")
     section, sep, name = str(selected).partition(".")
     if not sep or not section or not name:
         raise LaunchError("resource must have shape section.name")
     return section, name
 
 
-def _first_resource(manifest: Any) -> str:
-    for section, resources in (
-        ("services", manifest.services),
-        ("tactics", manifest.tactics),
-        ("channels", manifest.channels),
-        ("runs", manifest.runs),
-    ):
+def _first_resource(manifest: Any) -> str | None:
+    for section in _LAUNCHABLE_SECTIONS:
+        resources = getattr(manifest, section)
         if resources:
             return f"{section}.{next(iter(resources))}"
-    raise LaunchError("package does not declare a launchable resource")
+    return None
 
 
 def _service_app(manifest: Any, name: str, service: Any, base_dir: Path) -> Any:
-    errors: list[str] = []
     if service.entry:
+        # An entry that fails to import or build is an error, never a reason
+        # to serve the bare tactic without the service's auth or middleware.
         try:
-            value = import_entrypoint(service.entry, base_dir=base_dir)
-            return _coerce_service_app(
+            value = import_entrypoint(service.entry, base_dir=base_dir, keep_loaded=True)
+            app = _coerce_service_app(
                 value,
                 label=f"services.{name}",
                 allow_payload=not bool(service.tactic),
             )
+        except LaunchError:
+            raise
         except Exception as exc:
-            errors.append(str(exc))
+            raise LaunchError(
+                f"service {name} entry {service.entry} failed: {type(exc).__name__}: {exc}"
+            ) from exc
+        if app is not None:
+            return app
     if service.tactic:
         tactic = manifest.tactics.get(service.tactic)
         if tactic is None:
             raise LaunchError(f"service {name} references missing tactic {service.tactic}")
         return _tactic_app(tactic.entry, base_dir=base_dir, name=service.tactic)
-    detail = f": {'; '.join(errors)}" if errors else ""
-    raise LaunchError(f"service {name} did not resolve to a FastAPI app{detail}")
+    raise LaunchError(f"service {name} did not resolve to a FastAPI app")
 
 
 def _tactic_app(entry: str, *, base_dir: Path, name: str) -> Any:
-    value = import_entrypoint(entry, base_dir=base_dir)
+    value = import_entrypoint(entry, base_dir=base_dir, keep_loaded=True)
     tactic = _coerce_tactic(value, name=name)
     return create_tactic_app(tactic)
 
@@ -179,7 +202,7 @@ def _channel_app(manifest: Any, *, store: str | Path | None) -> Any:
 def _coerce_entrypoint_app(value: Any, *, label: str) -> Any:
     if _is_asgi_app(value):
         return value
-    if callable(value) and _can_call_without_args(value):
+    if _is_factory(value):
         produced = value()
         if _is_asgi_app(produced):
             return produced
@@ -192,6 +215,12 @@ def _coerce_entrypoint_app(value: Any, *, label: str) -> Any:
 
 
 def _coerce_service_app(value: Any, *, label: str, allow_payload: bool) -> Any:
+    """Build a service app, or return None for a payload that is not allowed.
+
+    A service entry has no handler form, so any callable it names that can
+    be called without arguments builds the service.
+    """
+
     if _is_asgi_app(value):
         return value
     if callable(value) and _can_call_without_args(value):
@@ -200,8 +229,7 @@ def _coerce_service_app(value: Any, *, label: str, allow_payload: bool) -> Any:
             return produced
         if _looks_like_tactic(produced):
             return _tactic_to_app(produced, name=label.rsplit(".", 1)[-1])
-        if allow_payload:
-            return _constant_app(produced, label=label)
+        return _constant_app(produced, label=label) if allow_payload else None
     raise LaunchError(f"{label} did not return an ASGI app or service payload")
 
 
