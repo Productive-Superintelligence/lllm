@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import asyncio
 import inspect
 from collections.abc import Callable, Mapping
@@ -159,7 +160,10 @@ def coerce_tactic(value: Any, *, name: str | None = None) -> Tactic[Any, Any]:
     constructed without arguments. Any other callable is a factory when it
     takes no parameters at all, or when it can be called without arguments
     and is annotated to return a ``Tactic`` or an ASGI app (a Starlette or
-    FastAPI application). Every other callable is a handler, so
+    FastAPI application). A return annotation that cannot be evaluated at
+    runtime, such as one naming a class imported only under
+    ``TYPE_CHECKING``, counts when that class name ends in ``Tactic`` or is
+    ``FastAPI`` or ``Starlette``. Every other callable is a handler, so
     ``def greet(name="world")`` answers each input instead of being called
     once at load.
     """
@@ -219,8 +223,11 @@ def _returns_tactic_or_app(value: Any, annotation: Any) -> bool:
         try:
             namespace = getattr(inspect.unwrap(value), "__globals__", {})
             annotation = eval(annotation, namespace)
-        except Exception:  # an annotation that cannot be evaluated says nothing
-            return False
+        except Exception:
+            # A class imported only for type checking is not there to
+            # evaluate, so the annotation is judged by the class name it gives.
+            name = _annotation_name(annotation)
+            return name.endswith("Tactic") or name in {"FastAPI", "Starlette"}
     annotation = get_origin(annotation) or annotation
     if not isinstance(annotation, type):
         return False
@@ -231,6 +238,20 @@ def _returns_tactic_or_app(value: Any, annotation: Any) -> bool:
     except ImportError:
         return False
     return issubclass(annotation, Starlette)
+
+
+def _annotation_name(text: str) -> str:
+    """The class name an annotation gives, e.g. ``Tactic`` for ``lllm.Tactic[str, str]``."""
+
+    try:
+        node = ast.parse(text, mode="eval").body
+    except SyntaxError:
+        return ""
+    if isinstance(node, ast.Subscript):
+        node = node.value
+    if isinstance(node, ast.Attribute):
+        return node.attr
+    return node.id if isinstance(node, ast.Name) else ""
 
 
 def _callable_without_args(signature: inspect.Signature) -> bool:

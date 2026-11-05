@@ -371,6 +371,70 @@ def build_tactic(settings: Settings | None = None) -> Tactic[Any, Any]:
     assert response.json()["output"] == "built:x"
 
 
+def test_a_factory_return_annotation_counts_when_imported_only_for_type_checking(
+    tmp_path: Path,
+):
+    package = _package(
+        tmp_path,
+        primary="tactics.built",
+        module="fix2_tc",
+        body='\n[tactics.built]\nentry = "fix2_tc.tactics:build_tactic"\n',
+    )
+    _write(
+        package / "fix2_tc" / "tactics.py",
+        """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from lllm.runtimes import as_tactic
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
+    from fix2_tc.models import Answer
+    from lllm.protocol import Tactic
+    from lllm.runtimes import CallableTactic
+
+CALLS = []
+
+def build_tactic(prefix: str = "built:") -> Tactic[Any, Any]:
+    CALLS.append("build_tactic")
+    return as_tactic(lambda value: f"{prefix}{value}", name="built")
+
+def build_configured(prefix: str = ">") -> CallableTactic:
+    CALLS.append("build_configured")
+    return as_tactic(lambda value: f"{prefix}{value}", name="configured")
+
+def create_app(debug: bool = False) -> FastAPI:
+    import fastapi
+
+    app = fastapi.FastAPI()
+
+    @app.get("/health")
+    def health():
+        return {"debug": debug}
+
+    return app
+
+def answer(question: str = "") -> Answer:
+    CALLS.append(question)
+    return {"text": question}
+""",
+    )
+    sys.path.insert(0, str(package))
+
+    response = TestClient(load_launch_app(package).app).post("/run", json={"input": "x"})
+    import fix2_tc.tactics as tactics
+
+    assert response.json()["output"] == "built:x"
+    assert coerce_tactic(tactics.build_configured).run("x") == ">x"
+    coerce_tactic(tactics.answer)
+    assert tactics.CALLS == ["build_tactic", "build_configured"]
+    app = load_launch_app("fix2_tc.tactics:create_app").app
+    assert TestClient(app).get("/health").json() == {"debug": False}
+
+
 # 22: a Tactic subclass gets name= only when its constructor takes it.
 
 
