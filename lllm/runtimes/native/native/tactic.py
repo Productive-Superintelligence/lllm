@@ -89,115 +89,16 @@ class _TrackedAgent:
 
 
 class NativeTactic(Tactic):
-    """Tactic backed by LLLM's native Agent/Prompt/Dialog runtime.
+    """A tactic that must declare ``agent_group``.
 
-    Subclass this when you want ``agent_group`` and ``agent_configs`` to build
-    live LLLM ``Agent`` objects. Plain ``Tactic`` subclasses can use any
-    runtime internally, including Pydantic AI, graph runtimes, robot monitors,
-    or ordinary Python code.
+    Every :class:`~lllm.Tactic` builds native agents when ``agent_group`` is
+    set; this subclass only insists on it, for code written against earlier
+    releases that subclassed ``NativeTactic``.
     """
 
-    agent_group: Optional[List[str]] = None
-
-    def __init__(
-        self,
-        config: Optional[Any] = None,
-        runtime: Any = None,
-        registry: Any = None,
-        tactic_path: Optional[str] = None,
-        context: Optional[TacticContext] = None,
-        observer: Any = None,
-    ):
-        super().__init__(
-            config=config,
-            runtime=runtime,
-            registry=registry,
-            tactic_path=tactic_path,
-            context=context,
-            observer=observer,
-        )
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         if self.agent_group is None:
             raise AssertionError(
                 f"agent_group not set for native tactic '{self.name}'"
             )
-        self._runtime = self._registry or _get_default_registry()
-        self._llm_invoker = None
-        self._agent_specs = {}
-        self.agents: Dict[str, Any] = {}
-        self._init_native_runtime()
-
-    @property
-    def llm_invoker(self):
-        if self._llm_invoker is None:
-            config = _config_as_mapping(self.config, "Native tactic config")
-            self._llm_invoker = _build_native_invoker(config)
-        return self._llm_invoker
-
-    @llm_invoker.setter
-    def llm_invoker(self, value):
-        self._llm_invoker = value
-
-    def _init_native_runtime(self) -> None:
-        from ..core.native_config import parse_agent_configs
-
-        config = _config_as_mapping(self.config, "Native tactic config")
-        self._agent_specs = parse_agent_configs(config, self.agent_group, self.name)
-        self.agents = self._create_fresh_agents()
-
-    def _create_fresh_agents(self) -> Dict[str, Any]:
-        if not self._agent_specs:
-            return {}
-        return {
-            agent_name: spec.build(self._runtime, self.llm_invoker)
-            for agent_name, spec in self._agent_specs.items()
-        }
-
-    def _prepare_session(self, session: TacticCallSession) -> None:
-        raw_agents = self._create_fresh_agents()
-        self.agents = {
-            name: _TrackedAgent(agent, session, name)
-            for name, agent in raw_agents.items()
-        }
-
-    @classmethod
-    def quick(
-        cls,
-        query: Optional[str] = None,
-        system_prompt: Optional[Union[str, "Prompt"]] = "You are a helpful assistant.",
-        model: str = "gpt-4o",
-        return_agent: bool = False,
-        **model_args: Any,
-    ) -> Union["Message", "Agent", Tuple["Message", "Agent"]]:
-        """Quick constructor for a single native LLLM agent."""
-
-        from ..core.agent import Agent
-        from ..core.prompt import Prompt
-
-        if isinstance(system_prompt, str):
-            prompt = Prompt(path="_quick/system", prompt=system_prompt)
-        else:
-            prompt = system_prompt
-        invoker = _build_native_invoker({"invoker": "litellm"})
-        agent = Agent(
-            name="assistant",
-            system_prompt=prompt,
-            model=model,
-            llm_invoker=invoker,
-            runtime=_get_default_registry(),
-            model_args=model_args,
-        )
-        if query is not None:
-            agent.open("chat")
-            agent.receive(query)
-            response = agent.respond()
-            if return_agent:
-                return response, agent
-            return response
-        return agent
-
-    def __repr__(self) -> str:
-        parts = [f"{type(self).__name__}(name={self.name!r}"]
-        parts.append(f"agents={list(self._agent_specs.keys())}")
-        if self._sub_tactics:
-            parts.append(f"sub_tactics={list(self._sub_tactics.keys())}")
-        return ", ".join(parts) + ")"
+        super().__init__(*args, **kwargs)

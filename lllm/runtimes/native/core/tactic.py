@@ -39,6 +39,10 @@ from typing import (
 
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
+from ....protocol.errors import TacticUnsupportedError
+from ....protocol.tactic import InputT, OutputT
+from ....protocol.tactic import Tactic as _ProtocolTactic
+
 if TYPE_CHECKING:
     from .agent import Agent
     from .dialog import Message
@@ -308,17 +312,21 @@ class TacticCallSession(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-class Tactic(ABC):
-    """
-    Runtime-neutral protocol boundary for a callable agentic machine.
+class Tactic(_ProtocolTactic[InputT, OutputT]):
+    """The program of an agentic system.
 
-    A tactic accepts a task and returns a result. Inputs and outputs may be
-    strings or Pydantic models, which makes the same boundary work naturally
-    for Python packages, FastAPI services, Pydantic AI agents, native LLLM
-    agents, graph runtimes, and plain Python systems.
+    A tactic owns a task interface and orchestrates the work behind it. Write
+    the program in :meth:`call` (``call(self, task)``); set ``agent_group`` and
+    pass agent configs to get fresh native :class:`Agent` objects in
+    ``self.agents`` on every call. Each call runs on its own copy of the
+    tactic inside a :class:`TacticCallSession` that records agent calls,
+    sub-tactic calls, and cost.
 
-    Native LLLM Agent/Prompt/Dialog orchestration is available through
-    :class:`NativeTactic`.
+    ``Tactic`` is also a protocol tactic: it validates typed input and output
+    (``input_type``/``output_type``, or the ``input_model``/``output_model``
+    aliases), and exposes ``run``/``arun``/``info`` so it can be served,
+    streamed, packaged, and used as a tool by any runtime. Subclasses may
+    implement the protocol hook ``_run`` instead of ``call``.
     """
 
     name: Optional[str] = None
@@ -326,6 +334,9 @@ class Tactic(ABC):
     output_model: Optional[type[BaseModel]] = None
     input_type: Any = None
     output_type: Any = None
+    runtime_kind = "native"
+    #: Names of agents built from ``agent_configs`` for every call.
+    agent_group: Optional[List[str]] = None
 
     # -- Optional registration --------------------------------------------
 
@@ -337,6 +348,16 @@ class Tactic(ABC):
         **kwargs,
     ):
         super().__init_subclass__(**kwargs)
+        if "runtime_kind" not in cls.__dict__:
+            # A tactic that only implements the protocol hook is plain Python;
+            # one that writes a call() program runs on the native runtime.
+            writes_program = cls.call is not Tactic.call or bool(cls.agent_group)
+            protocol_only = cls._run is not Tactic._run and not writes_program
+            cls.runtime_kind = "python" if protocol_only else "native"
+        if getattr(cls, "input_type", None) is None and cls.input_model is not None:
+            cls.input_type = cls.input_model
+        if getattr(cls, "output_type", None) is None and cls.output_model is not None:
+            cls.output_type = cls.output_model
         if (
             register
             and (runtime is not None or registry is not None)
@@ -356,7 +377,23 @@ class Tactic(ABC):
         tactic_path: Optional[str] = None,
         context: Optional[TacticContext] = None,
         observer: Any = None,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        package_ref: Optional[str] = None,
+        service_ref: Optional[str] = None,
+        examples: Optional[List[Dict[str, Any]]] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
     ):
+        self._sub_tactics: Dict[str, Tactic] = {}
+        super().__init__(
+            name=name,
+            description=description,
+            package_ref=package_ref,
+            service_ref=service_ref,
+            examples=examples,
+            metadata=metadata,
+        )
         self.context = TacticContext.from_compat(
             context,
             registry=registry,
@@ -365,31 +402,22 @@ class Tactic(ABC):
             observer=observer,
         )
         self._registry = self.context.registry
-        self._sub_tactics: Dict[str, Tactic] = {}
-
         self.config = {} if config is None else config
         self._tactic_path: Optional[str] = self.context.tactic_path
         self._max_workers: int = _config_get(self.config, "max_workers", 4)
         self._session: Optional[TacticCallSession] = None
-
-    def supports(self, capability: str) -> bool:
-        """Return whether this tactic supports an optional protocol surface."""
-
-        return capability in self.capabilities()
+        self.call_context: Optional[Any] = None
+        self._llm_invoker = None
+        self._agent_specs: Dict[str, Any] = {}
+        self.agents: Dict[str, Any] = {}
+        if self.agent_group:
+            self._init_agents()
 
     def capabilities(self) -> set[str]:
-        """Return optional protocol surfaces implemented by this tactic."""
+        """Protocol surfaces plus the native ``call``/``acall`` entry points."""
 
-        supported = {"call", "acall"}
-        if (
-            type(self).stream is not Tactic.stream
-            or type(self).astream is not Tactic.astream
-        ):
-            supported.add("stream")
-        if (
-            type(self).events is not Tactic.events
-            or type(self).aevents is not Tactic.aevents
-        ):
+        supported = super().capabilities() | {"call", "acall"}
+        if type(self).events is not Tactic.events:
             supported.add("events")
         return supported
 
@@ -402,22 +430,6 @@ class Tactic(ABC):
         """Return the declared output schema/type, if any."""
 
         return self.output_type or self.output_model
-
-    def validate_input(self, task: Any) -> Any:
-        """Validate/coerce a task using the tactic's Pydantic schema."""
-
-        schema = self.input_schema()
-        if schema is None:
-            return task
-        return TypeAdapter(schema).validate_python(task)
-
-    def validate_output(self, result: Any) -> Any:
-        """Validate/coerce a result using the tactic's Pydantic schema."""
-
-        schema = self.output_schema()
-        if schema is None:
-            return result
-        return TypeAdapter(schema).validate_python(result)
 
     # -- Sub-tactic composition -------------------------------------------
 
@@ -433,36 +445,7 @@ class Tactic(ABC):
 
     @property
     def tactic_name(self) -> str:
-        """Compatibility name used by tactic-tool adapters."""
-
-        return self.name or type(self).__name__
-
-    def run(self, input_value: Any, **kwargs) -> Any:
-        """Compatibility alias for the protocol sync tactic surface."""
-
-        return self.__call__(input_value, **kwargs)
-
-    async def arun(self, input_value: Any, **kwargs) -> Any:
-        """Compatibility alias for the protocol async tactic surface."""
-
-        return await self.acall(input_value, **kwargs)
-
-    def info(self) -> Any:
-        """Return a protocol-compatible tactic info record."""
-
-        from ....protocol import TacticInfo
-        from ....protocol.schema import export_json_schema
-
-        return TacticInfo(
-            name=self.tactic_name,
-            description=getattr(self, "description", None)
-            or inspect.getdoc(type(self))
-            or "",
-            input_schema=export_json_schema(self.input_schema()),
-            output_schema=export_json_schema(self.output_schema()),
-            capabilities=tuple(sorted(self.capabilities())),
-            runtime_kind="native",
-        )
+        return getattr(self, "_name", None) or self.name or type(self).__name__
 
     def as_tool(
         self,
@@ -489,29 +472,23 @@ class Tactic(ABC):
 
     # -- Core execution ---------------------------------------------------
 
-    @abstractmethod
     def call(self, task: Any, **kwargs) -> Any:
-        pass
+        """The tactic's program. Override this (or the protocol hook ``_run``)."""
 
-    def stream(self, task: Any, **kwargs) -> Any:
-        """Return a sync stream for runtimes that support it."""
-
-        raise NotImplementedError(f"{type(self).__name__} does not support stream().")
-
-    async def astream(self, task: Any, **kwargs) -> Any:
-        """Return an async stream for runtimes that support it."""
-
-        raise NotImplementedError(f"{type(self).__name__} does not support astream().")
+        raise TacticUnsupportedError(
+            f"{type(self).__name__} must implement call() or _run()."
+        )
 
     def events(self, task: Any, **kwargs) -> Any:
-        """Return a sync event stream for runtimes that support it."""
+        """Return a sync event stream for tactics that support it."""
 
-        raise NotImplementedError(f"{type(self).__name__} does not support events().")
+        raise TacticUnsupportedError(f"{type(self).__name__} does not support events().")
 
-    async def aevents(self, task: Any, **kwargs) -> Any:
-        """Return an async event stream for runtimes that support it."""
+    def _run(self, input_value: Any, *, context: Any = None, **kwargs: Any) -> Any:
+        """Protocol hook: run :meth:`call` inside a native call session."""
 
-        raise NotImplementedError(f"{type(self).__name__} does not support aevents().")
+        kwargs.pop("return_session", None)
+        return self._execute(input_value, context=context, validate=False, **kwargs)
 
     def _copy_for_call(self) -> "Tactic":
         ctx = copy.copy(self)
@@ -519,9 +496,50 @@ class Tactic(ABC):
         return ctx
 
     def _prepare_session(self, session: TacticCallSession) -> None:
-        """Runtime-specific hook run on the per-call tactic copy."""
+        """Give the per-call copy fresh agents that report into ``session``."""
 
+        if not self.agent_group:
+            return None
+        from ..native.tactic import _TrackedAgent
+
+        self.agents = {
+            name: _TrackedAgent(agent, session, name)
+            for name, agent in self._create_fresh_agents().items()
+        }
         return None
+
+    # -- Native agents ----------------------------------------------------
+
+    @property
+    def llm_invoker(self):
+        if self._llm_invoker is None:
+            from ..native.tactic import _build_native_invoker
+
+            config = _config_as_mapping(self.config, "Native tactic config")
+            self._llm_invoker = _build_native_invoker(config)
+        return self._llm_invoker
+
+    @llm_invoker.setter
+    def llm_invoker(self, value):
+        self._llm_invoker = value
+
+    def _init_agents(self) -> None:
+        from .native_config import parse_agent_configs
+
+        config = _config_as_mapping(self.config, "Native tactic config")
+        self._agent_specs = parse_agent_configs(config, self.agent_group, self.name)
+        self.agents = self._create_fresh_agents()
+
+    def _create_fresh_agents(self) -> Dict[str, Any]:
+        if not self._agent_specs:
+            return {}
+        from ..native.tactic import _get_default_registry
+
+        runtime = self._registry or _get_default_registry()
+        return {
+            agent_name: spec.build(runtime, self.llm_invoker)
+            for agent_name, spec in self._agent_specs.items()
+        }
 
     def _resolve_tactic_path(self, tactic_name: str) -> str:
         if self._tactic_path is not None:
@@ -547,6 +565,8 @@ class Tactic(ABC):
         tags: Optional[Dict[str, str]] = None,
         metadata: Optional[Dict[str, Any]] = None,
         return_session: bool = False,
+        context: Any = None,
+        validate: bool = True,
         **kwargs,
     ) -> Any:
         tactic_name = self.name or type(self).__name__
@@ -557,6 +577,7 @@ class Tactic(ABC):
             session_name = f"{tactic_name}_{task_hash}_{timestamp}"
 
         ctx = self._copy_for_call()
+        ctx.call_context = context
         tactic_path = self._resolve_tactic_path(tactic_name)
 
         session = TacticCallSession(
@@ -580,9 +601,11 @@ class Tactic(ABC):
             metadata=metadata,
         ) as observer_span:
             try:
-                validated_task = ctx.validate_input(task)
+                validated_task = ctx.validate_input(task) if validate else task
+                if context is not None and _accepts_context(type(ctx).call):
+                    kwargs.setdefault("context", context)
                 result = ctx.call(validated_task, **kwargs)
-                result = ctx.validate_output(result)
+                result = ctx.validate_output(result) if validate else result
                 session.success(result)
                 _notify_tactic_observer(
                     observer,
@@ -763,20 +786,40 @@ class Tactic(ABC):
         return_agent: bool = False,
         **model_args: Any,
     ) -> Union[Message, Agent, Tuple[Message, Agent]]:
-        """Compatibility shortcut for LLLM's native single-agent runtime."""
+        """One agent, no configuration: ``Tactic.quick("What is LLLM?")``.
 
-        from ..native.tactic import NativeTactic
+        With ``query`` it returns the reply (and the agent when
+        ``return_agent=True``); without ``query`` it returns the agent so you
+        can ``open``/``receive``/``respond`` yourself.
+        """
 
-        return NativeTactic.quick(
-            query=query,
-            system_prompt=system_prompt,
+        from ..native.tactic import _build_native_invoker, _get_default_registry
+        from .agent import Agent
+        from .prompt import Prompt
+
+        if isinstance(system_prompt, str):
+            prompt = Prompt(path="_quick/system", prompt=system_prompt)
+        else:
+            prompt = system_prompt
+        agent = Agent(
+            name="assistant",
+            system_prompt=prompt,
             model=model,
-            return_agent=return_agent,
-            **model_args,
+            llm_invoker=_build_native_invoker({"invoker": "litellm"}),
+            runtime=_get_default_registry(),
+            model_args=model_args,
         )
+        if query is None:
+            return agent
+        agent.open("chat")
+        agent.receive(query)
+        response = agent.respond()
+        return (response, agent) if return_agent else response
 
     def __repr__(self) -> str:
         parts = [f"{type(self).__name__}(name={self.name!r}"]
+        if self._agent_specs:
+            parts.append(f"agents={list(self._agent_specs.keys())}")
         if self._sub_tactics:
             parts.append(f"sub_tactics={list(self._sub_tactics.keys())}")
         return ", ".join(parts) + ")"
@@ -802,3 +845,14 @@ def __getattr__(name: str) -> Any:
 
         return getattr(tactic_registry, name)
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def _accepts_context(fn: Any) -> bool:
+    try:
+        parameters = inspect.signature(fn).parameters
+    except (TypeError, ValueError):
+        return False
+    return "context" in parameters or any(
+        parameter.kind is inspect.Parameter.VAR_KEYWORD
+        for parameter in parameters.values()
+    )

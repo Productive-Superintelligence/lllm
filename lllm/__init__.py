@@ -1,4 +1,10 @@
-"""LLLM: protocol and service layer for reusable agentic tactics."""
+"""LLLM: Low-Level Language Models.
+
+A lightweight framework for advanced agentic systems. ``lllm.Tactic`` is the
+program: write ``call()``, declare ``agent_group`` for native agents, or use
+``Tactic.quick()`` for a single agent with no configuration. Every tactic is
+also a typed protocol tactic that can be served, packaged, and composed.
+"""
 
 from .protocol import (
     CallContext,
@@ -7,7 +13,6 @@ from .protocol import (
     LLLMError,
     ProtocolError,
     SchemaError,
-    Tactic,
     TacticError,
     TacticEvent,
     TacticInfo,
@@ -17,6 +22,7 @@ from .protocol import (
     TacticServiceError,
     TacticUnsupportedError,
 )
+from .runtimes.native.core.tactic import Tactic
 from .create import create_project
 from .parsers import (
     BaseParser,
