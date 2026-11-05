@@ -93,10 +93,11 @@ print(json.dumps(get_weather.to_tool(), indent=2))
 - Parameters without defaults are required; defaults are noted in the
   description.
 - Without `description`, the function's docstring is used.
-- `strict` is chosen for you: a schema is marked strict only when every
-  parameter is required and flat, which is what strict function calling (for
-  example OpenAI's) accepts. Pass `strict=True` or `strict=False` to decide
-  yourself.
+- `strict` is chosen for you: a schema is marked strict when every parameter
+  is required and flat (a string, number, boolean, enum, or a list of these),
+  which is what strict function calling (for example OpenAI's) accepts. An
+  object parameter, such as a model or a dict, keeps it off. Pass
+  `strict=True` or `strict=False` to decide yourself.
 
 Annotations map to JSON Schema, including containers, choices, and models;
 unannotated parameters become strings:
@@ -130,6 +131,7 @@ print(draw.strict)                            # False: the points are nested obj
 | `Literal["red", "blue"]` | a string `enum` |
 | `Optional[int]` | `anyOf` integer or null |
 | a Pydantic model | the model's object schema, inlined |
+| a recursive model | inlined once; references back into it become its type and title, e.g. `{"type": "object", "title": "Node"}` |
 
 ### Step 2: Call a tool yourself
 
@@ -389,6 +391,10 @@ print(review_tool.description)                  # the tactic's docstring
 ask_dev = Prompt(path="dev/ask", prompt="{request}", function_list=[review_tool])
 ```
 
+With `parameter_mode="kwargs"`, a tactic whose input is a Pydantic model
+publishes the model's fields as separate parameters instead. An input without
+fields, like the `str` here, keeps the single `task` parameter.
+
 Tactics are covered in [Lesson 5](05-native-tactics.md). Tactics can also mark
 individual methods as tools with `@tactictool("name", ...)` and be referenced by
 package ref, for example `"my_pkg.tactics:code_review"`.
@@ -567,7 +573,9 @@ With a `base_url`, an endpoint method returns the parameters to send, and the
 proxy makes the request: `CALL_API("weather_api/current/Tokyo", {})` sends
 `GET https://api.example.com/weather/current/Tokyo?units=metric&api_key=...`.
 
-- `{name}` placeholders in the endpoint path are filled in the URL.
+- `{name}` placeholders in the endpoint path are filled in the URL, each value
+  URL-encoded as one path segment (`BRK/A` becomes `BRK%2FA`). A missing or
+  empty value, `.`, or `..` raises `ValueError` before anything is sent.
 - The key is added under `api_key_name`; a name starting with `*` sends it as a
   header instead.
 - Endpoints declared with `method="POST"` send a JSON body.

@@ -70,10 +70,14 @@ What each level shows:
 
 | Level | Messages |
 |---|---|
-| `DEBUG` | Every tool call with its arguments, and successful agent calls |
-| `INFO` | Tactic start and completion with cost and agent-call count |
+| `DEBUG` | Every tool call with its arguments, successful agent calls, and the traceback of a failed tactic call |
+| `INFO` | Tactic start and completion with cost and agent-call count, and one line per failed call (`Tactic 'summarizer' failed: ValueError: ...`) |
 | `WARNING` | Parse repairs (`[writer] Handling exception (retry 0/3): ...`) and provider retries |
-| `ERROR` | Tactic failures with the full traceback |
+| `ERROR` | An agent call that uses up its tool rounds without a final reply (`[writer] Agent call failed`) |
+
+An agent call that runs out of parse repairs, provider retries, or rate-limit
+retries logs nothing at `ERROR`: it raises the last error, and the tactic's
+INFO failure line reports it.
 
 To see tool calls without turning on debug output for every library:
 
@@ -98,7 +102,7 @@ print(session.summary())
 
 | Field or property | Meaning |
 |---|---|
-| `tactic_name` | The tactic's `name` |
+| `tactic_name` | The tactic's name (a `name=` given to the constructor wins over the class `name`) |
 | `tactic_path` | Stable identifier used for filtering (Step 9) |
 | `state` | `"success"` or `"failure"` (`"running"` while in flight) |
 | `delivery` | The value `call()` returned |

@@ -84,8 +84,10 @@ prompt.template_vars                        # {'name', 'place'}
 prompt.validate_args({"name": "Alice"})     # ['place'] (missing variables)
 ```
 
-Every variable must be supplied; a missing one raises `ValueError` before
-anything is sent. Templates are always formatted, so literal braces are written
+`template_vars` is read from the current template text, so a copy made with
+`prompt.model_copy(update={"prompt": ...})` reports its own variables. Every
+variable must be supplied; a missing one raises `ValueError` before anything is
+sent. Templates are always formatted, so literal braces are written
 doubled (`{{` and `}}`) and come out single, whether or not the template has
 variables:
 
@@ -368,11 +370,17 @@ prompt = Prompt(
   an array with string items, `Literal["fast", "deep"]` an enum, a `BaseModel`
   a nested object, `Optional[...]` a nullable value. Unannotated parameters are
   strings.
+- Nested models are inlined, since tool schemas have no `$defs`. A recursive
+  model is spelled out once; references back into it become its type and
+  title, such as `{"type": "object", "title": "Node"}`.
 - Parameters without defaults are `required`; defaults are added to the
   property description.
-- `strict=None` (the default) turns on strict tool schemas only when every
-  parameter is required and flat, which is what OpenAI-style strict mode
-  accepts. Pass `strict=True` or `strict=False` to decide yourself.
+- `strict=None` (the default) turns on strict tool schemas when every
+  parameter is required and flat (a string, number, boolean, enum, or a list of
+  these), which is what OpenAI-style strict mode accepts. An object parameter,
+  such as a model or a dict, keeps it off, because strict mode needs
+  `additionalProperties: false` on every object. Pass `strict=True` or
+  `strict=False` to decide yourself.
 - `description` defaults to the docstring, `name` to the function name. Names
   may not contain whitespace, `/`, `:`, `\`, `;`, or `%`.
 - `Function.from_callable(fn, ...)` does the same without the decorator.
@@ -818,9 +826,9 @@ drift across experiments easy to detect.
 (implementations are not included; they are re-bound by name to registered
 `@tool` implementations when the prompt next runs), a Pydantic `format` model is
 stored as `{"model": "module:Qualname", "schema": {...}}`, and the parser,
-handler, and renderer are left out. `Prompt.from_dict()` rebuilds the prompt and
-re-imports the `format` model (falling back to its JSON schema if the import
-fails).
+handler, and renderer are left out. `Prompt.from_dict()` rebuilds the prompt
+without importing code: it uses the `format` model class only when its module
+is already imported, and the stored JSON schema otherwise.
 
 ---
 

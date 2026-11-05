@@ -66,9 +66,10 @@ namespaces, aliases, re-exports, custom sections) are in
 The same file can also describe the package for the LLLM hub: `[package]` keys
 such as `org` and `kind`, and named resources such as `[tactics.brief]` with an
 `entry`. Native discovery reads only `[package]` `name`/`version`/`description`,
-`[dependencies] packages`, each section's `paths`, and custom sections, and it
+`[dependencies] packages`, each section's `paths`, and custom sections. It
 ignores hub sections (`schemas`, `channels`, `snapshots`, `runs`, `config`,
-`docs`, `examples`, `requirements`, `card`). See
+`docs`, `examples`, `requirements`, `card`) unless one sets `paths`, which makes
+it a custom section like any other. See
 [Package Manifest](../packages/manifest.md) and [Hub](../packages/hub.md).
 
 ### Loading

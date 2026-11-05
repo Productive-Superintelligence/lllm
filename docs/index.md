@@ -118,8 +118,8 @@ Pydantic is part of LLLM's contract, not an add-on:
   `PydanticAITactic` and it can be served, packaged, and composed like any
   other tactic, while Pydantic AI keeps owning its tools, models, and output
   validation.
-- **Tactics are Pydantic AI tools.** `tactic_as_tool` hands any tactic,
-  including a native multi-agent tactic, to a Pydantic AI agent as a tool.
+- **Tactics are Pydantic AI tools.** `tactic_as_tool` hands a tactic, such as a
+  native multi-agent tactic, to a Pydantic AI agent as a typed tool.
 
 See [Runtimes](protocol/runtimes.md) and the
 [Pydantic AI tutorial](tutorials/10-pydantic-ai.md).

@@ -186,7 +186,9 @@ json.dumps(dialog.to_dict())       # ready to store
 `from_dict()` rebuilds the tree and restores `top_prompt` from the embedded
 data, falling back to looking up `top_prompt_path` in the runtime (with a
 warning if it is missing). Tool implementations are re-bound by name to
-registered `@tool` resources when the prompt next runs.
+registered `@tool` resources when the prompt next runs. Loading never imports
+code: a saved `format` model is used only when its module is already imported,
+and its stored JSON schema otherwise.
 
 ---
 

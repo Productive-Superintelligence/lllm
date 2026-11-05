@@ -508,7 +508,8 @@ records the endpoint:
 
 - `endpoint` is the path under `base_url`, and the name the API directory and
   `CALL_API` use. It may contain `/`, hyphens, and `{name}` placeholders
-  (`series/{series_id}/observations`).
+  (`series/{series_id}/observations`); any placeholder name works, `{series-id}`
+  included.
 - `params` maps each parameter to `(type, example)`; a trailing `*` marks it
   required. `response` is an example response.
 - `method` is `"GET"` or `"POST"`; `remove_keys` lists keys to drop from the
@@ -517,6 +518,12 @@ records the endpoint:
 `ProxyRegistrator(path, name, description, runtime=None, *, registry=None)`
 registers the class (in the default runtime unless you pass one) and sets the
 key `path` that `activate_proxies` and `CALL_API` use.
+
+`lllm create my-proxy --template proxy` starts a project whose
+`proxies/sample_proxy.py` follows these conventions without the decorator: it
+sets `_proxy_path = "sample"`, its endpoint methods take the params dict, and
+`account_id*` marks a required parameter. `python main.py --catalog` prints its
+API docs.
 
 ### How a call is made
 
@@ -536,7 +543,11 @@ the proxy's `call(path, params)`:
 4. **Build the request.** With a `base_url`, the URL is `<base_url>/<endpoint>`
    with templates filled in, and the instance's `api_key` is added: as a query
    parameter named `api_key_name`, or as a header when the name starts with `*`
-   (`api_key_name = "*x-api-key"` sends header `x-api-key`).
+   (`api_key_name = "*x-api-key"` sends header `x-api-key`). Each `{name}` takes
+   its value out of the params, URL-encoded as exactly one path segment
+   (`{"ticker": "BRK/A"}` fills `companies/{ticker}` as `companies/BRK%2FA`),
+   so pass raw values, not encoded ones. A missing or empty value, `.`, or `..`
+   raises `ValueError` before anything is sent.
 5. **Send it.** `_call_api(url, params, endpoint_info, headers)` performs the
    request. The default sends GET or POST by the endpoint's `method`, raises on
    HTTP errors and on JSON responses carrying an `error` key, drops
@@ -544,9 +555,12 @@ the proxy's `call(path, params)`:
    default; under `~/.lllm/.cache/`, or `$TMP_DIR/.cache/`). Override
    `_call_api` for APIs that answer in plain text or need custom authentication.
 
-A proxy without a `base_url` returns whatever the endpoint method returns, which
-suits local computation and SDK clients (the `CalcProxy` above). Tactic-backed
-endpoints always return the tactic's result.
+A proxy with neither a `base_url` nor its own `_call_api` returns whatever the
+endpoint method returns, which suits local computation (the `CalcProxy` above).
+One that overrides `_call_api` without a `base_url`, such as an SDK client (the
+built-in `exa`), gets the filled-in endpoint path instead of a URL, with the
+same placeholder rules. Tactic-backed endpoints always return the tactic's
+result.
 
 You can call a proxy without a manager: `FMPProxy().call("search-symbol",
 {"query": "AAPL"})`, and `resolve_endpoint(path)` returns the method, its
@@ -629,8 +643,9 @@ paths = ["proxies"]
 ```
 
 Discovery imports every `.py` file in the folder and registers each `BaseProxy`
-subclass as `my_system.proxies:<path>` (the `@ProxyRegistrator` path if
-decorated, else `<file>/<ClassName>`).
+subclass as `my_system.proxies:<path>`: the class's `_proxy_path`, which
+`@ProxyRegistrator` sets and a class may also declare itself, else
+`<file>/<ClassName>`.
 
 ### 3. `load_builtin_proxies()`
 
