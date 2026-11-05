@@ -356,7 +356,10 @@ def _load_tactic(entrypoint: str, *, base_dir: Path, name: str) -> Any:
     from ..hub import import_entrypoint
     from ..runtimes import coerce_tactic
 
-    return coerce_tactic(import_entrypoint(entrypoint, base_dir=base_dir), name=name)
+    return coerce_tactic(
+        import_entrypoint(entrypoint, base_dir=base_dir, keep_loaded=True),
+        name=name,
+    )
 
 
 def _tactic_ref(ref: str | None) -> str | None:
