@@ -57,7 +57,7 @@ BUILTIN_RESOURCE_SECTIONS = (
 )
 # Sections the hub declares in the same lllm.toml (``[schemas.x]``,
 # ``[channels.x]``, ``[card]``, ...). They name resources rather than folders,
-# so they are never treated as custom discovery sections.
+# so they are custom discovery sections only when they set ``paths``.
 HUB_DECLARED_SECTIONS = frozenset(
     {
         "schemas",
@@ -300,11 +300,13 @@ def load_package(
             section_name=section_name,
         )
 
-    # Custom sections
+    # Custom sections (a hub-named section only when it sets ``paths``)
     for section_name, section_data in config.items():
-        if section_name.startswith("_") or section_name in KNOWN_SECTIONS:
+        if section_name.startswith("_") or not isinstance(section_data, dict):
             continue
-        if not isinstance(section_data, dict):
+        if section_name in KNOWN_SECTIONS and not (
+            section_name in HUB_DECLARED_SECTIONS and section_data.get("paths")
+        ):
             continue
         _discover_section(
             section_data,
