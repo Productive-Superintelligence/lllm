@@ -471,6 +471,8 @@ class SkillsConfig:
 
         Injects only ``name`` and ``description`` per skill (~50–100 tokens
         each) plus a one-line instruction on how to activate them.
+        Braces are escaped (``{`` → ``{{``) so the block is safe to append to
+        a Prompt template rendered with ``str.format``.
         Returns an empty string when *skills* is empty.
         """
         if not skills:
@@ -489,7 +491,8 @@ class SkillsConfig:
             lines.append(f"    <description>{skill['description']}</description>")
             lines.append("  </skill>")
         lines.append("</available_skills>")
-        return "\n" + "\n".join(lines)
+        block = "\n" + "\n".join(lines)
+        return block.replace("{", "{{").replace("}", "}}")
 
     # ------------------------------------------------------------------
     # API-level injection (Anthropic-hosted skill IDs)

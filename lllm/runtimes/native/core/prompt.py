@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import copy
-import importlib
 import hashlib
 import inspect
 import logging as _logging
 import string
+import sys
 import types
 from abc import ABC, abstractmethod
+from collections import deque
 from collections.abc import Mapping
 from typing import (
     Any,
@@ -234,25 +235,88 @@ def _annotation_schema(annotation: Any) -> Dict[str, Any]:
     return schema or {"type": _json_type_for_annotation(annotation)}
 
 
-def _inline_refs(schema: Any, defs: Optional[Dict[str, Any]] = None, depth: int = 0) -> Any:
-    """Replace ``{"$ref": "#/$defs/X"}`` with the definition; drop ``$defs``."""
+def _inline_refs(schema: Any) -> Any:
+    """Replace ``{"$ref": "#/$defs/X"}`` with the definition; drop ``$defs``.
 
-    if isinstance(schema, dict):
-        defs = {**(defs or {}), **schema.get("$defs", {})}
-        ref = schema.get("$ref")
-        if isinstance(ref, str) and ref.startswith("#/$defs/") and depth < 20:
-            target = defs.get(ref.split("/")[-1])
-            if target is not None:
-                extra = {k: v for k, v in schema.items() if k != "$ref"}
-                return _inline_refs({**target, **extra}, defs, depth + 1)
-        return {
-            key: _inline_refs(value, defs, depth)
-            for key, value in schema.items()
-            if key != "$defs"
-        }
-    if isinstance(schema, list):
-        return [_inline_refs(item, defs, depth) for item in schema]
-    return schema
+    Tool parameters have no place for ``$defs``, so every model is inlined
+    where it is used. Within a recursive cycle of models, though, each model
+    is spelled out only at its first (shallowest) use; a later reference
+    back into the cycle becomes the model's bare type and title
+    (``{"type": "object", "title": "X"}``, or ``{}`` for a definition with
+    neither). The result grows with the definitions, not with the number
+    of paths through a cycle.
+    """
+
+    if not isinstance(schema, dict):
+        return schema
+    defs = schema.get("$defs", {})
+    reach = _reachable_defs(defs)
+    spelled_out: set[str] = set()
+    result: Dict[str, Any] = {}
+    # Breadth first, so a model is spelled out at its shallowest use.
+    # ``model`` is the innermost definition being inlined.
+    queue = deque([(result, "schema", schema, None)])
+    while queue:
+        parent, key, node, model = queue.popleft()
+        while isinstance(node, dict) and (name := _def_name(node, defs)):
+            target = defs[name]
+            extra = {k: v for k, v in node.items() if k != "$ref"}
+            # Back into the cycle being inlined (``name`` leads to ``model``),
+            # to a model that is already spelled out.
+            if model is not None and model in reach[name] and name in spelled_out:
+                bare = {k: target[k] for k in ("type", "title") if k in target}
+                node = {**bare, **extra}
+                break
+            spelled_out.add(name)
+            node, model = {**target, **extra}, name
+        if isinstance(node, dict):
+            parent[key] = {}
+            queue.extend(
+                (parent[key], k, v, model) for k, v in node.items() if k != "$defs"
+            )
+        elif isinstance(node, list):
+            parent[key] = [None] * len(node)
+            queue.extend((parent[key], i, v, model) for i, v in enumerate(node))
+        else:
+            parent[key] = node
+    return result["schema"]
+
+
+def _def_name(schema: Dict[str, Any], defs: Dict[str, Any]) -> Optional[str]:
+    """Name of the definition that *schema* refers to with a ``$ref``."""
+
+    ref = schema.get("$ref")
+    if isinstance(ref, str) and ref.startswith("#/$defs/"):
+        name = ref.removeprefix("#/$defs/")
+        if name in defs:
+            return name
+    return None
+
+
+def _reachable_defs(defs: Dict[str, Any]) -> Dict[str, set[str]]:
+    """Map each definition to the definitions its references lead to."""
+
+    def refs(schema: Any) -> set[str]:
+        if isinstance(schema, list):
+            return set().union(*map(refs, schema))
+        if not isinstance(schema, dict):
+            return set()
+        found = set().union(*map(refs, schema.values()))
+        name = _def_name(schema, defs)
+        return found | {name} if name else found
+
+    direct = {name: refs(body) for name, body in defs.items()}
+    reach: Dict[str, set[str]] = {}
+    for name in defs:
+        seen: set[str] = set()
+        pending = list(direct[name])
+        while pending:
+            other = pending.pop()
+            if other not in seen:
+                seen.add(other)
+                pending.extend(direct[other])
+        reach[name] = seen
+    return reach
 
 
 def _resolve_strict(
@@ -273,6 +337,10 @@ def _resolve_strict(
 
 def _is_flat_schema(schema: Any) -> bool:
     if not isinstance(schema, dict):
+        return False
+    # Strict providers need ``additionalProperties: false`` on every object,
+    # so objects (models, dicts, cut-off recursive models) are never flat.
+    if schema.get("type") == "object":
         return False
     if any(key in schema for key in ("properties", "anyOf", "oneOf", "allOf", "$ref", "default")):
         return False
@@ -372,7 +440,10 @@ class Function(BaseModel):
     ) -> Function:
         """
         Build a :class:`Function` by inspecting *fn*'s signature and
-        docstring.  Type hints are converted to JSON Schema types.
+        docstring.  Type hints are converted to JSON Schema types; nested
+        models are inlined, and the models of a recursive cycle are spelled
+        out once each, with other references back into the cycle described
+        by type and title (``{"type": "object", "title": "Node"}``).
 
         Parameters without a type annotation default to ``"string"``.
         Parameters whose names end with ``*`` in the docstring (or that
@@ -777,7 +848,6 @@ class Prompt(BaseModel):
     # -- Internal (populated in model_post_init) --------------------------
     _functions: Dict[str, Function] = PrivateAttr(default_factory=dict)
     _mcp_servers: Dict[str, MCP] = PrivateAttr(default_factory=dict)
-    _template_vars: set = PrivateAttr(default_factory=set)
 
     def model_post_init(self, __context):
         self._functions = {
@@ -789,12 +859,7 @@ class Prompt(BaseModel):
             m.server_label: copy.deepcopy(m) for m in self.mcp_servers_list
         }
 
-        _parser = string.Formatter()
-        self._template_vars = {
-            field_name.split(".")[0].split("[")[0]
-            for _, field_name, _, _ in _parser.parse(self.prompt)
-            if field_name is not None
-        }
+        _template_fields(self.prompt)  # a malformed template fails here
         self.metadata = copy_boundary_value(self.metadata)
         self.addon_args = copy_boundary_value(self.addon_args)
         self.function_list = copy.deepcopy(self.function_list)
@@ -833,7 +898,9 @@ class Prompt(BaseModel):
     @property
     def template_vars(self) -> set[str]:
         """Variable names required by this template (e.g. {topic} → 'topic')."""
-        return self._template_vars
+        # Parsed from the current text: ``model_copy(update={"prompt": ...})``
+        # skips ``model_post_init``, so a cached set would go stale.
+        return _template_fields(self.prompt)
 
     def validate_args(self, prompt_args: dict[str, Any]) -> list[str]:
         """Return list of missing required template variables for the prompt."""
@@ -1067,6 +1134,15 @@ class Prompt(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+def _template_fields(template: str) -> set[str]:
+    """Top-level ``str.format`` field names in *template* ({a.b} → 'a')."""
+    return {
+        field_name.split(".")[0].split("[")[0]
+        for _, field_name, _, _ in string.Formatter().parse(template)
+        if field_name is not None
+    }
+
+
 def _mapping_field_value(label: str, value: Any) -> Dict[str, Any]:
     return mapping_field_value(label, value)
 
@@ -1119,18 +1195,24 @@ def tactic_as_function(
     The tool's parameters come from the tactic's published input schema:
     one ``task`` parameter holding the whole input (``parameter_mode="task"``)
     or the input model's fields as separate parameters (``"kwargs"``).
+    An input without fields (e.g. ``str``) cannot be split into keyword
+    arguments, so ``"kwargs"`` falls back to the single ``task`` parameter.
+    Nested and recursive models are inlined as in
+    :meth:`Function.from_callable`.
     """
 
     from ...pydantic_ai import tactic_as_tool
 
+    input_schema = _inline_refs(tactic.info().input_schema or {})
+    if parameter_mode == "kwargs" and not input_schema.get("properties"):
+        parameter_mode = "task"
     callable_tool = tactic_as_tool(
         tactic,
         name=name,
         description=description,
         parameter_mode=parameter_mode,
     )
-    input_schema = _inline_refs(tactic.info().input_schema or {})
-    if parameter_mode == "kwargs" and input_schema.get("properties"):
+    if parameter_mode == "kwargs":
         properties = copy.deepcopy(input_schema["properties"])
         required = list(input_schema.get("required", []))
     else:
@@ -1164,11 +1246,17 @@ def _format_to_dict(value: Any) -> Any:
 def _format_from_dict(value: Any) -> Any:
     if not (isinstance(value, dict) and set(value) == {"model", "schema"}):
         return value
+    # Saved data must never import code: use the model class only if its
+    # module is already loaded, otherwise keep the stored JSON schema.
     module_name, _, qualname = str(value["model"]).partition(":")
+    target: Any = sys.modules.get(module_name)
+    if target is None:
+        return value["schema"]
     try:
-        target: Any = importlib.import_module(module_name)
         for part in qualname.split("."):
             target = getattr(target, part)
-        return target
     except Exception:
         return value["schema"]
+    if isinstance(target, type) and hasattr(target, "model_json_schema"):
+        return target
+    return value["schema"]
