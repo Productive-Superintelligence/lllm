@@ -109,3 +109,18 @@ def test_dialogs_with_tools_and_formats_serialize_to_json():
     assert data["top_prompt"]["function_list"][0]["name"] == "echo"
     assert restored.top_prompt.format is Verdict
     assert restored.top_prompt.functions["echo"].function is None
+
+
+def test_custom_renderers_receive_variables_without_format_fields():
+    import string
+
+    from lllm.runtimes.native import Prompt
+    from lllm.runtimes.native.core.prompt import BaseRenderer
+
+    class TemplateRenderer(BaseRenderer):
+        def render(self, prompt, **kwargs):
+            return string.Template(prompt).substitute(**kwargs)
+
+    prompt = Prompt(path="dollar", prompt="Hello $name.", renderer=TemplateRenderer())
+
+    assert prompt(name="Ada") == "Hello Ada."

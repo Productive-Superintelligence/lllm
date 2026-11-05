@@ -848,7 +848,9 @@ class Prompt(BaseModel):
         ``{{`` / ``}}``; they are unescaped even when there are no variables.
         """
         if not self.template_vars:
-            return self.renderer.render(self.prompt)
+            # No str.format fields: a custom renderer may still use its own
+            # syntax (e.g. string.Template), so it receives the variables.
+            return self.renderer.render(self.prompt, **kwargs)
         missing_args = self.validate_args(kwargs)
         if missing_args:
             raise ValueError(
