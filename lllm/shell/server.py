@@ -8,15 +8,16 @@ network store API at ``/network/``. The shell adds its own surface on top:
 
 The shell routes report errors in the services error envelope,
 ``{"detail": {"error": {"type": ..., "message": ...}}}``: a resource named in
-the URL that does not exist is a 404, and a malformed request is a 400. A
-tactic resource fails with the status ``POST /tactics/<name>/run`` uses (400
-for ``SchemaError`` and ``TacticUnsupportedError``, 500 for anything else, an
-``HTTPException`` included). Other handlers keep the status of an
-``HTTPException`` they raise; a ``ValueError`` or ``SchemaError`` is a 400;
-channel store errors keep the store server's codes (404 not found, 409
-conflict, 400 otherwise), and a remote store's 4xx errors keep the code its
-server returned; anything else is a 500, including a resource lookup that
-fails inside a handler.
+the URL that does not exist is a 404, as is a resource other than a channel on
+the ``/channels/`` routes, and a malformed request is a 400, including an event
+appended there whose input is not an object. A tactic resource fails with the
+status ``POST /tactics/<name>/run`` uses (400 for ``SchemaError`` and
+``TacticUnsupportedError``, 500 for anything else, an ``HTTPException``
+included). Other handlers keep the status of an ``HTTPException`` they raise;
+a ``ValueError`` or ``SchemaError`` is a 400; channel store errors keep the
+store server's codes (404 not found, 409 conflict, 400 otherwise), and a
+remote store's 4xx errors keep the code its server returned; anything else is
+a 500, including a resource lookup that fails inside a handler.
 """
 
 from __future__ import annotations
@@ -117,9 +118,12 @@ def create_strategy_app(strategy: Strategy) -> FastAPI:
         name: str,
         request: StrategyRunRequest,
     ) -> StrategyRunResponse:
-        input_value = request.input if isinstance(request.input, dict) else {}
+        if not isinstance(request.input, dict):
+            # The input holds the event fields; anything else would be dropped.
+            error = SchemaError("input must be an object with the event fields")
+            raise _http_error(error, endpoint="channel", resource=name, status_code=400)
         request = StrategyRunRequest(
-            input={**input_value, "op": "append"},
+            input={**request.input, "op": "append"},
             context=request.context,
         )
         return await _invoke(strategy, name, request, endpoint="channel")
@@ -171,11 +175,15 @@ async def _invoke(
     endpoint: str,
 ) -> StrategyRunResponse:
     try:
-        strategy._lookup(name)
+        resource = strategy._lookup(name)
     except ResourceNotFoundError as exc:
         # Only this lookup is a 404: the same error raised inside a handler is
         # that handler's failure, since the resource in the URL exists.
         raise _http_error(exc, endpoint=endpoint, resource=name, status_code=404) from exc
+    if endpoint == "channel" and resource.kind != "channel":
+        # The channel routes serve channels only, so a GET never runs a tactic.
+        error = ResourceNotFoundError(f"Strategy channel not found: {name}")
+        raise _http_error(error, endpoint=endpoint, resource=name, status_code=404)
     tactic = name in strategy._tactics
     try:
         output = await strategy.invoke_resource(
