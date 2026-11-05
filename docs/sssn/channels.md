@@ -97,7 +97,7 @@ print(ticket.cursor, ticket.kind, ticket.correlation_id)
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `id` | random UUID | Unique in the store. You may set your own (a path segment). |
+| `id` | random UUID | Unique in the store. You may set your own (a path segment); appending an id that exists raises `EventExistsError`. |
 | `cursor` | assigned by the store | Position in the store; see [Cursors](#reading-with-cursors). |
 | `channel` | required | Must exist. |
 | `timestamp` | now | Seconds since the epoch, as a float. |
@@ -212,7 +212,9 @@ How subscriptions behave:
 - `pull_subscription(id, *, limit=None)` returns up to `limit` (default: the
   subscription's `batch_size`) events after the stored cursor and moves the
   cursor past them in the same call. A pulled event is delivered once, whether
-  or not the consumer finishes with it.
+  or not the consumer finishes with it. `TacticProcessor` reads ahead with
+  `query_events` instead and pulls an event only after writing its output;
+  see [Processing](processing.md#failures).
 - `filters` supports one key, `kind`. Other keys raise `InvalidPayloadError`.
 - Without `subscription_id`, the store generates a UUID. Name subscriptions you
   want to resume.
@@ -302,10 +304,13 @@ print(latest.value, latest.channel, latest.source_event_id)
 {'open': 1} None None
 ```
 
-`put_snapshot` replaces the whole snapshot: fields you leave out are reset, as
-`channel` and `source_event_id` are above. `channel` and `source_event_id` must
-exist when set. Snapshots have no history; keep the history in a channel and
-point the snapshot at the event it came from.
+`put_snapshot` takes a `Snapshot`, a dict of snapshot fields, or a name and a
+value with the other fields as keywords, as in
+`store.put_snapshot("queue-depth", {"open": 1}, channel="inbox")`. The remote
+clients take the same arguments. It replaces the whole snapshot: fields you
+leave out are reset, as `channel` and `source_event_id` are above. `channel`
+and `source_event_id` must exist when set. Snapshots have no history; keep the
+history in a channel and point the snapshot at the event it came from.
 
 ## Errors
 
@@ -317,6 +322,7 @@ from lllm.network import NetworkError
 for attempt in (
     lambda: store.get_channel("missing"),
     lambda: store.append_event({"channel": "inbox", "payload": {}, "parent_ids": ["nope"]}),
+    lambda: store.append_event({"id": ticket.id, "channel": "inbox", "payload": {}}),
     lambda: store.query_events("inbox", after_cursor=-1),
     lambda: store.create_channel({"name": "bad name"}),
 ):
@@ -329,6 +335,7 @@ for attempt in (
 ```text
 ChannelNotFoundError
 EventNotFoundError
+EventExistsError
 InvalidPayloadError
 InvalidPayloadError
 ```
@@ -336,6 +343,7 @@ InvalidPayloadError
 | Error | Raised when | Store server status |
 | --- | --- | --- |
 | `ChannelExistsError` | Creating a channel whose name is taken. | 409 |
+| `EventExistsError` | Appending an event whose id is taken. | 409 |
 | `SubscriptionExistsError` | Reusing a subscription id on a different channel. | 409 |
 | `ChannelNotFoundError` | Using a channel that does not exist. | 404 |
 | `EventNotFoundError` | Unknown event id, including dangling `parent_ids`, artifact `event_ids`, or snapshot `source_event_id`. | 404 |
