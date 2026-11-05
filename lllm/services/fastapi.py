@@ -141,7 +141,7 @@ def create_service_app(
         from fastapi.responses import StreamingResponse
         from fastapi.encoders import jsonable_encoder
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
+        raise RuntimeError("Install lllm-core[server] to use FastAPI services.") from exc
 
     tactic_map = _normalize_tactics(tactics)
     from .. import __version__
@@ -291,7 +291,7 @@ def _mount_custom_endpoints(
         from fastapi.responses import StreamingResponse
         from fastapi.encoders import jsonable_encoder
     except ImportError as exc:  # pragma: no cover
-        raise RuntimeError("Install lllm[server] to use FastAPI services.") from exc
+        raise RuntimeError("Install lllm-core[server] to use FastAPI services.") from exc
 
     for spec, method in custom_endpoints(tactic):
         route_key = endpoint_route_key(spec)

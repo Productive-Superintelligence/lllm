@@ -75,9 +75,9 @@ def _template_files(
     package_name: str,
 ) -> dict[str, str]:
     dependency = {
-        "plain": "lllm",
-        "pydantic-ai": "lllm[pydantic-ai]",
-        "native": "lllm",
+        "plain": "lllm-core",
+        "pydantic-ai": "lllm-core[pydantic-ai]",
+        "native": "lllm-core[native]",
     }[template]
     return {
         "pyproject.toml": _pyproject(project_slug, package_name, dependency),
@@ -111,7 +111,7 @@ def _pyproject(project_slug: str, package_name: str, dependency: str) -> str:
 
         [project.optional-dependencies]
         dev = ["pytest>=8.0", "httpx>=0.27"]
-        server = ["lllm[server]"]
+        server = ["lllm-core[server]"]
 
         [tool.setuptools.packages.find]
         where = ["."]

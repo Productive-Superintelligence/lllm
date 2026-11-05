@@ -533,6 +533,7 @@ _KNOWN_AGENT_KEYS = frozenset(
         "context_manager",
         "skills",
         "tools",
+        "inference_hints",
     }
 )
 
@@ -608,6 +609,7 @@ class AgentSpec:
     context_manager: Optional[ContextManagerConfig] = None
     skills: Optional[SkillsConfig] = None
     tools: List[str] = field(default_factory=list)
+    inference_hints: Any = None  # InferenceHints or None
 
     @classmethod
     def from_config(cls, name: str, raw: Dict[str, Any]) -> "AgentSpec":
@@ -671,6 +673,10 @@ class AgentSpec:
 
         # -- tactic tools --------------------------------------------------
         tools = _parse_tool_refs(raw.pop("tools", None))
+        # -- serving hints -------------------------------------------------
+        from .hints import coerce_hints
+
+        inference_hints = coerce_hints(raw.pop("inference_hints", None))
 
         # -- model_args: explicit dict + leftover unknown keys -------------
         model_args = raw.pop("model_args", {})
@@ -700,6 +706,7 @@ class AgentSpec:
             context_manager=context_manager_cfg,
             skills=skills_cfg,
             tools=tools,
+            inference_hints=inference_hints,
         )
 
     def build(self, runtime: Runtime, invoker):
@@ -858,6 +865,7 @@ class AgentSpec:
             max_interrupt_steps=self.max_interrupt_steps,
             max_llm_recall=self.max_llm_recall,
             context_manager=context_manager,
+            inference_hints=self.inference_hints,
         )
 
 

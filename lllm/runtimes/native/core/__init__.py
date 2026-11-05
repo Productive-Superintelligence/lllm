@@ -30,6 +30,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "APITypes": (".const", "APITypes"),
     "APIType": (".const", "APIType"),
     "FunctionCall": (".const", "FunctionCall"),
+    "InferenceHints": (".hints", "InferenceHints"),
     "InvokeCost": (".const", "InvokeCost"),
     "InvokeResult": (".const", "InvokeResult"),
     "Invokers": (".const", "Invokers"),

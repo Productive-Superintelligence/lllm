@@ -30,6 +30,7 @@ _LAZY_ATTRS: dict[str, tuple[str, str]] = {
     "DialogTreeNode": (".core", "DialogTreeNode"),
     "Function": (".core", "Function"),
     "FunctionCall": (".core", "FunctionCall"),
+    "InferenceHints": (".core", "InferenceHints"),
     "InvokeCost": (".core", "InvokeCost"),
     "InvokeResult": (".core", "InvokeResult"),
     "Invokers": (".core", "Invokers"),

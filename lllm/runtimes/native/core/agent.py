@@ -10,6 +10,7 @@ from .. import utils as U
 from ..invokers.base import BaseInvoker, BaseStreamHandler
 from .const import APITypes, Roles
 from .dialog import ContextManager, Dialog, Message
+from .hints import InferenceHints, merge_request_fields
 from .prompt import AgentCallSession, AgentException, Prompt
 from .runtime import Runtime, get_default_runtime
 
@@ -62,6 +63,9 @@ class Agent:
     context_manager: Optional[ContextManager] = (
         None  # applied before each LLM call; None = disabled
     )
+    # Serving hints (session identity, priority, KV-cache intent) sent with
+    # every model call; None = no hints. See ``core.hints``.
+    inference_hints: Optional[InferenceHints] = None
 
     # Dialog management
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)
@@ -354,6 +358,15 @@ class Agent:
                 "Set an explicit value to cap the loop.",
                 self.name,
             )
+        hint_fields = (
+            self.inference_hints.request_fields(
+                dialog_id=dialog.tree_node.dialog_id,
+                parent_dialog_id=dialog.tree_node.parent_id,
+                model_args={**self.model_args, **args},
+            )
+            if self.inference_hints is not None
+            else {}
+        )
         for i in range(_max_steps):
             working_dialog = (
                 dialog.fork()
@@ -364,6 +377,8 @@ class Agent:
                 try:
                     _model_args = self.model_args.copy()
                     _model_args.update(args)
+                    if hint_fields:
+                        _model_args = merge_request_fields(_model_args, hint_fields)
 
                     invoke_result = self.llm_invoker.call(
                         working_dialog,

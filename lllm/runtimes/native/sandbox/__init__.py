@@ -24,7 +24,7 @@ def __getattr__(name: str) -> Any:
             if exc.name in {"nbformat", "jupyter_client"}:
                 raise RuntimeError(
                     "Native Jupyter sandbox support requires the sandbox extra. "
-                    "Install it with `pip install 'lllm[sandbox]'`."
+                    "Install it with `pip install 'lllm-core[sandbox]'`."
                 ) from exc
             raise
         value = getattr(module, attr_name)

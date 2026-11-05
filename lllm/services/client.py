@@ -95,7 +95,7 @@ class RemoteTactic(Tactic[Any, Any]):
             import httpx
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "Install httpx or lllm[client] to inspect remote tactics."
+                "Install httpx or lllm-core[client] to inspect remote tactics."
             ) from exc
 
         with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
@@ -109,7 +109,7 @@ class RemoteTactic(Tactic[Any, Any]):
             import httpx
         except ImportError as exc:  # pragma: no cover
             raise RuntimeError(
-                "Install httpx or lllm[client] to inspect remote tactics."
+                "Install httpx or lllm-core[client] to inspect remote tactics."
             ) from exc
 
         async with httpx.AsyncClient(
@@ -129,7 +129,7 @@ class RemoteTactic(Tactic[Any, Any]):
         try:
             import httpx
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError("Install httpx or lllm[client] to call remote tactics.") from exc
+            raise RuntimeError("Install httpx or lllm-core[client] to call remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
         with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
@@ -146,7 +146,7 @@ class RemoteTactic(Tactic[Any, Any]):
         try:
             import httpx
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError("Install httpx or lllm[client] to stream remote tactics.") from exc
+            raise RuntimeError("Install httpx or lllm-core[client] to stream remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
         with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
@@ -177,7 +177,7 @@ class RemoteTactic(Tactic[Any, Any]):
         try:
             import httpx
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError("Install httpx or lllm[client] to stream remote tactics.") from exc
+            raise RuntimeError("Install httpx or lllm-core[client] to stream remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
         async with httpx.AsyncClient(
@@ -206,7 +206,7 @@ class RemoteTactic(Tactic[Any, Any]):
         try:
             import httpx
         except ImportError as exc:  # pragma: no cover
-            raise RuntimeError("Install httpx or lllm[client] to call remote tactics.") from exc
+            raise RuntimeError("Install httpx or lllm-core[client] to call remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
         async with httpx.AsyncClient(

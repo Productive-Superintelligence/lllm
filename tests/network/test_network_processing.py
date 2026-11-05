@@ -124,8 +124,19 @@ def test_processor_rejects_unknown_error_mode(tmp_path):
 def test_processor_runs_against_a_remote_store(tmp_path):
     local = make_store(tmp_path)
     append(local, "remote")
-    transport = TestClient(create_app(local))._transport
-    remote = RemoteStore("http://testserver", transport=transport)
+    app_client = TestClient(create_app(local))
+
+    def forward(request):
+        response = app_client.request(
+            request.method,
+            request.url.path,
+            params=request.url.params,
+            content=request.content,
+            headers={"content-type": request.headers.get("content-type", "")},
+        )
+        return httpx.Response(response.status_code, content=response.content)
+
+    remote = RemoteStore("http://testserver", transport=httpx.MockTransport(forward))
 
     outputs = TacticProcessor(Summarize(), remote, source="raw", sink="summaries").process()
 

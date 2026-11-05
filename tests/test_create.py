@@ -63,9 +63,9 @@ def test_generated_service_app_handles_protocol_endpoints(tmp_path, template):
 @pytest.mark.parametrize(
     ("template", "expected_dependency"),
     [
-        ("plain", "lllm"),
-        ("pydantic-ai", "lllm[pydantic-ai]"),
-        ("native", "lllm"),
+        ("plain", "lllm-core"),
+        ("pydantic-ai", "lllm-core[pydantic-ai]"),
+        ("native", "lllm-core[native]"),
     ],
 )
 def test_create_project_metadata_and_docs_match_server_flow(
@@ -77,7 +77,7 @@ def test_create_project_metadata_and_docs_match_server_flow(
 
     pyproject = tomllib.loads((result.path / "pyproject.toml").read_text())
     assert expected_dependency in pyproject["project"]["dependencies"]
-    assert "lllm[server]" in pyproject["project"]["optional-dependencies"]["server"]
+    assert "lllm-core[server]" in pyproject["project"]["optional-dependencies"]["server"]
 
     install_command = 'pip install -e ".[dev,server]"'
     serve_command = f"lllm serve {result.package_name}.tactics:build_tactic --port 8000"

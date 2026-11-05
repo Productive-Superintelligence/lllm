@@ -28,7 +28,7 @@ def _build_native_invoker(config: Dict[str, Any]) -> Any:
         if exc.name == "litellm":
             raise RuntimeError(
                 "The native LLLM runtime requires LiteLLM. Install it with "
-                "`pip install 'lllm[native]'`."
+                "`pip install 'lllm-core[native]'`."
             ) from exc
         raise
 
