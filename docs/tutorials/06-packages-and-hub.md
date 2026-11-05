@@ -185,8 +185,8 @@ lllm hub agent-card local/briefs
 The card is generated for people, the agent card for coding agents that will
 use the package. Someone else fetches it with `lllm hub get local/briefs`.
 
-To publish a browsable hub like [lllm.one/hub](https://lllm.one/hub/), write
-a static catalog next to the hub web app:
+To publish your own read-only hub, write a static catalog any web server can
+host (see [The Hub](../packages/hub.md#publish-a-static-hub)):
 
 ```bash
 lllm hub index ./site/hub

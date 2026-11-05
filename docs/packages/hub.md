@@ -10,7 +10,7 @@ The hub works on [lllm.toml](manifest.md) packages and comes in three forms:
 | --- | --- | --- |
 | Local hub | A folder (`.lllm/hub` by default) managed by `lllm hub` | Publishing and fetching packages on one machine or a shared drive |
 | Hub API | `lllm hub serve`, a FastAPI app over a local hub | Sharing a hub on a network |
-| Static hub | `lllm hub index`, a catalog plus zips any web server can host | Read-only public listings, like lllm.one/hub |
+| Static hub | `lllm hub index`, a catalog plus zips any web server can host | Read-only public listings |
 
 ## Validate and publish
 
@@ -83,8 +83,10 @@ lllm hub serve --port 8787
 | `GET /packages/{org}/{name}/config-template` | Local config template |
 | `GET /packages/{org}/{name}/download` | Package zip |
 
-The hosted hub behind lllm.one adds authenticated uploads and object storage;
-it lives in the `lllm-hub` repository.
+[lllm.one/hub](https://lllm.one/hub/) is its own website, built on the same
+package format: the
+[lllm-hub](https://github.com/Productive-Superintelligence/lllm-hub)
+repository adds a web app, authenticated uploads, and object storage.
 
 ## Publish a static hub
 
@@ -99,9 +101,9 @@ site/hub/
 ```
 
 The catalog holds each package's latest version: summary, resources, card,
-agent card, config template, README, and download link. Put the hub web app
-next to it (the files under `docs/hub/` in the LLLM repository) and any static
-host can serve a browsable hub. That is how lllm.one/hub is built.
+agent card, config template, README, and download link. To make it browsable,
+add the hub web app with `lllm-hub --export-web ./site/hub` (from the
+lllm-hub repository); any static host can then serve the folder.
 
 ## From Python
 

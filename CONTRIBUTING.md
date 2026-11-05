@@ -29,7 +29,7 @@ for the opt-in live tests (`pytest -m live`).
 | `lllm/hub/` | The `lllm.toml` package format, validation, local hub, cards, catalogs. |
 | `lllm/network/`, `lllm/shell/` | SSSN and AAAX (experimental). |
 | `lllm/templates/`, `lllm/create/` | `lllm create` project templates and scaffolds. |
-| `docs/` | lllm.one, including the static hub at `docs/hub/`. |
+| `docs/` | lllm.one, the docs site. The hub website at lllm.one/hub is the separate `lllm-hub` repository. |
 
 ## Design rules
 

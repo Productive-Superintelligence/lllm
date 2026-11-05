@@ -59,7 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         "index",
         help="Write a static catalog (data/catalog.json + zips) for the hub web app",
     )
-    index.add_argument("output", help="Output folder, e.g. docs/hub")
+    index.add_argument("output", help="Output folder, e.g. site/hub")
     index.add_argument("--generated-at", help="Fixed timestamp for reproducible builds")
 
     serve = subcommands.add_parser("serve", help="Serve the local package hub API")
