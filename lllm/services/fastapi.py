@@ -1,8 +1,11 @@
 """FastAPI service adapter for tactics."""
 
+import copy
 import inspect
 import json
+import logging
 import re
+import threading
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
@@ -28,8 +31,14 @@ from .endpoints import (
     EndpointSpec,
     custom_endpoints,
     endpoint_path_key,
+    endpoint_requires_body,
     endpoint_route_key,
 )
+
+logger = logging.getLogger(__name__)
+
+_JSON_SCHEMA_DEFS_REF = "#/$defs/"
+_OPENAPI_SCHEMAS_REF = "#/components/schemas/"
 
 
 class RunRequest(BaseModel):
@@ -264,6 +273,8 @@ def create_service_app(
                     context=context,
                 ) from exc
 
+        _document_tactic_schemas(app, only, jsonable_encoder)
+
     reserved_routes = _reserved_routes(
         tactic_map,
         expose_single_tactic_routes=expose_single_tactic_routes_value,
@@ -397,12 +408,16 @@ def _make_custom_route(
     async def route(request: Request):
         context = _error_context(tactic, spec.name)
         try:
-            input_value, context = await _input_and_context_from_request(
-                request,
-                tactic=tactic,
-                endpoint=spec.name,
-            )
-            input_value = tactic.validate_input(input_value)
+            if endpoint_requires_body(spec) or await request.body():
+                input_value, context = await _input_and_context_from_request(
+                    request,
+                    tactic=tactic,
+                    endpoint=spec.name,
+                )
+                input_value = tactic.validate_input(input_value)
+            else:
+                input_value = _query_input(request.query_params)
+                context = _context_from_data(None, tactic=tactic, endpoint=spec.name)
             if spec.mode in {"stream", "events"}:
                 result = _invoke_custom(method, input_value, context=context)
                 return streaming_response(
@@ -496,6 +511,147 @@ def _public_tactic_info(tactic: Tactic[Any, Any], jsonable_encoder: Any) -> dict
     return payload
 
 
+def _document_tactic_schemas(
+    app: Any,
+    tactic: Tactic[Any, Any],
+    jsonable_encoder: Any,
+) -> None:
+    """Show the tactic's input/output schemas on ``/run`` and ``/stream`` in OpenAPI.
+
+    These routes read the raw request (protocol envelope or raw JSON, with LLLM
+    error envelopes), so FastAPI cannot infer their bodies from typed
+    parameters. Instead, each generated document is patched once with the
+    schemas that ``tactic.info()`` advertises on ``/info``, encoded the same
+    way. This is best effort: if ``info()`` fails or its schemas cannot be
+    rendered as JSON, the document is served without them and patching is
+    retried on the next call. A warning is logged when patching starts
+    failing; retries that fail again are logged at debug level.
+    """
+
+    generate_openapi = app.openapi
+    lock = threading.Lock()
+    documented: dict[str, Any] | None = None
+    failing = False
+
+    def openapi() -> dict[str, Any]:
+        nonlocal documented, failing
+        with lock:
+            document = generate_openapi()
+            if document is not documented:
+                try:
+                    _add_tactic_schemas(document, tactic, jsonable_encoder)
+                except Exception:
+                    logger.log(
+                        logging.DEBUG if failing else logging.WARNING,
+                        "Could not add the schemas of tactic %r to the OpenAPI document.",
+                        tactic.tactic_name,
+                        exc_info=True,
+                    )
+                    failing = True
+                    return document
+                documented, failing = document, False
+            return document
+
+    app.openapi = openapi
+
+
+def _add_tactic_schemas(
+    document: dict[str, Any],
+    tactic: Tactic[Any, Any],
+    jsonable_encoder: Any,
+) -> None:
+    """Patch *document* in place, leaving it untouched if anything fails."""
+
+    # Encoded as on /info: inf and nan become null; UUIDs, dates and decimals
+    # become strings.
+    info = jsonable_encoder(tactic.info(), include={"input_schema", "output_schema"})
+    run = document["paths"]["/run"]["post"]
+    stream = document["paths"]["/stream"]["post"]
+    components = dict(document.get("components", {}).get("schemas", {}))
+    input_schema, output_schema = _openapi_schemas(
+        [info["input_schema"], info["output_schema"]],
+        components,
+    )
+    request_schema = RunRequest.model_json_schema()
+    request_schema["properties"]["input"] = input_schema
+    response_schema = RunResponse.model_json_schema(mode="serialization")
+    response_schema["properties"]["output"] = output_schema
+    # /openapi.json is rendered as strict UTF-8 JSON (Starlette's JSONResponse),
+    # so anything it would reject must fail here, before the document changes.
+    json.dumps(
+        [components, request_schema, response_schema],
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
+    document.setdefault("components", {})["schemas"] = components
+    for operation in (run, stream):
+        operation["requestBody"] = {
+            "required": True,
+            "content": {"application/json": {"schema": copy.deepcopy(request_schema)}},
+        }
+    responses = run.setdefault("responses", {})
+    responses.setdefault("200", {}).setdefault("content", {})["application/json"] = {
+        "schema": response_schema,
+    }
+
+
+def _openapi_schemas(
+    schemas: list[dict[str, Any] | None],
+    components: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """Return *schemas* with their local ``$defs`` moved into OpenAPI components.
+
+    JSON Schema refs such as ``#/$defs/Item`` do not resolve once a schema is
+    embedded in an OpenAPI document, so definitions become component schemas
+    (renamed when a name is already taken) and refs, including discriminator
+    mapping targets, are rewritten to match.
+    """
+
+    definitions: dict[str, Any] = {}
+    for schema in schemas:
+        for name, definition in ((schema or {}).get("$defs") or {}).items():
+            if definitions.setdefault(name, definition) != definition:
+                # One name, two different models: name each schema's defs apart.
+                return [_openapi_schemas([item], components)[0] for item in schemas]
+    names: dict[str, str] = {}
+    for name in definitions:
+        target, index = name, 1
+        while target in components or target in names.values():
+            index += 1
+            target = f"{name}{index}"
+        names[name] = target
+    for name, definition in definitions.items():
+        components[names[name]] = _openapi_refs(definition, names)
+    hoisted = [_openapi_refs(schema or {}, names) for schema in schemas]
+    for schema in hoisted:
+        schema.pop("$defs", None)
+    return hoisted
+
+
+def _openapi_refs(value: Any, names: Mapping[str, str]) -> Any:
+    if isinstance(value, list):
+        return [_openapi_refs(item, names) for item in value]
+    if not isinstance(value, dict):
+        return value
+    result = {key: _openapi_refs(item, names) for key, item in value.items()}
+    if isinstance(result.get("$ref"), str):
+        result["$ref"] = _openapi_ref(result["$ref"], names)
+    discriminator = result.get("discriminator")
+    if isinstance(discriminator, dict) and isinstance(discriminator.get("mapping"), dict):
+        discriminator["mapping"] = {
+            key: _openapi_ref(target, names) if isinstance(target, str) else target
+            for key, target in discriminator["mapping"].items()
+        }
+    return result
+
+
+def _openapi_ref(ref: str, names: Mapping[str, str]) -> str:
+    if not ref.startswith(_JSON_SCHEMA_DEFS_REF):
+        return ref
+    name = ref.removeprefix(_JSON_SCHEMA_DEFS_REF)
+    return _OPENAPI_SCHEMAS_REF + names.get(name, name)
+
+
 async def _input_and_context_from_request(
     request: Any,
     *,
@@ -542,6 +698,14 @@ def _body_from_raw(raw: bytes, content_type: str) -> Any:
         return raw.decode("utf-8")
     except UnicodeDecodeError:
         return raw
+
+
+def _query_input(query_params: Any) -> dict[str, Any] | None:
+    values: dict[str, Any] = {}
+    for key in query_params:
+        items = query_params.getlist(key)
+        values[key] = items[0] if len(items) == 1 else items
+    return values or None
 
 
 def _is_protocol_envelope(body: Mapping[str, Any]) -> bool:
