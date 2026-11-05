@@ -699,6 +699,10 @@ class Prompt(BaseModel):
     # -- Tools ------------------------------------------------------------
     function_list: List[Union[Function, StrictStr]] = Field(default_factory=list)
     mcp_servers_list: List[MCP] = Field(default_factory=list)
+    #: Also offer the agent's own tools (those on its system prompt, including
+    #: config ``tools:``, proxy tools, and skills) on this turn. Set False for
+    #: a turn that must answer without tools.
+    agent_tools: bool = True
 
     # Provider-specific capabilities or args (like allow_web_search, computer_use_config, etc.)
     addon_args: Dict[str, Any] = Field(default_factory=dict)

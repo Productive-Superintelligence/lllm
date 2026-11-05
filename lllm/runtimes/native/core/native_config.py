@@ -528,6 +528,7 @@ _KNOWN_AGENT_KEYS = frozenset(
         "max_exception_retry",
         "max_interrupt_steps",
         "max_llm_recall",
+        "max_rate_limit_retries",
         "extra_settings",
         "proxy",
         "context_manager",
@@ -604,6 +605,7 @@ class AgentSpec:
     max_exception_retry: int = 3
     max_interrupt_steps: int = 5
     max_llm_recall: int = 0
+    max_rate_limit_retries: int = 8
     extra_settings: Dict[str, Any] = field(default_factory=dict)
     proxy: Optional[ProxyConfig] = None
     context_manager: Optional[ContextManagerConfig] = None
@@ -648,6 +650,7 @@ class AgentSpec:
         max_exception_retry = raw.pop("max_exception_retry", 3)
         max_interrupt_steps = raw.pop("max_interrupt_steps", 5)
         max_llm_recall = raw.pop("max_llm_recall", 0)
+        max_rate_limit_retries = raw.pop("max_rate_limit_retries", 8)
         extra_settings = raw.pop("extra_settings", {})
 
         # -- proxy config (already deep-merged with global by the caller) --
@@ -701,6 +704,7 @@ class AgentSpec:
             max_exception_retry=max_exception_retry,
             max_interrupt_steps=max_interrupt_steps,
             max_llm_recall=max_llm_recall,
+            max_rate_limit_retries=max_rate_limit_retries,
             extra_settings=extra_settings,
             proxy=proxy,
             context_manager=context_manager_cfg,
@@ -864,6 +868,7 @@ class AgentSpec:
             max_exception_retry=self.max_exception_retry,
             max_interrupt_steps=self.max_interrupt_steps,
             max_llm_recall=self.max_llm_recall,
+            max_rate_limit_retries=self.max_rate_limit_retries,
             context_manager=context_manager,
             inference_hints=self.inference_hints,
         )

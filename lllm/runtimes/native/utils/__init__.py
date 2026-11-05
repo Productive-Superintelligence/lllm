@@ -305,8 +305,12 @@ def check_item(item: dict, required_keys: Dict[str, type]) -> dict:
 
 
 def is_openai_rate_limit_error(e):
-    if "Please wait and try again later." in str(e):
+    """Whether an LLM error is a rate limit (LiteLLM/OpenAI ``RateLimitError``, HTTP 429)."""
+
+    if type(e).__name__ == "RateLimitError" or getattr(e, "status_code", None) == 429:
         return True
-    if "Rate limit is exceeded." in str(e):
-        return True
-    return False
+    message = str(e)
+    return (
+        "Please wait and try again later." in message
+        or "Rate limit is exceeded." in message
+    )

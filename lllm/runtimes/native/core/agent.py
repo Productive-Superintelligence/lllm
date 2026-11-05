@@ -60,6 +60,8 @@ class Agent:
     max_exception_retry: int = 3
     max_interrupt_steps: int = 5
     max_llm_recall: int = 0
+    #: Rate-limit retries before giving up; waits grow exponentially (max 60s).
+    max_rate_limit_retries: int = 8
     context_manager: Optional[ContextManager] = (
         None  # applied before each LLM call; None = disabled
     )
@@ -73,6 +75,43 @@ class Agent:
 
     def __post_init__(self):
         self.runtime = self.runtime or get_default_runtime()
+
+    def _with_agent_tools(self, prompt: Prompt, runtime: Any) -> Prompt:
+        """Offer the agent's own tools on a turn driven by another prompt.
+
+        A turn is specified by the most recent prompt (its parser, format,
+        handlers, and tools), and ``receive(text)`` starts a plain turn. The
+        tools on the agent's system prompt (including config ``tools:``,
+        proxy tools, and skills) are capabilities of the agent, so they stay
+        available on every turn unless the prompt sets ``agent_tools=False``.
+        The turn prompt's own tools win on a name clash.
+        """
+
+        system = self.system_prompt
+        if prompt is system or not prompt.agent_tools:
+            return prompt
+        if not system.function_list and not system.mcp_servers_list:
+            return prompt
+        system = system.resolve_function_refs(runtime)
+        own_functions = prompt.functions
+        extra_functions = [
+            function
+            for name, function in system.functions.items()
+            if name not in own_functions
+        ]
+        own_servers = {server.server_label for server in prompt.mcp_servers_list}
+        extra_servers = [
+            server
+            for server in system.mcp_servers_list
+            if server.server_label not in own_servers
+        ]
+        if not extra_functions and not extra_servers:
+            return prompt
+        return prompt.extend(
+            path=prompt.path,
+            function_list=[*prompt.function_list, *extra_functions],
+            mcp_servers_list=[*prompt.mcp_servers_list, *extra_servers],
+        )
 
     def open(
         self,
@@ -348,7 +387,11 @@ class Agent:
         dialog.top_prompt = dialog.top_prompt.resolve_function_refs(
             dialog.runtime or self.runtime
         )
+        dialog.top_prompt = self._with_agent_tools(
+            dialog.top_prompt, dialog.runtime or self.runtime
+        )
         interrupts = []
+        rate_limit_retries = 0
         _max_steps = (
             100 if self.max_interrupt_steps == 0 else self.max_interrupt_steps + 1
         )  # +1 for the final response
@@ -408,10 +451,13 @@ class Agent:
                     else:
                         raise e
                 except Exception as e:  # handle the exception from the LLM
-                    # Simplified error handling for now
-                    wait_time = random.random() * 15 + 1
-                    if U.is_openai_rate_limit_error(e):  # for safe
-                        time.sleep(wait_time)
+                    if U.is_openai_rate_limit_error(e):
+                        rate_limit_retries += 1
+                        if rate_limit_retries > self.max_rate_limit_retries:
+                            raise e
+                        time.sleep(
+                            min(60.0, 2.0**rate_limit_retries) + random.random()
+                        )
                     else:
                         if not session.reach_max_llm_recall:
                             session.llm_recall(e, i)
