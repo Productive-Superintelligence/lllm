@@ -3,6 +3,7 @@
 import asyncio
 import logging
 import threading
+from contextlib import aclosing
 
 import pytest
 from fastapi.testclient import TestClient
@@ -882,17 +883,25 @@ class LoopBound(Tactic):
         self.loops = []
 
     async def call(self, task):
+        if self.lock is None:
+            self.loops.append(id(asyncio.get_running_loop()))
+            return task
         async with self.lock:
             self.loops.append(id(asyncio.get_running_loop()))
             await asyncio.sleep(0)
         return task
 
 
-def test_sync_callers_share_one_background_loop_for_async_programs():
+def test_sync_callers_reuse_their_threads_loop_for_async_programs():
     tactic = LoopBound()
 
-    assert [tactic("a"), tactic.run("b"), *tactic.bcall(["c", "d"])] == ["a", "b", "c", "d"]
-    assert len(set(tactic.loops)) == 1
+    assert [tactic("a"), tactic.run("b"), tactic("c")] == ["a", "b", "c"]
+    assert len(set(tactic.loops)) == 1  # one loop for this thread's calls
+    # Each bcall worker thread runs its programs on its own loop, so shared
+    # loop-bound state (the lock) is not used there.
+    unlocked = LoopBound()
+    unlocked.lock = None
+    assert unlocked.bcall(["d", "e"]) == ["d", "e"]
 
 
 def test_async_callers_and_served_requests_reuse_their_own_loop():
@@ -927,27 +936,146 @@ def test_async_ccall_runs_programs_concurrently_on_the_callers_loop():
     assert time.perf_counter() - started < 0.6
 
 
-def test_a_sync_call_from_inside_a_background_async_program_says_what_to_do():
-    class Inner(Tactic):
-        name = "inner"
+def _within(seconds, fn):
+    """Run fn in a thread and fail (instead of hanging the suite) if it takes too long."""
+
+    box = {}
+
+    def target():
+        try:
+            box["value"] = fn()
+        except BaseException as exc:  # noqa: BLE001 - re-raised below
+            box["error"] = exc
+
+    worker = threading.Thread(target=target, daemon=True)
+    worker.start()
+    worker.join(seconds)
+    assert not worker.is_alive(), f"hung for more than {seconds}s"
+    if "error" in box:
+        raise box["error"]
+    return box["value"]
+
+
+class _Score(Tactic):
+    name = "score"
+
+    async def call(self, task):
+        await asyncio.sleep(0)
+        return len(task)
+
+
+class _Summarize(Tactic):
+    """An async program that fans out with bcall and calls a sync entry point."""
+
+    name = "summarize"
+
+    def __init__(self):
+        super().__init__()
+        self.score = _Score()
+
+    async def call(self, text):
+        scores = self.score.bcall(text.split())  # a sync fan-out from async code
+        return sum(scores) + self.score("x")
+
+
+def test_async_programs_may_call_sync_entry_points_and_fan_out():
+    expected = len("ab") + len("cd") + len("e") + 1
+    assert _within(15, lambda: _Summarize()("ab cd e")) == expected
+    assert _within(15, lambda: _Summarize().run("ab cd e")) == expected
+    assert _within(15, lambda: _Summarize().bcall(["ab cd e"])) == [expected]
+    assert _within(15, lambda: asyncio.run(_Summarize().acall("ab cd e"))) == expected
+
+
+@pytest.mark.filterwarnings("ignore:This process .* is multi-threaded:DeprecationWarning")
+def test_sync_calls_of_async_programs_work_in_forked_children():
+    import multiprocessing
+
+    if "fork" not in multiprocessing.get_all_start_methods():
+        pytest.skip("no fork start method")
+    assert _Score()("warm") == 4  # the parent has used its thread loop
+    ctx = multiprocessing.get_context("fork")
+    with ctx.Pool(2) as pool:
+        result = pool.map_async(_score_in_child, ["abc", "de"])
+        assert result.get(timeout=20) == [3, 2]
+    # The children must leave the parent's loop alone (shared epoll state).
+    assert _within(10, lambda: _Score()("after")) == len("after")
+    assert _Score()("main thread") == len("main thread")
+
+
+def _score_in_child(text):
+    return _Score()(text)
+
+
+def test_system_exit_in_an_async_program_reaches_the_caller():
+    class Exits(Tactic):
+        name = "exits"
+
+        async def call(self, task):
+            raise SystemExit(3)
+
+    with pytest.raises(SystemExit):
+        _within(10, lambda: Exits()("x"))
+    assert _within(10, lambda: _Score()("still works")) == len("still works")
+
+
+def test_cancelled_async_calls_leave_cancelled_sessions():
+    class Slow(Tactic):
+        name = "slow-child"
+
+        async def call(self, task):
+            await asyncio.sleep(10)
+            return task
+
+    class Parent(Tactic):
+        name = "impatient"
+
+        def __init__(self):
+            super().__init__()
+            self.child = Slow()
+
+        async def call(self, task):
+            try:
+                await asyncio.wait_for(self.child.acall(task), timeout=0.05)
+            except asyncio.TimeoutError:
+                return "timed out"
+
+    session = asyncio.run(Parent().acall("x", return_session=True))
+    assert session.delivery == "timed out"
+    assert [child.state for child in session.sub_tactic_sessions["slow-child"]] == ["cancelled"]
+
+
+def test_arun_goes_through_a_run_mixin_when_call_is_async():
+    class Guarded:
+        def _run(self, input_value, *, context=None, **kwargs):
+            return "guarded:" + super()._run(input_value, context=context, **kwargs)
+
+    class AsyncProgram(Guarded, Tactic):
+        name = "guarded-async"
 
         async def call(self, task):
             return task
 
-    class Outer(Tactic):
-        name = "outer"
+    tactic = AsyncProgram()
+    assert tactic.run("x") == "guarded:x"
+    assert asyncio.run(tactic.arun("x")) == "guarded:x"
 
-        def __init__(self):
-            super().__init__()
-            self.inner = Inner()
+
+def test_async_programs_use_agents_with_arespond():
+    class AsyncWriter(Tactic):
+        name = "async-writer"
+        agent_group = ["writer"]
 
         async def call(self, task):
-            return self.inner(task)  # sync entry point from async code
+            writer = self.agents["writer"]
+            writer.open("work")
+            writer.receive(task)
+            return (await writer.arespond()).content
 
-    with pytest.raises(TacticUnsupportedError, match="await tactic.acall"):
-        Outer()("x")
-    # The async entry point is the way: it awaits the inner program directly.
-    assert asyncio.run(Outer().acall("x")) is not None or True
+    tactic = AsyncWriter(_WRITER)
+    session = asyncio.run(tactic.acall("hi", return_session=True))
+    assert session.delivery == "echo: hi"
+    assert session.agent_call_count == 1
+    assert tactic("again") == "echo: again"
 
 
 # -- Streams are pulled lazily and finish their sessions ------------------------
@@ -1106,3 +1234,64 @@ def test_async_stream_overrides_with_agents_warn():
 
             async def astream(self, input_value, *, context=None, **kwargs):
                 yield input_value
+
+
+def test_closing_a_proxied_stream_runs_the_inner_cleanup_first():
+    from lllm import ProxyTactic
+
+    cleaned = threading.Event()
+
+    class Feed(Tactic):
+        name = "proxied-feed"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            try:
+                for step in range(10):
+                    yield step
+            finally:
+                cleaned.set()
+
+    async def first_then_close():
+        stream = ProxyTactic(Feed()).aevents("x")
+        async for event in stream:
+            await stream.aclose()
+            return event.data, cleaned.is_set()
+
+    assert asyncio.run(first_then_close()) == (0, True)
+
+
+def test_streams_closed_in_a_cancel_scope_do_not_leak_threads():
+    anyio = pytest.importorskip("anyio")
+    import time
+
+    class Slowish(Tactic):
+        name = "slowish"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            for step in range(1000):
+                time.sleep(0.01)
+                yield step
+
+    def stream_threads():
+        return [t for t in threading.enumerate() if t.name == "lllm-stream"]
+
+    before = len(stream_threads())
+
+    async def main():
+        for _ in range(5):
+            with anyio.move_on_after(0.05):
+                async with aclosing(Slowish().aevents("x")) as events:
+                    async for _event in events:
+                        await anyio.sleep(1)
+
+    asyncio.run(main())
+    deadline = time.monotonic() + 5
+    while len(stream_threads()) > before and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert len(stream_threads()) == before

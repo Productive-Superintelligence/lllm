@@ -31,9 +31,12 @@ modules, with a single `lllm` command.
   the reader, and closing a stream (or a client disconnecting) closes the
   generator. A stream closed early leaves its session `"cancelled"`.
 - Async `call()` programs are awaited on the caller's loop by `acall`,
-  `arun`, `ccall` and a service's `/run`, and run on one long-lived
-  background loop from `tactic(x)`, `run()` and `bcall`, so clients they
-  keep between calls (an `httpx.AsyncClient`) stay usable.
+  `arun`, `ccall` and a service's `/run`, and run on the calling thread's
+  own event loop (kept per thread, fresh after a fork) from `tactic(x)`,
+  `run()` and `bcall`, so clients they keep between calls (an
+  `httpx.AsyncClient`) stay usable. `await agent.arespond()` calls an agent
+  from async code without blocking the loop. A cancelled or interrupted call
+  leaves its session `"cancelled"`.
 - Sub-tactic calls roll up into the caller's session and cost. Sessions and
   sub-tactic records use the instance name, so `Tactic(name=...)` wins over
   the class `name`.
@@ -161,9 +164,7 @@ modules, with a single `lllm` command.
 - A hook-only tactic (`_run()`/`_arun()`) runs on the instance under
   `tactic(x)`, `acall`, `bcall` and `ccall` too, not on a per-call copy.
 - `tactic(x)` on an `async def call()` returns the result instead of a
-  coroutine: in async code, `await tactic.acall(x)`. Calling `tactic(x)` on
-  an async program from inside another async program raises
-  `TacticUnsupportedError`.
+  coroutine: in async code, `await tactic.acall(x)`.
 - Static hub catalogs write zips to `packages/<org>/<name>/<version>.zip`
   (was `packages/<org>-<name>-<version>.zip`), with the package files at
   the archive root instead of under a folder; `install_package()` reads

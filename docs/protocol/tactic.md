@@ -198,7 +198,7 @@ or `_run()`.
 | Method | Returns |
 | --- | --- |
 | `tactic(task, session_name=None, tags=None, metadata=None, return_session=False, **kwargs)` | The result, or the call's `TacticCallSession`. |
-| `await tactic.acall(task, ...)` | The same, run in a worker thread. |
+| `await tactic.acall(task, ...)` | The same, awaited: an `async def call()` runs on the caller's loop, a sync one in a worker thread. |
 | `tactic.bcall(tasks, max_workers=None, fail_fast=True, return_sessions=False, ...)` | Results in input order. With `fail_fast=False`, failures come back as exception objects in place. |
 | `async for index, result in tactic.ccall(tasks)` | `(index, result)` pairs as each call finishes. |
 

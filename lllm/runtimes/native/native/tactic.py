@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from typing import Any, Dict, List, Optional, TYPE_CHECKING, Tuple, Union
 
 from ..core.tactic import (
@@ -74,6 +76,25 @@ class _TrackedAgent:
         if return_session:
             return agent_session
         return agent_session.delivery
+
+    async def arespond(
+        self,
+        alias: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        args: Optional[Dict[str, Any]] = None,
+        parser_args: Optional[Dict[str, Any]] = None,
+        return_session: bool = False,
+    ) -> Any:
+        """``respond()`` for async code: runs off the event loop, still recorded."""
+
+        return await asyncio.to_thread(
+            self.respond,
+            alias=alias,
+            metadata=metadata,
+            args=args,
+            parser_args=parser_args,
+            return_session=return_session,
+        )
 
     def __getattr__(self, name: str) -> Any:
         return getattr(self._agent, name)

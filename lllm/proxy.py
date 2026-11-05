@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import inspect
 import time
+from contextlib import aclosing
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
 from typing import Any, Literal
 
@@ -209,11 +210,14 @@ class ProxyTactic(Tactic[Any, Any]):
         chunks: list[Any] = []
         try:
             proxied_input = await _acall_value_hook(self.before, proxied_input, context)
-            async for item in self.tactic.astream(proxied_input, context=context, **kwargs):
-                item = await _acall_value_hook(self.after, item, context)
-                if self.capture_outputs:
-                    chunks.append(item)
-                yield item
+            async with aclosing(
+                self.tactic.astream(proxied_input, context=context, **kwargs)
+            ) as items:
+                async for item in items:
+                    item = await _acall_value_hook(self.after, item, context)
+                    if self.capture_outputs:
+                        chunks.append(item)
+                    yield item
         except Exception as exc:
             await _acall_error_hook(self.on_error, exc, context)
             self._record_failure(started_at, context, proxied_input, exc)
@@ -229,8 +233,11 @@ class ProxyTactic(Tactic[Any, Any]):
     ) -> AsyncIterator[TacticEvent]:
         context = _call_context(context)
         if not self.tactic.supports("events"):
-            async for event in super().aevents(input_value, context=context, **kwargs):
-                yield event
+            async with aclosing(
+                super().aevents(input_value, context=context, **kwargs)
+            ) as fallback:
+                async for event in fallback:
+                    yield event
             return
 
         started_at = time.time()
@@ -238,13 +245,16 @@ class ProxyTactic(Tactic[Any, Any]):
         events: list[Any] = []
         try:
             proxied_input = await _acall_value_hook(self.before, proxied_input, context)
-            async for event in self.tactic.aevents(proxied_input, context=context, **kwargs):
-                event = await _acall_value_hook(self.after, event, context)
-                if not isinstance(event, TacticEvent):
-                    event = TacticEvent(data=event)
-                if self.capture_outputs:
-                    events.append(event)
-                yield event
+            async with aclosing(
+                self.tactic.aevents(proxied_input, context=context, **kwargs)
+            ) as inner:
+                async for event in inner:
+                    event = await _acall_value_hook(self.after, event, context)
+                    if not isinstance(event, TacticEvent):
+                        event = TacticEvent(data=event)
+                    if self.capture_outputs:
+                        events.append(event)
+                    yield event
         except Exception as exc:
             await _acall_error_hook(self.on_error, exc, context)
             self._record_failure(started_at, context, proxied_input, exc)

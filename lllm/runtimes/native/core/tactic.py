@@ -20,6 +20,7 @@ import datetime as dt
 import hashlib
 import inspect
 import logging
+import os
 import sys
 import threading
 import traceback as tb
@@ -694,7 +695,13 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                 f"{type(self).__name__} must implement call() or _run()."
             )
         kwargs.pop("return_session", None)
-        if program == "call" and type(self)._program_is_async("call"):
+        # An async call() is awaited on this loop, unless a subclass or mixin
+        # wraps _run(): then arun() goes through it, as run() does.
+        if (
+            program == "call"
+            and type(self)._run is Tactic._run
+            and type(self)._program_is_async("call")
+        ):
             return await self._aexecute(
                 input_value, context=context, validate=False, _program="call", **kwargs
             )
@@ -907,13 +914,16 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
             try:
                 validated = self.validate_input(task) if validate else task
                 # An async program called from a sync entry point runs on the
-                # shared background loop.
+                # calling thread's own event loop.
                 result = _resolve_awaitable(
                     self._invoke_program(program, validated, context, kwargs)
                 )
                 result = self.validate_output(result) if validate else result
             except Exception as exc:
                 self._record_failure(session, observer, span, task, exc, tags, metadata)
+                raise
+            except BaseException:
+                session.state = "cancelled"  # interrupted (Ctrl-C, SystemExit)
                 raise
             self._record_success(session, observer, span, validated, result, tags, metadata)
         return result
@@ -949,6 +959,9 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                 result = self.validate_output(result) if validate else result
             except Exception as exc:
                 self._record_failure(session, observer, span, task, exc, tags, metadata)
+                raise
+            except BaseException:
+                session.state = "cancelled"  # the awaiting task was cancelled
                 raise
             self._record_success(session, observer, span, validated, result, tags, metadata)
         return result
@@ -1256,69 +1269,83 @@ def _accepts_context(fn: Any) -> bool:
     )
 
 
-_BACKGROUND_LOOP: Optional[asyncio.AbstractEventLoop] = None
-_BACKGROUND_THREAD: Optional[threading.Thread] = None
-_BACKGROUND_LOCK = threading.Lock()
+class _ThreadLoop:
+    """A thread's own event loop, kept for its later sync calls of async programs."""
+
+    def __init__(self) -> None:
+        self.loop = asyncio.new_event_loop()
+        self.pid = os.getpid()
+
+    def __del__(self) -> None:
+        loop = getattr(self, "loop", None)
+        # A forked child must not close its parent's loop: the epoll instance
+        # is shared across fork, and closing would unregister the parent's
+        # wake-up pipe.
+        if (
+            loop is not None
+            and getattr(self, "pid", None) == os.getpid()
+            and not loop.is_closed()
+            and not loop.is_running()
+        ):
+            try:
+                loop.close()
+            except Exception:  # interpreter shutdown
+                pass
 
 
-def _background_loop() -> Tuple[asyncio.AbstractEventLoop, threading.Thread]:
-    """The event loop that runs async programs for sync callers.
+_THREAD_LOOPS = threading.local()
 
-    One loop for the process, so clients and pools an async program keeps
-    between calls (an ``httpx.AsyncClient``, say) stay bound to a live loop.
-    """
 
-    global _BACKGROUND_LOOP, _BACKGROUND_THREAD
-    with _BACKGROUND_LOCK:
-        if _BACKGROUND_LOOP is None or _BACKGROUND_LOOP.is_closed():
-            loop = asyncio.new_event_loop()
-            thread = threading.Thread(
-                target=loop.run_forever, name="lllm-async-programs", daemon=True
-            )
-            thread.start()
-            _BACKGROUND_LOOP, _BACKGROUND_THREAD = loop, thread
-        return _BACKGROUND_LOOP, _BACKGROUND_THREAD
+def _thread_loop() -> asyncio.AbstractEventLoop:
+    holder = getattr(_THREAD_LOOPS, "holder", None)
+    # A forked child gets a fresh loop: the inherited one belongs to the parent.
+    if holder is None or holder.loop.is_closed() or holder.pid != os.getpid():
+        holder = _ThreadLoop()
+        _THREAD_LOOPS.holder = holder
+    return holder.loop
 
 
 def _resolve_awaitable(value: Any) -> Any:
     """Return ``value``, first running it to completion if it is awaitable.
 
-    Awaitables run on the shared background loop (see :func:`_background_loop`)
-    with the caller's context variables, so sub-tactic calls still roll up
-    into the active session. Async code should await ``acall()``/``arun()``
-    instead, which run async programs on its own loop.
+    A sync entry point runs an async program on the calling thread's own
+    event loop, kept for that thread's later calls, so clients and pools the
+    program keeps between calls stay bound to a live loop. Called from async
+    code (a loop is already running in this thread), the program runs on a
+    separate thread instead, and the caller waits, as with any sync call;
+    async code should ``await tactic.acall(...)`` or ``tactic.arun(...)``.
     """
 
     if not inspect.isawaitable(value):
         return value
-    loop, thread = _background_loop()
-    if threading.current_thread() is thread:
-        if inspect.iscoroutine(value):
-            value.close()
-        raise TacticUnsupportedError(
-            "An async tactic program called a sync entry point of another async "
-            "program; use `await tactic.acall(...)` (or `await tactic.arun(...)`) "
-            "from async code."
-        )
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return _run_on_thread_loop(value)
+    run_in_context = contextvars.copy_context().run
+    with concurrent.futures.ThreadPoolExecutor(
+        max_workers=1, thread_name_prefix="lllm-sync-call"
+    ) as pool:
+        return pool.submit(run_in_context, _run_on_thread_loop, value).result()
+
+
+def _run_on_thread_loop(value: Any) -> Any:
+    loop = _thread_loop()
 
     async def wait() -> Any:
         return await value
 
-    result: concurrent.futures.Future = concurrent.futures.Future()
-
-    def start() -> None:
-        # Created inside the caller's context, so the task copies it.
-        task = loop.create_task(wait())
-
-        def done(finished: "asyncio.Task[Any]") -> None:
-            if finished.cancelled():
-                result.cancel()
-            elif finished.exception() is not None:
-                result.set_exception(finished.exception())
-            else:
-                result.set_result(finished.result())
-
-        task.add_done_callback(done)
-
-    loop.call_soon_threadsafe(start, context=contextvars.copy_context())
-    return result.result()
+    task = loop.create_task(wait())  # copies the caller's context
+    try:
+        return loop.run_until_complete(task)
+    except BaseException:
+        if not task.done():
+            # Ctrl-C while waiting: cancel the program and let its cleanup run.
+            task.cancel()
+            try:
+                loop.run_until_complete(asyncio.gather(task, return_exceptions=True))
+            except BaseException:
+                pass
+        if not isinstance(sys.exc_info()[1], Exception):
+            _THREAD_LOOPS.holder = None  # do not reuse a loop an interrupt went through
+        raise

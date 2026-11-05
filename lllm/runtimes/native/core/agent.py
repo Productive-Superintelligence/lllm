@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import random
 import time
@@ -293,6 +294,25 @@ class Agent:
             caption=caption,
             name=name,
             role=role,
+        )
+
+    async def arespond(
+        self,
+        alias: Optional[str] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        args: Optional[Dict[str, Any]] = None,
+        parser_args: Optional[Dict[str, Any]] = None,
+        return_session: bool = False,
+    ) -> Union[Message, AgentCallSession]:
+        """``respond()`` for async code: runs the call off the event loop."""
+
+        return await asyncio.to_thread(
+            self.respond,
+            alias=alias,
+            metadata=metadata,
+            args=args,
+            parser_args=parser_args,
+            return_session=return_session,
         )
 
     @overload

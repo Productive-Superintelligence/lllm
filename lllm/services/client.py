@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from contextlib import aclosing
 import json
 import math
 from collections.abc import AsyncIterator, Iterable, Iterator, Mapping
@@ -169,8 +170,9 @@ class RemoteTactic(Tactic[Any, Any]):
         context: CallContext | None = None,
         **kwargs: Any,
     ) -> AsyncIterator[Any]:
-        async for event in self.aevents(input_value, context=context, **kwargs):
-            yield event.data
+        async with aclosing(self.aevents(input_value, context=context, **kwargs)) as events:
+            async for event in events:
+                yield event.data
 
     async def aevents(
         self,

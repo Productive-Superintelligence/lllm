@@ -106,11 +106,13 @@ upper.run("hi")   # 'HI'
 - An `_arun()`-only tactic also gets `run()` and `tactic(task)`, which run the
   hook to completion.
 - `call()` may be `async def`. The async entry points (`acall`, `arun`,
-  `ccall`, and a service's `/run`) await it on the caller's event loop; the
-  sync ones (`tactic(task)`, `run()`, `bcall`) run it on one long-lived
-  background loop, so clients it keeps between calls stay usable. From async
-  code, use the async entry points: calling `tactic(task)` on an async
-  program from inside another async program raises `TacticUnsupportedError`.
+  `ccall`, and a service's `/run`) await it on the caller's event loop, so it
+  must not block: call agents with `await agent.arespond()`, sub-tactics with
+  `await sub.acall(...)`. The sync entry points (`tactic(task)`, `run()`,
+  `bcall`) run it on the calling thread's own event loop, kept for that
+  thread's later calls (a forked process starts a fresh one), so clients it
+  keeps between calls stay usable. A sync call made from async code runs the
+  program on a separate thread while the caller waits.
 - A tactic that writes neither raises `TacticUnsupportedError` when called.
 
 `NativeTactic` is a thin subclass that only insists on `agent_group` (raising
@@ -477,8 +479,9 @@ returned in place of results.
 result = await tactic.acall("Analyze this paper")
 ```
 
-`acall` runs the call in the default executor so it does not block the event
-loop.
+`acall` awaits an `async def call()` on the caller's loop and runs a sync
+`call()` in the default executor, so neither blocks the event loop (as long
+as the async one does not block itself; see above).
 
 ### Async concurrent (fastest first)
 
@@ -487,7 +490,9 @@ async for idx, result in tactic.ccall(tasks, max_workers=3):
     print(f"Task {idx} finished: {result}")
 ```
 
-Yields `(index, result)` pairs as tasks complete, not in input order.
+Yields `(index, result)` pairs as tasks complete, not in input order. Async
+programs run as concurrent tasks on the caller's loop, sync ones on up to
+`max_workers` threads.
 
 All three accept `return_session(s)=True` to get `TacticCallSession` objects.
 `max_workers` defaults to the config's `max_workers` key (4 if unset).

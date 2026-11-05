@@ -146,6 +146,8 @@ inputs, a declared output contract, and bounded side effects.
 ## The call loop
 
 `agent.respond()` runs a small state machine until it reaches a final reply.
+In async code, `await agent.arespond()` does the same off the event loop
+(inside a tactic it is recorded in the session like `respond()`).
 
 ```mermaid
 stateDiagram-v2

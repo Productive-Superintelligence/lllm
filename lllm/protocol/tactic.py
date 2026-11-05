@@ -427,12 +427,14 @@ async def iterate_in_thread(make_iterator: Callable[[], Iterator[Any]]) -> Async
             yield item
     finally:
         close = getattr(iterator, "close", None)
-        if close is not None:
-            closing = worker.submit(close)  # runs after any item in progress
-            closing.add_done_callback(_log_close_error)
-            if not in_flight:
-                await asyncio.wait([asyncio.wrap_future(closing)])
+        closing = worker.submit(close) if close is not None else None
+        # Queued behind the close, so the thread exits even if this task is
+        # cancelled again while waiting below.
         worker.stop()
+        if closing is not None:
+            closing.add_done_callback(_log_close_error)
+            if not in_flight:  # waiting at a yield: let its cleanup finish now
+                await asyncio.wait([asyncio.wrap_future(closing)])
 
 
 def _make_iterator(make_iterator: Callable[[], Iterator[Any]]) -> Iterator[Any]:
