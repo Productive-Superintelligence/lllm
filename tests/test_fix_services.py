@@ -1,17 +1,19 @@
 """Regression tests for service fixes S1 (RemoteTactic default names), S2
-(bodiless custom endpoints) and S3 (tactic schemas in OpenAPI)."""
+(custom GET/DELETE endpoints without a body) and S3 (tactic schemas in OpenAPI)."""
 
 import asyncio
 import enum
 import json
+import threading
+from typing import Annotated, Literal, Union
 
 import httpx
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from lllm import Tactic, endpoint
 from lllm.services import RemoteTactic, create_service_app, create_tactic_app
-from lllm.services.endpoints import EndpointSpec, endpoint_has_body
+from lllm.services.endpoints import EndpointSpec, endpoint_requires_body
 
 
 def call(app, method, path, **kwargs):
@@ -71,7 +73,8 @@ def test_remote_tactic_with_default_name_runs_and_mounts():
     assert app.state.lllm_tactics == {"127.0.0.1-8000": remote}
 
 
-# S2: bodiless custom endpoints do not validate against the input type.
+# S2: custom GET/DELETE requests without a body do not validate against the
+# input type; a body, when sent, is still read and validated.
 
 
 class ItemInput(BaseModel):
@@ -102,6 +105,10 @@ class ItemTactic(Tactic[ItemInput, ItemOutput]):
     async def remove(self, input_value, *, context=None):
         return {"input": input_value}
 
+    @endpoint.delete("/policy")
+    async def delete_policy(self, input_value, *, context=None):
+        return await self.arun(input_value, context=context)
+
     @endpoint.post("/act")
     async def act(self, input_value, *, context=None):
         return {"type": type(input_value).__name__, "text": input_value.text}
@@ -112,13 +119,13 @@ class ItemTactic(Tactic[ItemInput, ItemOutput]):
 
 
 @pytest.mark.parametrize(
-    ("method", "has_body"),
+    ("method", "requires_body"),
     [("GET", False), ("DELETE", False), ("POST", True), ("PUT", True), ("PATCH", True)],
 )
-def test_endpoint_has_body_follows_http_method(method, has_body):
+def test_endpoint_requires_body_follows_http_method(method, requires_body):
     spec = EndpointSpec(method=method, path="/route", name="route")
 
-    assert endpoint_has_body(spec) is has_body
+    assert endpoint_requires_body(spec) is requires_body
 
 
 def test_get_endpoint_receives_none_without_query_params():
@@ -165,11 +172,44 @@ def test_get_events_endpoint_streams_query_input():
     assert events == [{"input": {"since": "3"}}]
 
 
-def test_delete_endpoint_skips_input_validation():
+def test_delete_endpoint_without_body_skips_input_validation():
     response = call(create_tactic_app(ItemTactic()), "DELETE", "/items/7")
 
     assert response.status_code == 200
     assert response.json() == {"input": None}
+
+
+def test_delete_endpoint_reads_and_validates_body_when_present():
+    app = create_tactic_app(ItemTactic())
+
+    envelope = call(app, "DELETE", "/policy", json={"input": {"text": "forward"}})
+    raw = call(app, "DELETE", "/policy", json={"text": "forward"})
+    query = call(app, "DELETE", "/policy", params={"text": "forward"})
+    invalid = call(
+        app,
+        "DELETE",
+        "/policy",
+        json={"input": {"nope": 1}, "context": {"request_id": "req-delete"}},
+    )
+
+    for response in (envelope, raw, query):
+        assert response.status_code == 200
+        assert response.json() == {"text": "forward"}
+    assert invalid.status_code == 400
+    assert invalid.json()["detail"]["error"]["type"] == "SchemaError"
+    assert invalid.json()["detail"]["error"]["request_id"] == "req-delete"
+
+
+def test_get_endpoint_reads_and_validates_body_when_present():
+    app = create_tactic_app(ItemTactic())
+
+    valid = call(app, "GET", "/status", json={"input": {"text": "go"}}, params={"q": "x"})
+    invalid = call(app, "GET", "/status", json={"nope": 1})
+
+    assert valid.status_code == 200
+    assert valid.json() == {"input": {"text": "go"}, "endpoint": "status"}
+    assert invalid.status_code == 400
+    assert invalid.json()["detail"]["error"]["type"] == "SchemaError"
 
 
 @pytest.mark.parametrize("method", ["POST", "PATCH"])
@@ -241,12 +281,19 @@ def _resolve(document, ref):
 
 
 def _refs(value):
+    """Yield ``$ref`` values and discriminator mapping targets."""
+
     if isinstance(value, dict):
         for key, item in value.items():
             if key == "$ref" and isinstance(item, str):
                 yield item
             else:
                 yield from _refs(item)
+        discriminator = value.get("discriminator")
+        if isinstance(discriminator, dict):
+            for target in (discriminator.get("mapping") or {}).values():
+                if isinstance(target, str):
+                    yield target
     elif isinstance(value, list):
         for item in value:
             yield from _refs(item)
@@ -364,6 +411,164 @@ def test_openapi_schemas_survive_regeneration_without_duplicates():
     assert "Address2" not in second["components"]["schemas"]
     assert "ValidationError3" not in second["components"]["schemas"]
     _assert_refs_resolve(second)
+
+
+class Cat(BaseModel):
+    kind: Literal["cat"] = "cat"
+
+
+class Dog(BaseModel):
+    kind: Literal["dog"] = "dog"
+
+
+class PetInput(BaseModel):
+    pet: Annotated[Union[Cat, Dog], Field(discriminator="kind")]
+
+
+class PetTactic(Tactic[PetInput, PetInput]):
+    name = "pets"
+    input_type = PetInput
+    output_type = PetInput
+
+    def _run(self, input_value, *, context=None):
+        return input_value
+
+
+def test_openapi_rewrites_discriminator_mapping_targets():
+    document = create_tactic_app(PetTactic()).openapi()
+
+    for schema in (
+        _request_schema(document)["properties"]["input"],
+        _request_schema(document, "/stream")["properties"]["input"],
+        _response_schema(document)["properties"]["output"],
+    ):
+        assert schema["properties"]["pet"]["discriminator"]["mapping"] == {
+            "cat": "#/components/schemas/Cat",
+            "dog": "#/components/schemas/Dog",
+        }
+    _assert_refs_resolve(document)
+
+
+def test_openapi_discriminator_mapping_follows_renamed_member():
+    class ValidationError(BaseModel):
+        """Shares its name with FastAPI's built-in component."""
+
+        kind: Literal["invalid"] = "invalid"
+        reason: str
+
+    class Accepted(BaseModel):
+        kind: Literal["ok"] = "ok"
+
+    class Verdict(BaseModel):
+        verdict: Annotated[Union[ValidationError, Accepted], Field(discriminator="kind")]
+
+    class JudgeTactic(Tactic[Verdict, Verdict]):
+        name = "judge"
+        input_type = Verdict
+        output_type = Verdict
+
+        def _run(self, input_value, *, context=None):
+            return input_value
+
+    document = create_tactic_app(JudgeTactic()).openapi()
+    verdict = _request_schema(document)["properties"]["input"]["properties"]["verdict"]
+    mapping = verdict["discriminator"]["mapping"]
+
+    assert mapping == {
+        "invalid": "#/components/schemas/ValidationError2",
+        "ok": "#/components/schemas/Accepted",
+    }
+    assert [choice["$ref"] for choice in verdict["oneOf"]] == list(mapping.values())
+    assert "reason" in _resolve(document, mapping["invalid"])["properties"]
+    _assert_refs_resolve(document)
+
+
+def test_openapi_is_served_while_tactic_info_fails(caplog):
+    failing = True
+
+    class FlakyInfoTactic(RichTactic):
+        def info(self):
+            if failing:
+                raise RuntimeError("info backend unavailable")
+            return super().info()
+
+        @endpoint.post("/act")
+        async def act(self, input_value, *, context=None):
+            return input_value
+
+    app = create_service_app([FlakyInfoTactic()], expose_single_tactic_routes=True)
+
+    with caplog.at_level("WARNING", logger="lllm.services.fastapi"):
+        served = call(app, "GET", "/openapi.json")
+    failing = False
+    recovered = call(app, "GET", "/openapi.json")
+
+    assert served.status_code == 200
+    assert "/act" in served.json()["paths"]
+    assert "requestBody" not in served.json()["paths"]["/run"]["post"]
+    assert "Could not add the schemas of tactic 'rich'" in caplog.text
+    assert recovered.status_code == 200
+    document = recovered.json()
+    assert _request_schema(document)["properties"]["input"]["title"] == "RichInput"
+    assert "Address2" not in document["components"]["schemas"]
+    _assert_refs_resolve(document)
+
+
+def test_openapi_is_served_when_tactic_schema_cannot_be_exported():
+    class Opaque:
+        pass
+
+    class OpaqueInput(BaseModel):
+        model_config = ConfigDict(arbitrary_types_allowed=True)
+
+        thing: Opaque
+
+    class OpaqueTactic(Tactic):
+        name = "opaque"
+        input_type = OpaqueInput
+
+        def _run(self, input_value, *, context=None):
+            return None
+
+    app = create_service_app([OpaqueTactic()], expose_single_tactic_routes=True)
+
+    response = call(app, "GET", "/openapi.json")
+
+    assert response.status_code == 200
+    assert "requestBody" not in response.json()["paths"]["/run"]["post"]
+
+
+def test_openapi_documents_schemas_once_for_concurrent_first_callers():
+    armed = threading.Event()
+    patching = threading.Event()
+    release = threading.Event()
+    patches = []
+
+    class SlowInfoTactic(RichTactic):
+        def info(self):
+            if armed.is_set():
+                patches.append(threading.current_thread().name)
+                patching.set()
+                release.wait(timeout=5)
+            return super().info()
+
+    app = create_tactic_app(SlowInfoTactic())
+    armed.set()
+    documents = []
+    first = threading.Thread(target=lambda: documents.append(app.openapi()))
+    second = threading.Thread(target=lambda: documents.append(app.openapi()))
+    first.start()
+    assert patching.wait(timeout=5)
+    second.start()
+    second.join(timeout=0.2)  # Without serialization it starts patching too.
+    release.set()
+    first.join(timeout=5)
+    second.join(timeout=5)
+
+    assert len(patches) == 1
+    assert len(documents) == 2 and documents[0] is documents[1]
+    assert "Address2" not in documents[0]["components"]["schemas"]
+    _assert_refs_resolve(documents[0])
 
 
 def test_served_openapi_is_typed_and_run_behaviour_is_unchanged():

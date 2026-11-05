@@ -3,7 +3,9 @@
 import copy
 import inspect
 import json
+import logging
 import re
+import threading
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
 
@@ -28,10 +30,12 @@ from ..protocol._validation import (
 from .endpoints import (
     EndpointSpec,
     custom_endpoints,
-    endpoint_has_body,
     endpoint_path_key,
+    endpoint_requires_body,
     endpoint_route_key,
 )
+
+logger = logging.getLogger(__name__)
 
 _JSON_SCHEMA_DEFS_REF = "#/$defs/"
 _OPENAPI_SCHEMAS_REF = "#/components/schemas/"
@@ -402,7 +406,7 @@ def _make_custom_route(
     async def route(request: Request):
         context = _error_context(tactic, spec.name)
         try:
-            if endpoint_has_body(spec):
+            if endpoint_requires_body(spec) or await request.body():
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=tactic,
@@ -511,41 +515,57 @@ def _document_tactic_schemas(app: Any, tactic: Tactic[Any, Any]) -> None:
     These routes read the raw request (protocol envelope or raw JSON, with LLLM
     error envelopes), so FastAPI cannot infer their bodies from typed
     parameters. Instead, each generated document is patched once with the
-    schemas that ``tactic.info()`` advertises on ``/info``.
+    schemas that ``tactic.info()`` advertises on ``/info``. This is best
+    effort: if ``info()`` fails, the document is served without them (``/info``
+    reports the error) and patching is retried on the next call.
     """
 
     generate_openapi = app.openapi
+    lock = threading.Lock()
     documented: dict[str, Any] | None = None
 
     def openapi() -> dict[str, Any]:
         nonlocal documented
-        document = generate_openapi()
-        if document is not documented:
-            _add_tactic_schemas(document, tactic)
-            documented = document
-        return document
+        with lock:
+            document = generate_openapi()
+            if document is not documented:
+                try:
+                    _add_tactic_schemas(document, tactic)
+                except Exception:
+                    logger.warning(
+                        "Could not add the schemas of tactic %r to the OpenAPI document.",
+                        tactic.tactic_name,
+                        exc_info=True,
+                    )
+                    return document
+                documented = document
+            return document
 
     app.openapi = openapi
 
 
 def _add_tactic_schemas(document: dict[str, Any], tactic: Tactic[Any, Any]) -> None:
+    """Patch *document* in place, leaving it untouched if anything fails."""
+
     info = tactic.info()
-    components = document.setdefault("components", {}).setdefault("schemas", {})
+    run = document["paths"]["/run"]["post"]
+    stream = document["paths"]["/stream"]["post"]
+    components = dict(document.get("components", {}).get("schemas", {}))
     input_schema, output_schema = _openapi_schemas(
         [info.input_schema, info.output_schema],
         components,
     )
     request_schema = RunRequest.model_json_schema()
     request_schema["properties"]["input"] = input_schema
-    paths = document["paths"]
-    for path in ("/run", "/stream"):
-        paths[path]["post"]["requestBody"] = {
+    response_schema = RunResponse.model_json_schema(mode="serialization")
+    response_schema["properties"]["output"] = output_schema
+    document.setdefault("components", {})["schemas"] = components
+    for operation in (run, stream):
+        operation["requestBody"] = {
             "required": True,
             "content": {"application/json": {"schema": copy.deepcopy(request_schema)}},
         }
-    response_schema = RunResponse.model_json_schema(mode="serialization")
-    response_schema["properties"]["output"] = output_schema
-    responses = paths["/run"]["post"].setdefault("responses", {})
+    responses = run.setdefault("responses", {})
     responses.setdefault("200", {}).setdefault("content", {})["application/json"] = {
         "schema": response_schema,
     }
@@ -559,7 +579,8 @@ def _openapi_schemas(
 
     JSON Schema refs such as ``#/$defs/Item`` do not resolve once a schema is
     embedded in an OpenAPI document, so definitions become component schemas
-    (renamed when a name is already taken) and refs are rewritten to match.
+    (renamed when a name is already taken) and refs, including discriminator
+    mapping targets, are rewritten to match.
     """
 
     definitions: dict[str, Any] = {}
@@ -589,11 +610,22 @@ def _openapi_refs(value: Any, names: Mapping[str, str]) -> Any:
     if not isinstance(value, dict):
         return value
     result = {key: _openapi_refs(item, names) for key, item in value.items()}
-    ref = result.get("$ref")
-    if isinstance(ref, str) and ref.startswith(_JSON_SCHEMA_DEFS_REF):
-        name = ref.removeprefix(_JSON_SCHEMA_DEFS_REF)
-        result["$ref"] = _OPENAPI_SCHEMAS_REF + names.get(name, name)
+    if isinstance(result.get("$ref"), str):
+        result["$ref"] = _openapi_ref(result["$ref"], names)
+    discriminator = result.get("discriminator")
+    if isinstance(discriminator, dict) and isinstance(discriminator.get("mapping"), dict):
+        discriminator["mapping"] = {
+            key: _openapi_ref(target, names) if isinstance(target, str) else target
+            for key, target in discriminator["mapping"].items()
+        }
     return result
+
+
+def _openapi_ref(ref: str, names: Mapping[str, str]) -> str:
+    if not ref.startswith(_JSON_SCHEMA_DEFS_REF):
+        return ref
+    name = ref.removeprefix(_JSON_SCHEMA_DEFS_REF)
+    return _OPENAPI_SCHEMAS_REF + names.get(name, name)
 
 
 async def _input_and_context_from_request(

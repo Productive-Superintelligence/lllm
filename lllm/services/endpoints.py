@@ -15,7 +15,7 @@ F = TypeVar("F", bound=Callable[..., Any])
 
 _ENDPOINT_MODES = {"run", "stream", "events"}
 _HTTP_METHODS = {"GET", "POST", "PUT", "PATCH", "DELETE"}
-_BODILESS_METHODS = {"GET", "DELETE"}
+_OPTIONAL_BODY_METHODS = {"GET", "DELETE"}
 _ROUTE_PARAMETER_RE = re.compile(r"\{[^{}]+\}")
 
 
@@ -42,12 +42,12 @@ class EndpointSpec:
 class endpoint:
     """Decorator namespace for custom tactic endpoint metadata.
 
-    ``post``, ``put`` and ``patch`` routes read the request body (raw JSON or
-    the ``{"input": ..., "context": ...}`` envelope) and validate it against
-    the tactic input type before calling the method. ``get`` and ``delete``
-    routes have no request body: the method receives the query parameters as
-    a dict of strings (a repeated key maps to a list), or ``None`` when there
-    are none, and that value is not validated against the tactic input type.
+    Routes read the request body (raw JSON or the ``{"input": ..., "context":
+    ...}`` envelope) and validate it against the tactic input type before
+    calling the method. ``get`` and ``delete`` requests may omit the body: the
+    method then receives the query parameters as a dict of strings (a repeated
+    key maps to a list), or ``None`` when there are none, and that value is not
+    validated against the tactic input type.
     """
 
     @staticmethod
@@ -178,10 +178,14 @@ def endpoint_route_key(spec: EndpointSpec) -> tuple[str, str]:
     return spec.method, endpoint_path_key(spec.path)
 
 
-def endpoint_has_body(spec: EndpointSpec) -> bool:
-    """Return whether requests to *spec* carry the tactic input as a body."""
+def endpoint_requires_body(spec: EndpointSpec) -> bool:
+    """Return whether *spec* reads the tactic input from the body of every request.
 
-    return spec.method not in _BODILESS_METHODS
+    GET and DELETE requests may omit the body; their query parameters are used
+    instead.
+    """
+
+    return spec.method not in _OPTIONAL_BODY_METHODS
 
 
 def endpoint_path_key(path: str) -> str:
