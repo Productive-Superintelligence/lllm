@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from ..protocol import CallContext, Tactic
-from .models import ResourceKind, StrategyInfo, StrategyResource
+from .models import ResourceKind, StrategyInfo, StrategyResource, _segment
 
 Handler = Callable[..., Any | Awaitable[Any]]
 
@@ -118,7 +118,8 @@ class Strategy:
         runner: Handler | None = None,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
-        self.name = name
+        # The rule StrategyInfo checks, so info() and GET /strategy cannot fail on it.
+        self.name = _segment(name, "strategy.name")
         self.description = description
         self._resources: dict[str, StrategyResource] = {}
         self._handlers: dict[str, Handler] = {}
@@ -578,13 +579,13 @@ def _accepts_context(signature: inspect.Signature) -> bool:
 
 
 def _can_accept_input(signature: inspect.Signature) -> bool:
+    # The input is passed positionally, so keyword-only parameters cannot take it.
     for parameter in signature.parameters.values():
         if parameter.name == "context":
             continue
         if parameter.kind in {
             inspect.Parameter.POSITIONAL_ONLY,
             inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            inspect.Parameter.KEYWORD_ONLY,
         }:
             return True
     return any(
