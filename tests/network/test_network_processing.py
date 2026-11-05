@@ -2,7 +2,8 @@ import asyncio
 
 import httpx
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
+from pydantic_core import PydanticSerializationError
 
 from lllm import Resolver, Tactic, as_tactic
 from fastapi.testclient import TestClient
@@ -396,3 +397,95 @@ def test_processor_process_rejects_async_stores_with_a_clear_error(tmp_path):
 
     # The rejected call left no half-made state behind.
     assert summaries(asyncio.run(processor.aprocess())) == ["ASYNC"]
+
+
+class Fragile(BaseModel):
+    """A valid output whose JSON dump fails for the text "binary"."""
+
+    text: str
+
+    @field_serializer("text")
+    def _refuse_binary(self, value):
+        if value == "binary":
+            raise ValueError("cannot serialize binary")
+        return value
+
+
+class Echo(Tactic[Raw, Fragile]):
+    name = "echo"
+    input_type = Raw
+    output_type = Fragile
+
+    def _run(self, input_value, *, context=None):
+        return Fragile(text=input_value.text)
+
+
+def runner(processor, mode):
+    if mode == "sync":
+        return processor.process
+    return lambda: asyncio.run(processor.aprocess())
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+def test_processor_records_outputs_that_cannot_become_sink_events(tmp_path, mode):
+    store = make_store(tmp_path)
+    failing = append(store, "binary")
+    append(store, "hello")
+    append(store, "world")
+    processor = TacticProcessor(
+        Echo(), store, source="raw", sink="summaries", errors="record"
+    )
+    run = runner(processor, mode)
+
+    events = run()
+
+    # The failed output is recorded and acknowledged, so it does not block the
+    # events behind it.
+    assert [event.kind for event in events] == ["error", "result", "result"]
+    assert events[0].parent_ids == (failing.id,)
+    assert "cannot serialize binary" in events[0].payload["error"]
+    assert [event.payload for event in events[1:]] == [{"text": "hello"}, {"text": "world"}]
+    assert store.get_subscription("echo-processor").cursor == 3
+    assert run() == []
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+def test_processor_retries_outputs_that_cannot_become_sink_events(tmp_path, mode):
+    store = make_store(tmp_path)
+    append(store, "binary")
+    append(store, "hello")
+    run = runner(TacticProcessor(Echo(), store, source="raw", sink="summaries"), mode)
+
+    for _ in range(2):
+        with pytest.raises(PydanticSerializationError, match="cannot serialize binary"):
+            run()
+    assert store.get_subscription("echo-processor").cursor == 0
+    assert store.query_events("summaries") == ()
+
+    # The same subscription picks up at the failed event, not after it.
+    recording = TacticProcessor(
+        Echo(), store, source="raw", sink="summaries", errors="record"
+    )
+    assert [event.kind for event in recording.process()] == ["error", "result"]
+
+
+@pytest.mark.parametrize("name", ["shout loud", "tab\tname", "ask?", "a#b"])
+def test_processor_needs_a_consumer_for_tactic_names_that_cannot_name_one(
+    tmp_path, name
+):
+    store = make_store(tmp_path)
+    append(store, "Hi")
+
+    def shout(payload: dict) -> dict:
+        return {"text": payload["text"].upper()}
+
+    # Valid tactic names, but whitespace is not valid in a subscription id and
+    # "?" or "#" would cut a RemoteStore URL short.
+    for tactic in (as_tactic(shout, name=name), Summarize(name=name)):
+        with pytest.raises(ValueError, match=r"tactic name .*Pass consumer="):
+            TacticProcessor(tactic, store, source="raw")
+
+    named = TacticProcessor(
+        as_tactic(shout, name=name), store, source="raw", consumer="shout"
+    )
+    assert named.process() == [{"text": "HI"}]
