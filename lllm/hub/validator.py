@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path, PureWindowsPath
 from typing import Any
 
+from ..protocol._validation import is_schema_metadata_key, is_sensitive_metadata_key
 from .endpoints import (
     resource_extra as _resource_extra,
     validate_endpoint_metadata as _validate_endpoint_metadata,
@@ -57,6 +58,7 @@ def validate_package(path: str | Path) -> ValidationReport:
     issues.extend(_validate_resource_names(manifest))
     issues.extend(_validate_readme(manifest))
     issues.extend(_validate_card_metadata(manifest))
+    issues.extend(_validate_secret_metadata(manifest))
     issues.extend(_validate_primary(manifest))
     issues.extend(_validate_schemas(manifest))
     issues.extend(_validate_tactics(manifest))
@@ -202,6 +204,62 @@ def _validate_card_metadata(manifest: PackageManifest) -> list[ValidationIssue]:
             )
         )
     return issues
+
+
+def _validate_secret_metadata(manifest: PackageManifest) -> list[ValidationIssue]:
+    """Reject raw secret-shaped metadata keys; lllm.toml ships with the package."""
+
+    resources: list[tuple[str, Any]] = [
+        (manifest.ref(kind, name), resource)
+        for kind, table in (
+            ("schema", manifest.schemas),
+            ("tactic", manifest.tactics),
+            ("service", manifest.services),
+            ("channel", manifest.channels),
+            ("snapshot", manifest.snapshots),
+            ("run", manifest.runs),
+            ("doc", manifest.docs),
+            ("example", manifest.examples),
+            ("asset", manifest.assets),
+        )
+        for name, resource in table.items()
+        if not _invalid_segment(name)
+    ]
+    if manifest.config is not None:
+        resources.append((manifest.ref("config", "default"), manifest.config))
+    if manifest.card is not None:
+        resources.append(("card", manifest.card))
+    return [
+        ValidationIssue(
+            level="error",
+            code="metadata_secret_key",
+            message=(
+                f"Metadata must not include raw secret key {key!r}: lllm.toml is "
+                f"published as written. Use a reference such as '{key}_ref' instead."
+            ),
+            resource=ref,
+        )
+        for ref, resource in resources
+        # The hub indexes extra table keys as metadata too.
+        for source in (_resource_extra(resource), resource.metadata)
+        for key in _secret_metadata_keys(source)
+    ]
+
+
+def _secret_metadata_keys(value: Any) -> list[str]:
+    """Secret-shaped keys in a metadata value, leaving JSON schemas alone."""
+
+    if isinstance(value, dict):
+        keys: list[str] = []
+        for key, item in value.items():
+            if is_sensitive_metadata_key(key):
+                keys.append(key)
+            elif not is_schema_metadata_key(key):
+                keys.extend(_secret_metadata_keys(item))
+        return keys
+    if isinstance(value, (list, tuple)):
+        return [key for item in value for key in _secret_metadata_keys(item)]
+    return []
 
 
 def _validate_primary(manifest: PackageManifest) -> list[ValidationIssue]:
@@ -645,18 +703,26 @@ def _validate_discovery(manifest: PackageManifest) -> list[ValidationIssue]:
         return issues
     for section, discovery in manifest.discovery.items():
         if not discovery.paths:
-            if not (manifest.base_dir / section).is_dir():
-                issues.append(
-                    ValidationIssue(
-                        level="warning",
-                        code="discovery_section_empty",
-                        message=(
-                            f"[{section}] has no paths and no ./{section} folder, "
-                            "so the native runtime discovers nothing for it."
-                        ),
-                        resource=section,
-                    )
+            # The runtime falls back to ./<section>; check it like a declared path.
+            issue = _local_folder_issue(
+                manifest,
+                section,
+                resource=section,
+                code="discovery_path",
+                label=f"[{section}] folder",
+            )
+            if issue is not None and issue.level == "warning":
+                issue = ValidationIssue(
+                    level="warning",
+                    code="discovery_section_empty",
+                    message=(
+                        f"[{section}] has no paths and no ./{section} folder, "
+                        "so the native runtime discovers nothing for it."
+                    ),
+                    resource=section,
                 )
+            if issue is not None:
+                issues.append(issue)
             continue
         for entry in discovery.paths:
             raw = entry["path"] if isinstance(entry, dict) else entry

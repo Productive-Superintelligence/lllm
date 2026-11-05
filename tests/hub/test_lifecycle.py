@@ -2275,7 +2275,8 @@ x_policy = "safe-policy"
         encoding="utf-8",
     )
     hub_root = tmp_path / "hub"
-    record = LocalHub(hub_root).publish(package)
+    # Validation rejects these keys; the index must still filter them when skipped.
+    record = LocalHub(hub_root).publish(package, validate=False)
     index_text = (hub_root / "index" / "packages.json").read_text(encoding="utf-8")
     reopened = LocalHub(hub_root).get("demo/echo")
 
