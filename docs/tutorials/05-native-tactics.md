@@ -491,8 +491,11 @@ Summarize text in three bullet points.
 capabilities: acall, arun, call, run
 ```
 
-The entrypoint can name a tactic instance, as here, or a function that returns
-one. Call the service:
+The entrypoint can name a tactic instance, as here, or a factory that returns
+one: a function with no parameters, or with defaults for all of them and a
+`-> Tactic` annotation. Any other function is served as a handler, called once
+per input ([Factories and handlers](../core/tactic.md#factories-and-handlers)).
+Call the service:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/run \

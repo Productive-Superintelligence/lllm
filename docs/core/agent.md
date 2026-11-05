@@ -569,7 +569,9 @@ When the agent is built, local and URL skills follow the agentskills.io
 progressive-disclosure model.
 
 **Tier 1: catalog.** Only names and descriptions are appended to the system
-prompt, and an `activate_skill` tool is added to its `function_list`:
+prompt, and an `activate_skill` tool is added to its `function_list`. The block
+is brace-escaped, so braces in a description reach the model as written when the
+prompt renders with the default `str.format` renderer:
 
 ```
 <system prompt text>

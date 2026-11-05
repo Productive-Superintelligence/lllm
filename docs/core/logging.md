@@ -100,13 +100,17 @@ optional and called with keyword arguments.
 
 | Method | When | Arguments |
 | --- | --- | --- |
-| `observe_tactic(...)` | Before `call()` runs. Return a context manager (or `None`); the value it yields is passed to the callbacks as `span`. | `tactic`, `session`, `task`, `session_name`, `tags`, `metadata` |
-| `on_tactic_success(...)` | After `call()` returns and the output validates. | `tactic`, `session`, `task`, `result`, `span`, `tags`, `metadata` |
-| `on_tactic_failure(...)` | When `call()` (or validation) raises. | `tactic`, `session`, `task`, `exception`, `span`, `tags`, `metadata` |
+| `observe_tactic(...)` | Before `call()` (or the hook) runs. Return a context manager (or `None`); the value it yields is passed to the callbacks as `span`. | `tactic`, `session`, `task`, `session_name`, `tags`, `metadata` |
+| `on_tactic_success(...)` | After `call()` (or the hook) returns and the output validates. | `tactic`, `session`, `task`, `result`, `span`, `tags`, `metadata` |
+| `on_tactic_failure(...)` | When `call()`, the hook, or validation raises. | `tactic`, `session`, `task`, `exception`, `span`, `tags`, `metadata` |
 
 `tactic` is the per-call copy, so `tactic.agents` holds this call's agents and
 their dialogs. An exception inside an observer is logged as a warning and never
-breaks the tactic call.
+breaks the tactic call. The observer sees every call that runs in a session:
+`tactic(task)`, `acall`, `bcall`, and `ccall` on any tactic, and `run()` /
+`arun()` on tactics that write `call()`. A tactic that only implements the
+`_run()` or `_arun()` hook runs it directly from `run()` / `arun()`, without a
+session.
 
 ### Example: a JSON Lines session log
 
@@ -219,10 +223,10 @@ class OTelObserver:
         span.record_exception(exception)
 ```
 
-When a tactic is called through the protocol (`run()`, `arun()`, or a FastAPI
-service), the per-call copy passed to the observer carries the request's
-`CallContext` as `tactic.call_context` (request id, trace id, refs, tags,
-metadata), so service traces and native sessions line up:
+When a tactic that writes `call()` is called through the protocol (`run()`,
+`arun()`, or a FastAPI service), the per-call copy passed to the observer
+carries the request's `CallContext` as `tactic.call_context` (request id, trace
+id, refs, tags, metadata), so service traces and native sessions line up:
 
 ```python
 class TraceIdObserver:
@@ -291,7 +295,7 @@ live under `lllm.runtimes.native`:
 | Logger | Covers |
 | --- | --- |
 | `lllm.runtimes.native` | Everything below |
-| `lllm.runtimes.native.core.tactic` | Tactic start and completion with cost (INFO), failures with traceback (ERROR), observer errors |
+| `lllm.runtimes.native.core.tactic` | Tactic start, completion with cost, and failure, one line each (INFO), the failure traceback (DEBUG), observer errors (WARNING) |
 | `lllm.runtimes.native.core.prompt` | Repair retries and LLM recalls (WARNING), tool calls and their arguments (DEBUG), agent-call failure (ERROR) |
 | `lllm.runtimes.native.core.agent` | Loop configuration warnings |
 | `lllm.runtimes.native.core.native_config` | Unknown agent config keys, missing or unreachable skills |
@@ -323,8 +327,11 @@ logging.getLogger("lllm.runtimes.native").setLevel(logging.INFO)
 | Level | What you see |
 | --- | --- |
 | `WARNING` | Repair retries with the parse error, LLM recalls, unknown config keys, missing skills |
-| `INFO` | Plus tactic start and completion with cost and agent-call counts, package installs |
-| `DEBUG` | Plus every tool call with arguments, successful agent calls, context truncation, resource overwrites |
+| `INFO` | Plus tactic start and completion with cost and agent-call counts, one line per tactic failure, package installs |
+| `DEBUG` | Plus every tool call with arguments, successful agent calls, tactic failure tracebacks, context truncation, resource overwrites |
+
+A failed tactic call raises, and its session records the error and traceback,
+so the log keeps the failure to one INFO line and the traceback at DEBUG.
 
 ### Fine-grained control
 

@@ -524,7 +524,9 @@ flowchart LR
   write `call()`. See [Tactics](tactic.md#serving-and-the-protocol) and
   [Tactic protocol](../protocol/tactic.md).
 - **Services.** Pass the tactic to `lllm.create_tactic_app`, or point
-  `lllm serve` at it (`lllm serve my_pkg.tactics:build`). See
+  `lllm serve` at it or at a factory that builds it
+  (`lllm serve my_pkg.tactics:build`; see
+  [Factories and handlers](tactic.md#factories-and-handlers)). See
   [Services](../protocol/services.md).
 - **Packages.** The same `lllm.toml` that drives native discovery also carries
   hub metadata. See [Package Manifest](../packages/manifest.md) and

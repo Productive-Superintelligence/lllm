@@ -67,10 +67,44 @@ name on every call and puts them in `self.agents`. Without it, `call()` is plain
 Python: deterministic steps, or orchestration over other tactics, tools, and
 runtimes.
 
-A tactic implements `call()` or the protocol hook `_run()`; calling one that
-implements neither raises `TacticUnsupportedError`. `NativeTactic` is a thin
-subclass that only insists on `agent_group` (raising `AssertionError` without
-it), kept for code that subclasses it.
+### `call()` or a protocol hook
+
+A tactic writes one program: `call()`, or the protocol hook `_run()` (or
+`_arun()` for async-only code). The native entry points (`tactic(task)`,
+`acall`, `bcall`, `ccall`) run whichever one the class writes, inside a
+`TacticCallSession`:
+
+```python
+from lllm import Tactic
+
+
+class Upper(Tactic):
+    name = "upper"
+
+    def _run(self, input_value, *, context=None):
+        return input_value.upper()
+
+
+upper = Upper()
+upper("hi")       # 'HI', recorded in a TacticCallSession
+upper.run("hi")   # 'HI'
+```
+
+- `run()` and `arun()` run that program too. For a hook-only tactic they call
+  the hook directly, without a session.
+- A hook always receives a `CallContext` as `context=` (a fresh one when the
+  caller passes none).
+- A hook-only tactic has no `call()`: `upper.call("hi")` raises
+  `TacticUnsupportedError` and points to `tactic(task)`, `run()`, and `arun()`.
+  A hook that hands its call back, through `super()._run()` or `self.call()`,
+  raises the same error at once instead of recursing.
+- An `_arun()`-only tactic also gets `run()` and `tactic(task)`, which run the
+  hook to completion.
+- `call()` may be `async def`; every entry point awaits it.
+- A tactic that writes neither raises `TacticUnsupportedError` when called.
+
+`NativeTactic` is a thin subclass that only insists on `agent_group` (raising
+`AssertionError` without it), kept for code that subclasses it.
 
 ### Constructor
 
@@ -86,7 +120,7 @@ Tactic(config=None, runtime=None, registry=None, tactic_path=None, context=None,
 | `tactic_path` | Stable identity recorded on sessions, e.g. `"my_pkg::analytica"`. |
 | `context` | A `TacticContext(registry=..., tactic_path=..., observer=..., metadata=...)` bundling the above. |
 | `observer` | Object with tactic lifecycle hooks; see [Logging](logging.md#persisting-sessions-with-an-observer). |
-| `name`, `description`, `package_ref`, `service_ref`, `examples`, `metadata` | Override what `info()` publishes. The description defaults to the class docstring. |
+| `name`, `description`, `package_ref`, `service_ref`, `examples`, `metadata` | Override what `info()` publishes. The description defaults to the class docstring. A name is one path segment (no `/`, `:`, `\`, `;`, or `%`); an `Enum` member stands for its value. |
 
 ---
 
@@ -199,8 +233,8 @@ For each call, `__call__`:
    agent specs;
 2. builds fresh `Agent`s from the specs, each with no dialogs, and wraps them in
    `_TrackedAgent` proxies that record every `respond()`;
-3. validates the task against the input type, runs `call()`, validates the
-   result against the output type;
+3. validates the task against the input type, runs `call()` (or the hook,
+   awaiting it if it is async), validates the result against the output type;
 4. marks the `TacticCallSession` as `"success"` or `"failure"` (re-raising the
    exception).
 
@@ -235,20 +269,21 @@ print(session.summary())          # compact dict
 ```
 
 `tactic(task, session_name=None, tags=None, metadata=None, return_session=False, **kwargs)`:
-extra keyword arguments are passed to `call()`. `session_name` defaults to
-`"<name>_<task hash>_<timestamp>"`; it, `tags`, and `metadata` are handed to the
-tactic's observer, which is how sessions get persisted (see [Logging](logging.md)).
+extra keyword arguments are passed to `call()` (or the hook). `session_name`
+defaults to `"<name>_<task hash>_<timestamp>"`; it, `tags`, and `metadata` are
+handed to the tactic's observer, which is how sessions get persisted (see
+[Logging](logging.md)).
 
 ### TacticCallSession
 
 | Field | Type | Description |
 | --- | --- | --- |
-| `tactic_name` | `str` | `Tactic.name` (or the class name) |
+| `tactic_name` | `str` | The tactic's name: the constructor's `name=`, else `Tactic.name`, else the class name |
 | `tactic_path` | `str \| None` | Stable identity, `"<package>::<name>"` when known |
 | `state` | `str` | `"initial"`, `"running"`, `"success"`, or `"failure"` |
 | `agent_sessions` | `Dict[str, List[AgentCallSession]]` | Per-agent call records |
 | `sub_tactic_sessions` | `Dict[str, List[TacticCallSession]]` | Sessions of tactics called during this call |
-| `delivery` | `Any` | Return value of `call()` on success |
+| `delivery` | `Any` | Return value of `call()` (or the hook) on success |
 | `error` | `str \| None` | `"ExcType: message"` on failure |
 | `error_traceback` | `str \| None` | Full traceback on failure |
 
@@ -299,11 +334,12 @@ tactic.sub_tactics      # {'analyzer': Analytica(...), 'searcher': Searcher(...)
 ```
 
 Sessions roll up automatically. Any tactic called while another tactic is
-running records its session into the caller's, under its `name`
-(`session.sub_tactic_sessions["analytica"]`), so sub-tactic agent calls and
-cost reach the parent's `total_cost`. This tracks the call, not the attribute:
-a tactic created inside `call()` is recorded too, and so are calls made through
-`acall`, `bcall`, and `ccall`, whose worker threads carry the caller's context.
+running records its session into the caller's, under its name
+(`session.sub_tactic_sessions["analytica"]`, or the `name=` it was constructed
+with), so sub-tactic agent calls and cost reach the parent's `total_cost`. This
+tracks the call, not the attribute: a tactic created inside `call()` is
+recorded too, and so are calls made through `acall`, `bcall`, and `ccall`,
+whose worker threads carry the caller's context.
 
 ---
 
@@ -397,6 +433,10 @@ class StructuredAnalysis(BaseAnalysis):
     def call(self, task: str) -> AnalysisOutput:
         return AnalysisOutput.model_validate_json(super().call(task))
 ```
+
+A type the subclass declares itself wins over an inherited one under either
+spelling: an `output_model` set on the subclass replaces an inherited
+`output_type`, and `input_model` likewise replaces `input_type`.
 
 ---
 
@@ -661,8 +701,10 @@ prompt = Prompt(path="research/answer", prompt="Use tools when needed.", functio
 
 The tool publishes the tactic's input schema: in the default `"task"` mode as
 one `task` parameter holding the whole input, and with `parameter_mode="kwargs"`
-as the input model's fields, one parameter each. The tool's description is the
-tactic's description.
+as the input model's fields, one parameter each. An input without fields, such
+as `str`, keeps the single `task` parameter in either mode. Nested models are
+inlined as for [`@tool`](prompts.md#tool-coupled-tools). The tool's description
+is the tactic's description.
 
 ---
 
@@ -696,9 +738,11 @@ the one you serve:
 | `tactic.run(value, context=None, return_trace=False)` | Protocol call: validates input and output; `return_trace=True` returns a `CallResult` with a `CallTrace`. |
 | `await tactic.arun(value, context=None)` | Async protocol call. |
 | `tactic.info()` | `TacticInfo`: name, description (the class docstring unless overridden), input/output JSON schemas, capabilities, `runtime_kind`. |
+| `tactic.events(task)` | Override it to stream: `aevents()` and a service's `/stream` route serve what it yields, as `TacticEvent`s. |
 
 `runtime_kind` is `"native"` for tactics that write `call()` (or declare
-`agent_group`) and `"python"` for ones that only implement `_run()`.
+`agent_group`) and `"python"` for ones that only implement `_run()` or
+`_arun()`. A `runtime_kind` set on a class is inherited by its subclasses.
 
 `run()` and `arun()` accept a `CallContext` (request id, trace id, refs, tags,
 metadata). It is passed to `call()` as `context=` when `call` accepts a
@@ -725,6 +769,8 @@ tactic = Brief(config)
 tactic.run("Summarize the release", context=CallContext(trace_id="trace-1"))
 tactic.info().runtime_kind      # 'native'
 ```
+
+A `_run()` or `_arun()` hook always receives the `CallContext` as `context=`.
 
 ### Serving over HTTP
 
@@ -754,10 +800,45 @@ curl -X POST http://127.0.0.1:8000/run \
 ```
 
 `lllm serve module:attr` accepts a tactic instance, a `Tactic` subclass it can
-construct with no arguments, or a zero-argument factory; point it at a factory
-when the tactic needs a loaded runtime and config. It imports from the working
-directory, so no `PYTHONPATH` setup is needed. See
+construct with no arguments, a factory, or a plain function; point it at a
+factory when the tactic needs a loaded runtime and config. It imports from the
+working directory, so no `PYTHONPATH` setup is needed. See
 [Tactic protocol](../protocol/tactic.md) and [Services](../protocol/services.md).
+
+### Factories and handlers
+
+`lllm serve module:attr`, `lllm inspect module:attr`, and a package tactic's
+`entry = "module:attr"` tell a factory from a handler by one rule:
+
+- A **factory** is called once, with no arguments, when the entry is loaded,
+  and returns the tactic. A function is a factory when it takes no parameters,
+  or when it can be called without arguments and its return annotation is a
+  `Tactic`.
+- Any other function is a **handler**: it is wrapped with `lllm.as_tactic` and
+  called once per input.
+
+```python
+from lllm import Tactic, build_tactic, load_runtime, resolve_config
+
+
+def build_public_tactic():                       # factory: no parameters
+    load_runtime()
+    return build_tactic(resolve_config("default"))
+
+
+def build_named(config_name: str = "default") -> Tactic:   # factory: annotated
+    load_runtime()
+    return build_tactic(resolve_config(config_name))
+
+
+def greet(name: str = "world") -> str:            # handler: runs on every input
+    return f"Hello {name}"
+```
+
+Without its `-> Tactic` annotation, `build_named` would be a handler and
+receive each input as `config_name`. An annotation that cannot be evaluated at
+load time, such as a class imported only under `TYPE_CHECKING`, counts when the
+class name ends in `Tactic`.
 
 ### Objects that only look like tactics
 
