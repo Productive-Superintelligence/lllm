@@ -1,6 +1,6 @@
 # Package Contract
 
-`psi.toml` is the package contract. PsiHub owns the package format,
+`lllm.toml` is the package contract. LLLM hub owns the package format,
 validation, cards, downloads, and local config templates. LLLM contributes
 tactic and service metadata that can be indexed there.
 
@@ -10,14 +10,14 @@ the ownership sharper:
 
 - LLLM owns tactics and tactic services.
 - SSSN owns semantic channels, artifacts, snapshots, and stores.
-- PsiHub owns package metadata, refs, cards, and local config.
+- LLLM hub owns package metadata, refs, cards, and local config.
 - Launch tools read the package; the package itself is not a launcher.
 
 ## Minimal LLLM Package
 
 ```toml
 [package]
-psi_version = "0.1"
+manifest_version = "0.1"
 org = "demo"
 name = "briefs"
 version = "0.1.0"
@@ -112,9 +112,9 @@ under `/tactics/{name}/...`.
 Every resource gets a durable identity:
 
 ```text
-psi://demo/briefs/tactics/brief
-psi://demo/briefs/services/api
-psi://demo/briefs/schemas/brief_input
+lllm://demo/briefs/tactics/brief
+lllm://demo/briefs/services/api
+lllm://demo/briefs/schemas/brief_input
 ```
 
 Refs are identifiers, not launch instructions. A local config can bind a ref

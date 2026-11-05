@@ -22,4 +22,4 @@ Run:
 - Keep native runtime features under `lllm.runtimes.native`.
 - Let Pydantic AI own provider, tool, eval, workflow, and observability behavior.
 - Keep FastAPI routes boring, typed, and compatible with OpenAPI.
-- Keep PsiHub package metadata optional and integration-scoped.
+- Keep LLLM hub package metadata optional and integration-scoped.

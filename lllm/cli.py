@@ -10,7 +10,7 @@ import json
 from typing import Any
 
 from .create import create_project
-from .integrations import tactic_resource
+from .hub import tactic_resource
 from .protocol import Tactic
 from .runtimes import as_tactic
 from .services import create_tactic_app

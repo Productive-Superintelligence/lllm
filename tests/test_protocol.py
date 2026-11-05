@@ -31,12 +31,12 @@ FORBIDDEN_PROTOCOL_IMPORT_PREFIXES = (
     "fastapi",
     "lllm.cli",
     "lllm.create",
-    "lllm.integrations",
+    "lllm.hub",
     "lllm.runtimes",
     "lllm.services",
     "pydantic_ai",
-    "psihub",
-    "sssn",
+    "lllm.network",
+    "lllm.shell",
 )
 
 
@@ -359,10 +359,10 @@ def test_call_context_rejects_malformed_endpoint_tokens(endpoint):
     "tactic_ref",
     (
         "not-a-ref",
-        "psi://demo/echo/services/api",
-        "psi://demo/echo/tactics/bad name",
-        "psi://demo/echo/tactics/bad%2Fname",
-        "psi://demo/echo/tactics/bad;name",
+        "lllm://demo/echo/services/api",
+        "lllm://demo/echo/tactics/bad name",
+        "lllm://demo/echo/tactics/bad%2Fname",
+        "lllm://demo/echo/tactics/bad;name",
     ),
 )
 def test_call_context_rejects_malformed_tactic_refs(tactic_ref):
@@ -375,7 +375,7 @@ def test_tactic_metadata_tokens_allow_common_separators():
         request_id="req-1",
         trace_id="trace.1",
         span_id="span_1",
-        tactic_ref="psi://demo/echo/tactics/run",
+        tactic_ref="lllm://demo/echo/tactics/run",
         endpoint="custom.endpoint",
     )
     event = TacticEvent(id="event-1", kind="tool-call")
@@ -388,7 +388,7 @@ def test_tactic_metadata_tokens_allow_common_separators():
     assert context.request_id == "req-1"
     assert context.trace_id == "trace.1"
     assert context.span_id == "span_1"
-    assert context.tactic_ref == "psi://demo/echo/tactics/run"
+    assert context.tactic_ref == "lllm://demo/echo/tactics/run"
     assert context.endpoint == "custom.endpoint"
     assert event.id == "event-1"
     assert event.kind == "tool-call"
@@ -562,8 +562,8 @@ def test_tactic_info_and_trace_metadata_are_isolated():
     [
         ({"name": b"echo"}, "name"),
         ({"description": b"Echo."}, "description"),
-        ({"package_ref": b"psi://demo/echo/tactics/echo"}, "package_ref"),
-        ({"service_ref": b"psi://demo/echo/services/api"}, "service_ref"),
+        ({"package_ref": b"lllm://demo/echo/tactics/echo"}, "package_ref"),
+        ({"service_ref": b"lllm://demo/echo/services/api"}, "service_ref"),
     ],
 )
 def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
@@ -575,13 +575,13 @@ def test_tactic_constructor_rejects_bytes_for_text_fields(kwargs, field_name):
     "package_ref",
     [
         "not-a-ref",
-        "psi://demo/echo/channels/events",
-        "psi://demo/echo/tactics/echo?token=raw",
-        "psi://demo/echo/tactics/bad name",
-        "psi://demo/echo/tactics/echo%2Fhidden",
-        "psi://demo;org/echo/tactics/echo",
-        "psi://demo/echo;pkg/tactics/echo",
-        "psi://demo/echo/tactics/echo;name",
+        "lllm://demo/echo/channels/events",
+        "lllm://demo/echo/tactics/echo?token=raw",
+        "lllm://demo/echo/tactics/bad name",
+        "lllm://demo/echo/tactics/echo%2Fhidden",
+        "lllm://demo;org/echo/tactics/echo",
+        "lllm://demo/echo;pkg/tactics/echo",
+        "lllm://demo/echo/tactics/echo;name",
     ],
 )
 def test_tactic_constructor_rejects_malformed_package_refs(package_ref):
@@ -593,13 +593,13 @@ def test_tactic_constructor_rejects_malformed_package_refs(package_ref):
     "package_ref",
     [
         "not-a-ref",
-        "psi://demo/echo/channels/events",
-        "psi://demo/echo/tactics/echo?token=raw",
-        "psi://demo/echo/tactics/bad name",
-        "psi://demo/echo/tactics/echo%2Fhidden",
-        "psi://demo;org/echo/tactics/echo",
-        "psi://demo/echo;pkg/tactics/echo",
-        "psi://demo/echo/tactics/echo;name",
+        "lllm://demo/echo/channels/events",
+        "lllm://demo/echo/tactics/echo?token=raw",
+        "lllm://demo/echo/tactics/bad name",
+        "lllm://demo/echo/tactics/echo%2Fhidden",
+        "lllm://demo;org/echo/tactics/echo",
+        "lllm://demo/echo;pkg/tactics/echo",
+        "lllm://demo/echo/tactics/echo;name",
     ],
 )
 def test_tactic_info_rejects_malformed_package_refs(package_ref):
@@ -624,13 +624,13 @@ def test_tactic_info_rejects_malformed_package_refs(package_ref):
         "http://service/base%2Fapi",
         "http://service/base\\api",
         "http://service/base:api",
-        "psi://demo/echo/tactics/echo",
-        "psi://demo/echo/services/api?token=raw",
-        "psi://demo/echo/services/bad name",
-        "psi://demo/echo/services/api%2Fhidden",
-        "psi://demo;org/echo/services/api",
-        "psi://demo/echo;pkg/services/api",
-        "psi://demo/echo/services/api;name",
+        "lllm://demo/echo/tactics/echo",
+        "lllm://demo/echo/services/api?token=raw",
+        "lllm://demo/echo/services/bad name",
+        "lllm://demo/echo/services/api%2Fhidden",
+        "lllm://demo;org/echo/services/api",
+        "lllm://demo/echo;pkg/services/api",
+        "lllm://demo/echo/services/api;name",
     ],
 )
 def test_tactic_constructor_rejects_malformed_service_refs(service_ref):
@@ -655,13 +655,13 @@ def test_tactic_constructor_rejects_malformed_service_refs(service_ref):
         "http://service/base%2Fapi",
         "http://service/base\\api",
         "http://service/base:api",
-        "psi://demo/echo/tactics/echo",
-        "psi://demo/echo/services/api?token=raw",
-        "psi://demo/echo/services/bad name",
-        "psi://demo/echo/services/api%2Fhidden",
-        "psi://demo;org/echo/services/api",
-        "psi://demo/echo;pkg/services/api",
-        "psi://demo/echo/services/api;name",
+        "lllm://demo/echo/tactics/echo",
+        "lllm://demo/echo/services/api?token=raw",
+        "lllm://demo/echo/services/bad name",
+        "lllm://demo/echo/services/api%2Fhidden",
+        "lllm://demo;org/echo/services/api",
+        "lllm://demo/echo;pkg/services/api",
+        "lllm://demo/echo/services/api;name",
     ],
 )
 def test_tactic_info_rejects_malformed_service_refs(service_ref):
@@ -670,7 +670,7 @@ def test_tactic_info_rejects_malformed_service_refs(service_ref):
 
 
 def test_service_ref_fields_accept_service_refs_and_http_urls():
-    psi_ref = "psi://demo/echo/services/api"
+    psi_ref = "lllm://demo/echo/services/api"
     http_ref = "http://service/base"
     trailing_slash_http_ref = "http://service/base/"
 
@@ -688,10 +688,10 @@ def test_service_ref_fields_accept_service_refs_and_http_urls():
     "service_ref",
     [
         "not-a-ref",
-        "psi://demo/echo/tactics/echo",
-        "psi://demo/echo/services/api?token=raw",
-        "psi://demo/echo/services/bad name",
-        "psi://demo/echo/services/api;name",
+        "lllm://demo/echo/tactics/echo",
+        "lllm://demo/echo/services/api?token=raw",
+        "lllm://demo/echo/services/bad name",
+        "lllm://demo/echo/services/api;name",
         "http://user:pass@service",
         "http://service?env=dev",
         "http://service/base//api",
@@ -804,16 +804,16 @@ def test_plain_callable_wraps_as_tactic_with_annotations():
     tactic = as_tactic(
         shout,
         description="Uppercase text.",
-        package_ref="psi://demo/echo/tactics/shout",
-        service_ref="psi://demo/echo/services/api",
+        package_ref="lllm://demo/echo/tactics/shout",
+        service_ref="lllm://demo/echo/services/api",
         examples=[example],
         metadata={"owner": "tests"},
     )
     info = tactic.info()
 
     assert info.description == "Uppercase text."
-    assert info.package_ref == "psi://demo/echo/tactics/shout"
-    assert info.service_ref == "psi://demo/echo/services/api"
+    assert info.package_ref == "lllm://demo/echo/tactics/shout"
+    assert info.service_ref == "lllm://demo/echo/services/api"
     assert info.examples == [example]
     assert info.metadata == {"owner": "tests"}
     assert info.input_schema["type"] == "string"

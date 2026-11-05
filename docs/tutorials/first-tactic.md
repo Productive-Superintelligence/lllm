@@ -88,12 +88,12 @@ Bind a package-style ref to the same local tactic:
 from lllm import TacticResolver
 
 resolver = TacticResolver()
-resolver.register("psi://demo/echo/tactics/echo", EchoTactic())
+resolver.register("lllm://demo/echo/tactics/echo", EchoTactic())
 
-assert resolver.run("psi://demo/echo/tactics/echo", {"text": "hi"}).text == "HI"
+assert resolver.run("lllm://demo/echo/tactics/echo", {"text": "hi"}).text == "HI"
 ```
 
-The same ref can later resolve to a service URL from `.psi/config.toml` without
+The same ref can later resolve to a service URL from `.lllm/config.toml` without
 changing callers.
 
 ## Verify

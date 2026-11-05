@@ -319,7 +319,7 @@ from lllm.runtimes.native import NativeTacticAdapter
 
 public_tactic = NativeTacticAdapter(
     native_tactic,
-    package_ref="psi://demo/native-service/tactics/native-brief",
+    package_ref="lllm://demo/native-service/tactics/native-brief",
     run_kwargs={"tone": "precise"},
 )
 ```

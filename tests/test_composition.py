@@ -19,7 +19,7 @@ from lllm.services import create_service_app, create_tactic_app
 from lllm.services.client import _aiter_sse_events, _iter_sse_events, _request_envelope
 
 
-REF = "psi://demo/echo/tactics/echo"
+REF = "lllm://demo/echo/tactics/echo"
 
 
 class EchoInput(BaseModel):
@@ -76,7 +76,7 @@ def test_tactic_ref_parses_psi_tactic_refs():
 
 def test_tactic_ref_rejects_non_tactic_refs():
     with pytest.raises(TacticRefError):
-        TacticRef("psi://demo/echo/channels/events")
+        TacticRef("lllm://demo/echo/channels/events")
 
 
 @pytest.mark.parametrize("value", [None, 123, ""])
@@ -90,33 +90,33 @@ def test_tactic_ref_rejects_non_string_or_empty_values(value):
 @pytest.mark.parametrize(
     "value",
     [
-        "psi://demo/echo/tactics/echo?env=dev",
-        "psi://demo/echo/tactics/echo#fragment",
-        "psi://demo:bad/echo/tactics/echo",
-        "psi://demo/echo:bad/tactics/echo",
-        r"psi://demo/echo/tactics/echo\bad",
-        "psi://../echo/tactics/echo",
-        "psi://demo/./tactics/echo",
-        "psi://demo/echo/tactics/..",
-        "psi://demo/echo/tactics//echo",
-        "psi://demo/echo//tactics/echo",
-        "psi://demo/echo/tactics/echo/",
-        "psi://demo/   /tactics/echo",
-        "psi://demo/echo/tactics/   ",
-        "psi://demo org/echo/tactics/echo",
-        "psi://demo/echo pkg/tactics/echo",
-        "psi://demo/echo/tact ics/echo",
-        "psi://demo/echo/tactics/echo name",
-        "psi://demo;org/echo/tactics/echo",
-        "psi://demo/echo;pkg/tactics/echo",
-        "psi://demo/echo/tactics/echo;name",
-        "psi://demo%2Forg/echo/tactics/echo",
-        "psi://demo/echo%2Fpkg/tactics/echo",
-        "psi://demo/echo/tactics/echo%2Fname",
-        "psi://demo/echo/tactics/echo%5Cname",
-        "psi://demo/echo/tactics/%2E%2E",
-        "psi://demo/echo/tactics/echo%20name",
-        "psi://demo/echo/tactics/echo%3Aname",
+        "lllm://demo/echo/tactics/echo?env=dev",
+        "lllm://demo/echo/tactics/echo#fragment",
+        "lllm://demo:bad/echo/tactics/echo",
+        "lllm://demo/echo:bad/tactics/echo",
+        r"lllm://demo/echo/tactics/echo\bad",
+        "lllm://../echo/tactics/echo",
+        "lllm://demo/./tactics/echo",
+        "lllm://demo/echo/tactics/..",
+        "lllm://demo/echo/tactics//echo",
+        "lllm://demo/echo//tactics/echo",
+        "lllm://demo/echo/tactics/echo/",
+        "lllm://demo/   /tactics/echo",
+        "lllm://demo/echo/tactics/   ",
+        "lllm://demo org/echo/tactics/echo",
+        "lllm://demo/echo pkg/tactics/echo",
+        "lllm://demo/echo/tact ics/echo",
+        "lllm://demo/echo/tactics/echo name",
+        "lllm://demo;org/echo/tactics/echo",
+        "lllm://demo/echo;pkg/tactics/echo",
+        "lllm://demo/echo/tactics/echo;name",
+        "lllm://demo%2Forg/echo/tactics/echo",
+        "lllm://demo/echo%2Fpkg/tactics/echo",
+        "lllm://demo/echo/tactics/echo%2Fname",
+        "lllm://demo/echo/tactics/echo%5Cname",
+        "lllm://demo/echo/tactics/%2E%2E",
+        "lllm://demo/echo/tactics/echo%20name",
+        "lllm://demo/echo/tactics/echo%3Aname",
     ],
 )
 def test_tactic_ref_rejects_non_resource_url_parts(value):
@@ -999,17 +999,17 @@ def test_resolver_calls_bound_http_tactic():
 
 
 def test_resolver_loads_url_bindings_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
 [refs."{REF}"]
 url = "http://127.0.0.1:8000/tactics/echo"
 
-[refs."psi://demo/echo/services/api"]
+[refs."lllm://demo/echo/services/api"]
 url = "http://127.0.0.1:8000"
 
-[refs."psi://demo/echo/channels/events"]
+[refs."lllm://demo/echo/channels/events"]
 store = ".sssn"
 """.lstrip(),
         encoding="utf-8",
@@ -1024,7 +1024,7 @@ store = ".sssn"
 
 
 def test_resolver_loads_url_binding_metadata_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
@@ -1057,7 +1057,7 @@ headers = {{ x_policy = "demo" }}
 
 
 def test_resolver_loads_credential_ref_metadata_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
@@ -1084,7 +1084,7 @@ headers = {{ x_policy = "demo" }}
 
 
 def test_resolver_rejects_secret_metadata_keys_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
@@ -1104,7 +1104,7 @@ headers = {{ xauthtoken = "Bearer raw-config-token" }}
 
 
 def test_resolver_loaded_config_metadata_is_isolated(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
@@ -1132,7 +1132,7 @@ labels = ["alpha", "beta"]
 
 
 def test_resolver_rejects_non_table_ref_metadata_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
@@ -1148,7 +1148,7 @@ metadata = "bad"
 
 
 def test_resolver_rejects_whitespace_bearing_url_bindings_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         f"""
@@ -1169,7 +1169,7 @@ def test_resolver_rejects_malformed_config_paths():
 
 
 def test_resolver_rejects_malformed_url_bindings_from_local_config(tmp_path):
-    config_dir = tmp_path / ".psi"
+    config_dir = tmp_path / ".lllm"
     config_dir.mkdir()
     (config_dir / "config.toml").write_text(
         """
@@ -1179,7 +1179,7 @@ url = "http://127.0.0.1:8000/tactics/echo"
         encoding="utf-8",
     )
 
-    with pytest.raises(TacticRefError, match="psi://"):
+    with pytest.raises(TacticRefError, match="lllm://"):
         TacticResolver.from_config(tmp_path)
 
 
@@ -1187,18 +1187,18 @@ url = "http://127.0.0.1:8000/tactics/echo"
     "ref",
     [
         "http://demo/echo/channels/events",
-        "psi://demo/echo/channels/events?env=dev",
-        "psi://demo/echo/channels/events#latest",
-        "psi://demo/echo/channels/bad name",
-        "psi://demo/echo/channels/events%2Fhidden",
-        "psi://demo;org/echo/channels/events",
-        "psi://demo/echo;pkg/channels/events",
-        "psi://demo/echo/channels/events;name",
-        "psi://demo/echo/widgets/item",
+        "lllm://demo/echo/channels/events?env=dev",
+        "lllm://demo/echo/channels/events#latest",
+        "lllm://demo/echo/channels/bad name",
+        "lllm://demo/echo/channels/events%2Fhidden",
+        "lllm://demo;org/echo/channels/events",
+        "lllm://demo/echo;pkg/channels/events",
+        "lllm://demo/echo/channels/events;name",
+        "lllm://demo/echo/widgets/item",
     ],
 )
 def test_resolver_validates_ignored_non_tactic_config_refs(tmp_path, ref):
-    config_dir = tmp_path / "workspace" / ".psi"
+    config_dir = tmp_path / "workspace" / ".lllm"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         f"""
@@ -1220,7 +1220,7 @@ store = ".sssn"
         ("channels", 'store = ".sssn"'),
         ("snapshots", 'store = ".sssn"'),
         ("runs", 'path = "runs/latest.json"'),
-        ("configs", 'path = ".psi/config.toml"'),
+        ("configs", 'path = ".lllm/config.toml"'),
         ("docs", 'path = "docs/guide.md"'),
         ("examples", 'path = "examples/demo.py"'),
         ("assets", 'path = "assets/logo.svg"'),
@@ -1231,11 +1231,11 @@ def test_resolver_ignores_known_non_tactic_config_sections(
     resource_kind,
     target_line,
 ):
-    config_dir = tmp_path / resource_kind / ".psi"
+    config_dir = tmp_path / resource_kind / ".lllm"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         f"""
-[refs."psi://demo/echo/{resource_kind}/local"]
+[refs."lllm://demo/echo/{resource_kind}/local"]
 {target_line}
 """.lstrip(),
         encoding="utf-8",
@@ -1248,7 +1248,7 @@ def test_resolver_ignores_known_non_tactic_config_sections(
 
 def test_resolver_rejects_invalid_tactic_url_values_from_local_config(tmp_path):
     for index, url_value in enumerate(("123", "false", '""', '"   "'), start=1):
-        config_dir = tmp_path / f"workspace-{index}" / ".psi"
+        config_dir = tmp_path / f"workspace-{index}" / ".lllm"
         config_dir.mkdir(parents=True)
         (config_dir / "config.toml").write_text(
             f"""
@@ -1270,7 +1270,7 @@ def test_resolver_rejects_ambiguous_tactic_url_targets_from_local_config(
     tmp_path,
     extra_target,
 ):
-    config_dir = tmp_path / "workspace" / ".psi"
+    config_dir = tmp_path / "workspace" / ".lllm"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         f"""
@@ -1293,7 +1293,7 @@ def test_resolver_rejects_non_url_tactic_targets_from_local_config(
     tmp_path,
     target_line,
 ):
-    config_dir = tmp_path / "workspace" / ".psi"
+    config_dir = tmp_path / "workspace" / ".lllm"
     config_dir.mkdir(parents=True)
     (config_dir / "config.toml").write_text(
         f"""
@@ -1327,7 +1327,7 @@ def test_resolver_rejects_malformed_tactic_url_targets_from_local_config(tmp_pat
             "http://127.0.0.1:8000/tactics:echo",
         )
     ):
-        config_dir = tmp_path / f"workspace-url-{index}" / ".psi"
+        config_dir = tmp_path / f"workspace-url-{index}" / ".lllm"
         config_dir.mkdir(parents=True)
         (config_dir / "config.toml").write_text(
             f"""

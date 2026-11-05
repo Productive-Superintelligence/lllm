@@ -52,7 +52,25 @@ BUILTIN_RESOURCE_SECTIONS = (
     TOOLS_SECTION,
     PROXY_SECTION,
 )
-KNOWN_SECTIONS = META_SECTIONS | frozenset(BUILTIN_RESOURCE_SECTIONS)
+# Sections the hub declares in the same lllm.toml (``[schemas.x]``,
+# ``[channels.x]``, ``[card]``, ...). They name resources rather than folders,
+# so they are never treated as custom discovery sections.
+HUB_DECLARED_SECTIONS = frozenset(
+    {
+        "schemas",
+        "channels",
+        "snapshots",
+        "runs",
+        "config",
+        "docs",
+        "examples",
+        "requirements",
+        "card",
+    }
+)
+KNOWN_SECTIONS = (
+    META_SECTIONS | frozenset(BUILTIN_RESOURCE_SECTIONS) | HUB_DECLARED_SECTIONS
+)
 
 _SECTION_TO_RESOURCE_TYPE = {
     PROMPT_SECTION: "prompt",

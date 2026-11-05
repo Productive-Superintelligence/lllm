@@ -38,7 +38,7 @@ class TacticResolver:
 
     @classmethod
     def from_config(cls, path: str | Path) -> "TacticResolver":
-        """Load URL bindings from a local `.psi/config.toml` style file."""
+        """Load URL bindings from a local `.lllm/config.toml` style file."""
 
         resolver = cls()
         config = _load_toml(path)
@@ -142,7 +142,7 @@ class TacticResolver:
 def _load_toml(path: str | Path) -> dict[str, Any]:
     target = Path(_path_value(path, "config path"))
     if target.is_dir():
-        target = target / ".psi" / "config.toml"
+        target = target / ".lllm" / "config.toml"
     try:
         import tomllib
     except ImportError:  # pragma: no cover - Python 3.10 fallback
@@ -214,7 +214,7 @@ def _is_tactic_config_ref(ref: str) -> bool:
     parsed = urlparse(ref)
     raw_parts = parsed.path.split("/")
     if (
-        parsed.scheme != "psi"
+        parsed.scheme != "lllm"
         or not parsed.netloc
         or parsed.params
         or parsed.query
@@ -222,7 +222,7 @@ def _is_tactic_config_ref(ref: str) -> bool:
         or len(raw_parts) != 4
         or raw_parts[0] != ""
     ):
-        raise TacticRefError(f"Ref binding key must be a psi:// resource ref: {ref}")
+        raise TacticRefError(f"Ref binding key must be a lllm:// resource ref: {ref}")
     package, resource_kind, name = raw_parts[1:]
     for segment in (parsed.netloc, package, resource_kind, name):
         decoded = unquote(segment)

@@ -720,7 +720,7 @@ def test_native_preservation_audit_documents_port_cut_defer_status():
     assert "`lllm.runtimes.native`" in audit
     assert "`NativeTacticAdapter`" in audit
     assert "`tactic_as_function()`" in audit
-    assert "PsiHub owns `psi.toml`" in audit
+    assert "LLLM hub owns `lllm.toml`" in audit
     assert "Live native invoker behavior" in audit
     assert "Jupyter sandbox behavior" in audit
 
@@ -765,7 +765,7 @@ def test_native_runtime_doc_preserves_restored_v1_surfaces():
         "`NativeTacticAdapter`",
         "`tactic_as_function()`",
         "native package discovery still reads `lllm.toml`",
-        "PsiHub owns `psi.toml`",
+        "LLLM hub owns `lllm.toml`",
     ]
     all_native_text = "\n".join(texts.values())
     for term in expected_terms:
@@ -802,17 +802,17 @@ def test_protocol_reference_documents_identifier_rules():
     assert "`;`" in reference
     assert "Token-style fields" in reference
     assert "`service_ref` values" in reference
-    assert "psi://.../services/..." in reference
+    assert "lllm://.../services/..." in reference
     assert "empty path segments" in reference
 
 
-def test_psihub_metadata_reference_names_json_schemas():
-    reference = (ROOT / "docs" / "reference" / "psihub-metadata.md").read_text(
+def test_hub_metadata_reference_names_json_schemas():
+    reference = (ROOT / "docs" / "reference" / "hub-metadata.md").read_text(
         encoding="utf-8"
     )
 
     assert "input and output JSON schemas" in reference
-    assert "Package refs use `psi://.../tactics/...`" in reference
+    assert "Package refs use `lllm://.../tactics/...`" in reference
     assert "service refs use either" in reference
     assert "input and output schema refs" not in reference
 
@@ -823,10 +823,10 @@ def test_composition_guide_documents_mixed_local_config():
     )
 
     assert "TacticResolver.from_config()" in guide
-    assert "shared `.psi/config.toml`" in guide
+    assert "shared `.lllm/config.toml`" in guide
     assert "non-tactic refs" in guide
-    assert "psi://demo/echo/services/api" in guide
-    assert "psi://demo/echo/channels/events" in guide
+    assert "lllm://demo/echo/services/api" in guide
+    assert "lllm://demo/echo/channels/events" in guide
     assert "All binding keys must still be valid" in guide
     assert "known PSI resource sections" in guide
     assert "`schemas`, `services`, `channels`" in guide

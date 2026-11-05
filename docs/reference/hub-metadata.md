@@ -1,6 +1,6 @@
-# PsiHub Metadata
+# LLLM hub Metadata
 
-LLLM exposes helper metadata for PsiHub.
+LLLM exposes helper metadata for LLLM hub.
 
 ```python
 from lllm.integrations import tactic_resource
@@ -17,8 +17,8 @@ Metadata can include:
 - custom endpoint metadata,
 - descriptions and user metadata.
 
-Package refs use `psi://.../tactics/...`; service refs use either
-`psi://.../services/...` or absolute HTTP(S) service URLs without embedded
+Package refs use `lllm://.../tactics/...`; service refs use either
+`lllm://.../services/...` or absolute HTTP(S) service URLs without embedded
 credentials, URL params, queries, fragments, percent escapes, backslashes,
 colons, semicolon params, empty path segments, or dot segments.
 
@@ -31,5 +31,5 @@ variants such as `set-cookie`, or collapsed lowercase variants such as
 `apikey`, `accesstoken`, and `clientsecret` in exported examples or metadata.
 Metadata maps must use string keys, including nested maps.
 
-PsiHub owns `psi.toml`, package validation, local hub storage, generated cards,
+LLLM hub owns `lllm.toml`, package validation, local hub storage, generated cards,
 agent cards, downloads, and config templates.

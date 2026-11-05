@@ -84,7 +84,7 @@ cross-service correlation.
 - package and service refs,
 - capability flags such as streaming support.
 
-This is what `/info` returns from a service and what PsiHub can render into
+This is what `/info` returns from a service and what LLLM hub can render into
 package cards. Keep `info()` data descriptive and portable; do not put raw
 secrets or environment-specific credentials in metadata.
 
@@ -99,7 +99,7 @@ A tactic can hide:
 - a remote HTTP service.
 
 The caller still sees the same typed boundary. That is why LLLM composes well
-with PsiHub and SSSN: the package or channel layer can point at a tactic
+with LLLM hub and SSSN: the package or channel layer can point at a tactic
 without inheriting the implementation runtime.
 
 ## Reference

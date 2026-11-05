@@ -20,8 +20,8 @@ spaces, but they must avoid percent escapes, `.`, `..`, `/`, `\`, `:`, and
 Token-style fields such as request ids, event kinds, runtime kinds, states, and
 error types must also avoid whitespace and semicolon path-param/control
 separators.
-`package_ref` values point at `psi://.../tactics/...` tactic refs.
-`service_ref` values must either point at `psi://.../services/...` service refs
+`package_ref` values point at `lllm://.../tactics/...` tactic refs.
+`service_ref` values must either point at `lllm://.../services/...` service refs
 or use absolute HTTP(S) service URLs without embedded credentials, URL params,
 queries, fragments, percent escapes, backslashes, colons, empty path segments,
 dot segments, or semicolon params.

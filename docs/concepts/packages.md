@@ -1,8 +1,8 @@
 # Packages
 
-LLLM does not own `psi.toml`; PsiHub owns package metadata, validation, cards,
+LLLM does not own `lllm.toml`; LLLM hub owns package metadata, validation, cards,
 agent cards, downloads, and local config templates. LLLM contributes tactic and
-service metadata that PsiHub can index.
+service metadata that LLLM hub can index.
 
 ```toml
 [package]
@@ -29,7 +29,7 @@ transport = "fastapi"
 ```
 
 The package declares importable resources. LLLM can provide the tactic object
-and service adapter; PsiHub checks the package shape and renders the package in
+and service adapter; LLLM hub checks the package shape and renders the package in
 a way humans and coding agents can inspect.
 
 ## Refs
@@ -37,8 +37,8 @@ a way humans and coding agents can inspect.
 Package resources get durable refs:
 
 ```text
-psi://demo/echo/tactics/echo
-psi://demo/echo/services/api
+lllm://demo/echo/tactics/echo
+lllm://demo/echo/services/api
 ```
 
 Refs are identifiers, not launch instructions. A local config file can bind a
@@ -63,7 +63,7 @@ runner at credentials without storing them in the package.
 
 1. Build and test the tactic locally.
 2. Expose it through a service when it needs an HTTP boundary.
-3. Add PsiHub metadata with `psihub init`.
+3. Add LLLM hub metadata with `lllm hub init`.
 4. Validate the package.
 5. Publish or download it through a local hub.
 

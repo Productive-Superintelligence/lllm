@@ -10,7 +10,7 @@
 Low-Level Language Models (LLLM) is the protocol and service layer for reusable
 agentic tactics. The center model is deliberately small: a `Tactic` is a typed
 unit of work that can run in process, stream results, sit behind a FastAPI
-service, and be described as a PsiHub package resource.
+service, and be described as a LLLM hub package resource.
 
 LLLM is not a model runtime. Pydantic AI, native LLLM objects, plain Python,
 and future adapters keep owning execution details such as tools, provider
@@ -33,7 +33,7 @@ can understand.
   </div>
   <div class="psi-tile">
     <strong>Package</strong>
-    PsiHub metadata makes tactics discoverable, configurable, and composable.
+    LLLM hub metadata makes tactics discoverable, configurable, and composable.
   </div>
 </div>
 
@@ -88,7 +88,7 @@ flowchart LR
   C --> D["Pydantic AI adapter"]
   C --> E["Native adapter"]
   C --> F["Plain Python tactic"]
-  C --> G["PsiHub tactic metadata"]
+  C --> G["LLLM hub tactic metadata"]
   G --> H["Cards, refs, config templates"]
 ```
 
@@ -102,7 +102,7 @@ a remote HTTP service.
 - `Tactic`, `TacticInfo`, `CallContext`, and `TacticEvent`.
 - Local, async, streaming, proxy, and sandbox wrappers at the tactic boundary.
 - FastAPI service adapters and remote tactic clients.
-- Metadata helpers that export tactics to PsiHub package resources.
+- Metadata helpers that export tactics to LLLM hub package resources.
 - Ref resolution for local or remote tactic bindings.
 
 ## What Stays Outside

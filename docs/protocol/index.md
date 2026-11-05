@@ -40,7 +40,7 @@ setting.
   </div>
   <div class="psi-tile">
     <strong>Ref</strong>
-    A durable `psi://` identity that can resolve to a local object or remote
+    A durable `lllm://` identity that can resolve to a local object or remote
     service.
   </div>
 </div>
@@ -56,7 +56,7 @@ flowchart TD
   T --> C["Plain Python"]
   T --> R["Remote service"]
   T --> I["TacticInfo"]
-  I --> H["PsiHub package card"]
+  I --> H["LLLM hub package card"]
   I --> S["Service /info"]
   I --> A["Agent-readable metadata"]
 ```
@@ -79,7 +79,7 @@ HTTP service. It sends one shape and receives one shape.
 The old v1 docs used `Program` for the smallest compute boundary and
 `ServiceSpec` for the deployable surface. In the current protocol, the center
 object is `Tactic`; services expose one or more tactics, and package metadata
-lives in PsiHub.
+lives in LLLM hub.
 
 ## Call Shape
 
@@ -137,5 +137,5 @@ useful.
 
 - [Tactic Boundary](tactic-boundary.md) explains the center call contract.
 - [Service Boundary](service-boundary.md) shows the HTTP surface.
-- [Package Contract](package-contract.md) maps tactics into `psi.toml`.
+- [Package Contract](package-contract.md) maps tactics into `lllm.toml`.
 - [Refs And Resolution](refs-resolution.md) covers local and remote binding.

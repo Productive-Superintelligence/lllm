@@ -4,7 +4,7 @@ import pytest
 from pydantic import BaseModel
 
 from lllm import Tactic, endpoint
-from lllm.integrations import tactic_resource
+from lllm.hub import tactic_resource
 
 
 class ActInput(BaseModel):
@@ -188,10 +188,10 @@ def test_tactic_resource_accepts_nested_read_only_mapping_info_values():
     "package_ref",
     [
         "not-a-ref",
-        "psi://demo/echo/channels/events",
-        "psi://demo/echo/tactics/echo?token=raw",
-        "psi://demo/echo/tactics/bad name",
-        "psi://demo/echo/tactics/echo;name",
+        "lllm://demo/echo/channels/events",
+        "lllm://demo/echo/tactics/echo?token=raw",
+        "lllm://demo/echo/tactics/bad name",
+        "lllm://demo/echo/tactics/echo;name",
     ],
 )
 def test_tactic_resource_rejects_malformed_package_refs(package_ref):
@@ -225,10 +225,10 @@ def test_tactic_resource_rejects_malformed_package_refs(package_ref):
         "http://service/base%2Fapi",
         "http://service/base\\api",
         "http://service/base:api",
-        "psi://demo/echo/tactics/echo",
-        "psi://demo/echo/services/api?token=raw",
-        "psi://demo/echo/services/bad name",
-        "psi://demo/echo/services/api;name",
+        "lllm://demo/echo/tactics/echo",
+        "lllm://demo/echo/services/api?token=raw",
+        "lllm://demo/echo/services/bad name",
+        "lllm://demo/echo/services/api;name",
     ],
 )
 def test_tactic_resource_rejects_malformed_service_refs(service_ref):

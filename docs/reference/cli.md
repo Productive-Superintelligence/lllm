@@ -28,6 +28,6 @@ lllm create native my-native-demo
 ```
 
 The create command scaffolds a runnable tactic/service project. Package
-metadata is prepared later with PsiHub. Project names are normalized to portable
+metadata is prepared later with LLLM hub. Project names are normalized to portable
 slugs and must not contain percent escapes. Directory paths must be non-empty
 and unpadded.

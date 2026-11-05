@@ -42,7 +42,7 @@ flowchart TD
   C --> R["Remote HTTP service"]
   B --> I["TacticInfo"]
   I --> S["/info"]
-  I --> H["PsiHub metadata"]
+  I --> H["LLLM hub metadata"]
 ```
 
 The old v1 docs called this the runtime adapter rule: keep framework features

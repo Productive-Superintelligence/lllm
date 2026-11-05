@@ -48,7 +48,7 @@ assert load_tool("demo.tools:echo", runtime=runtime).name == "echo"
 
 ## Package Discovery
 
-Native package discovery reads `lllm.toml`, not `psi.toml`:
+Native package discovery reads `lllm.toml`, not `lllm.toml`:
 
 ```toml
 [package]

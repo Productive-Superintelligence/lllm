@@ -24,7 +24,7 @@ def test_create_plain_project_builds_runnable_tactic(tmp_path):
     assert (result.path / "app.py").exists()
     assert (result.path / "client.py").exists()
     assert (result.path / "tests" / "test_tactic.py").exists()
-    assert not (result.path / "psi.toml").exists()
+    assert not (result.path / "lllm.toml").exists()
     assert _import_generated_client(result.path, result.package_name)
     assert _run_generated_client(result.path, result.package_name) == "HELLO"
     assert _run_generated_tactic(result.path, result.package_name) == "HELLO"

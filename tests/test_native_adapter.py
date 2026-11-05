@@ -35,8 +35,8 @@ def test_native_adapter_keeps_native_object_behind_boundary():
     tactic = NativeTacticAdapter(
         NativeAdd(),
         description="Native addition.",
-        package_ref="psi://demo/native/tactics/add",
-        service_ref="psi://demo/native/services/api",
+        package_ref="lllm://demo/native/tactics/add",
+        service_ref="lllm://demo/native/services/api",
         examples=[example],
         metadata={"owner": "tests"},
     )
@@ -44,8 +44,8 @@ def test_native_adapter_keeps_native_object_behind_boundary():
 
     assert info.runtime_kind == "native"
     assert info.description == "Native addition."
-    assert info.package_ref == "psi://demo/native/tactics/add"
-    assert info.service_ref == "psi://demo/native/services/api"
+    assert info.package_ref == "lllm://demo/native/tactics/add"
+    assert info.service_ref == "lllm://demo/native/services/api"
     assert info.examples == [example]
     assert info.metadata == {"owner": "tests"}
     assert tactic.run({"left": 2, "right": 3}) == 5

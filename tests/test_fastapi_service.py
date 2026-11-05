@@ -843,7 +843,7 @@ def test_invalid_request_context_returns_stable_error_envelope():
         "/run",
         json={
             "input": {"text": "hello"},
-            "context": {"tactic_ref": "psi://demo/echo/services/api"},
+            "context": {"tactic_ref": "lllm://demo/echo/services/api"},
         },
     )
 

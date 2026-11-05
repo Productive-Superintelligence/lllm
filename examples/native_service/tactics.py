@@ -87,7 +87,7 @@ def build_tactic() -> NativeTacticAdapter:
     return NativeTacticAdapter(
         build_native_tactic(),
         description="Serve an offline native prompt/dialog workflow.",
-        package_ref="psi://demo/native-service/tactics/native-brief",
+        package_ref="lllm://demo/native-service/tactics/native-brief",
         run_kwargs={"tone": "precise"},
         metadata={"example": "native-service"},
     )

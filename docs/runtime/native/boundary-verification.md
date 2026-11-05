@@ -8,7 +8,7 @@ native runtime unless they cross through a protocol tactic adapter.
 | Old Assumption | Current Treatment |
 | --- | --- |
 | Native runtime is the center of LLLM | Native is one runtime behind the protocol `Tactic` boundary. |
-| Native resources define public package metadata | PsiHub owns `psi.toml`; native package discovery still reads `lllm.toml`. |
+| Native resources define public package metadata | LLLM hub owns `lllm.toml`; native package discovery still reads `lllm.toml`. |
 | Provider, sandbox, and proxy deps are core deps | They are lazy optional integrations. |
 | Live builtin proxies are normal tests | Builtins are restored, but live API behavior stays opt-in and credential-gated. |
 | Native agent sessions are protocol fields | Sessions remain native diagnostics; the public protocol returns typed tactic results. |

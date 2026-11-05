@@ -10,7 +10,7 @@ from .errors import TacticRefError
 
 @dataclass(frozen=True)
 class TacticRef:
-    """A stable `psi://org/package/tactics/name` tactic reference."""
+    """A stable `lllm://org/package/tactics/name` tactic reference."""
 
     value: str
     org: str = field(init=False)
@@ -22,8 +22,8 @@ class TacticRef:
         if not isinstance(self.value, str) or not self.value.strip():
             raise TacticRefError("Tactic ref must be a non-empty string.")
         parsed = urlparse(self.value)
-        if parsed.scheme != "psi":
-            raise TacticRefError(f"Tactic ref must use psi:// scheme: {self.value}")
+        if parsed.scheme != "lllm":
+            raise TacticRefError(f"Tactic ref must use lllm:// scheme: {self.value}")
         if parsed.params or parsed.query or parsed.fragment:
             raise TacticRefError(
                 "Tactic ref must not include params, query, or fragment: "
@@ -37,7 +37,7 @@ class TacticRef:
             or any(not part for part in raw_parts[1:])
         ):
             raise TacticRefError(
-                "Tactic ref must have shape psi://org/package/tactics/name: "
+                "Tactic ref must have shape lllm://org/package/tactics/name: "
                 f"{self.value}"
             )
         package, resource_kind, name = raw_parts[1:]
@@ -122,8 +122,8 @@ def service_ref_value(value: str, label: str = "service_ref") -> str:
             )
         _validate_http_service_url_path(parsed.netloc, parsed.path, label)
         return value
-    if parsed.scheme != "psi":
-        raise ValueError(f"{label} must be a psi:// service ref or HTTP(S) URL.")
+    if parsed.scheme != "lllm":
+        raise ValueError(f"{label} must be a lllm:// service ref or HTTP(S) URL.")
     if parsed.params or parsed.query or parsed.fragment:
         raise ValueError(f"{label} must not include params, query, or fragment.")
     raw_parts = parsed.path.split("/")
@@ -133,7 +133,7 @@ def service_ref_value(value: str, label: str = "service_ref") -> str:
         or raw_parts[0] != ""
         or any(not part for part in raw_parts[1:])
     ):
-        raise ValueError(f"{label} must have shape psi://org/package/services/name.")
+        raise ValueError(f"{label} must have shape lllm://org/package/services/name.")
     package, resource_kind, name = raw_parts[1:]
     if resource_kind != "services":
         raise ValueError(f"{label} must point at /services/.")

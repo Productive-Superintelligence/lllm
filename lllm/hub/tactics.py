@@ -1,8 +1,4 @@
-"""Small helpers for PsiHub integration.
-
-PsiHub owns package manifests and validation. LLLM only exposes tactic metadata
-in a shape PsiHub can consume.
-"""
+"""Export tactic metadata in the shape the hub indexes."""
 
 from __future__ import annotations
 

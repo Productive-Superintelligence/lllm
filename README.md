@@ -9,7 +9,7 @@ reusable agentic tactics.
 
 The center model is `Tactic`: a typed, runtime-agnostic unit that does one
 thing well and can be called locally, exposed through FastAPI, described for a
-PsiHub package, and composed later through refs and local config.
+LLLM hub package, and composed later through refs and local config.
 
 ## Install
 
@@ -209,12 +209,12 @@ Templates:
 - `pydantic-ai`: a Pydantic AI-style agent wrapped as a tactic.
 - `native`: a native-style object wrapped behind the tactic boundary.
 
-Add package metadata later with `psihub init`.
+Add package metadata later with `lllm hub init`.
 
 ## Boundaries
 
 - LLLM owns the `Tactic` protocol and service adapter.
-- PsiHub owns `psi.toml`, package validation, package cards, local hub storage,
+- LLLM hub owns `lllm.toml`, package validation, package cards, local hub storage,
   downloads, and config templates.
 - Native runtime ideas live under `lllm.runtimes.native` and do not shape the
   protocol layer.
@@ -228,10 +228,10 @@ as ref resolution, not service launching:
 from lllm import TacticResolver
 
 resolver = TacticResolver()
-resolver.register("psi://demo/echo/tactics/echo", EchoTactic())
+resolver.register("lllm://demo/echo/tactics/echo", EchoTactic())
 
 result = resolver.run(
-    "psi://demo/echo/tactics/echo",
+    "lllm://demo/echo/tactics/echo",
     {"text": "hello"},
 )
 ```
@@ -239,20 +239,20 @@ result = resolver.run(
 Local config can bind the same ref to a running service:
 
 ```toml
-[refs."psi://demo/echo/tactics/echo"]
+[refs."lllm://demo/echo/tactics/echo"]
 url = "http://127.0.0.1:8000/tactics/echo"
 
-[refs."psi://demo/echo/tactics/echo".metadata]
+[refs."lllm://demo/echo/tactics/echo".metadata]
 policy_url = "http://127.0.0.1:9000"
 ```
 
 ```python
 resolver = TacticResolver.from_config(".")
-tactic = resolver.resolve("psi://demo/echo/tactics/echo")
+tactic = resolver.resolve("lllm://demo/echo/tactics/echo")
 ```
 
 Tactic refs are strict package resource identifiers:
-`psi://org/package/tactics/name` with no semicolon params, query string,
+`lllm://org/package/tactics/name` with no semicolon params, query string,
 fragment, or path-control separators in ref segments.
 Shared config may include non-tactic refs from known PSI resource sections,
 including `schemas`, `services`, `channels`, `snapshots`, `runs`, `configs`,
@@ -282,7 +282,7 @@ HTTP 500.
 
 ## Package Metadata Helpers
 
-LLLM does not own `psi.toml`, but it can export tactic metadata for PsiHub:
+LLLM does not own `lllm.toml`, but it can export tactic metadata for LLLM hub:
 
 ```python
 from lllm.integrations import tactic_resource
@@ -294,7 +294,7 @@ Custom endpoint decorators and tactic examples are included in that metadata so
 package cards can show domain routes and concrete calls alongside the portable
 `/run` interface. Use `@endpoint.get`, `@endpoint.post`, `@endpoint.put`,
 `@endpoint.patch`, or `@endpoint.delete` to declare typed service routes without
-changing the tactic protocol. Public service info and PsiHub metadata exports
+changing the tactic protocol. Public service info and LLLM hub metadata exports
 filter raw secret-shaped keys from examples and user metadata, including
 `api_key`/`apiKey`/`apikey`, tokens, `accessToken`/`accesstoken`, passwords,
 cookies, `authorization`, and credentials, while preserving local refs such as

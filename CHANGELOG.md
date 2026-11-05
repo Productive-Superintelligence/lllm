@@ -6,4 +6,4 @@
 - Added plain Python, Pydantic AI, and native runtime adapters.
 - Added FastAPI service wrappers, clients, custom endpoints, and SSE streaming.
 - Added parser, proxy, and sandbox utilities outside the native runtime.
-- Added optional PsiHub metadata helpers and `lllm create` scaffolding.
+- Added optional LLLM hub metadata helpers and `lllm create` scaffolding.

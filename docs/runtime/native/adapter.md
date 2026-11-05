@@ -11,7 +11,7 @@ from lllm.runtimes.native import NativeTacticAdapter
 
 public_tactic = NativeTacticAdapter(
     native_tactic,
-    package_ref="psi://demo/native/tactics/brief",
+    package_ref="lllm://demo/native/tactics/brief",
 )
 ```
 

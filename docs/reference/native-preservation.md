@@ -6,7 +6,7 @@ protocol-first LLLM design.
 The rule for this port is simple: preserve native behavior inside
 `lllm.runtimes.native` when practical, but do not let native concepts reshape
 the public `Tactic` protocol, FastAPI service contract, Pydantic AI adapter,
-or PsiHub package metadata.
+or LLLM hub package metadata.
 
 ## Summary
 
@@ -14,7 +14,7 @@ or PsiHub package metadata.
 | --- | --- | --- |
 | Prompt/dialog/message model | Ported | Native-scoped under `lllm.runtimes.native.core`. |
 | Native `Agent` loop | Ported | Usable for native workflows; not part of protocol `Tactic`. |
-| Native `Runtime` registry | Ported | Native resource registry only; PsiHub owns package manifests. |
+| Native `Runtime` registry | Ported | Native resource registry only; LLLM hub owns package manifests. |
 | Native `Tactic` | Ported and adapted | Kept as native runtime object; bridged through `NativeTacticAdapter`. |
 | Invokers | Ported | Optional dependencies; no eager provider import from `lllm`. |
 | Proxies and builtin proxy assets | Ported | Optional/live API behavior stays out of normal tests. |
@@ -30,7 +30,7 @@ The following v1 pieces are restored substantially as native runtime code:
 | v1 Module Area | Restored Location | Notes |
 | --- | --- | --- |
 | Agent/dialog/prompt loop | `lllm.runtimes.native.core.agent`, `dialog`, `prompt` | Preserves named dialogs, fork lineage, parser retries, tool interrupts, and `AgentCallSession`. |
-| Runtime/resource registry | `lllm.runtimes.native.core.runtime`, `resource`, `config` | Keeps native prompt/tool/proxy/tactic resource loading separate from PsiHub package ownership. |
+| Runtime/resource registry | `lllm.runtimes.native.core.runtime`, `resource`, `config` | Keeps native prompt/tool/proxy/tactic resource loading separate from LLLM hub package ownership. |
 | Native tactic machinery | `lllm.runtimes.native.core.tactic`, `tactic_registry`, `tactic_tool`, `native.tactic` | Keeps native call sessions, sub-tactic records, native agent groups, and `@tactictool`. |
 | Native invokers | `lllm.runtimes.native.invokers` | LiteLLM remains optional through the `native` extra. |
 | Proxy system | `lllm.runtimes.native.proxies` | Proxy managers, prompt templates, tactic endpoints, interpreter tools, and builtin proxy modules are restored. |
@@ -65,7 +65,7 @@ The important cut is architectural rather than file-level:
 | Old Assumption | Kept Out Of The Public Protocol | Reason |
 | --- | --- | --- |
 | Native runtime as the center of LLLM | Public protocol layer | LLLM now centers on runtime-agnostic protocol `Tactic`. |
-| Native resource/package registry owning reusable package metadata | PsiHub package protocol | PsiHub owns `psi.toml`, validation, cards, local hub lifecycle, and ref/config metadata. |
+| Native resource/package registry owning reusable package metadata | LLLM hub package protocol | LLLM hub owns `lllm.toml`, validation, cards, local hub lifecycle, and ref/config metadata. |
 | Provider/tool/sandbox dependencies as core imports | Core `lllm` import path | Optional native integrations should not burden Pydantic AI, plain Python, or service-only users. |
 
 ## Deferred
