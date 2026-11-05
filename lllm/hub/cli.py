@@ -55,6 +55,13 @@ def main(argv: list[str] | None = None) -> int:
     config.add_argument("identifier")
     config.add_argument("--version")
 
+    index = subcommands.add_parser(
+        "index",
+        help="Write a static catalog (data/catalog.json + zips) for the hub web app",
+    )
+    index.add_argument("output", help="Output folder, e.g. docs/hub")
+    index.add_argument("--generated-at", help="Fixed timestamp for reproducible builds")
+
     serve = subcommands.add_parser("serve", help="Serve the local package hub API")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8787)
@@ -122,6 +129,13 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "list":
         for record in hub.list():
             print(record.key)
+        return 0
+
+    if args.command == "index":
+        from .catalog import build_catalog
+
+        catalog = build_catalog(hub, args.output, generated_at=args.generated_at)
+        print(f"indexed {len(catalog['packages'])} package(s) into {args.output}")
         return 0
 
     if args.command == "card":

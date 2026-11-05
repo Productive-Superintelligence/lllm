@@ -188,3 +188,32 @@ def test_malformed_native_sections_fail_to_load(tmp_path, section):
 
     assert not report.ok
     assert report.issues[0].code == "manifest_load_failed"
+
+
+def test_hub_index_builds_a_static_catalog(tmp_path):
+    import json
+    import zipfile
+
+    from lllm.cli import main
+    from lllm.create import create_project
+
+    project = create_project("minimal", "briefs", directory=tmp_path).path
+    hub = tmp_path / "hub"
+    assert main(["hub", "--hub", str(hub), "publish", str(project), "--local"]) == 0
+    site = tmp_path / "site"
+
+    assert main(["hub", "--hub", str(hub), "index", str(site), "--generated-at", "2026-01-01T00:00:00Z"]) == 0
+
+    catalog = json.loads((site / "data" / "catalog.json").read_text())
+    [summary] = catalog["packages"]
+    detail = catalog["details"]["local/briefs"]
+    assert summary["download_url"] == "packages/local-briefs-0.1.0.zip"
+    assert summary["resources"] == [
+        {"kind": "tactic", "name": "assistant", "ref": "lllm://local/briefs/tactics/assistant"},
+        {"kind": "doc", "name": "readme", "ref": "lllm://local/briefs/docs/readme"},
+    ]
+    assert detail["primary"] == "tactics.assistant"
+    assert detail["commands"]["get"] == "lllm hub get local/briefs"
+    assert detail["readme"].startswith("#")
+    with zipfile.ZipFile(site / "packages" / "local-briefs-0.1.0.zip") as archive:
+        assert "briefs/lllm.toml" in archive.namelist()
