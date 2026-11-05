@@ -55,7 +55,12 @@ class RemoteTacticError(TacticServiceError):
 
 
 class RemoteTactic(Tactic[Any, Any]):
-    """Call a tactic through its HTTP service endpoints."""
+    """Call a tactic through its HTTP service endpoints.
+
+    When ``name`` is omitted it is derived from ``url``: the last path segment
+    (ignoring a trailing ``/run``, ``/stream`` or ``/info``), or else the host
+    and port, so ``http://127.0.0.1:8000`` becomes ``127.0.0.1-8000``.
+    """
 
     runtime_kind = "http"
 
@@ -550,9 +555,11 @@ def _validate_service_url_path(netloc: str, path: str) -> None:
 
 
 def _name_from_url(url: str) -> str:
-    parts = [part for part in url.rstrip("/").split("/") if part]
-    if not parts:
-        return "remote"
-    if parts[-1] in {"run", "stream", "info"} and len(parts) > 1:
-        return parts[-2]
-    return parts[-1]
+    parsed = urlsplit(url)
+    parts = [part for part in parsed.path.split("/") if part]
+    if parts and parts[-1] in {"run", "stream", "info"}:
+        parts.pop()
+    if parts:
+        return parts[-1]
+    # Port and IPv6 colons are not allowed in tactic names.
+    return parsed.netloc.replace(":", "-") or "remote"
