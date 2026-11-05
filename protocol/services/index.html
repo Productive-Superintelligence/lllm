@@ -1,0 +1,1652 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/protocol/services/">
+      
+      
+        <link rel="prev" href="../runtimes/">
+      
+      
+        <link rel="next" href="../refs/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Services - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#services" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Services
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../tactic/" class="psi-header-nav__link psi-header-nav__link--active">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../tactic/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Tactic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Services
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#serve-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serve a tactic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Routes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#several-tactics-in-one-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Several tactics in one app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requests-and-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requests and responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calling-a-service-from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling a service from Python
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The CLI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The CLI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lllm-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lllm serve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lllm-inspect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lllm inspect
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../refs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Refs and Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#serve-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serve a tactic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#routes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Routes
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Routes">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#several-tactics-in-one-app" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Several tactics in one app
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#requests-and-responses" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Requests and responses
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calling-a-service-from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling a service from Python
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The CLI
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The CLI">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#lllm-serve" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lllm serve
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#lllm-inspect" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lllm inspect
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="services">Services</h1>
+<p>Any tactic can be served over HTTP with the contract it has in Python. A request
+carries the input and a <code>CallContext</code>, a response carries the validated output,
+and <code>/info</code> publishes the schemas. <code>RemoteTactic</code> turns a service back into a
+tactic, so calling code does not change when a tactic moves to another process
+or machine.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[server]"</span><span class="w">   </span><span class="c1"># FastAPI and Uvicorn, for serving</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[client]"</span><span class="w">   </span><span class="c1"># httpx, for RemoteTactic</span>
+</code></pre></div>
+<h2 id="serve-a-tactic">Serve a tactic</h2>
+<p>Put a tactic in a module, <code>tactics.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">TacticEvent</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Question</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Answer</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">trace_id</span><span class="p">:</span> <span class="nb">str</span> <span class="o">|</span> <span class="kc">None</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Shout</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Shout the question back."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"shout"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Question</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Answer</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Question</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Answer</span><span class="p">:</span>
+        <span class="n">trace_id</span> <span class="o">=</span> <span class="n">context</span><span class="o">.</span><span class="n">trace_id</span> <span class="k">if</span> <span class="n">context</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="n">Answer</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">(),</span> <span class="n">trace_id</span><span class="o">=</span><span class="n">trace_id</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Question</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">word</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">():</span>
+            <span class="k">yield</span> <span class="n">word</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">TacticEvent</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">))</span>
+</code></pre></div>
+<p>Serve it from the same folder:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>serve<span class="w"> </span>tactics:Shout<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>INFO:     Started server process [3940928]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+</code></pre></div>
+<p>Call it:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"input": {"text": "hello"}, "context": {"trace_id": "trace-1"}}'</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span><span class="nt">"output"</span><span class="p">:{</span><span class="nt">"text"</span><span class="p">:</span><span class="s2">"HELLO"</span><span class="p">,</span><span class="nt">"trace_id"</span><span class="p">:</span><span class="s2">"trace-1"</span><span class="p">},</span><span class="nt">"request_id"</span><span class="p">:</span><span class="s2">"fba55530-a1a1-4f28-abfa-535817256e08"</span><span class="p">,</span><span class="nt">"tactic"</span><span class="p">:</span><span class="s2">"shout"</span><span class="p">}</span>
+</code></pre></div>
+<p>The <code>module:attribute</code> can name a tactic class or instance, a factory that
+returns one, an object with a <code>run</code> method, or a handler function. A factory is
+called once at load and a handler once per input; the rule that tells them
+apart is in <a href="../runtimes/#loading-entrypoints">Loading entrypoints</a>. <code>--host</code>
+defaults to <code>127.0.0.1</code>, <code>--port</code> to 8000, and <code>--log-level</code> to <code>info</code>.</p>
+<p>To build the app in code, use <code>create_tactic_app</code> and any ASGI server:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># app.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_tactic_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tactics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Shout</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_tactic_app</span><span class="p">(</span><span class="n">Shout</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>uvicorn<span class="w"> </span>app:app<span class="w"> </span>--port<span class="w"> </span><span class="m">8000</span>
+</code></pre></div>
+<p><code>create_tactic_app(tactic, *, title=None, description=None)</code> returns a FastAPI
+app titled with the tactic's name and description unless you pass your own.</p>
+<h2 id="routes">Routes</h2>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /health</code></td>
+<td><code>{"ok": true, "tactics": [...]}</code></td>
+</tr>
+<tr>
+<td><code>GET /info</code></td>
+<td>The tactic's <code>TacticInfo</code>.</td>
+</tr>
+<tr>
+<td><code>POST /run</code></td>
+<td>Run once and return the output.</td>
+</tr>
+<tr>
+<td><code>POST /stream</code></td>
+<td>Stream events as server-sent events.</td>
+</tr>
+<tr>
+<td><code>GET /tactics</code></td>
+<td><code>TacticInfo</code> for every tactic in the app.</td>
+</tr>
+<tr>
+<td><code>GET /tactics/{name}/info</code></td>
+<td>One tactic's <code>TacticInfo</code>.</td>
+</tr>
+<tr>
+<td><code>POST /tactics/{name}/run</code></td>
+<td>Run one tactic.</td>
+</tr>
+<tr>
+<td><code>POST /tactics/{name}/stream</code></td>
+<td>Stream one tactic.</td>
+</tr>
+</tbody>
+</table>
+<p><code>create_tactic_app</code> mounts all of them. FastAPI's own <code>/docs</code> and
+<code>/openapi.json</code> are there as usual. <code>/info</code> publishes the tactic's input and
+output schemas, and <code>/openapi.json</code> shows the same schemas as the <code>input</code> of
+the <code>/run</code> and <code>/stream</code> request envelopes and the <code>output</code> of the <code>/run</code>
+response. The <code>/tactics/{name}/...</code> routes are listed without them.</p>
+<h3 id="several-tactics-in-one-app">Several tactics in one app</h3>
+<p><code>create_service_app</code> serves a list of tactics (routed by name) or a mapping of
+route names to tactics. It mounts <code>/health</code> and the <code>/tactics/...</code> routes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_tactic</span><span class="p">,</span> <span class="n">create_service_app</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tactics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Shout</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">word_count</span><span class="p">(</span><span class="n">text</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Count the words in a text."""</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_service_app</span><span class="p">([</span><span class="n">Shout</span><span class="p">(),</span> <span class="n">as_tactic</span><span class="p">(</span><span class="n">word_count</span><span class="p">)],</span> <span class="n">title</span><span class="o">=</span><span class="s2">"Text tools"</span><span class="p">)</span>
+<span class="n">client</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/health"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/tactics/word_count/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="s2">"one two three"</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'ok': True, 'tactics': ['shout', 'word_count']}
+{'output': 3, 'request_id': 'e518af99-f181-4587-9fcd-a1fef116b8fa', 'tactic': 'word_count'}
+</code></pre></div>
+<p>Route names must be unique, plain path segments. Pass
+<code>expose_single_tactic_routes=True</code> to also mount <code>/info</code>, <code>/run</code>, and <code>/stream</code>
+when the app holds exactly one tactic.</p>
+<h2 id="requests-and-responses">Requests and responses</h2>
+<p><code>POST /run</code> takes an envelope with the input and an optional context:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hello"</span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"context"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"request_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"req-1"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"trace_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"trace-1"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"caller"</span><span class="p">:</span><span class="w"> </span><span class="s2">"cli"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"tags"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"env"</span><span class="p">:</span><span class="w"> </span><span class="s2">"dev"</span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="nt">"user"</span><span class="p">:</span><span class="w"> </span><span class="s2">"ada"</span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>The <code>context</code> object has the shape of a <a href="../tactic/#callcontext"><code>CallContext</code></a>:
+<code>request_id</code>, <code>trace_id</code>, <code>span_id</code>, <code>caller</code>, <code>tags</code>, <code>metadata</code>,
+<code>package_ref</code>, <code>service_ref</code>, and <code>tactic_ref</code>. The service generates a
+<code>request_id</code> when there is none, sets <code>endpoint</code> to the route (<code>"run"</code>,
+<code>"stream"</code>, or a custom endpoint's name), defaults <code>tactic_ref</code> to the tactic's
+<code>package_ref</code>, and ignores keys it does not know. This is the context the
+tactic receives:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">create_tactic_app</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ShowContext</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"show-context"</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="nb">dict</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">context</span><span class="o">.</span><span class="n">model_dump</span><span class="p">(</span><span class="n">exclude_none</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_tactic_app</span><span class="p">(</span><span class="n">ShowContext</span><span class="p">(</span><span class="n">package_ref</span><span class="o">=</span><span class="s2">"lllm://demo/debug/tactics/show-context"</span><span class="p">))</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span>
+    <span class="s2">"input"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">,</span>
+    <span class="s2">"context"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"request_id"</span><span class="p">:</span> <span class="s2">"req-1"</span><span class="p">,</span> <span class="s2">"trace_id"</span><span class="p">:</span> <span class="s2">"trace-1"</span><span class="p">,</span> <span class="s2">"caller"</span><span class="p">:</span> <span class="s2">"cli"</span><span class="p">,</span>
+                <span class="s2">"tags"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"env"</span><span class="p">:</span> <span class="s2">"dev"</span><span class="p">},</span> <span class="s2">"metadata"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="s2">"ada"</span><span class="p">},</span> <span class="s2">"region"</span><span class="p">:</span> <span class="s2">"eu"</span><span class="p">},</span>
+<span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'output': {'request_id': 'req-1', 'caller': 'cli', 'trace_id': 'trace-1', 'tactic_ref': 'lllm://demo/debug/tactics/show-context', 'endpoint': 'run', 'tags': {'env': 'dev'}, 'metadata': {'user': 'ada'}}, 'request_id': 'req-1', 'tactic': 'show-context'}
+</code></pre></div>
+<p>A successful <code>/run</code> returns <code>{"output": ..., "request_id": ..., "tactic": ...}</code>.</p>
+<p>Two looser forms are accepted for clients you cannot change: <code>task</code> works in
+place of <code>input</code>, and a body that is not an envelope is taken as the input
+itself, so <code>{"text": "hello"}</code> works too. (An envelope is a JSON object with
+<code>input</code> or <code>task</code> and no keys besides <code>input</code>, <code>task</code>, and <code>context</code>.) New
+clients should send the envelope; it is the only form that carries a context.</p>
+<h2 id="streaming">Streaming</h2>
+<p><code>POST /stream</code> responds with <code>text/event-stream</code>. Each event is one <code>data:</code> line
+holding a <a href="../tactic/#streaming-and-events"><code>TacticEvent</code></a> as JSON:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>-N<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/stream<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"input": {"text": "hello world"}}'</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>data: {"id": "52f5acbc-174f-4d6f-bdb9-f52ddcefaecb", "timestamp": 1793845808.4317925, "kind": "message", "data": "HELLO", "metadata": {}}
+
+data: {"id": "34f98b46-3109-4105-bcdb-5bfe20faf471", "timestamp": 1793845808.4319072, "kind": "message", "data": "WORLD", "metadata": {}}
+
+data: {"id": "8e506315-e940-4dd2-bb34-5a5c063a77b5", "timestamp": 1793845808.432171, "kind": "result", "data": {"text": "HELLO WORLD", "trace_id": null}, "metadata": {}}
+</code></pre></div>
+<p>The route sends what <code>tactic.aevents()</code> yields. For a tactic that implements
+<code>stream()</code>, that path validates the input before <code>stream()</code> runs
+(<a href="../tactic/#streaming-and-events">Streaming and events</a>). Once the response
+has started, a failure (including invalid input) arrives as a final <code>error</code>
+event while the HTTP status stays 200:</p>
+<div class="highlight"><pre><span></span><code>data: {"id": "458cf822-a0f0-4a81-b345-a02520feec00", "timestamp": 1793845812.2663333, "kind": "error", "data": {"message": "Value does not match schema Question: 1 validation error for Question\ntext\n  Field required [type=missing, input_value={'txt': 'hello'}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.14/v/missing"}, "metadata": {"error_type": "SchemaError", "tactic": "shout", "endpoint": "stream", "request_id": "req-7"}}
+</code></pre></div>
+<p>A tactic that supports neither <code>stream</code> nor <code>events</code> gets a 400
+<code>TacticUnsupportedError</code> before any event is sent. Event metadata passes through
+the same secret filter as <code>/info</code>.</p>
+<h2 id="errors">Errors</h2>
+<p>Failures return a stable JSON body under FastAPI's <code>detail</code> key:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8000/run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"input": {"text": 5}, "context": {"request_id": "req-42"}}'</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"detail"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"error"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"SchemaError"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"message"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Value does not match schema Question: 1 validation error for Question\ntext\n  Input should be a valid string [type=string_type, input_value=5, input_type=int]\n    For further information visit https://errors.pydantic.dev/2.14/v/string_type"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"tactic"</span><span class="p">:</span><span class="w"> </span><span class="s2">"shout"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"endpoint"</span><span class="p">:</span><span class="w"> </span><span class="s2">"run"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"request_id"</span><span class="p">:</span><span class="w"> </span><span class="s2">"req-42"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th><code>error.type</code></th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400</td>
+<td><code>SchemaError</code></td>
+<td>Invalid input or output, or a malformed envelope or context.</td>
+</tr>
+<tr>
+<td>400</td>
+<td><code>TacticUnsupportedError</code></td>
+<td><code>/stream</code> on a tactic that does not stream.</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>TacticNotFound</code></td>
+<td><code>/tactics/{name}/...</code> with an unknown name.</td>
+</tr>
+<tr>
+<td>500</td>
+<td>the exception's class name</td>
+<td>Anything else the tactic raises; <code>message</code> is <code>str(exc)</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>RemoteTactic</code> turns this body back into a <code>RemoteTacticError</code>
+(<a href="#calling-a-service-from-python">below</a>). See also the
+<a href="../../reference/service-api/">Service API reference</a>.</p>
+<h2 id="custom-endpoints">Custom endpoints</h2>
+<p>A tactic can mount its own routes next to the standard ones. Decorate a method
+with <code>endpoint.post</code>, <code>endpoint.get</code>, <code>endpoint.put</code>, <code>endpoint.patch</code>, or
+<code>endpoint.delete</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">TacticEvent</span><span class="p">,</span> <span class="n">create_tactic_app</span><span class="p">,</span> <span class="n">endpoint</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Ticket</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Route</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">queue</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">urgent</span><span class="p">:</span> <span class="nb">bool</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Triage</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Route a support ticket to a queue."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"triage"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Ticket</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Route</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Ticket</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Route</span><span class="p">:</span>
+        <span class="n">urgent</span> <span class="o">=</span> <span class="s2">"outage"</span> <span class="ow">in</span> <span class="n">task</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">Route</span><span class="p">(</span><span class="n">queue</span><span class="o">=</span><span class="s2">"oncall"</span> <span class="k">if</span> <span class="n">urgent</span> <span class="k">else</span> <span class="s2">"support"</span><span class="p">,</span> <span class="n">urgent</span><span class="o">=</span><span class="n">urgent</span><span class="p">)</span>
+
+    <span class="nd">@endpoint</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/triage/explain"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Route a ticket and say why."</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">explain</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticket</span><span class="p">:</span> <span class="n">Ticket</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">route</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">ticket</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">reason</span> <span class="o">=</span> <span class="s2">"mentions an outage"</span> <span class="k">if</span> <span class="n">route</span><span class="o">.</span><span class="n">urgent</span> <span class="k">else</span> <span class="s2">"routine request"</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"queue"</span><span class="p">:</span> <span class="n">route</span><span class="o">.</span><span class="n">queue</span><span class="p">,</span> <span class="s2">"reason"</span><span class="p">:</span> <span class="n">reason</span><span class="p">,</span> <span class="s2">"endpoint"</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">endpoint</span><span class="p">}</span>
+
+    <span class="nd">@endpoint</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/triage/steps"</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">"stream"</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">steps</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ticket</span><span class="p">:</span> <span class="n">Ticket</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="p">{</span><span class="s2">"step"</span><span class="p">:</span> <span class="s2">"read"</span><span class="p">,</span> <span class="s2">"chars"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">ticket</span><span class="o">.</span><span class="n">text</span><span class="p">)}</span>
+        <span class="k">yield</span> <span class="n">TacticEvent</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">ticket</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">))</span>
+
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">create_tactic_app</span><span class="p">(</span><span class="n">Triage</span><span class="p">()))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/triage/explain"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Total outage in eu-west"</span><span class="p">}})</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/triage/steps"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Printer jam"</span><span class="p">}})</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'queue': 'oncall', 'reason': 'mentions an outage', 'endpoint': 'explain'}
+data: {"step": "read", "chars": 11}
+
+data: {"id": "2011ecab-0a65-4527-9946-c563d23cdef4", "timestamp": 1793845911.8305802, "kind": "result", "data": {"queue": "support", "urgent": false}, "metadata": {}}
+</code></pre></div>
+<p>How custom endpoints behave:</p>
+<ul>
+<li>The signature is <code>endpoint.post(path, *, name=None, mode="run", description="", tags=())</code>.
+  <code>name</code> defaults to the method name and becomes <code>context.endpoint</code>; the
+  description defaults to the docstring.</li>
+<li>The method receives the request's input, read from the same envelope as <code>/run</code>
+  and validated against the tactic's <code>input_type</code>, plus <code>context=</code> when it
+  accepts one. Sync and async methods both work.</li>
+<li><code>endpoint.get</code> and <code>endpoint.delete</code> routes may be called without a body.
+  The method then receives the query parameters as a dict of strings (a
+  repeated key gives a list), or <code>None</code> when there are none, without
+  validation. A request that sends a body is read and validated as above.</li>
+<li>With <code>mode="run"</code> the return value is the JSON response, with no envelope
+  around it. With <code>mode="stream"</code> or <code>mode="events"</code>, each yielded item becomes
+  one <code>data:</code> line: events as <code>TacticEvent</code> JSON, anything else as plain JSON.</li>
+<li>Routes may not shadow the standard routes (<code>/run</code>, <code>/stream</code>, <code>/info</code>,
+  <code>/tactics/...</code>), and each method and path pair must be unique across the
+  app. Both are checked when the app is built.</li>
+<li><code>lllm inspect module:attr --json</code> lists the endpoints with their method,
+  path, mode, description, and tags.</li>
+</ul>
+<h2 id="calling-a-service-from-python">Calling a service from Python</h2>
+<p><code>RemoteTactic</code> is a tactic whose implementation is an HTTP service. With the
+service from <a href="#serve-a-tactic">Serve a tactic</a> running:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallContext</span><span class="p">,</span> <span class="n">RemoteTactic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">tactics</span><span class="w"> </span><span class="kn">import</span> <span class="n">Answer</span><span class="p">,</span> <span class="n">Question</span>
+
+<span class="n">remote</span> <span class="o">=</span> <span class="n">RemoteTactic</span><span class="p">(</span>
+    <span class="s2">"http://127.0.0.1:8000"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"shout"</span><span class="p">,</span>
+    <span class="n">input_type</span><span class="o">=</span><span class="n">Question</span><span class="p">,</span>
+    <span class="n">output_type</span><span class="o">=</span><span class="n">Answer</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">remote</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">},</span> <span class="n">context</span><span class="o">=</span><span class="n">CallContext</span><span class="p">(</span><span class="n">trace_id</span><span class="o">=</span><span class="s2">"trace-1"</span><span class="p">))))</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">remote</span><span class="o">.</span><span class="n">stream</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello world"</span><span class="p">})))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">remote</span><span class="o">.</span><span class="n">fetch_info</span><span class="p">()</span><span class="o">.</span><span class="n">capabilities</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Answer(text='HELLO', trace_id='trace-1')
+['HELLO', 'WORLD', {'text': 'HELLO WORLD', 'trace_id': None}]
+('acall', 'arun', 'call', 'run', 'stream')
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>HTTP call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run()</code>, <code>await arun()</code></td>
+<td><code>POST {url}/run</code> with the envelope; returns <code>output</code>.</td>
+</tr>
+<tr>
+<td><code>stream()</code>, <code>astream()</code></td>
+<td><code>POST {url}/stream</code>; yields each event's <code>data</code>.</td>
+</tr>
+<tr>
+<td><code>aevents()</code></td>
+<td><code>POST {url}/stream</code>; yields <code>TacticEvent</code>s.</td>
+</tr>
+<tr>
+<td><code>fetch_info()</code>, <code>await afetch_info()</code></td>
+<td><code>GET {url}/info</code>; returns the service's <code>TacticInfo</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Things to know:</p>
+<ul>
+<li>The URL is the service base (<code>http://host:8000</code>), or a tactic inside a
+  multi-tactic app (<code>http://host:8000/tactics/shout</code>). A URL that already ends
+  in <code>/run</code>, <code>/stream</code>, or <code>/info</code> is normalized.</li>
+<li>Without <code>name=</code>, the name comes from the URL: its last path segment
+  (ignoring a trailing <code>/run</code>, <code>/stream</code>, or <code>/info</code>), such as <code>shout</code> in
+  <code>.../tactics/shout</code>, or else the host and port, so <code>http://127.0.0.1:8000</code>
+  is named <code>127.0.0.1-8000</code>.</li>
+<li><code>run()</code> and <code>arun()</code> validate the input against <code>input_type</code> before anything
+  is sent, and validate the response into <code>output_type</code>; without <code>output_type</code>
+  you get the JSON as-is. <code>stream()</code>, <code>astream()</code>, and <code>aevents()</code> send the
+  input as given and do not validate what comes back. Bad input fails on the
+  service and arrives as its <code>error</code> event (<a href="#streaming">Streaming</a>):
+  <code>stream()</code> and <code>astream()</code> yield that event's data like any other item, and
+  <code>aevents()</code> yields the event with <code>kind="error"</code>.</li>
+<li>The context travels in the envelope, so ids, tags, and metadata reach the
+  remote tactic.</li>
+<li><code>info()</code> is local (<code>runtime_kind</code> is <code>"http"</code>); <code>fetch_info()</code> asks the
+  service.</li>
+<li><code>timeout</code> defaults to 30 seconds. <code>transport=</code> and <code>async_transport=</code> take
+  httpx transports, which is how tests call an app in-process; see
+  <a href="../refs/#test-against-an-in-process-service">Refs and Composition</a>.</li>
+</ul>
+<p>An error response (status 400 or above) raises <code>RemoteTacticError</code>, with the
+structured fields as attributes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteTacticError</span>
+
+<span class="n">untyped</span> <span class="o">=</span> <span class="n">RemoteTactic</span><span class="p">(</span><span class="s2">"http://127.0.0.1:8000"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"shout"</span><span class="p">)</span>
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">untyped</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="mi">5</span><span class="p">})</span>
+<span class="k">except</span> <span class="n">RemoteTacticError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">error_type</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">tactic</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">endpoint</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>400 SchemaError shout run
+</code></pre></div>
+<p><code>RemoteTacticError</code> also carries <code>message</code>, <code>request_id</code>, and the raw <code>detail</code>.
+It subclasses <code>TacticServiceError</code>.</p>
+<h2 id="the-cli">The CLI</h2>
+<h3 id="lllm-serve">lllm serve</h3>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>serve<span class="w"> </span>module:attribute<span class="w"> </span><span class="o">[</span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span><span class="m">8000</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--log-level<span class="w"> </span>info<span class="o">]</span>
+lllm<span class="w"> </span>serve<span class="w"> </span>PATH<span class="w"> </span><span class="o">[</span>--resource<span class="w"> </span>SECTION.NAME<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span>N<span class="o">]</span><span class="w"> </span><span class="o">[</span>--skip-key-check<span class="o">]</span>
+</code></pre></div>
+<p>Given a package folder (or its <code>lllm.toml</code>), <code>lllm serve</code> launches the
+package's primary resource (<code>[package] primary</code>), or the one named with
+<code>--resource</code>, such as <code>tactics.shout</code> or <code>services.api</code>. The port comes from
+<code>--port</code>, else the resource's <code>metadata.port</code> (for a tactic without one, the
+port of a service that declares it as its <code>tactic</code>), else 8000. Here is a package
+folder holding the <code>tactics.py</code> above and this manifest:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[package]</span>
+<span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"demo"</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"shout"</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.1.0"</span>
+<span class="n">primary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tactics.shout"</span>
+
+<span class="k">[requirements.api_keys]</span>
+<span class="n">OPENAI_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Model access for the agents."</span>
+
+<span class="k">[tactics.shout]</span>
+<span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tactics:Shout"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Shout the question back."</span>
+
+<span class="k">[tactics.shout.metadata]</span>
+<span class="n">port</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">8100</span>
+</code></pre></div>
+<p>Before starting, <code>lllm serve</code> checks the API keys the package declares, in
+<code>[requirements.api_keys]</code> or a resource's <code>required_api_keys</code> metadata. It looks
+in the environment, the <code>--env-file</code> (default <code>.env.local</code>), and the OS keyring
+(skip it with <code>--no-keyring</code>). In a terminal it prompts for missing keys;
+otherwise it stops:</p>
+<div class="highlight"><pre><span></span><code>usage: lllm [-h] [--version] COMMAND ...
+lllm: error: missing required API key(s):
+- OPENAI_API_KEY - Model access for the agents.
+
+Run `lllm setup .` or set the missing names in your environment.
+</code></pre></div>
+<p><code>lllm setup .</code> stores keys in the OS keyring or <code>.env.local</code>. It also works for
+a package with nothing to launch, such as a library, from its
+<code>[requirements.api_keys]</code>. <code>--skip-key-check</code> starts without checking. The
+manifest format is covered in <a href="../../packages/manifest/">The lllm.toml manifest</a>.</p>
+<p>A tactic entry loads by the same rule as a <code>module:attribute</code> target. A service
+entry has no handler form: it names a FastAPI or Starlette app, or something
+that can be called without arguments, which is called once to build an app, a
+tactic, or an object with a <code>run</code> method. If that call returns plain data
+instead (a mapping, list, tuple, string, int, float, or bool), a service that
+declares <code>tactic</code> serves that tactic, and a service without one serves the data
+from a fixed JSON app: <code>GET /health</code>, plus <code>POST /run</code>, which returns the data
+as <code>output</code>. Any other entry stops <code>lllm serve</code> with an error that names the
+cause, instead of serving the service's tactic without its auth or middleware.
+That includes an entry that fails to import, raises while building, names a
+tactic instance, or returns an app wrapped in raw ASGI middleware, <code>None</code>, or a
+coroutine:</p>
+<div class="highlight"><pre><span></span><code>usage: lllm [-h] [--version] COMMAND ...
+lllm: error: service api entry service:create_app failed: NameError: name 'add_auth' is not defined
+</code></pre></div>
+<p>Only <code>services</code>, <code>tactics</code>, <code>channels</code>, and <code>runs</code> resources can be launched.
+Naming another kind, such as <code>config.default</code>, as the primary or with
+<code>--resource</code> is an error that lists what can be launched:</p>
+<div class="highlight"><pre><span></span><code>usage: lllm [-h] [--version] COMMAND ...
+lllm: error: resource config.default cannot be launched; launchable resources: tactics.shout
+</code></pre></div>
+<p>A served package keeps its modules loaded and its folder on <code>sys.path</code> for the
+life of the process, so its code can import the package's own modules when it
+is called. Packages served in one process, such as the packages of an
+<a href="../../aaax/">AAAX</a> strategy, share <code>sys.modules</code>, so give their top-level
+modules distinct names.</p>
+<h3 id="lllm-inspect">lllm inspect</h3>
+<p><code>lllm inspect</code> shows what a target is without starting anything. For an
+entrypoint it prints the tactic's contract:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>inspect<span class="w"> </span>tactics:Shout
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>shout (native)
+Shout the question back.
+capabilities: acall, arun, call, run, stream
+</code></pre></div>
+<p><code>--json</code> prints the full contract: <code>name</code>, <code>description</code>, <code>runtime</code>,
+<code>capabilities</code>, <code>endpoints</code>, <code>input_schema</code>, <code>output_schema</code>, <code>package_ref</code>,
+<code>service_ref</code>, <code>examples</code>, and <code>metadata</code>, with secret-shaped metadata keys
+removed. For a package it shows what <code>lllm serve</code> would launch, the state of
+each declared key, and the routes:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>inspect<span class="w"> </span>.
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>demo/shout:tactics.shout (tactic)
+port: 8100
+api keys:
+  OPENAI_API_KEY: missing - Model access for the agents.
+GET /health
+GET /info
+GET /tactics
+GET /tactics/{name}/info
+GET,HEAD /docs
+GET,HEAD /docs/oauth2-redirect
+GET,HEAD /openapi.json
+GET,HEAD /redoc
+POST /run
+POST /stream
+POST /tactics/{name}/run
+POST /tactics/{name}/stream
+</code></pre></div>
+<p>All commands and flags are in the <a href="../../reference/cli/">CLI reference</a>.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="../refs/">Refs and Composition</a>: bind <code>lllm://</code> refs to services in
+  <code>.lllm/config.toml</code> and compose local and remote tactics.</li>
+<li><a href="../../tutorials/09-serving/">Tutorial 9: Serving</a>: a guided walkthrough.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,2438 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/tutorials/04-tools/">
+      
+      
+        <link rel="prev" href="../03-prompts/">
+      
+      
+        <link rel="next" href="../05-native-tactics/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>4. Tools, Proxies, and Sandbox - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#4-tools-proxies-and-sandbox" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              4. Tools, Proxies, and Sandbox
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../" class="psi-header-nav__link psi-header-nav__link--active">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-agents-and-dialogs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1: Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1: Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-a-tool-with-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Define a tool with @tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-call-a-tool-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Call a tool yourself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-decide-where-tools-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Decide where tools live
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-run-the-tool-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Run the tool loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-control-the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Control the loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-format-tool-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Format tool results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-declare-a-tool-separately-from-its-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Declare a tool separately from its implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-use-a-tactic-as-a-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Use a tactic as a tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-9-connect-mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Connect MCP servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-10-declare-agent-tools-in-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 10: Declare agent tools in configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2: Proxies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2: Proxies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-11-define-a-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 11: Define a proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-12-proxy-an-http-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 12: Proxy an HTTP API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-13-call-proxies-from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 13: Call proxies from Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-14-give-an-agent-the-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 14: Give an agent the proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-15-run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 15: Run it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-3-sandbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 3: Sandbox
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 3: Sandbox">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-16-let-the-agent-write-cells-and-run-them-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 16: Let the agent write cells and run them yourself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-17-bring-your-own-sandbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 17: Bring your own sandbox
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-native-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Native Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-packages-and-hub/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Packages and the Hub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-serving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Serving and Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-pydantic-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Pydantic AI Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-channels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Channels with SSSN
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-1-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 1: Tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 1: Tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-define-a-tool-with-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Define a tool with @tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-call-a-tool-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Call a tool yourself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-decide-where-tools-live" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Decide where tools live
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-run-the-tool-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Run the tool loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-control-the-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Control the loop
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-format-tool-results" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Format tool results
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-declare-a-tool-separately-from-its-implementation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Declare a tool separately from its implementation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-8-use-a-tactic-as-a-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Use a tactic as a tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-9-connect-mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Connect MCP servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-10-declare-agent-tools-in-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 10: Declare agent tools in configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-2-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 2: Proxies
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 2: Proxies">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-11-define-a-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 11: Define a proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-12-proxy-an-http-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 12: Proxy an HTTP API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-13-call-proxies-from-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 13: Call proxies from Python
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-14-give-an-agent-the-proxy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 14: Give an agent the proxy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-15-run-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 15: Run it
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#part-3-sandbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Part 3: Sandbox
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Part 3: Sandbox">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-16-let-the-agent-write-cells-and-run-them-yourself" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 16: Let the agent write cells and run them yourself
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-17-bring-your-own-sandbox" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 17: Bring your own sandbox
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="4-tools-proxies-and-sandbox">4. Tools, Proxies, and Sandbox</h1>
+<p><strong>Goal:</strong> give an agent Python tools and watch the tool-call loop, control that
+loop, declare tools separately from their implementations, expose a whole
+tactic or an MCP server as a tool, connect research data APIs through proxies,
+and run agent-written code in a sandbox you control.</p>
+<p>LLLM gives you three levels of capability, each with more autonomy:</p>
+<ul>
+<li><strong>Tools</strong>: Python functions the model can call during a turn. LLLM runs the
+  tool-call loop for you, and you decide which tools are on offer, how results
+  are reported, and how many rounds are allowed.</li>
+<li><strong>Proxies</strong>: whole data APIs (dozens of endpoints) behind a small programming
+  surface. Instead of one schema per endpoint, the agent reads the API's
+  documentation and calls endpoints from Python with <code>CALL_API</code>; the proxy adds
+  credentials and sends the requests. This is how LLLM agents work with
+  research data sources such as financial statements or economic series.</li>
+<li><strong>Sandboxes</strong>: the agent writes code cells and your tactic decides where and
+  how they run.</li>
+</ul>
+<p>Where Pydantic fits: tool schemas are generated from type annotations,
+including lists, <code>Literal</code> choices, and nested Pydantic models. Tool schemas
+(<code>Function</code>) and tool invocations (<code>FunctionCall</code>) are Pydantic models
+themselves, and when a tactic is used as a tool, its arguments are validated
+against the tactic's <code>input_type</code> (<a href="../05-native-tactics/">Lesson 5</a>).</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Finish <a href="../03-prompts/">Lesson 3</a>, in particular Step 3: the most recent prompt
+put into a dialog drives the next <code>respond()</code>. Steps that call <code>respond()</code> or
+run a tactic need a model provider key; defining tools, proxies, and sandboxes
+and calling them directly runs locally.</p>
+<hr />
+<h2 id="part-1-tools">Part 1: Tools</h2>
+<h3 id="step-1-define-a-tool-with-tool">Step 1: Define a tool with <code>@tool</code></h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Get the current weather for a city"</span><span class="p">,</span>
+    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"city"</span><span class="p">:</span> <span class="s2">"The city name, e.g. 'Paris'"</span><span class="p">,</span>
+        <span class="s2">"unit"</span><span class="p">:</span> <span class="s2">"Temperature unit: 'celsius' or 'fahrenheit'"</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">unit</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"celsius"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="c1"># Replace with a real weather API call.</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Sunny, 22 degrees </span><span class="si">{</span><span class="n">unit</span><span class="si">}</span><span class="s2"> in </span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">"</span>
+</code></pre></div>
+<p><code>@tool</code> turns the function into a <code>Function</code>: the schema the model sees plus the
+implementation. It builds the JSON Schema from the signature:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">get_weather</span><span class="o">.</span><span class="n">to_tool</span><span class="p">(),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{
+  "type": "function",
+  "function": {
+    "name": "get_weather",
+    "description": "Get the current weather for a city",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "city": {
+          "type": "string",
+          "description": "The city name, e.g. 'Paris'"
+        },
+        "unit": {
+          "type": "string",
+          "description": "Temperature unit: 'celsius' or 'fahrenheit' (default: 'celsius')"
+        }
+      },
+      "required": [
+        "city"
+      ],
+      "additionalProperties": false
+    },
+    "strict": false
+  }
+}
+</code></pre></div>
+<ul>
+<li>Parameters without defaults are required; defaults are noted in the
+  description.</li>
+<li>Without <code>description</code>, the function's docstring is used.</li>
+<li><code>strict</code> is chosen for you: a schema is marked strict when every parameter
+  is required and flat (a string, number, boolean, enum, or a list of these),
+  which is what strict function calling (for example OpenAI's) accepts. An
+  object parameter, such as a model or a dict, keeps it off. Pass
+  <code>strict=True</code> or <code>strict=False</code> to decide yourself.</li>
+</ul>
+<p>Annotations map to JSON Schema, including containers, choices, and models;
+unannotated parameters become strings:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Point</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">x</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">y</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Draw a line through the points"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">draw</span><span class="p">(</span><span class="n">points</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="n">Point</span><span class="p">],</span> <span class="n">color</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"red"</span><span class="p">,</span> <span class="s2">"blue"</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Drew </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">points</span><span class="p">)</span><span class="si">}</span><span class="s2"> points in </span><span class="si">{</span><span class="n">color</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">draw</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">"color"</span><span class="p">]))</span>   <span class="c1"># {"enum": ["red", "blue"], "type": "string"}</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">draw</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">"points"</span><span class="p">][</span><span class="s2">"type"</span><span class="p">],</span> <span class="n">draw</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">"points"</span><span class="p">][</span><span class="s2">"items"</span><span class="p">][</span><span class="s2">"required"</span><span class="p">])</span>  <span class="c1"># array ['x', 'y']</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">draw</span><span class="o">.</span><span class="n">strict</span><span class="p">)</span>                            <span class="c1"># False: the points are nested objects</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Annotation</th>
+<th>JSON Schema</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>str</code>, <code>int</code>, <code>float</code>, <code>bool</code></td>
+<td><code>string</code>, <code>integer</code>, <code>number</code>, <code>boolean</code></td>
+</tr>
+<tr>
+<td><code>list[str]</code></td>
+<td>an <code>array</code> of strings</td>
+</tr>
+<tr>
+<td><code>dict[str, int]</code></td>
+<td>an <code>object</code> with integer values</td>
+</tr>
+<tr>
+<td><code>Literal["red", "blue"]</code></td>
+<td>a string <code>enum</code></td>
+</tr>
+<tr>
+<td><code>Optional[int]</code></td>
+<td><code>anyOf</code> integer or null</td>
+</tr>
+<tr>
+<td>a Pydantic model</td>
+<td>the model's object schema, inlined</td>
+</tr>
+<tr>
+<td>a recursive model</td>
+<td>inlined once; references back into it become its type and title, e.g. <code>{"type": "object", "title": "Node"}</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="step-2-call-a-tool-yourself">Step 2: Call a tool yourself</h3>
+<p>A tool is called with a <code>FunctionCall</code>, exactly as the agent loop does:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionCall</span>
+
+<span class="n">call</span> <span class="o">=</span> <span class="n">get_weather</span><span class="p">(</span><span class="n">FunctionCall</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"get_weather"</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="s2">"Paris"</span><span class="p">}))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">result</span><span class="p">)</span>       <span class="c1"># Sunny, 22 degrees celsius in Paris</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">result_str</span><span class="p">)</span>
+</code></pre></div>
+<p><code>result_str</code> is what the model reads back:</p>
+<div class="highlight"><pre><span></span><code>Return of calling function get_weather with arguments {'city': 'Paris'}:
+---
+Sunny, 22 degrees celsius in Paris
+---
+</code></pre></div>
+<h3 id="step-3-decide-where-tools-live">Step 3: Decide where tools live</h3>
+<p>Tools are declared on prompts, in one of two places:</p>
+<ul>
+<li><strong>The agent's system prompt.</strong> These are the agent's own tools, offered on
+  every turn, whether the turn was sent with <code>receive(text)</code> or with a prompt.</li>
+<li><strong>The prompt for one turn</strong>, sent with <code>receive_prompt()</code>. Its tools are
+  offered on that turn in addition to the agent's own; if both declare a tool
+  with the same name, the turn's version wins. Set <code>agent_tools=False</code> on a turn
+  prompt to offer only that prompt's tools (or none).</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+
+<span class="n">weather_system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"weather_bot/system"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"You are a weather assistant."</span><span class="p">,</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">get_weather</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">weather_system</span><span class="o">.</span><span class="n">functions</span><span class="p">))</span>   <span class="c1"># ['get_weather']</span>
+</code></pre></div>
+<h3 id="step-4-run-the-tool-loop">Step 4: Run the tool loop</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.invokers</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_invoker</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"weather_bot"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="n">weather_system</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">,</span>
+    <span class="n">llm_invoker</span><span class="o">=</span><span class="n">build_invoker</span><span class="p">({</span><span class="s2">"invoker"</span><span class="p">:</span> <span class="s2">"litellm"</span><span class="p">}),</span>
+    <span class="n">max_interrupt_steps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>   <span class="c1"># at most 3 rounds of tool calls per respond()</span>
+<span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"What is the weather in Paris and Tokyo?"</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">agent</span><span class="o">.</span><span class="n">current_dialog</span><span class="o">.</span><span class="n">messages</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">role</span><span class="o">.</span><span class="n">value</span><span class="si">:</span><span class="s2">&gt;9</span><span class="si">}</span><span class="s2"> | </span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<p>A typical run leaves this in the dialog (the model may request both lookups in
+one round, as here, or one per round):</p>
+<div class="highlight"><pre><span></span><code>   system | system
+     user | user
+tool_call | weather_bot
+     tool | get_weather
+     tool | get_weather
+assistant | weather_bot
+</code></pre></div>
+<p>What <code>respond()</code> did:</p>
+<ol>
+<li>The model saw the question and the <code>get_weather</code> schema, and replied with
+   tool calls instead of text.</li>
+<li>LLLM ran each requested function and appended the results as <code>tool</code>
+   messages.</li>
+<li>The model was called again with the results and wrote the final answer.</li>
+<li><code>respond()</code> returned that final <code>Message</code>.</li>
+</ol>
+<p>A turn prompt can add a tool for one turn, or switch the agent's tools off:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Convert a temperature from Celsius to Fahrenheit"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">to_fahrenheit</span><span class="p">(</span><span class="n">celsius</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">celsius</span> <span class="o">*</span> <span class="mi">9</span> <span class="o">/</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">32</span>
+
+
+<span class="n">convert</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"weather_bot/convert"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"</span><span class="si">{question}</span><span class="s2">"</span><span class="p">,</span> <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">to_fahrenheit</span><span class="p">])</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">convert</span><span class="p">,</span> <span class="p">{</span><span class="s2">"question"</span><span class="p">:</span> <span class="s2">"How warm is Paris today in Fahrenheit?"</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>    <span class="c1"># get_weather and to_fahrenheit are both offered</span>
+
+<span class="n">recap</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"weather_bot/recap"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Summarize our conversation in one sentence."</span><span class="p">,</span> <span class="n">agent_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">recap</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>    <span class="c1"># no tools are offered on this turn</span>
+</code></pre></div>
+<h3 id="step-5-control-the-loop">Step 5: Control the loop</h3>
+<div class="highlight"><pre><span></span><code><span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Divide two numbers"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">divide</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">b</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">b</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"Division by zero"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">a</span> <span class="o">/</span> <span class="n">b</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">divide</span><span class="p">(</span><span class="n">FunctionCall</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"divide"</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s2">"a"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">:</span> <span class="mi">0</span><span class="p">}))</span><span class="o">.</span><span class="n">result_str</span><span class="p">)</span>
+<span class="c1"># Error: Division by zero</span>
+</code></pre></div>
+<p>The loop is governed by a few rules:</p>
+<ul>
+<li><strong>Round limit.</strong> <code>max_interrupt_steps</code> (default 5) caps tool-call rounds per
+  <code>respond()</code>. When the cap is reached, LLLM appends "You are reaching the limit
+  of tool calls. Provide the final response." and calls the model once more
+  without tools. <code>0</code> means up to 100 rounds and logs a warning; always set a cap.</li>
+<li><strong>Tool errors.</strong> An exception inside a tool becomes the result
+  <code>Error: &lt;message&gt;</code>, as above, so the model can retry with other arguments.</li>
+<li><strong>Repeated calls.</strong> If the model repeats a call with identical arguments in
+  the same <code>respond()</code>, LLLM does not run it again and tells the model to use
+  the earlier result.</li>
+<li><strong>Unknown tools.</strong> A call to a tool that is not offered on the turn raises
+  <code>KeyError</code>.</li>
+</ul>
+<p>To see the rounds of one call, ask for its session:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"And in Berlin?"</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="n">rounds</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">interrupts</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">calls</span> <span class="ow">in</span> <span class="n">rounds</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="p">[(</span><span class="n">call</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">call</span><span class="o">.</span><span class="n">arguments</span><span class="p">)</span> <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="n">calls</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="step-6-format-tool-results">Step 6: Format tool results</h3>
+<p>The default result text is the "Return of calling function ..." block from
+Step 2. Pass a <code>processor(result, function_call) -&gt; str</code> to change it:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">short_result</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">function_call</span><span class="p">):</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">function_call</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">result</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Get the current weather for a city"</span><span class="p">,</span> <span class="n">processor</span><span class="o">=</span><span class="n">short_result</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">weather_brief</span><span class="p">(</span><span class="n">city</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Sunny in </span><span class="si">{</span><span class="n">city</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">weather_brief</span><span class="p">(</span><span class="n">FunctionCall</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"weather_brief"</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="s2">"Paris"</span><span class="p">}))</span><span class="o">.</span><span class="n">result_str</span><span class="p">)</span>
+<span class="c1"># [weather_brief] Sunny in Paris</span>
+</code></pre></div>
+<h3 id="step-7-declare-a-tool-separately-from-its-implementation">Step 7: Declare a tool separately from its implementation</h3>
+<p>Sometimes the prompt should own the interface while the implementation lives
+elsewhere, like a header file and its source. Declare the schema as a
+<code>Function</code> without an implementation:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Function</span>
+
+<span class="n">search_decl</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"web_search"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Search the web for information"</span><span class="p">,</span>
+    <span class="n">properties</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Search query"</span><span class="p">}},</span>
+    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">"query"</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Then register an implementation under the same name in a runtime registry:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runtime</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"web_search"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Search the web for information"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Top results for </span><span class="si">{</span><span class="n">query</span><span class="si">!r}</span><span class="s2">"</span>   <span class="c1"># call your search API here</span>
+
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">Runtime</span><span class="p">()</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_tool</span><span class="p">(</span><span class="s2">"web_search"</span><span class="p">,</span> <span class="n">web_search</span><span class="p">)</span>
+</code></pre></div>
+<p>An agent resolves declarations against its runtime when a turn starts:</p>
+<div class="highlight"><pre><span></span><code><span class="n">researcher</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"researcher"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="n">Prompt</span><span class="p">(</span>
+        <span class="n">path</span><span class="o">=</span><span class="s2">"research_bot/system"</span><span class="p">,</span>
+        <span class="n">prompt</span><span class="o">=</span><span class="s2">"You research questions carefully."</span><span class="p">,</span>
+        <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">search_decl</span><span class="p">],</span>
+    <span class="p">),</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">,</span>
+    <span class="n">llm_invoker</span><span class="o">=</span><span class="n">build_invoker</span><span class="p">({</span><span class="s2">"invoker"</span><span class="p">:</span> <span class="s2">"litellm"</span><span class="p">}),</span>
+    <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">researcher</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+<span class="n">researcher</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"What is the LLLM framework?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">researcher</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+<p>Binding is by exact name. If nothing named <code>web_search</code> is registered,
+<code>respond()</code> raises <code>KeyError</code> naming the missing tool. A plain string works as
+well, <code>function_list=["web_search"]</code>, and a prompt can mix live <code>Function</code>
+objects, declarations, and strings in one list. Inside an LLLM package, tools
+defined in the package's tool folders are registered automatically and can be
+referenced by package refs such as <code>"my_pkg.tools:web_search"</code>
+(<a href="../06-packages-and-hub/">Lesson 6</a> explains how refs are formed).</p>
+<h3 id="step-8-use-a-tactic-as-a-tool">Step 8: Use a tactic as a tool</h3>
+<p>A tool can be a whole agentic workflow. <code>tactic_as_function()</code> turns a tactic
+into a <code>Function</code> whose single <code>task</code> argument is passed to the tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Tactic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">tactic_as_function</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CodeReviewTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Review a Python snippet and list concrete problems."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"code_review"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"reviewer"</span><span class="p">]</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="nb">str</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">reviewer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"reviewer"</span><span class="p">]</span>
+        <span class="n">reviewer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"review"</span><span class="p">)</span>
+        <span class="n">reviewer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Review this code and list concrete problems:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">reviewer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">review_tool</span> <span class="o">=</span> <span class="n">tactic_as_function</span><span class="p">(</span><span class="n">CodeReviewTactic</span><span class="p">({</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o"</span><span class="p">},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"reviewer"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"You are a strict Python reviewer."</span><span class="p">}],</span>
+<span class="p">}))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">review_tool</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">review_tool</span><span class="o">.</span><span class="n">required</span><span class="p">)</span>   <span class="c1"># code_review ['task']</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">review_tool</span><span class="o">.</span><span class="n">description</span><span class="p">)</span>                  <span class="c1"># the tactic's docstring</span>
+
+<span class="n">ask_dev</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"dev/ask"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"</span><span class="si">{request}</span><span class="s2">"</span><span class="p">,</span> <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">review_tool</span><span class="p">])</span>
+</code></pre></div>
+<p>With <code>parameter_mode="kwargs"</code>, a tactic whose input is a Pydantic model
+publishes the model's fields as separate parameters instead. An input without
+fields, like the <code>str</code> here, keeps the single <code>task</code> parameter.</p>
+<p>Tactics are covered in <a href="../05-native-tactics/">Lesson 5</a>. Tactics can also mark
+individual methods as tools with <code>@tactictool("name", ...)</code> and be referenced by
+package ref, for example <code>"my_pkg.tactics:code_review"</code>.</p>
+<h3 id="step-9-connect-mcp-servers">Step 9: Connect MCP servers</h3>
+<p>Tools served over the Model Context Protocol are declared with <code>MCP</code> and
+attached with <code>mcp_servers_list</code>, on the system prompt (every turn) or on a
+turn prompt:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCP</span><span class="p">,</span> <span class="n">Prompt</span>
+
+<span class="n">docs_server</span> <span class="o">=</span> <span class="n">MCP</span><span class="p">(</span>
+    <span class="n">server_label</span><span class="o">=</span><span class="s2">"docs"</span><span class="p">,</span>
+    <span class="n">server_url</span><span class="o">=</span><span class="s2">"https://example.com/mcp"</span><span class="p">,</span>
+    <span class="n">require_approval</span><span class="o">=</span><span class="s2">"never"</span><span class="p">,</span>
+    <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">"search"</span><span class="p">,</span> <span class="s2">"fetch_url"</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">ask_docs</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"docs_bot/ask"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"</span><span class="si">{question}</span><span class="s2">"</span><span class="p">,</span> <span class="n">mcp_servers_list</span><span class="o">=</span><span class="p">[</span><span class="n">docs_server</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">docs_server</span><span class="o">.</span><span class="n">to_tool</span><span class="p">())</span>
+</code></pre></div>
+<p>The provider calls MCP servers itself; LLLM passes the declaration along as a
+<code>{"type": "mcp", ...}</code> tool. Whether that is accepted depends on the provider
+and API. For example, OpenAI exposes remote MCP servers through its Responses
+API, which you select with <code>api_type=APITypes.RESPONSE</code> on the agent (import
+<code>APITypes</code> from <code>lllm.runtimes.native</code>).</p>
+<h3 id="step-10-declare-agent-tools-in-configuration">Step 10: Declare agent tools in configuration</h3>
+<p>When agents are built from configuration (<a href="../05-native-tactics/">Lesson 5</a>),
+a <code>tools</code> key lists capabilities for an agent, or for all agents under
+<code>global</code>. The refs are added to the agent's system prompt, resolved from the
+tactic's registry, and offered on every turn like any other agent tool:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runtime</span><span class="p">,</span> <span class="n">Tactic</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">Runtime</span><span class="p">()</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_tool</span><span class="p">(</span><span class="s2">"web_search"</span><span class="p">,</span> <span class="n">web_search</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">AnalystTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"analyst"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"analyst"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">analyst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"analyst"</span><span class="p">]</span>
+        <span class="n">analyst</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+        <span class="n">analyst</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">analyst</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o"</span><span class="p">,</span> <span class="s2">"tools"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"web_search"</span><span class="p">]},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"analyst"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"You are a research analyst."</span><span class="p">}],</span>
+<span class="p">}</span>
+
+<span class="n">analyst</span> <span class="o">=</span> <span class="n">AnalystTactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">runtime</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">analyst</span><span class="p">(</span><span class="s2">"Find recent work on program synthesis with LLMs."</span><span class="p">))</span>
+</code></pre></div>
+<p>Supported <code>tools</code> entries are registered tool names or <code>pkg.tools:name</code> refs,
+tactic tools (<code>pkg.tactics:name</code>, or <code>pkg.tactics:name#tool</code> to pick one
+method), and proxies (<code>pkg.proxies:name</code>), which add the proxy tools described
+next.</p>
+<hr />
+<h2 id="part-2-proxies">Part 2: Proxies</h2>
+<p>When an agent needs many endpoints, one function schema per endpoint bloats
+the tool list and still cannot express multi-step data work. A <strong>proxy</strong> wraps
+an API surface instead: the agent reads the API's documentation and works with
+it from Python, through two tools:</p>
+<ul>
+<li><code>query_api_doc(proxy_name)</code> returns a proxy's endpoint documentation.</li>
+<li><code>run_python(code)</code> runs Python in a persistent interpreter where
+  <code>CALL_API(path, params)</code> is already available.</li>
+</ul>
+<p>The agent then fetches, joins, and computes over the data in ordinary Python,
+in a few tool rounds.</p>
+<h3 id="step-11-define-a-proxy">Step 11: Define a proxy</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseProxy</span><span class="p">,</span> <span class="n">ProxyRegistrator</span>
+
+
+<span class="nd">@ProxyRegistrator</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"weather"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Weather API"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Current weather and forecasts for any city."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WeatherProxy</span><span class="p">(</span><span class="n">BaseProxy</span><span class="p">):</span>
+
+    <span class="nd">@BaseProxy</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span>
+        <span class="n">category</span><span class="o">=</span><span class="s2">"current"</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s2">"current/</span><span class="si">{city}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Current temperature and conditions for a city."</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"city*"</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"London"</span><span class="p">),</span>     <span class="c1"># * marks a required parameter</span>
+            <span class="s2">"units"</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"celsius"</span><span class="p">),</span>
+        <span class="p">},</span>
+        <span class="n">response</span><span class="o">=</span><span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mi">18</span><span class="p">,</span> <span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"cloudy"</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="n">params</span><span class="p">[</span><span class="s2">"city"</span><span class="p">],</span> <span class="s2">"temperature"</span><span class="p">:</span> <span class="mi">18</span><span class="p">,</span> <span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"cloudy"</span><span class="p">}</span>
+
+    <span class="nd">@BaseProxy</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span>
+        <span class="n">category</span><span class="o">=</span><span class="s2">"forecast"</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s2">"forecast/daily"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Daily forecast for a city."</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span>
+            <span class="s2">"city*"</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"London"</span><span class="p">),</span>
+            <span class="s2">"days"</span><span class="p">:</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span>
+        <span class="p">},</span>
+        <span class="n">response</span><span class="o">=</span><span class="p">[{</span><span class="s2">"day"</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">:</span> <span class="mi">20</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">:</span> <span class="mi">12</span><span class="p">}],</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">daily_forecast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+        <span class="n">days</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"days"</span><span class="p">,</span> <span class="mi">5</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[{</span><span class="s2">"day"</span><span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="s2">"high"</span><span class="p">:</span> <span class="mi">18</span> <span class="o">+</span> <span class="n">i</span><span class="p">,</span> <span class="s2">"low"</span><span class="p">:</span> <span class="mi">10</span> <span class="o">+</span> <span class="n">i</span><span class="p">}</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">days</span><span class="p">)]</span>
+</code></pre></div>
+<ul>
+<li><code>@ProxyRegistrator</code> registers the class in the default runtime under <code>path</code>,
+  the name you activate and the first segment of every <code>CALL_API</code> path.</li>
+<li><code>endpoint</code> is the path the agent calls, exactly as the documentation lists
+  it: <code>CALL_API("weather/forecast/daily", {"city": "Tokyo"})</code>. Paths can
+  contain slashes, hyphens, and <code>{name}</code> placeholders, which are filled from
+  the path: <code>CALL_API("weather/current/Tokyo", {})</code> passes <code>city="Tokyo"</code>.</li>
+<li>Only methods decorated with <code>@BaseProxy.endpoint</code> can be called.</li>
+<li>This proxy has no <code>base_url</code>, so each endpoint method computes the response
+  itself. Step 12 proxies a real HTTP API.</li>
+<li>In <code>params</code>, the tuple is <code>(type, example value)</code>. <code>response</code> is an example
+  response. Both appear in the documentation the agent reads.</li>
+</ul>
+<h3 id="step-12-proxy-an-http-api">Step 12: Proxy an HTTP API</h3>
+<p>For a web API, declare where it lives and how to authenticate, and let each
+endpoint method prepare the request parameters:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseProxy</span><span class="p">,</span> <span class="n">ProxyRegistrator</span>
+
+
+<span class="nd">@ProxyRegistrator</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"weather_api"</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"Weather HTTP API"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Current weather from a JSON web API."</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WeatherHTTPProxy</span><span class="p">(</span><span class="n">BaseProxy</span><span class="p">):</span>
+    <span class="n">base_url</span> <span class="o">=</span> <span class="s2">"https://api.example.com/weather"</span>
+    <span class="n">api_key_name</span> <span class="o">=</span> <span class="s2">"api_key"</span>   <span class="c1"># sent as a query parameter; "*X-Api-Key" would send a header</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"WEATHER_API_KEY"</span><span class="p">)</span>
+
+    <span class="nd">@BaseProxy</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span>
+        <span class="n">category</span><span class="o">=</span><span class="s2">"current"</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s2">"current/</span><span class="si">{city}</span><span class="s2">"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Current weather for a city."</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"city*"</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"London"</span><span class="p">),</span> <span class="s2">"units"</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"metric"</span><span class="p">)},</span>
+        <span class="n">response</span><span class="o">=</span><span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">18.2</span><span class="p">,</span> <span class="s2">"condition"</span><span class="p">:</span> <span class="s2">"cloudy"</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">params</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="s2">"units"</span><span class="p">,</span> <span class="s2">"metric"</span><span class="p">)</span>   <span class="c1"># validate or adjust the request here</span>
+        <span class="k">return</span> <span class="n">params</span>
+</code></pre></div>
+<p>With a <code>base_url</code>, an endpoint method returns the parameters to send, and the
+proxy makes the request: <code>CALL_API("weather_api/current/Tokyo", {})</code> sends
+<code>GET https://api.example.com/weather/current/Tokyo?units=metric&amp;api_key=...</code>.</p>
+<ul>
+<li><code>{name}</code> placeholders in the endpoint path are filled in the URL, each value
+  URL-encoded as one path segment (<code>BRK/A</code> becomes <code>BRK%2FA</code>). A missing or
+  empty value, <code>.</code>, or <code>..</code> raises <code>ValueError</code> before anything is sent.</li>
+<li>The key is added under <code>api_key_name</code>; a name starting with <code>*</code> sends it as a
+  header instead.</li>
+<li>Endpoints declared with <code>method="POST"</code> send a JSON body.</li>
+<li>Responses are cached on disk under <code>~/.lllm</code> by default; pass
+  <code>use_cache=False</code> to <code>super().__init__()</code> to turn that off.</li>
+<li>Override <code>_call_api(url, params, endpoint_info, headers)</code> for APIs that need
+  extra request fields or response post-processing.</li>
+</ul>
+<p>The proxies that ship with LLLM (Step 15) are written this way.</p>
+<h3 id="step-13-call-proxies-from-python">Step 13: Call proxies from Python</h3>
+<p><code>ProxyManager</code> loads activated proxies and dispatches calls; it is exactly what
+the agent's <code>CALL_API</code> uses:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProxyManager</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.proxies</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentInterpreter</span>
+
+<span class="n">proxies</span> <span class="o">=</span> <span class="n">ProxyManager</span><span class="p">(</span><span class="n">activate_proxies</span><span class="o">=</span><span class="p">[</span><span class="s2">"weather"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">proxies</span><span class="o">.</span><span class="n">available</span><span class="p">())</span>                                   <span class="c1"># ['weather']</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">proxies</span><span class="p">(</span><span class="s2">"weather/current/Tokyo"</span><span class="p">,</span> <span class="p">{}))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">proxies</span><span class="p">(</span><span class="s2">"weather/forecast/daily"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="s2">"Tokyo"</span><span class="p">,</span> <span class="s2">"days"</span><span class="p">:</span> <span class="mi">2</span><span class="p">}))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">proxies</span><span class="o">.</span><span class="n">retrieve_api_docs</span><span class="p">(</span><span class="s2">"weather"</span><span class="p">))</span>                  <span class="c1"># what query_api_doc returns</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>## Weather API (weather)
+Current weather and forecasts for any city.
+- **current/{city}** [GET] – Current temperature and conditions for a city.
+    - `city*` (str) e.g. London
+    - `units` (str) e.g. celsius
+- **forecast/daily** [GET] – Daily forecast for a city.
+    - `city*` (str) e.g. London
+    - `days` (int) e.g. 5
+</code></pre></div>
+<p><code>AgentInterpreter</code> is the interpreter behind <code>run_python</code>. Its namespace
+persists across calls, like a live REPL:</p>
+<div class="highlight"><pre><span></span><code><span class="n">interpreter</span> <span class="o">=</span> <span class="n">AgentInterpreter</span><span class="p">(</span><span class="n">proxies</span><span class="p">,</span> <span class="n">max_output_chars</span><span class="o">=</span><span class="mi">5000</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">interpreter</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">'tokyo = CALL_API("weather/current/Tokyo", </span><span class="si">{}</span><span class="s1">)</span><span class="se">\n</span><span class="s1">print(tokyo["temperature"])'</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">interpreter</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s1">'print("Tokyo is", tokyo["condition"])'</span><span class="p">))</span>   <span class="c1"># `tokyo` is still defined</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">interpreter</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"1 / 0"</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>                  <span class="c1"># ZeroDivisionError: division by zero</span>
+</code></pre></div>
+<ul>
+<li>Only what the code prints is returned; the last expression is not echoed.</li>
+<li>Exceptions come back as formatted tracebacks, so the agent can fix its code
+  without losing state.</li>
+<li>Output longer than <code>max_output_chars</code> is cut and <code>"... (truncated)"</code> appended.</li>
+<li>Code running longer than <code>timeout</code> seconds raises <code>TimeoutError</code>, which the
+  tool loop reports to the model as an error.</li>
+<li><code>interpreter.reset()</code> clears everything except <code>CALL_API</code>.</li>
+</ul>
+<h3 id="step-14-give-an-agent-the-proxy">Step 14: Give an agent the proxy</h3>
+<p>Add a <code>proxy</code> block to an agent's configuration. LLLM then builds a
+<code>ProxyManager</code> and an <code>AgentInterpreter</code> for the agent, appends the API
+directory and usage instructions to its system prompt, and adds the
+<code>query_api_doc</code> and <code>run_python</code> tools, which are offered on every turn:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">WeatherTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"weather"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"weather_analyst"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">analyst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"weather_analyst"</span><span class="p">]</span>
+        <span class="n">analyst</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+        <span class="n">analyst</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">analyst</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o"</span><span class="p">,</span> <span class="s2">"model_args"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[{</span>
+        <span class="s2">"name"</span><span class="p">:</span> <span class="s2">"weather_analyst"</span><span class="p">,</span>
+        <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"You are a weather analyst. Use the Weather API to answer questions."</span><span class="p">,</span>
+        <span class="s2">"proxy"</span><span class="p">:</span> <span class="p">{</span>
+            <span class="s2">"activate_proxies"</span><span class="p">:</span> <span class="p">[</span><span class="s2">"weather"</span><span class="p">],</span>
+            <span class="s2">"exec_env"</span><span class="p">:</span> <span class="s2">"interpreter"</span><span class="p">,</span>
+            <span class="s2">"max_output_chars"</span><span class="p">:</span> <span class="mi">5000</span><span class="p">,</span>
+            <span class="s2">"timeout"</span><span class="p">:</span> <span class="mf">60.0</span><span class="p">,</span>
+        <span class="p">},</span>
+    <span class="p">}],</span>
+<span class="p">}</span>
+
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">WeatherTactic</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">tactic</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"weather_analyst"</span><span class="p">]</span><span class="o">.</span><span class="n">system_prompt</span><span class="o">.</span><span class="n">functions</span><span class="p">))</span>
+<span class="c1"># ['query_api_doc', 'run_python']</span>
+</code></pre></div>
+<p>The same configuration in YAML, with a global default that agents override
+field by field:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<span class="w">  </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">weather</span><span class="p p-Indicator">]</span>
+<span class="w">    </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interpreter</span>
+
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">weather_analyst</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">You are a weather analyst. Use the Weather API to answer questions.</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">quick_analyst</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">You answer weather questions in one sentence.</span>
+<span class="w">    </span><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">30.0</span><span class="w">          </span><span class="c1"># only this field changes; the rest is inherited</span>
+</code></pre></div>
+<p>Every key of the <code>proxy</code> block:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">proxy</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">activate_proxies</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">weather</span><span class="p p-Indicator">]</span><span class="w">      </span><span class="c1"># proxies to load; empty means all registered proxies</span>
+<span class="w">  </span><span class="nt">deploy_mode</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">false</span><span class="w">               </span><span class="c1"># passed to each proxy instance</span>
+<span class="w">  </span><span class="nt">cutoff_date</span><span class="p">:</span><span class="w"> </span><span class="s">"2024-01-01"</span><span class="w">        </span><span class="c1"># ISO date passed to proxies that restrict data by date</span>
+<span class="w">  </span><span class="nt">exec_env</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">interpreter</span><span class="w">            </span><span class="c1"># "interpreter" adds run_python; any other value (or null) does not</span>
+<span class="w">  </span><span class="nt">max_output_chars</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5000</span><span class="w">           </span><span class="c1"># truncate run_python output; 0 disables truncation</span>
+<span class="w">  </span><span class="nt">truncation_indicator</span><span class="p">:</span><span class="w"> </span><span class="s">"...</span><span class="nv"> </span><span class="s">(truncated)"</span>
+<span class="w">  </span><span class="nt">timeout</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">60.0</span><span class="w">                    </span><span class="c1"># seconds per run_python call</span>
+<span class="w">  </span><span class="nt">prompt_template</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">            </span><span class="c1"># custom instruction block; null selects the built-in one</span>
+</code></pre></div>
+<p>With <code>exec_env</code> set to anything other than <code>interpreter</code> (for example
+<code>jupyter</code> or <code>null</code>), the agent still gets the API directory and
+<code>query_api_doc</code>, but no <code>run_python</code>: your tactic executes code itself, as in
+Part 3.</p>
+<p>The built-in instruction block includes the API directory: every endpoint of
+every activated proxy, with its parameters. For large APIs that is a lot of
+system-prompt text. To keep it short, set <code>prompt_template</code> to your own
+instructions without the <code>{api_directory}</code> placeholder; the agent then reads
+documentation only through <code>query_api_doc</code>. A custom template may use
+<code>{max_output_chars}</code> and <code>{truncation_indicator}</code>, and must double any literal
+braces. Set it before building the tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="n">config</span><span class="p">[</span><span class="s2">"agent_configs"</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">"proxy"</span><span class="p">][</span><span class="s2">"prompt_template"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s2">"</span><span class="se">\n\n</span><span class="s2">Call query_api_doc(name) before using a data API, then run Python with "</span>
+    <span class="s2">"run_python, calling CALL_API(path, params). Output longer than "</span>
+    <span class="s2">"</span><span class="si">{max_output_chars}</span><span class="s2"> characters is truncated."</span>
+<span class="p">)</span>
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">WeatherTactic</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="step-15-run-it">Step 15: Run it</h3>
+<div class="highlight"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">tactic</span><span class="p">(</span><span class="s2">"What is the current weather in Tokyo and Paris?"</span><span class="p">))</span>
+</code></pre></div>
+<p>The agent typically:</p>
+<ol>
+<li>calls <code>query_api_doc("weather")</code> to read the endpoint details;</li>
+<li>calls <code>run_python</code> with code that runs <code>CALL_API("weather/current/Tokyo", {})</code>
+   and <code>CALL_API("weather/current/Paris", {})</code> and prints the results;</li>
+<li>calls <code>run_python</code> again, reusing those variables, to compare or format;</li>
+<li>writes the final answer.</li>
+</ol>
+<p>Each tactic call builds fresh agents, so every call starts with a fresh
+interpreter.</p>
+<p>LLLM also ships ready-made proxies for research data, registered by
+<code>load_builtin_proxies()</code> from <code>lllm.runtimes.native.proxies</code>: Financial
+Modeling Prep (<code>fmp</code>), FRED (<code>fred</code>), Exa search (<code>exa</code>), Google Trends (<code>gt</code>),
+Wolfram Alpha (<code>wa</code>), and Main Street Data (<code>msd</code>). Each reads its API key from
+the environment. <a href="../08-advanced-patterns/">Lesson 8</a> combines several of them.</p>
+<hr />
+<h2 id="part-3-sandbox">Part 3: Sandbox</h2>
+<p>Interpreter mode runs the agent's code for you. When you want to own execution,
+to intercept every cell, keep a notebook-style record, or run code somewhere
+else, let the agent write code cells and run them in your tactic.</p>
+<h3 id="step-16-let-the-agent-write-cells-and-run-them-yourself">Step 16: Let the agent write cells and run them yourself</h3>
+<p>The agent writes <code>&lt;python_cell&gt;</code> and <code>&lt;markdown_cell&gt;</code> tags; a parser extracts
+them; the tactic runs the code in a sandbox and sends the outputs back:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">ProxyManager</span><span class="p">,</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Tactic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">ParseError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.proxies</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentInterpreter</span>
+
+<span class="n">NOTEBOOK_SYSTEM</span> <span class="o">=</span> <span class="s2">"""You are a data analyst working in a Python notebook.</span>
+
+<span class="s2">- Write code in &lt;python_cell&gt;...&lt;/python_cell&gt; tags and notes in &lt;markdown_cell&gt;...&lt;/markdown_cell&gt; tags.</span>
+<span class="s2">- Cells run in order and variables persist between turns. Use print() to see values.</span>
+<span class="s2">- Call the data APIs listed below with CALL_API(path, params).</span>
+<span class="s2">- When you are done, write a final &lt;markdown_cell&gt; summary followed by &lt;TERMINATE_NOTEBOOK&gt;.</span>
+
+<span class="si">{api_directory}</span><span class="s2">"""</span>
+
+<span class="n">CELL</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"&lt;(python_cell|markdown_cell)&gt;(.*?)&lt;/\1&gt;"</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">DOTALL</span><span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">notebook_parser</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">cells</span> <span class="o">=</span> <span class="p">[(</span><span class="n">kind</span><span class="p">,</span> <span class="n">body</span><span class="o">.</span><span class="n">strip</span><span class="p">())</span> <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">body</span> <span class="ow">in</span> <span class="n">CELL</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">content</span><span class="p">)]</span>
+    <span class="n">has_code</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">kind</span> <span class="o">==</span> <span class="s2">"python_cell"</span> <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">cells</span><span class="p">)</span>
+    <span class="n">terminate</span> <span class="o">=</span> <span class="s2">"&lt;TERMINATE_NOTEBOOK&gt;"</span> <span class="ow">in</span> <span class="n">content</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_code</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">cells</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">terminate</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span>
+            <span class="s2">"No cells found. Wrap code in &lt;python_cell&gt;...&lt;/python_cell&gt;, "</span>
+            <span class="s2">"or reply with &lt;TERMINATE_NOTEBOOK&gt; when you are done."</span>
+        <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"cells"</span><span class="p">:</span> <span class="n">cells</span><span class="p">,</span> <span class="s2">"terminate"</span><span class="p">:</span> <span class="n">terminate</span><span class="p">}</span>
+
+
+<span class="n">task_turn</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"notebook/task"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"</span><span class="si">{task}</span><span class="s2">"</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">notebook_parser</span><span class="p">)</span>
+<span class="n">results_turn</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"notebook/results"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Cell outputs:</span><span class="se">\n\n</span><span class="si">{outputs}</span><span class="s2">"</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">notebook_parser</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">NotebookAnalysisTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"notebook_analysis"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"analyst"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_steps</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">proxies</span> <span class="o">=</span> <span class="n">ProxyManager</span><span class="p">(</span><span class="n">activate_proxies</span><span class="o">=</span><span class="p">[</span><span class="s2">"weather"</span><span class="p">])</span>
+        <span class="n">sandbox</span> <span class="o">=</span> <span class="n">AgentInterpreter</span><span class="p">(</span><span class="n">proxies</span><span class="p">,</span> <span class="n">timeout</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>   <span class="c1"># CALL_API is pre-loaded</span>
+        <span class="n">notebook</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">analyst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"analyst"</span><span class="p">]</span>
+        <span class="n">analyst</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"api_directory"</span><span class="p">:</span> <span class="n">proxies</span><span class="o">.</span><span class="n">retrieve_api_docs</span><span class="p">()})</span>
+        <span class="n">analyst</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">task_turn</span><span class="p">,</span> <span class="p">{</span><span class="s2">"task"</span><span class="p">:</span> <span class="n">task</span><span class="p">})</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_steps</span><span class="p">):</span>
+            <span class="n">parsed</span> <span class="o">=</span> <span class="n">analyst</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">parsed</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">kind</span><span class="p">,</span> <span class="n">source</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">"cells"</span><span class="p">]:</span>
+                <span class="n">notebook</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">&gt;</span><span class="se">\n</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="se">\n</span><span class="s2">&lt;/</span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">&gt;"</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s2">"python_cell"</span><span class="p">:</span>
+                    <span class="k">try</span><span class="p">:</span>
+                        <span class="n">output</span> <span class="o">=</span> <span class="n">sandbox</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+                    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>          <span class="c1"># e.g. a timeout</span>
+                        <span class="n">output</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span>
+                    <span class="n">outputs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">output</span> <span class="ow">or</span> <span class="s2">"(no output)"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">"terminate"</span><span class="p">]:</span>
+                <span class="k">break</span>
+            <span class="n">analyst</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">results_turn</span><span class="p">,</span> <span class="p">{</span><span class="s2">"outputs"</span><span class="p">:</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">---</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">outputs</span><span class="p">)</span> <span class="ow">or</span> <span class="s2">"(no code cells)"</span><span class="p">})</span>
+        <span class="k">return</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">notebook</span><span class="p">)</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o"</span><span class="p">,</span> <span class="s2">"model_args"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">0.1</span><span class="p">}},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"analyst"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="n">NOTEBOOK_SYSTEM</span><span class="p">}],</span>
+<span class="p">}</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">NotebookAnalysisTactic</span><span class="p">(</span><span class="n">config</span><span class="p">)(</span><span class="s2">"Compare the 3-day forecast for Tokyo and Paris."</span><span class="p">))</span>
+</code></pre></div>
+<p>Notice how the pieces from earlier lessons fit together:</p>
+<ul>
+<li>Both turn prompts carry <code>notebook_parser</code>, because every turn's reply must be
+  parsed (the rule from Lesson 3).</li>
+<li>A reply without cells fails parsing, so the model is asked again with the
+  <code>ParseError</code> message before your loop ever sees it.</li>
+<li>A failing cell returns its traceback as output, so the agent sees the error
+  on the next turn and can rewrite the cell.</li>
+</ul>
+<h3 id="step-17-bring-your-own-sandbox">Step 17: Bring your own sandbox</h3>
+<p>The tactic only needs an object with <code>run(code) -&gt; str</code>. Swap the sandbox and
+nothing else changes. This one runs each cell in a fresh Python process:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">subprocess</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">sys</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SubprocessSandbox</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Run each cell in a fresh Python process: no shared state, no CALL_API."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">timeout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">30.0</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">timeout</span> <span class="o">=</span> <span class="n">timeout</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">code</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">sys</span><span class="o">.</span><span class="n">executable</span><span class="p">,</span> <span class="s2">"-c"</span><span class="p">,</span> <span class="n">code</span><span class="p">],</span>
+            <span class="n">capture_output</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">text</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+            <span class="n">timeout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">timeout</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">stdout</span> <span class="o">+</span> <span class="n">result</span><span class="o">.</span><span class="n">stderr</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">SubprocessSandbox</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"print(sum(range(10)))"</span><span class="p">))</span>   <span class="c1"># 45</span>
+</code></pre></div>
+<p>Use it by replacing <code>sandbox = AgentInterpreter(...)</code> in the tactic. The same
+shape fits a container, a remote execution service, or a database query runner.</p>
+<p><code>AgentInterpreter</code> runs code with <code>exec()</code> inside your process. That suits
+trusted analysis code calling your own APIs, but it is not isolation. For
+untrusted code, put real isolation (a container, VM, or remote sandbox) behind
+the <code>run()</code> method.</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Define a tool</td>
+<td><code>@tool(description=..., prop_desc={...})</code></td>
+</tr>
+<tr>
+<td>Call a tool directly</td>
+<td><code>fn(FunctionCall(name=..., arguments={...}))</code></td>
+</tr>
+<tr>
+<td>Agent tools (every turn)</td>
+<td>system prompt <code>function_list=[...]</code>, or config <code>tools: [...]</code></td>
+</tr>
+<tr>
+<td>Tools for one turn</td>
+<td><code>Prompt(function_list=[...])</code> + <code>agent.receive_prompt(prompt, args)</code></td>
+</tr>
+<tr>
+<td>Turn without agent tools</td>
+<td><code>Prompt(..., agent_tools=False)</code></td>
+</tr>
+<tr>
+<td>Cap tool rounds</td>
+<td><code>Agent(max_interrupt_steps=N)</code></td>
+</tr>
+<tr>
+<td>Inspect tool rounds</td>
+<td><code>agent.respond(return_session=True).interrupts</code></td>
+</tr>
+<tr>
+<td>Custom result text</td>
+<td><code>@tool(processor=fn)</code></td>
+</tr>
+<tr>
+<td>Declaration + implementation</td>
+<td><code>Function(name=..., properties=...)</code> + <code>runtime.register_tool(name, impl)</code></td>
+</tr>
+<tr>
+<td>Tactic as a tool</td>
+<td><code>tactic_as_function(tactic)</code></td>
+</tr>
+<tr>
+<td>MCP server</td>
+<td><code>Prompt(mcp_servers_list=[MCP(...)])</code></td>
+</tr>
+<tr>
+<td>Define a proxy</td>
+<td><code>@ProxyRegistrator(path=...)</code> + <code>@BaseProxy.endpoint(endpoint="a/{b}", ...)</code></td>
+</tr>
+<tr>
+<td>HTTP-backed proxy</td>
+<td><code>base_url</code>, <code>api_key_name</code>, <code>api_key</code>; endpoint methods return the params</td>
+</tr>
+<tr>
+<td>Use a proxy in Python</td>
+<td><code>ProxyManager(activate_proxies=[...])("proxy/path", params)</code>, <code>AgentInterpreter(manager)</code></td>
+</tr>
+<tr>
+<td>Give an agent proxies</td>
+<td>config <code>proxy: {activate_proxies: [...], exec_env: interpreter}</code></td>
+</tr>
+<tr>
+<td>Own code execution</td>
+<td><code>&lt;python_cell&gt;</code> parser + any object with <code>run(code) -&gt; str</code></td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="../../core/proxy-and-sandbox/">Proxies and Sandbox reference</a> and the
+<a href="../../core/prompts/">Prompts reference</a> for every option.</p>
+<p><strong>Next:</strong> <a href="../05-native-tactics/">5. Native Tactics</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

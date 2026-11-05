@@ -1,0 +1,1808 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/architecture/">
+      
+      
+        <link rel="prev" href="../../tutorials/11-channels/">
+      
+      
+        <link rel="next" href="../agent/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Architecture - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#architecture" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Architecture
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="./" class="psi-header-nav__link psi-header-nav__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="./" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-abstractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four abstractions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design ideas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design ideas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#an-agentic-system-is-a-program" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An agentic system is a program
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-prompt-is-a-function-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A prompt is a function signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-dialog-is-the-agents-mental-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A dialog is the agent's mental state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-is-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration is declaration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#declaring-a-tool-is-separate-from-implementing-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declaring a tool is separate from implementing it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-are-tools-the-recursive-abstraction-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics are tools: the recursive abstraction graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool-calling-as-programming-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool calling as programming: proxies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-with-pydantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing with Pydantic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-native-fits-into-the-rest-of-lllm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How native fits into the rest of LLLM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-hints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference Hints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxies and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-four-abstractions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The four abstractions
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-ideas" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design ideas
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Design ideas">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#an-agentic-system-is-a-program" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        An agentic system is a program
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-prompt-is-a-function-signature" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A prompt is a function signature
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#a-dialog-is-the-agents-mental-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A dialog is the agent's mental state
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration-is-declaration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration is declaration
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#declaring-a-tool-is-separate-from-implementing-it" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declaring a tool is separate from implementing it
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-are-tools-the-recursive-abstraction-graph" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics are tools: the recursive abstraction graph
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tool-calling-as-programming-proxies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tool calling as programming: proxies
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composing-with-pydantic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composing with Pydantic
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-flow" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Data flow
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-native-fits-into-the-rest-of-lllm" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How native fits into the rest of LLLM
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-to-go-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where to go next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="architecture">Architecture</h1>
+<p>LLLM stands for <strong>Low-Level Language Model</strong>. At its core is a small, readable
+framework for building advanced agentic systems: program synthesis loops,
+neuro-symbolic pipelines, multi-agent research systems, anything where you need
+to see and steer every turn an agent takes. That framework is the native runtime,
+<code>lllm.runtimes.native</code>.</p>
+<p>"Low-level" here means control and transparency. It does not mean boilerplate.</p>
+<ul>
+<li><strong>Every turn is a declared contract.</strong> A <code>Prompt</code> bundles the template, the
+  parser that defines a valid reply, the tools the model may call, and the
+  handlers that decide what to say when parsing fails or a tool returns.</li>
+<li><strong>The loop that enforces it is short enough to read.</strong> <code>Agent.respond()</code> calls
+  the model, parses the reply, runs tools, and routes failures through your
+  handlers, with explicit retry caps.</li>
+<li><strong>State is explicit.</strong> Each agent's conversation is a <code>Dialog</code>, a tree you can
+  fork, inspect, serialize, and replay.</li>
+<li><strong>Everything is typed with Pydantic:</strong> prompts, messages, call sessions, and
+  tactic inputs and outputs.</li>
+<li><strong>It comes with research tooling:</strong> an in-process Python interpreter and a
+  Jupyter sandbox for agents that run code, proxies for agents that need many
+  API endpoints, agent skills, and access to 100+ model providers through LiteLLM.</li>
+</ul>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[native]"</span><span class="w">     </span><span class="c1"># LiteLLM-backed agents</span>
+pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[sandbox]"</span><span class="w">    </span><span class="c1"># optional Jupyter sandbox</span>
+</code></pre></div>
+<hr />
+<h2 id="the-four-abstractions">The four abstractions</h2>
+<p>LLLM organises an agentic system into four layers, each with a single
+responsibility.</p>
+<div class="highlight"><pre><span></span><code>┌──────────────────────────────────────────────────┐
+│                    Tactic                        │  ← "the program"
+│  (orchestrates agents, owns the task interface)  │
+├────────────────┬────────────────┬────────────────┤
+│    Agent A     │    Agent B     │    Agent C     │  ← "the callers"
+│  (model+loop)  │  (model+loop)  │  (model+loop)  │
+├────────────────┴────────────────┴────────────────┤
+│               Prompts (functions)                │  ← "the calls"
+│  template · parser · tools · handlers            │
+├──────────────────────────────────────────────────┤
+│               Dialogs (state)                    │  ← "mental state"
+│  per-agent message history, fork-able tree       │
+└──────────────────────────────────────────────────┘
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Abstraction</th>
+<th>Role</th>
+<th>Class</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Tactic</td>
+<td>The program. Takes a task, wires agents together, returns a result.</td>
+<td><code>Tactic</code> (set <code>agent_group</code> to get agents)</td>
+</tr>
+<tr>
+<td>Agent</td>
+<td>The caller. A system prompt, a model, and the call loop.</td>
+<td><code>Agent</code></td>
+</tr>
+<tr>
+<td>Prompt</td>
+<td>The function. One turn's template, output contract, tools, and handlers.</td>
+<td><code>Prompt</code></td>
+</tr>
+<tr>
+<td>Dialog</td>
+<td>The agent's mental state. Append-only messages in a fork-able tree.</td>
+<td><code>Dialog</code></td>
+</tr>
+</tbody>
+</table>
+<p>All four import from the top-level package:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">Dialog</span><span class="p">,</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">tool</span>
+</code></pre></div>
+<p><code>lllm</code> exports the native vocabulary (<code>Tactic</code>, <code>Prompt</code>, <code>Agent</code>, <code>Dialog</code>,
+<code>Message</code>, <code>Function</code>, <code>tool</code>, <code>tactictool</code>, <code>Runtime</code>, <code>load_runtime</code>,
+<code>resolve_config</code>, <code>build_tactic</code>, <code>BaseProxy</code>, ...). <code>lllm.runtimes.native</code>
+holds the same objects plus the parser and handler classes
+(<code>DefaultTagParser</code>, <code>BaseParser</code>, <code>BaseHandler</code>, <code>DefaultSimpleHandler</code>, ...);
+import those from there, because <code>lllm.DefaultTagParser</code> is the
+runtime-agnostic parser, whose tags are optional.</p>
+<p><code>lllm.Tactic</code> is also LLLM's protocol tactic: the same class you serve,
+package, and compose with other runtimes. See
+<a href="#how-native-fits-into-the-rest-of-lllm">How native fits into the rest of LLLM</a>.</p>
+<hr />
+<h2 id="design-ideas">Design ideas</h2>
+<h3 id="an-agentic-system-is-a-program">An agentic system is a program</h3>
+<p>A tactic's <code>call()</code> is ordinary Python. Agents are called like functions, and
+the control flow (sequencing, branching, loops, parallelism) is code you
+write and can debug.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">DraftAndReview</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"draft_and_review"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"writer"</span><span class="p">,</span> <span class="s2">"reviewer"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">writer</span><span class="p">,</span> <span class="n">reviewer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"writer"</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"reviewer"</span><span class="p">]</span>
+
+        <span class="n">writer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"draft"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"topic"</span><span class="p">:</span> <span class="n">task</span><span class="p">})</span>
+        <span class="n">draft</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+        <span class="n">reviewer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"review"</span><span class="p">)</span>
+        <span class="n">reviewer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">draft</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"writer"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">reviewer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o-mini"</span><span class="p">},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"writer"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"Write a one-paragraph brief about </span><span class="si">{topic}</span><span class="s2">."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"reviewer"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"Tighten the draft you receive."</span><span class="p">},</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">DraftAndReview</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">tactic</span><span class="p">(</span><span class="s2">"dialog trees"</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>          <span class="c1"># agent calls, cost, state</span>
+</code></pre></div>
+<p><strong>Why it matters.</strong> A tactic is stateless: every call gets fresh agents and
+fresh dialogs, so concurrent calls (<code>tactic.bcall(tasks)</code>) never share mutable
+state. Each call returns or records a <code>TacticCallSession</code> with every agent call
+and its cost. See <a href="../tactic/">Tactics</a>.</p>
+<h3 id="a-prompt-is-a-function-signature">A prompt is a function signature</h3>
+<p>The agent is the function and the <code>Prompt</code> is its type signature. The invoker
+reads the parser, output format, and handlers from the prompt that sent the
+latest turn, and the agent loop keeps going until the reply satisfies it. Plain
+text sent with <code>agent.receive()</code> has no parser; send a <code>Prompt</code> with
+<code>agent.receive_prompt()</code> when the turn needs a contract. Tools combine: the
+agent's own tools (those on its system prompt) are offered on every turn,
+alongside the turn prompt's.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Evaluate an arithmetic expression"</span><span class="p">,</span> <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">"expr"</span><span class="p">:</span> <span class="s2">"e.g. 2*(3+4)"</span><span class="p">})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calc</span><span class="p">(</span><span class="n">expr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">expr</span><span class="p">,</span> <span class="p">{</span><span class="s2">"__builtins__"</span><span class="p">:</span> <span class="p">{}}))</span>   <span class="c1"># demo only</span>
+
+
+<span class="n">solve</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"math/solve"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Solve: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Show work in &lt;work&gt; and the result in &lt;answer&gt;."</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"work"</span><span class="p">,</span> <span class="s2">"answer"</span><span class="p">]),</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">calc</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">solve</span><span class="p">(</span><span class="n">question</span><span class="o">=</span><span class="s2">"What is 17 * 23?"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">solve</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">"&lt;work&gt;17*23&lt;/work&gt;&lt;answer&gt;391&lt;/answer&gt;"</span><span class="p">)[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"answer"</span><span class="p">])</span>
+</code></pre></div>
+<p>With an agent, the same prompt becomes one validated call:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">solve</span><span class="p">,</span> <span class="p">{</span><span class="s2">"question"</span><span class="p">:</span> <span class="s2">"What is 17 * 23?"</span><span class="p">})</span>
+<span class="n">reply</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>                      <span class="c1"># tool calls and repairs happen inside</span>
+<span class="n">answer</span> <span class="o">=</span> <span class="n">reply</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"answer"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div>
+<p><strong>Why it matters.</strong> Parse failures become repair turns
+(<code>"Error: {error_message}. Please fix."</code> by default) in a <em>forked</em> working
+dialog, so the canonical history only records the valid reply. Retries are
+capped (<code>max_exception_retry</code>), and failure surfaces as an exception rather
+than a silently malformed answer. The handler is a replaceable object, so the
+repair strategy is yours. See <a href="../prompts/">Prompts</a> and <a href="../agent/">Agent</a>.</p>
+<h3 id="a-dialog-is-the-agents-mental-state">A dialog is the agent's mental state</h3>
+<p>A dialog is what one agent has seen: not a shared global chat log. Agents
+share information only by passing content explicitly. Dialogs are append-only
+and fork into trees.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dialog</span><span class="p">,</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Role</span>
+
+<span class="n">system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"planner/system"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"You are a </span><span class="si">{style}</span><span class="s2"> planner."</span><span class="p">)</span>
+
+<span class="n">dialog</span> <span class="o">=</span> <span class="n">Dialog</span><span class="p">(</span><span class="n">owner</span><span class="o">=</span><span class="s2">"planner"</span><span class="p">)</span>
+<span class="n">dialog</span><span class="o">.</span><span class="n">put_prompt</span><span class="p">(</span><span class="n">system</span><span class="p">,</span> <span class="p">{</span><span class="s2">"style"</span><span class="p">:</span> <span class="s2">"careful"</span><span class="p">},</span> <span class="n">role</span><span class="o">=</span><span class="n">Role</span><span class="o">.</span><span class="n">SYSTEM</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"system"</span><span class="p">)</span>
+<span class="n">dialog</span><span class="o">.</span><span class="n">put_text</span><span class="p">(</span><span class="s2">"Plan the next release."</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">)</span>
+
+<span class="n">branch</span> <span class="o">=</span> <span class="n">dialog</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="n">last_n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">first_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>    <span class="c1"># keep system prompt + last message</span>
+<span class="n">branch</span><span class="o">.</span><span class="n">put_text</span><span class="p">(</span><span class="s2">"Assume the deadline moved up a week."</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"user"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dialog</span><span class="o">.</span><span class="n">tree_overview</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">branch</span><span class="o">.</span><span class="n">parent</span> <span class="ow">is</span> <span class="n">dialog</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">branch</span><span class="o">.</span><span class="n">messages</span><span class="p">))</span>
+</code></pre></div>
+<p><strong>Why it matters.</strong> Forking gives you speculation, alternative strategies, and
+context-window management without mutating history. Every dialog carries a
+<code>DialogTreeNode</code> (ids and split points only), so the full tree can be
+reconstructed from logs. The agent loop itself forks a working dialog at
+every step of a call. See <a href="../dialog/">Dialog</a>.</p>
+<h3 id="configuration-is-declaration">Configuration is declaration</h3>
+<p>What exists (prompts, tools, proxies, tactics, configs) is declared in an
+<code>lllm.toml</code> package; how agents are wired is declared in YAML. Python code
+refers to resources by namespaced URL instead of import paths.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># lllm.toml</span>
+<span class="k">[package]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"research_kit"</span>
+
+<span class="k">[prompts]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"prompts"</span><span class="p">]</span>
+
+<span class="k">[tactics]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"tactics"</span><span class="p">]</span>
+
+<span class="c1"># tools/, proxies/, configs/, assets/ are discovered by default when present</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># configs/default.yaml</span>
+<span class="nt">tactic_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">draft_and_review</span>
+<span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o-mini</span>
+<span class="w">  </span><span class="nt">tools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">research_kit.tools</span><span class="p p-Indicator">:</span><span class="nv">search</span><span class="p p-Indicator">]</span>
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">writer</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research_kit:briefs/writer</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reviewer</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research_kit:briefs/reviewer</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_tactic</span><span class="p">,</span> <span class="n">load_runtime</span><span class="p">,</span> <span class="n">resolve_config</span>
+
+<span class="n">load_runtime</span><span class="p">()</span>                                   <span class="c1"># discover ./lllm.toml</span>
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">build_tactic</span><span class="p">(</span><span class="n">resolve_config</span><span class="p">(</span><span class="s2">"default"</span><span class="p">))</span>
+</code></pre></div>
+<p><code>lllm create my-app</code> generates exactly this shape: <code>lllm.toml</code>, <code>prompts/</code>,
+<code>configs/default.yaml</code>, <code>tactics/</code>, a <code>main.py</code>, and an offline smoke test.</p>
+<p><strong>Why it matters.</strong> The system's shape is inspectable, diffable, and
+reproducible; swapping a model or prompt is a config change. Packages are
+namespaced (<code>research_kit.prompts:briefs/writer</code>), so you can depend on other
+people's prompts and tactics like libraries. Because configs hold references,
+not live objects, tool modules never have to build agents at import time.
+See <a href="../config/">Configuration</a> and <a href="../../packages/discovery/">Package Discovery</a>.</p>
+<h3 id="declaring-a-tool-is-separate-from-implementing-it">Declaring a tool is separate from implementing it</h3>
+<p>A prompt can carry a bare <code>Function</code> declaration, a header that tells the model
+what it may call. The implementation is a normal <code>@tool</code> function in the same
+package. At run time LLLM binds them by exact name.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># prompts/notes.py: what the model sees</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Function</span><span class="p">,</span> <span class="n">Prompt</span>
+
+<span class="n">save_note</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"save_note"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Save a research note."</span><span class="p">,</span>
+    <span class="n">properties</span><span class="o">=</span><span class="p">{</span><span class="s2">"title"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">},</span> <span class="s2">"content"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">}},</span>
+    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">"title"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="n">system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"system"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Take notes as you go."</span><span class="p">,</span> <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">save_note</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># tools/save_note.py: how it runs</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"save_note"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Save a research note."</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_note</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="o">...</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"saved </span><span class="si">{</span><span class="n">title</span><span class="si">!r}</span><span class="s2">"</span>
+</code></pre></div>
+<p><strong>Why it matters.</strong> Prompts stay declarative and versionable as interfaces;
+implementations stay testable Python. A name mismatch fails loudly instead of
+silently binding the wrong callable. When declaration and implementation belong
+together, pass the <code>@tool</code> function directly instead. See
+<a href="../prompts/#defining-tools">Prompts</a>.</p>
+<h3 id="tactics-are-tools-the-recursive-abstraction-graph">Tactics are tools: the recursive abstraction graph</h3>
+<p>A tactic is the top of the stack, yet a prompt can call one. Decorate a tactic
+method with <code>@tactictool</code> and reference the tactic by URL in a
+<code>function_list</code>; one model turn can then invoke a whole agentic subsystem.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">tactictool</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CodeInput</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">code</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">CodeReview</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Review code and list concrete issues."""</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"code_review"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"reviewer"</span><span class="p">]</span>
+
+    <span class="nd">@tactictool</span><span class="p">(</span><span class="s2">"code_review"</span><span class="p">,</span> <span class="n">config</span><span class="o">=</span><span class="s2">"shared_pkg:review"</span><span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">CodeInput</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">reviewer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"reviewer"</span><span class="p">]</span>
+        <span class="n">reviewer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"review"</span><span class="p">)</span>
+        <span class="n">reviewer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="o">.</span><span class="n">code</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">reviewer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">planner</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"planner/system"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Plan the change. Request a code review before finishing."</span><span class="p">,</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="s2">"shared_pkg.tactics:code_review"</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><strong>Why it matters.</strong> Reusable capabilities ship as tactics, and any agent can
+use them as tools without knowing how many agents or prompts sit inside. The
+<code>CodeInput</code> model becomes the tool's JSON schema. See
+<a href="../tactic/#tactics-as-tools">Tactics</a>.</p>
+<h3 id="tool-calling-as-programming-proxies">Tool calling as programming: proxies</h3>
+<p>When an agent needs dozens of related endpoints, one function schema per
+endpoint does not scale. A proxy exposes an API surface as a <em>programming</em>
+environment: the agent reads endpoint docs with <code>query_api_doc</code> and writes
+Python that calls <code>CALL_API(...)</code> through <code>run_python</code>, keeping variables
+between calls.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseProxy</span><span class="p">,</span> <span class="n">ProxyRegistrator</span>
+
+
+<span class="nd">@ProxyRegistrator</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"weather"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"Weather API"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Current conditions."</span><span class="p">)</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">WeatherProxy</span><span class="p">(</span><span class="n">BaseProxy</span><span class="p">):</span>
+    <span class="n">base_url</span> <span class="o">=</span> <span class="s2">"https://api.example.com/v1"</span>   <span class="c1"># requests go to &lt;base_url&gt;/&lt;endpoint&gt;</span>
+    <span class="n">api_key_name</span> <span class="o">=</span> <span class="s2">"appid"</span>                    <span class="c1"># the key is sent as ?appid=&lt;api_key&gt;</span>
+    <span class="n">api_key</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">"WEATHER_API_KEY"</span><span class="p">)</span>
+
+    <span class="nd">@BaseProxy</span><span class="o">.</span><span class="n">endpoint</span><span class="p">(</span>
+        <span class="n">category</span><span class="o">=</span><span class="s2">"current"</span><span class="p">,</span>
+        <span class="n">endpoint</span><span class="o">=</span><span class="s2">"current"</span><span class="p">,</span>
+        <span class="n">description</span><span class="o">=</span><span class="s2">"Current temperature for a city."</span><span class="p">,</span>
+        <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"city*"</span><span class="p">:</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="s2">"Paris"</span><span class="p">)},</span>
+        <span class="n">response</span><span class="o">=</span><span class="p">{</span><span class="s2">"city"</span><span class="p">:</span> <span class="s2">"Paris"</span><span class="p">,</span> <span class="s2">"temp"</span><span class="p">:</span> <span class="mf">21.5</span><span class="p">},</span>
+    <span class="p">)</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">current</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">params</span>          <span class="c1"># shape or validate the request parameters here</span>
+</code></pre></div>
+<p>The agent writes <code>CALL_API("weather/current", {"city": "Oslo"})</code> inside
+<code>run_python</code>, and LLLM sends <code>GET https://api.example.com/v1/current?city=Oslo&amp;appid=...</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst/system</span>
+<span class="w">    </span><span class="nt">tools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">my_pkg.proxies</span><span class="p p-Indicator">:</span><span class="nv">weather</span><span class="p p-Indicator">]</span><span class="w">    </span><span class="c1"># injects query_api_doc + run_python</span>
+</code></pre></div>
+<p><strong>Why it matters.</strong> The model composes calls, filters results, and computes
+with Python instead of shuttling raw JSON through the context window. See
+<a href="../proxy-and-sandbox/">Proxies &amp; Sandbox</a>.</p>
+<hr />
+<h2 id="composing-with-pydantic">Composing with Pydantic</h2>
+<p>Pydantic is the type system across the native runtime.</p>
+<p><strong>Typed tactic inputs and outputs.</strong> Set <code>input_type</code> and <code>output_type</code> (or
+<code>input_model</code> / <code>output_model</code>). The tactic validates every call, so dicts are
+coerced into models, and <code>tactic.info()</code> exports both JSON schemas.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BriefIn</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">topic</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">audience</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"engineers"</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BriefOut</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Brief</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"brief"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">BriefIn</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">BriefOut</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">BriefIn</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">BriefOut</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">BriefOut</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">task</span><span class="o">.</span><span class="n">topic</span><span class="si">}</span><span class="s2"> for </span><span class="si">{</span><span class="n">task</span><span class="o">.</span><span class="n">audience</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">Brief</span><span class="p">()({</span><span class="s2">"topic"</span><span class="p">:</span> <span class="s2">"Dialogs"</span><span class="p">}))</span>                      <span class="c1"># dict -&gt; BriefIn</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">Brief</span><span class="p">()</span><span class="o">.</span><span class="n">info</span><span class="p">()</span><span class="o">.</span><span class="n">input_schema</span><span class="p">[</span><span class="s2">"required"</span><span class="p">])</span>            <span class="c1"># ['topic']</span>
+</code></pre></div>
+<p><strong>Structured output.</strong> <code>Prompt(format=MyModel)</code> asks the provider for JSON that
+matches the model (Chat Completions API). The reply's <code>message.parsed</code> holds the
+decoded dict:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Report</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">sources</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+
+<span class="n">report_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"report"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Report on </span><span class="si">{topic}</span><span class="s2">."</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="n">Report</span><span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">report_prompt</span><span class="p">,</span> <span class="p">{</span><span class="s2">"topic"</span><span class="p">:</span> <span class="s2">"dialog trees"</span><span class="p">})</span>
+<span class="n">report</span> <span class="o">=</span> <span class="n">Report</span><span class="o">.</span><span class="n">model_validate</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">parsed</span><span class="p">)</span>
+</code></pre></div>
+<p><strong>Validation with repair.</strong> A parser can validate with Pydantic and raise
+<code>ParseError</code>; the agent loop then sends Pydantic's error message back to the
+model and asks for a fix, up to <code>max_exception_retry</code> times.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span><span class="p">,</span> <span class="n">ValidationError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseParser</span><span class="p">,</span> <span class="n">ParseError</span><span class="p">,</span> <span class="n">find_md_blocks</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Verdict</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">label</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">pattern</span><span class="o">=</span><span class="s2">"^(approve|reject)$"</span><span class="p">)</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ModelParser</span><span class="p">(</span><span class="n">BaseParser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Validate a ```json block against a Pydantic model."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="nb">type</span><span class="p">[</span><span class="n">BaseModel</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">runtime_args</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">blocks</span> <span class="o">=</span> <span class="n">find_md_blocks</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="s2">"json"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">blocks</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span><span class="s2">"Reply with one ```json block."</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">"value"</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">model_validate_json</span><span class="p">(</span><span class="n">blocks</span><span class="p">[</span><span class="mi">0</span><span class="p">])}</span>
+        <span class="k">except</span> <span class="n">ValidationError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"The JSON does not match the schema:</span><span class="se">\n</span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="n">review</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"review/verdict"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Review this diff:</span><span class="se">\n</span><span class="si">{diff}</span><span class="se">\n</span><span class="s2">Reply with a ```json block matching </span><span class="si">{schema}</span><span class="s2">."</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">ModelParser</span><span class="p">(</span><span class="n">Verdict</span><span class="p">),</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">review</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s1">'```json</span><span class="se">\n</span><span class="s1">{"label": "approve", "confidence": 0.9}</span><span class="se">\n</span><span class="s1">```'</span><span class="p">)[</span><span class="s2">"value"</span><span class="p">])</span>
+</code></pre></div>
+<p><strong>Typed tactic tools.</strong> A <code>@tactictool</code> method whose parameter is a
+<code>BaseModel</code> uses that model as the tool's JSON schema, and a <code>BaseModel</code> return
+value is sent back to the calling model as JSON.</p>
+<hr />
+<h2 id="data-flow">Data flow</h2>
+<div class="mermaid">sequenceDiagram
+  participant C as Caller
+  participant T as Tactic.call()
+  participant A as Agent
+  participant D as Dialog
+  participant I as Invoker
+  participant F as Tools
+
+  C-&gt;&gt;T: tactic(task)
+  T-&gt;&gt;A: open(alias, prompt_args)
+  A-&gt;&gt;D: system prompt
+  T-&gt;&gt;A: receive(...) / receive_prompt(...)
+  A-&gt;&gt;D: user turn (sets top_prompt)
+  T-&gt;&gt;A: respond()
+  loop until a valid final reply
+    A-&gt;&gt;D: fork working dialog
+    A-&gt;&gt;I: call(working dialog, model, model_args)
+    I--&gt;&gt;A: InvokeResult (message, parse errors)
+    alt parse error
+      A-&gt;&gt;D: repair prompt (working dialog only)
+    else tool calls
+      A-&gt;&gt;F: execute Function(s)
+      A-&gt;&gt;D: tool results
+    end
+  end
+  A-&gt;&gt;D: append final reply
+  A--&gt;&gt;T: Message
+  T--&gt;&gt;C: result (or TacticCallSession)</div>
+<hr />
+<h2 id="how-native-fits-into-the-rest-of-lllm">How native fits into the rest of LLLM</h2>
+<p>The native runtime is where agents are built. The rest of LLLM is the outer
+interface that lets a native system be served, packaged, and mixed with other
+runtimes, and a native tactic plugs into it directly: <code>lllm.Tactic</code> is both the
+program class and the protocol tactic.</p>
+<div class="mermaid">flowchart LR
+  N["lllm.Tactic&lt;br/&gt;call() · agents · prompts · dialogs"] --&gt; P["protocol surface&lt;br/&gt;run / arun / info"]
+  P --&gt; S["FastAPI service&lt;br/&gt;create_tactic_app · lllm serve"]
+  P --&gt; H["lllm.toml package&lt;br/&gt;hub resources"]
+  O["Other tactics&lt;br/&gt;(Pydantic AI, Python, remote)"] --&gt;|tactic_as_function| N</div>
+<ul>
+<li><strong>Protocol.</strong> Every tactic has validated <code>run()</code> / <code>arun()</code>, accepts a
+  <code>CallContext</code> (passed to <code>call(context=...)</code> when <code>call</code> takes it), and
+  describes itself with <code>info()</code>; <code>runtime_kind</code> is <code>"native"</code> for tactics that
+  write <code>call()</code>. See <a href="../tactic/#serving-and-the-protocol">Tactics</a> and
+  <a href="../../protocol/tactic/">Tactic protocol</a>.</li>
+<li><strong>Services.</strong> Pass the tactic to <code>lllm.create_tactic_app</code>, or point
+  <code>lllm serve</code> at it or at a factory that builds it
+  (<code>lllm serve my_pkg.tactics:build</code>; see
+  <a href="../tactic/#factories-and-handlers">Factories and handlers</a>). See
+  <a href="../../protocol/services/">Services</a>.</li>
+<li><strong>Packages.</strong> The same <code>lllm.toml</code> that drives native discovery also carries
+  hub metadata. See <a href="../../packages/manifest/">Package Manifest</a> and
+  <a href="../../packages/hub/">Hub</a>.</li>
+<li><strong>Other runtimes.</strong> <code>tactic_as_function(tactic)</code> turns any protocol tactic
+  into a native <code>Function</code> a prompt can call; <code>tactic.as_tool()</code> turns a
+  tactic into a plain Python callable for other agent frameworks.
+  <code>NativeTacticAdapter</code> remains for objects that only look like tactics (a class
+  with <code>call()</code> or <code>run()</code> that does not subclass <code>Tactic</code>).</li>
+</ul>
+<hr />
+<h2 id="where-to-go-next">Where to go next</h2>
+<ul>
+<li><a href="../agent/">Agent</a>: the call loop, dialogs by alias, tools, skills</li>
+<li><a href="../prompts/">Prompts</a>: templates, parsers, tools, handlers</li>
+<li><a href="../dialog/">Dialog</a>: messages, forking, context management</li>
+<li><a href="../tactic/">Tactics</a>: orchestration, sessions, tactic tools, serving</li>
+<li><a href="../config/">Configuration</a>: <code>lllm.toml</code> and YAML agent configs</li>
+<li><a href="../invokers/">Invokers</a>: providers, streaming, custom invokers</li>
+<li><a href="../logging/">Logging</a>: sessions, observers, terminal logs</li>
+<li><a href="../runtime/">Runtime &amp; Registries</a> and <a href="../../packages/discovery/">Package Discovery</a></li>
+<li><a href="../../tutorials/">Tutorials</a></li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1857 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/tutorials/02-agents-and-dialogs/">
+      
+      
+        <link rel="prev" href="../01-quick-start/">
+      
+      
+        <link rel="next" href="../03-prompts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>2. Agents and Dialogs - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#2-agents-and-dialogs" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              2. Agents and Dialogs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../" class="psi-header-nav__link psi-header-nav__link--active">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-build-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Build an agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-run-one-turn-open-receive-respond" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Run one turn: open, receive, respond
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-hold-a-multi-turn-conversation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Hold a multi-turn conversation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-run-several-dialogs-on-one-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Run several dialogs on one agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-inspect-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Inspect a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-fork-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Fork a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-close-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Close a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-read-the-reply-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Read the reply Message
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-9-save-and-restore-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Save and restore a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-10-manage-the-context-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 10: Manage the context window
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 10: Manage the context window">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-the-built-in-truncator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the built-in truncator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-your-own-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write your own policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#declare-it-in-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declare it in configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works-dialogs-as-mental-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works: dialogs as mental state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-native-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Native Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-packages-and-hub/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Packages and the Hub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../07-logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-serving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Serving and Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-pydantic-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Pydantic AI Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-channels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Channels with SSSN
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-build-an-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Build an agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-run-one-turn-open-receive-respond" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Run one turn: open, receive, respond
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-hold-a-multi-turn-conversation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Hold a multi-turn conversation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-run-several-dialogs-on-one-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Run several dialogs on one agent
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-inspect-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Inspect a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-fork-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Fork a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-close-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Close a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-read-the-reply-message" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Read the reply Message
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-9-save-and-restore-a-dialog" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Save and restore a dialog
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-10-manage-the-context-window" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 10: Manage the context window
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step 10: Manage the context window">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#use-the-built-in-truncator" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Use the built-in truncator
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#write-your-own-policy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Write your own policy
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#declare-it-in-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declare it in configuration
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#how-it-works-dialogs-as-mental-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How it works: dialogs as mental state
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="2-agents-and-dialogs">2. Agents and Dialogs</h1>
+<p><strong>Goal:</strong> build a native <code>Agent</code>, hold multi-turn conversations, run several
+dialogs on one agent, branch them with <code>fork()</code>, inspect and save them, and keep
+long conversations inside the model's context window.</p>
+<p>Every interaction in LLLM's native runtime is built from two primitives:</p>
+<ul>
+<li>An <strong><code>Agent</code></strong> owns an LLM identity: a name, a system prompt, a model, and the
+  invoker that talks to the provider.</li>
+<li>A <strong><code>Dialog</code></strong> is that agent's mental state: an append-only, forkable message
+  history. An agent can hold many named dialogs at once.</li>
+</ul>
+<p>This is the low-level control LLLM is built around. Nothing is hidden in a
+framework loop: you decide which dialog a message goes into, when the model is
+called, and where a conversation branches. That is what research workflows need
+when they retry from an earlier point, explore alternatives side by side, or
+replay a transcript later.</p>
+<p>Where Pydantic fits: every message is a Pydantic model (<code>Message</code>), and so are
+the per-call diagnostics (<code>AgentCallSession</code>) and costs (<code>InvokeCost</code>). A
+transcript is typed data you can dump to JSON and load back.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Start with <a href="../01-quick-start/">Lesson 1</a> if you are new to LLLM. The native
+runtime needs the <code>native</code> extra and a key for your model provider:</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[native]"</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">OPENAI_API_KEY</span><span class="o">=</span>sk-...<span class="w">   </span><span class="c1"># or the key for any LiteLLM provider you use</span>
+</code></pre></div>
+<p>Steps that call <code>respond()</code> send requests to your model provider. Building
+agents, opening, forking, inspecting, and saving dialogs run locally.</p>
+<hr />
+<h2 id="step-1-build-an-agent">Step 1: Build an agent</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.invokers</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_invoker</span>
+
+<span class="n">system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"assistant/system"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"You are a helpful assistant."</span><span class="p">)</span>
+<span class="n">invoker</span> <span class="o">=</span> <span class="n">build_invoker</span><span class="p">({</span><span class="s2">"invoker"</span><span class="p">:</span> <span class="s2">"litellm"</span><span class="p">})</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"assistant"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">,</span>
+    <span class="n">llm_invoker</span><span class="o">=</span><span class="n">invoker</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<ul>
+<li><code>Prompt</code> is LLLM's prompt object. Here it is just a template; the next
+  lesson gives it parsers, tools, and handlers.</li>
+<li><code>build_invoker({"invoker": "litellm"})</code> returns the LiteLLM invoker, so
+  <code>model</code> accepts any LiteLLM model string: OpenAI, Anthropic, Gemini, local
+  Ollama models, and more.</li>
+</ul>
+<p><code>Agent</code> is a dataclass. The fields you will use most:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>required</td>
+<td>The agent's role, used as the responder name on its messages</td>
+</tr>
+<tr>
+<td><code>system_prompt</code></td>
+<td>required</td>
+<td>The <code>Prompt</code> that seeds every dialog the agent opens</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>required</td>
+<td>Model identifier passed to the invoker</td>
+</tr>
+<tr>
+<td><code>llm_invoker</code></td>
+<td>required</td>
+<td>The invoker that calls the provider</td>
+</tr>
+<tr>
+<td><code>model_args</code></td>
+<td><code>{}</code></td>
+<td>Extra model arguments, such as <code>temperature</code></td>
+</tr>
+<tr>
+<td><code>max_exception_retry</code></td>
+<td><code>3</code></td>
+<td>Retries when the reply fails parsing (<a href="../03-prompts/">Lesson 3</a>)</td>
+</tr>
+<tr>
+<td><code>max_interrupt_steps</code></td>
+<td><code>5</code></td>
+<td>Tool-call rounds allowed per <code>respond()</code> (<a href="../04-tools/">Lesson 4</a>)</td>
+</tr>
+<tr>
+<td><code>max_llm_recall</code></td>
+<td><code>0</code></td>
+<td>Retries when the provider call raises an error other than a rate limit</td>
+</tr>
+<tr>
+<td><code>max_rate_limit_retries</code></td>
+<td><code>8</code></td>
+<td>Retries after rate-limit errors, waiting exponentially longer (up to 60 seconds)</td>
+</tr>
+<tr>
+<td><code>context_manager</code></td>
+<td><code>None</code></td>
+<td>Trims the dialog before each call (Step 10)</td>
+</tr>
+</tbody>
+</table>
+<p>For a quick experiment, <code>Tactic.quick()</code> from <a href="../01-quick-start/">Lesson 1</a>
+builds the same kind of agent in one line:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Tactic</span><span class="o">.</span><span class="n">quick</span><span class="p">(</span><span class="n">system_prompt</span><span class="o">=</span><span class="s2">"You are a helpful assistant."</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">)</span>
+</code></pre></div>
+<p>Without a query, <code>quick()</code> returns the agent; with one, it opens a dialog, sends
+the query, and returns the reply.</p>
+<p>In larger projects you declare agents in configuration instead of constructing
+them by hand; <a href="../05-native-tactics/">Lesson 5</a> shows how.</p>
+<hr />
+<h2 id="step-2-run-one-turn-open-receive-respond">Step 2: Run one turn: <code>open</code>, <code>receive</code>, <code>respond</code></h2>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">)</span>                                 <span class="c1"># 1. create a named dialog</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"What is the capital of France?"</span><span class="p">)</span>   <span class="c1"># 2. append a user message</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>                         <span class="c1"># 3. call the model, append its reply</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+<ol>
+<li><code>open(alias)</code> creates a dialog owned by the agent, seeds it with the system
+   prompt, and makes it the active dialog. The alias (<code>"chat"</code>) is your name for
+   this conversation; opening an alias that already exists raises <code>ValueError</code>.</li>
+<li><code>receive(text)</code> appends a user message to the active dialog.</li>
+<li><code>respond()</code> sends the dialog to the model, appends the reply, and returns it
+   as a <code>Message</code>. <code>.content</code> holds the reply text.</li>
+</ol>
+<hr />
+<h2 id="step-3-hold-a-multi-turn-conversation">Step 3: Hold a multi-turn conversation</h2>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"And what language do they speak there?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+<p>Each <code>receive</code> / <code>respond</code> cycle appends to the same dialog, and the whole
+history is sent on every call, so the model answers the follow-up with the
+earlier turn in context.</p>
+<hr />
+<h2 id="step-4-run-several-dialogs-on-one-agent">Step 4: Run several dialogs on one agent</h2>
+<p>An agent can hold several named dialogs and switch between them:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"topic_a"</span><span class="p">)</span>               <span class="c1"># opening also switches to the new dialog</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Tell me about black holes."</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"topic_b"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Tell me about cats."</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s2">"topic_a"</span><span class="p">)</span>             <span class="c1"># back to the first conversation</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"How massive is Sagittarius A*?"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">active_alias</span><span class="p">)</span>           <span class="c1"># topic_a</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">dialogs</span><span class="p">))</span>        <span class="c1"># ['chat', 'topic_a', 'topic_b']</span>
+</code></pre></div>
+<p><code>receive()</code> and <code>respond()</code> also take <code>alias=</code> to target a dialog without
+switching to it, for example <code>agent.respond(alias="topic_b")</code>.</p>
+<hr />
+<h2 id="step-5-inspect-a-dialog">Step 5: Inspect a dialog</h2>
+<div class="highlight"><pre><span></span><code><span class="n">dialog</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">current_dialog</span>
+
+<span class="k">for</span> <span class="n">message</span> <span class="ow">in</span> <span class="n">dialog</span><span class="o">.</span><span class="n">messages</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"[</span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">] </span><span class="si">{</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">[:</span><span class="mi">80</span><span class="p">]</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">dialog</span><span class="o">.</span><span class="n">overview</span><span class="p">())</span>   <span class="c1"># condensed, numbered view</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dialog</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>         <span class="c1"># token counts and dollar cost so far</span>
+</code></pre></div>
+<p><code>overview()</code> returns one entry per message, truncated to 100 characters:</p>
+<div class="highlight"><pre><span></span><code>[0. system (developer)]: You are a helpful assistant.
+
+[1. user (user)]: Tell me about black holes.
+
+[2. assistant (assistant)]: ...
+</code></pre></div>
+<p><code>dialog.head</code> is the first message (the system prompt) and <code>dialog.tail</code> is the
+last one (usually the latest reply). <code>dialog.cost</code> sums the usage the provider
+reported for every message.</p>
+<hr />
+<h2 id="step-6-fork-a-dialog">Step 6: Fork a dialog</h2>
+<p>Forking creates a child dialog that starts with a copy of the parent's history
+and then evolves independently. Use it to explore "what if" branches without
+touching the main thread:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"You are interviewing a candidate for a backend role."</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="s2">"main"</span><span class="p">,</span> <span class="s2">"strict_branch"</span><span class="p">)</span>   <span class="c1"># copy "main" and switch to the copy</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Explain recursion."</span><span class="p">)</span>
+<span class="n">strict_reply</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="s2">"main"</span><span class="p">,</span> <span class="s2">"lenient_branch"</span><span class="p">)</span>  <span class="c1"># "main" itself was never changed</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Tell me something interesting about yourself."</span><span class="p">)</span>
+<span class="n">lenient_reply</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">dialogs</span><span class="p">[</span><span class="s2">"main"</span><span class="p">]</span><span class="o">.</span><span class="n">messages</span><span class="p">))</span>           <span class="c1"># 3</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">dialogs</span><span class="p">[</span><span class="s2">"strict_branch"</span><span class="p">]</span><span class="o">.</span><span class="n">messages</span><span class="p">))</span>  <span class="c1"># 5</span>
+</code></pre></div>
+<p><code>fork(alias, child_alias, last_n=0, first_k=1)</code> copies the whole history by
+default. With <code>last_n &gt; 0</code> the child keeps only the first <code>first_k</code> messages
+plus the last <code>last_n</code>, which is handy for retrying from a clean point:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="s2">"main"</span><span class="p">,</span> <span class="s2">"retry"</span><span class="p">,</span> <span class="n">last_n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">first_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># system prompt + last message</span>
+</code></pre></div>
+<p>Every dialog records its lineage. Print the tree from any dialog:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">dialogs</span><span class="p">[</span><span class="s2">"main"</span><span class="p">]</span><span class="o">.</span><span class="n">tree_overview</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[a033d03f] owner=assistant msgs=3 split@None
+  └─ [29cd695c] owner=assistant msgs=3 split@2
+  └─ [6a89279f] owner=assistant msgs=5 split@3
+    └─ [25480008] owner=assistant msgs=5 split@4
+  └─ ...
+</code></pre></div>
+<p>Your named forks appear in the tree, and so do the short-lived working copies
+that <code>respond()</code> makes for each model call (see "How it works" below). The ids
+differ on every run.</p>
+<hr />
+<h2 id="step-7-close-a-dialog">Step 7: Close a dialog</h2>
+<div class="highlight"><pre><span></span><code><span class="n">old_dialog</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">)</span>   <span class="c1"># remove it from the agent and return it</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">old_dialog</span><span class="o">.</span><span class="n">messages</span><span class="p">))</span>
+</code></pre></div>
+<p>Closing returns the <code>Dialog</code> object so you can archive or inspect it. If the
+closed dialog was active, the agent has no active dialog until you <code>open()</code> or
+<code>switch()</code> again.</p>
+<hr />
+<h2 id="step-8-read-the-reply-message">Step 8: Read the reply <code>Message</code></h2>
+<p><code>respond()</code> returns a <code>Message</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Give me one more fact about cats."</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"topic_b"</span><span class="p">)</span>
+<span class="n">message</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">"topic_b"</span><span class="p">)</span>
+
+<span class="n">message</span><span class="o">.</span><span class="n">content</span>            <span class="c1"># str: the reply text</span>
+<span class="n">message</span><span class="o">.</span><span class="n">role</span>               <span class="c1"># Roles.ASSISTANT</span>
+<span class="n">message</span><span class="o">.</span><span class="n">name</span>               <span class="c1"># "assistant" (the agent's name)</span>
+<span class="n">message</span><span class="o">.</span><span class="n">model</span>              <span class="c1"># the model used for the call</span>
+<span class="n">message</span><span class="o">.</span><span class="n">usage</span>              <span class="c1"># dict of token counts reported by the provider</span>
+<span class="n">message</span><span class="o">.</span><span class="n">cost</span>               <span class="c1"># InvokeCost: tokens and dollar cost for this reply</span>
+<span class="n">message</span><span class="o">.</span><span class="n">is_function_call</span>   <span class="c1"># True when the model asked for tools (Lesson 4)</span>
+<span class="n">message</span><span class="o">.</span><span class="n">parsed</span>             <span class="c1"># parser output (Lesson 3); {} when no parser ran</span>
+<span class="n">message</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span>          <span class="c1"># JSON-ready dict</span>
+</code></pre></div>
+<p>For diagnostics about the whole call, including parse retries and tool rounds,
+ask for the session instead:</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"And one more, please."</span><span class="p">,</span> <span class="n">alias</span><span class="o">=</span><span class="s2">"topic_b"</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">alias</span><span class="o">=</span><span class="s2">"topic_b"</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>                    <span class="c1"># "success"</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>         <span class="c1"># the same Message respond() would return</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">exception_retries_count</span><span class="p">)</span>  <span class="c1"># 0 when the first reply parsed cleanly</span>
+</code></pre></div>
+<p><a href="../07-logging/">Lesson 7</a> covers sessions in detail.</p>
+<hr />
+<h2 id="step-9-save-and-restore-a-dialog">Step 9: Save and restore a dialog</h2>
+<p>Dialogs serialize to JSON-ready dictionaries that include their message
+history, lineage, child dialogs, and the latest prompt (tools are stored as
+their schemas):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dialog</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"main_dialog.json"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">dialogs</span><span class="p">[</span><span class="s2">"main"</span><span class="p">]</span><span class="o">.</span><span class="n">to_dict</span><span class="p">(),</span> <span class="n">f</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"main_dialog.json"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">restored</span> <span class="o">=</span> <span class="n">Dialog</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">restored</span><span class="o">.</span><span class="n">messages</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">restored</span><span class="o">.</span><span class="n">children</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">restored</span><span class="o">.</span><span class="n">overview</span><span class="p">())</span>
+</code></pre></div>
+<p>Use saved dialogs to review runs, build datasets, or compare branches offline.
+Single messages round-trip the same way with <code>message.to_dict()</code> and
+<code>Message.from_dict(data)</code>.</p>
+<hr />
+<h2 id="step-10-manage-the-context-window">Step 10: Manage the context window</h2>
+<p>Long conversations can outgrow a model's context window. A <code>ContextManager</code>
+trims what is sent to the model <strong>before each call</strong> without touching the
+dialog itself.</p>
+<h3 id="use-the-built-in-truncator">Use the built-in truncator</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.core.dialog</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultContextManager</span>
+
+<span class="n">cm</span> <span class="o">=</span> <span class="n">DefaultContextManager</span><span class="p">(</span><span class="s2">"gpt-4o"</span><span class="p">)</span>                     <span class="c1"># window size from LiteLLM</span>
+<span class="n">cm</span> <span class="o">=</span> <span class="n">DefaultContextManager</span><span class="p">(</span><span class="s2">"gpt-4o"</span><span class="p">,</span> <span class="n">max_tokens</span><span class="o">=</span><span class="mi">32000</span><span class="p">)</span>   <span class="c1"># or an explicit cap</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"assistant"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="n">system</span><span class="p">,</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">,</span>
+    <span class="n">llm_invoker</span><span class="o">=</span><span class="n">invoker</span><span class="p">,</span>
+    <span class="n">context_manager</span><span class="o">=</span><span class="n">cm</span><span class="p">,</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>Before each model call, <code>DefaultContextManager</code> counts tokens with LiteLLM and,
+when the dialog is too long:</p>
+<ul>
+<li>always keeps the first message (the system prompt);</li>
+<li>keeps messages from the most recent backwards until the budget runs out;</li>
+<li>cuts the oldest kept message to fit, prefixed with
+  <code>[...earlier content truncated...]</code>;</li>
+<li>reserves a 5,000-token safety buffer below the limit.</li>
+</ul>
+<h3 id="write-your-own-policy">Write your own policy</h3>
+<p>Subclass <code>ContextManager</code>, set <code>name</code>, and implement <code>__call__</code>. It receives a
+working copy of the dialog and returns the dialog to send:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dialog</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.core.dialog</span><span class="w"> </span><span class="kn">import</span> <span class="n">ContextManager</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RollingWindowManager</span><span class="p">(</span><span class="n">ContextManager</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"rolling_window"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_tokens</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">keep_last</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">10</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model_name</span> <span class="o">=</span> <span class="n">model_name</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span> <span class="o">=</span> <span class="n">keep_last</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dialog</span><span class="p">:</span> <span class="n">Dialog</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dialog</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">dialog</span><span class="o">.</span><span class="n">messages</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span> <span class="o">+</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">dialog</span>                                       <span class="c1"># short enough</span>
+        <span class="k">return</span> <span class="n">dialog</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="n">last_n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">keep_last</span><span class="p">,</span> <span class="n">first_k</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>   <span class="c1"># system prompt + recent turns</span>
+
+
+<span class="n">agent</span><span class="o">.</span><span class="n">context_manager</span> <span class="o">=</span> <span class="n">RollingWindowManager</span><span class="p">(</span><span class="s2">"gpt-4o"</span><span class="p">,</span> <span class="n">keep_last</span><span class="o">=</span><span class="mi">6</span><span class="p">)</span>
+</code></pre></div>
+<p>Keep the <code>model_name</code> and <code>max_tokens</code> parameters even if you ignore them:
+agents built from configuration construct context managers with those two
+keyword arguments.</p>
+<h3 id="declare-it-in-configuration">Declare it in configuration</h3>
+<p>When agents are built from a tactic config (<a href="../05-native-tactics/">Lesson 5</a>),
+context management is a config key. A global default applies to every agent and
+each agent can override it:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<span class="w">  </span><span class="nt">context_manager</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span><span class="w">          </span><span class="c1"># DefaultContextManager</span>
+<span class="w">    </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">128000</span>
+
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">small_agent</span>
+<span class="w">    </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o-mini</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">You answer briefly.</span>
+<span class="w">    </span><span class="nt">context_manager</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">default</span>
+<span class="w">      </span><span class="nt">max_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">16000</span><span class="w">    </span><span class="c1"># tighter cap for the smaller model</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">full_history_agent</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">You keep every detail.</span>
+<span class="w">    </span><span class="nt">context_manager</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">null</span><span class="w">           </span><span class="c1"># disabled: always send the full dialog</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rolling_agent</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">You chat casually.</span>
+<span class="w">    </span><span class="nt">context_manager</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">rolling_window</span><span class="w"> </span><span class="c1"># a registered custom policy</span>
+</code></pre></div>
+<p>Custom types are looked up in the runtime registry the tactic uses, so register
+the class there first:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runtime</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">Runtime</span><span class="p">()</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_context_manager</span><span class="p">(</span><span class="n">RollingWindowManager</span><span class="p">)</span>   <span class="c1"># registered under its `name`</span>
+<span class="c1"># then build the tactic with registry=runtime (Lesson 5)</span>
+</code></pre></div>
+<hr />
+<h2 id="how-it-works-dialogs-as-mental-state">How it works: dialogs as mental state</h2>
+<p>LLLM treats a dialog as an agent's internal mental state. It is:</p>
+<ul>
+<li><strong>Append-only.</strong> Messages are added with <code>put_*</code> methods and never edited in
+  place.</li>
+<li><strong>Owned by one agent.</strong> The agent that opens a dialog seeds it with its system
+  prompt and records itself as the owner.</li>
+<li><strong>Forkable.</strong> Branching happens through <code>fork()</code>, which records the parent,
+  the split point, and the children.</li>
+</ul>
+<p><code>respond()</code> builds on these rules. For every model call it forks a working copy
+of the dialog, applies the context manager to that copy, and sends it. Failed
+attempts and repair messages stay in the working copy; your dialog receives
+only accepted replies (plus, when tools are used, the tool calls and their
+results). That keeps the canonical history clean and is why working copies show
+up in <code>tree_overview()</code>.</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Build an agent</td>
+<td><code>Agent(name, system_prompt, model, llm_invoker)</code></td>
+</tr>
+<tr>
+<td>One-line agent</td>
+<td><code>Tactic.quick(system_prompt=..., model=...)</code></td>
+</tr>
+<tr>
+<td>Create a dialog</td>
+<td><code>agent.open(alias)</code></td>
+</tr>
+<tr>
+<td>Append a user message</td>
+<td><code>agent.receive(text)</code></td>
+</tr>
+<tr>
+<td>Call the model</td>
+<td><code>agent.respond()</code> returns a <code>Message</code></td>
+</tr>
+<tr>
+<td>Switch dialogs</td>
+<td><code>agent.switch(alias)</code></td>
+</tr>
+<tr>
+<td>Branch a dialog</td>
+<td><code>agent.fork(alias, child_alias, last_n=0, first_k=1)</code></td>
+</tr>
+<tr>
+<td>Remove a dialog</td>
+<td><code>agent.close(alias)</code> returns the <code>Dialog</code></td>
+</tr>
+<tr>
+<td>Inspect</td>
+<td><code>dialog.messages</code>, <code>dialog.overview()</code>, <code>dialog.cost</code>, <code>dialog.tree_overview()</code></td>
+</tr>
+<tr>
+<td>Save and load</td>
+<td><code>dialog.to_dict()</code>, <code>Dialog.from_dict(data)</code></td>
+</tr>
+<tr>
+<td>Call diagnostics</td>
+<td><code>agent.respond(return_session=True)</code></td>
+</tr>
+<tr>
+<td>Trim context</td>
+<td><code>DefaultContextManager(model, max_tokens=...)</code> or a <code>ContextManager</code> subclass</td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="../../core/agent/">Agent reference</a> and the
+<a href="../../core/dialog/">Dialog reference</a> for every method and field.</p>
+<p><strong>Next:</strong> <a href="../03-prompts/">3. Prompts and Structured Output</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

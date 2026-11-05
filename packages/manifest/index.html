@@ -1,0 +1,1332 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/packages/manifest/">
+      
+      
+        <link rel="prev" href="../../protocol/refs/">
+      
+      
+        <link rel="next" href="../discovery/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>The Manifest - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-lllmtoml-manifest" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The Manifest
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="./" class="psi-header-nav__link psi-header-nav__link--active">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="./" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Manifest
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Manifest
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-complete-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A complete example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [package]
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#native-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#declared-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declared resources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Declared resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entrypoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entrypoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../discovery/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Discovery
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hub/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Hub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-complete-example" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A complete example
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        [package]
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#native-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Native discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#declared-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Declared resources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Declared resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#entrypoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entrypoints
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Validation
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#local-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local configuration
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-lllmtoml-manifest">The lllm.toml Manifest</h1>
+<p>A package is a folder with an <code>lllm.toml</code>. The same file has two readers:</p>
+<ul>
+<li>the <strong>native runtime</strong> reads it to discover resources: prompts, tools,
+  proxies, tactics, YAML configs, and package dependencies
+  (see <a href="../discovery/">Discovery</a>);</li>
+<li>the <strong>hub</strong> reads it to identify, validate, render, publish, and serve the
+  package (see <a href="../hub/">The Hub</a>).</li>
+</ul>
+<p>Neither reader needs the other's sections, so a package can start as a
+handful of discovery paths and grow hub metadata later. <code>lllm create</code> writes
+a manifest that already serves both, and <code>lllm init</code> writes a minimal one.</p>
+<h2 id="a-complete-example">A complete example</h2>
+<div class="highlight"><pre><span></span><code><span class="k">[package]</span>
+<span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"acme"</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"briefs"</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.1.0"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Writes and reviews technical briefs."</span>
+<span class="n">primary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tactics.brief"</span>
+
+<span class="c1"># --- native discovery -------------------------------------------------</span>
+<span class="k">[prompts]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"prompts"</span><span class="p">]</span>
+
+<span class="k">[configs]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"configs"</span><span class="p">]</span>
+
+<span class="k">[tactics]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"tactics"</span><span class="p">]</span>
+
+<span class="k">[dependencies]</span>
+<span class="n">packages</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"./vendor/style-guide as style"</span><span class="p">]</span>
+
+<span class="c1"># --- declared resources (hub) ------------------------------------------</span>
+<span class="k">[schemas.brief_input]</span>
+<span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"briefs.schemas:BriefInput"</span>
+
+<span class="k">[schemas.brief_output]</span>
+<span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"briefs.schemas:BriefOutput"</span>
+
+<span class="k">[tactics.brief]</span>
+<span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"main:create_tactic"</span>
+<span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brief_input"</span>
+<span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brief_output"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Plan, draft, and review a brief."</span>
+
+<span class="k">[services.api]</span>
+<span class="n">tactic</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"brief"</span>
+<span class="n">transport</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"fastapi"</span>
+
+<span class="k">[requirements.api_keys]</span>
+<span class="n">OPENAI_API_KEY</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Model access for the writer and reviewer agents."</span>
+
+<span class="k">[card]</span>
+<span class="n">summary</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Technical briefs with a writer and a reviewer agent."</span>
+<span class="n">tags</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"writing"</span><span class="p">,</span><span class="w"> </span><span class="s2">"multi-agent"</span><span class="p">]</span>
+
+<span class="k">[docs.readme]</span>
+<span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"README.md"</span>
+<span class="n">title</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"README"</span>
+</code></pre></div>
+<p><code>[tactics]</code> holds both kinds of entry at once: <code>paths</code> tells the native runtime
+which folder to scan, and <code>[tactics.brief]</code> declares one tactic by name for the
+hub. The same split works in <code>[services]</code> and <code>[assets]</code>.</p>
+<h2 id="package"><code>[package]</code></h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>folder name (the hub requires it)</td>
+<td>Package name; the namespace prefix for discovered resources</td>
+</tr>
+<tr>
+<td><code>org</code></td>
+<td><code>"local"</code></td>
+<td>Owner; the identifier is <code>org/name</code></td>
+</tr>
+<tr>
+<td><code>version</code></td>
+<td><code>"0.1.0"</code></td>
+<td>Package version</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>""</code></td>
+<td>One line about the package</td>
+</tr>
+<tr>
+<td><code>primary</code></td>
+<td>none</td>
+<td>The resource <code>lllm serve &lt;package&gt;</code> launches, e.g. <code>tactics.brief</code></td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>"mixed"</code></td>
+<td><code>tactic</code>, <code>channel</code>, <code>service</code>, <code>app</code>, <code>library</code>, or <code>mixed</code></td>
+</tr>
+<tr>
+<td><code>license</code>, <code>authors</code></td>
+<td>none</td>
+<td>Optional metadata</td>
+</tr>
+<tr>
+<td><code>manifest_version</code></td>
+<td><code>"0.1"</code></td>
+<td>Manifest format version</td>
+</tr>
+</tbody>
+</table>
+<h2 id="native-discovery">Native discovery</h2>
+<p>Discovery sections name folders to scan. Each entry is a path, optionally with
+a virtual prefix:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[prompts]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"./prompts"</span><span class="p">,</span><span class="w"> </span><span class="s2">"./shared/prompts under shared"</span><span class="p">]</span><span class="w">  </span><span class="c1"># or {path = ..., prefix = ...}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Discovers</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[prompts]</code></td>
+<td><code>Prompt</code> objects in Python modules</td>
+</tr>
+<tr>
+<td><code>[tools]</code></td>
+<td><code>@tool</code> functions (plus metadata files)</td>
+</tr>
+<tr>
+<td><code>[proxies]</code></td>
+<td><code>BaseProxy</code> subclasses</td>
+</tr>
+<tr>
+<td><code>[tactics]</code> (<code>paths</code>)</td>
+<td><code>Tactic</code> subclasses with a <code>name</code></td>
+</tr>
+<tr>
+<td><code>[configs]</code></td>
+<td>YAML configs (<code>.yaml</code>/<code>.yml</code>: agent configs, with <code>base</code> inheritance)</td>
+</tr>
+<tr>
+<td><code>[services]</code> (<code>paths</code>)</td>
+<td>ASGI apps in Python modules; spec files as data</td>
+</tr>
+<tr>
+<td><code>[assets]</code> (<code>paths</code>)</td>
+<td>any files, loaded lazily</td>
+</tr>
+<tr>
+<td>any other table</td>
+<td>a custom section: files and Python resources</td>
+</tr>
+</tbody>
+</table>
+<p>A section without <code>paths</code> falls back to a folder with the section's name, if
+one exists. The native runtime does this for all seven built-in sections, even
+with no table. Validation checks that the following stay inside the package:</p>
+<ul>
+<li>the <code>paths</code> or fallback folder of <code>[prompts]</code>, <code>[tools]</code>, <code>[proxies]</code>,
+  <code>[configs]</code>, and custom sections;</li>
+<li>the <code>paths</code> of <code>[tactics]</code>, <code>[services]</code>, and <code>[assets]</code>.</li>
+</ul>
+<p>It does not check the fallback folder of <code>[tactics]</code>, <code>[services]</code>, or
+<code>[assets]</code> without <code>paths</code>, or of a built-in section with no table. The native
+runtime treats the hub's own tables (<code>[schemas]</code>, <code>[docs]</code>, <code>[card]</code>, ...) as
+custom sections only when they set <code>paths</code>. The hub cannot load most of them
+with <code>paths</code>. It does load <code>[config]</code> and <code>[card]</code> with <code>paths</code>, but
+validation does not check those paths. Give custom sections their own names.</p>
+<p>Resources are keyed <code>package.section:path</code>, for example
+<code>briefs.prompts:writer/system</code>.
+<code>[dependencies] packages = ["./pkg as alias"]</code> loads other packages first,
+under an optional alias.</p>
+<p><a href="../discovery/">Discovery</a> covers keys, aliases, shared packages, and
+installing package archives.</p>
+<h2 id="declared-resources">Declared resources</h2>
+<p>Declared resources are named tables the hub indexes. Each gets a ref,
+<code>lllm://org/package/&lt;section&gt;/&lt;name&gt;</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Table</th>
+<th>Key fields</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[schemas.&lt;name&gt;]</code></td>
+<td><code>entry</code> (a <code>module:Model</code>), <code>description</code></td>
+</tr>
+<tr>
+<td><code>[tactics.&lt;name&gt;]</code></td>
+<td><code>entry</code>, <code>input</code>, <code>output</code> (schema names), <code>runtime</code>, <code>description</code>, <code>examples</code></td>
+</tr>
+<tr>
+<td><code>[services.&lt;name&gt;]</code></td>
+<td><code>tactic</code> or <code>tactics</code>, <code>entry</code>, <code>transport</code>, <code>subscribes</code>, <code>publishes</code></td>
+</tr>
+<tr>
+<td><code>[channels.&lt;name&gt;]</code></td>
+<td><code>schema</code>, <code>form</code> (<code>log</code>, ...), <code>description</code></td>
+</tr>
+<tr>
+<td><code>[snapshots.&lt;name&gt;]</code></td>
+<td><code>schema</code>, <code>channel</code></td>
+</tr>
+<tr>
+<td><code>[runs.&lt;name&gt;]</code></td>
+<td><code>services</code>, <code>tactics</code>, <code>channels</code>, <code>snapshots</code> that make up one run; <code>lllm serve</code> launches a run that lists exactly one service</td>
+</tr>
+<tr>
+<td><code>[config]</code></td>
+<td><code>schema</code> and <code>defaults</code> for package settings</td>
+</tr>
+<tr>
+<td><code>[docs.&lt;name&gt;]</code></td>
+<td><code>path</code>, <code>title</code></td>
+</tr>
+<tr>
+<td><code>[examples.&lt;name&gt;]</code></td>
+<td><code>path</code> or <code>command</code></td>
+</tr>
+<tr>
+<td><code>[assets.&lt;name&gt;]</code></td>
+<td><code>path</code>, <code>media_type</code></td>
+</tr>
+<tr>
+<td><code>[requirements.api_keys]</code></td>
+<td><code>NAME = "why it is needed"</code>, checked by <code>lllm setup</code> and <code>lllm serve</code></td>
+</tr>
+<tr>
+<td><code>[card]</code></td>
+<td><code>summary</code>, <code>tags</code>, <code>safety</code>, <code>latency</code>, <code>suggested_commands</code></td>
+</tr>
+</tbody>
+</table>
+<p>The named resource tables, <code>[config]</code>, and <code>[card]</code> also accept
+<code>metadata = {...}</code>. The package ships <code>lllm.toml</code> as written, so validation
+rejects raw secret-shaped keys (<code>api_key</code>, <code>token</code>, <code>clientSecret</code>, ...) in
+<code>metadata</code>, nested maps included, and in extra keys written directly in those
+tables. References such as <code>api_key_ref</code> are allowed. Validation does not look
+inside maps under JSON-schema keys (<code>schema</code>, <code>input_schema</code>, <code>output_schema</code>,
+or forms such as <code>inputSchema</code>), since a schema may name a field <code>api_key</code>. It
+does not check <code>[config] defaults</code> or tactic <code>examples</code> either. Keep secret
+values out of all of these: the package zip keeps them, and the hub API shows
+schema maps unchanged.
+<a href="../../reference/hub-metadata/#rules-for-published-metadata">Hub Metadata</a>
+lists the key shapes and what cards, the hub API, and the catalog drop.</p>
+<h3 id="entrypoints">Entrypoints</h3>
+<p>Entrypoints are <code>module:attribute</code>, imported relative to the package folder.
+A tactic entry may name a <code>Tactic</code> class or instance, a factory, or a
+handler. A factory is called once, with no arguments, when the package loads;
+a handler is wrapped with <code>as_tactic</code> and called once per input. <code>lllm serve</code>
+and AAAX package tactics tell them apart by one rule:</p>
+<ul>
+<li>Any other class is a factory when it can be constructed without arguments.</li>
+<li>Any other callable is a factory when it takes no parameters, like
+  <code>main:create_tactic</code> in generated projects, or when it can be called
+  without arguments and is annotated to return a <code>Tactic</code> or a FastAPI or
+  Starlette app.</li>
+<li>Everything else is a handler: <code>def greet(name="world")</code> answers each input
+  instead of being called once at load.</li>
+</ul>
+<p>A return annotation that cannot be evaluated at runtime, such as a class
+imported only under <code>TYPE_CHECKING</code>, counts when its class name ends in
+<code>Tactic</code> or is <code>FastAPI</code> or <code>Starlette</code>. A <code>[services.&lt;name&gt;]</code> entry has no
+handler form: it names an app, or a callable that can be called without
+arguments and builds a FastAPI or Starlette app, a tactic, or a data payload.
+Anything else is a launch error.</p>
+<p>Serving keeps a package's modules imported, and packages served in one
+process share <code>sys.modules</code>. A module that a tactic imports when it is called
+needs a top-level name no other served package uses.</p>
+<h2 id="validation">Validation</h2>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>hub<span class="w"> </span>validate<span class="w"> </span>.
+</code></pre></div>
+<p>Validation imports declared entrypoints without calling them, checks refs and
+schema links, checks that declared files and the discovery folders listed in
+<a href="#native-discovery">Native discovery</a> stay inside the package, and rejects
+secret-shaped metadata keys. It reports errors (the package cannot be
+published) and warnings. The main codes:</p>
+<table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Level</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>manifest_load_failed</code></td>
+<td>error</td>
+<td><code>lllm.toml</code> does not parse or fit the manifest, for example a <code>primary</code> that is not <code>section.name</code>, or <code>paths</code> in <code>[schemas]</code></td>
+</tr>
+<tr>
+<td><code>entrypoint_import_failed</code></td>
+<td>error</td>
+<td>A declared <code>entry</code> could not be imported</td>
+</tr>
+<tr>
+<td><code>primary_missing</code></td>
+<td>error</td>
+<td><code>primary</code> names a resource the manifest does not declare</td>
+</tr>
+<tr>
+<td><code>schema_ref_missing</code></td>
+<td>error</td>
+<td>A tactic's <code>input</code>/<code>output</code> names no schema</td>
+</tr>
+<tr>
+<td><code>metadata_secret_key</code></td>
+<td>error</td>
+<td><code>metadata</code> or an extra table key holds a raw secret-shaped key outside a JSON schema</td>
+</tr>
+<tr>
+<td><code>discovery_path_absolute</code>, <code>discovery_path_outside_package</code></td>
+<td>error</td>
+<td>A checked discovery path or fallback folder is absolute, escapes the package, or goes through a symlink</td>
+</tr>
+<tr>
+<td><code>discovery_path_missing</code></td>
+<td>warning</td>
+<td>A checked discovery path does not exist</td>
+</tr>
+<tr>
+<td><code>discovery_section_empty</code></td>
+<td>warning</td>
+<td>A checked section has no <code>paths</code> and no folder: often a typo such as <code>[tactic.x]</code></td>
+</tr>
+<tr>
+<td><code>dependency_manifest_missing</code></td>
+<td>warning</td>
+<td>A dependency folder has no <code>lllm.toml</code></td>
+</tr>
+<tr>
+<td><code>card_metadata_missing</code>, <code>card_summary_missing</code>, <code>readme_missing</code>, <code>readme_doc_missing</code></td>
+<td>warning</td>
+<td>The hub page will be sparse</td>
+</tr>
+</tbody>
+</table>
+<h2 id="local-configuration">Local configuration</h2>
+<p>Bindings that depend on where a package runs (service URLs, channel stores,
+settings) live outside the package, in <code>.lllm/config.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[refs.</span><span class="s2">"lllm://acme/briefs/tactics/brief"</span><span class="k">]</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"http://127.0.0.1:8000"</span>
+
+<span class="k">[refs.</span><span class="s2">"lllm://acme/briefs/channels/events"</span><span class="k">]</span>
+<span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">".lllm/network"</span>
+</code></pre></div>
+<p><code>lllm hub config-template acme/briefs</code> renders a starting point, and
+<a href="../../protocol/refs/"><code>lllm.Resolver</code></a> reads it.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

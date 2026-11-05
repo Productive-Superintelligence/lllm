@@ -1,0 +1,64 @@
+{% import "partials/nav-item.html" as item with context %}
+{% macro header_nav_target(nav_item, root) %}
+  {% set root = root or nav_item %}
+  {% if nav_item.children %}
+    {{ header_nav_target(nav_item.children | first, root) }}
+  {% else %}
+    <a href="{{ nav_item.url | url }}" class="psi-drawer-sections__link{% if root.active %} psi-drawer-sections__link--active{% endif %}">
+      {{ root.title }}
+    </a>
+  {% endif %}
+{% endmacro %}
+
+{% set active = namespace(item = none) %}
+{% for nav_item in nav.items %}
+  {% if nav_item.active %}
+    {% set active.item = nav_item %}
+  {% endif %}
+{% endfor %}
+
+{% set class = "md-nav md-nav--primary" %}
+{% if "toc.integrate" in features %}
+  {% set class = class ~ " md-nav--integrated" %}
+{% endif %}
+<nav class="{{ class }}" aria-label="{{ lang.t('nav') }}" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="{{ config.extra.homepage | d(nav.homepage.url, true) | url }}" title="{{ config.site_name | e }}" class="md-nav__button md-logo" aria-label="{{ config.site_name }}" data-md-component="logo">
+      {% include "partials/logo.html" %}
+    </a>
+    {{ config.site_name }}
+  </label>
+  {% if config.repo_url %}
+    <div class="md-nav__source">
+      {% include "partials/source.html" %}
+    </div>
+  {% endif %}
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    {% for nav_item in nav.items %}
+      {{ header_nav_target(nav_item) }}
+    {% endfor %}
+    {% if config.extra.docs_switch %}
+      <span class="psi-drawer-sections__label">Docs</span>
+      {% for doc in config.extra.docs_switch %}
+        <a href="{{ doc.url }}" class="psi-drawer-sections__link{% if doc.key == config.extra.current_doc %} psi-drawer-sections__link--active{% endif %}">
+          {{ doc.title }}
+        </a>
+      {% endfor %}
+    {% endif %}
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    {% if active.item and active.item.children %}
+      {% for nav_item in active.item.children %}
+        {% set path = "__nav_" ~ loop.index %}
+        {{ item.render(nav_item, path, 1, active.item) }}
+      {% endfor %}
+    {% elif active.item %}
+      {{ item.render(active.item, "__nav_1", 1) }}
+    {% else %}
+      {% for nav_item in nav.items %}
+        {% set path = "__nav_" ~ loop.index %}
+        {{ item.render(nav_item, path, 1) }}
+      {% endfor %}
+    {% endif %}
+  </ul>
+</nav>

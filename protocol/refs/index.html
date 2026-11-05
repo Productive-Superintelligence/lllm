@@ -1,0 +1,1449 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/protocol/refs/">
+      
+      
+        <link rel="prev" href="../services/">
+      
+      
+        <link rel="next" href="../../packages/manifest/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Refs and Composition - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#refs-and-composition" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Refs and Composition
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../tactic/" class="psi-header-nav__link psi-header-nav__link--active">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../tactic/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Tactic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Refs and Composition
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Refs and Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ref-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ref shape
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lllmresolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lllm.Resolver
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="lllm.Resolver">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#register-in-process-tactics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Register in-process tactics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bind-refs-in-lllmconfigtoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bind refs in .lllm/config.toml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resolver-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolver reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composition-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Composition patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#call-tactics-by-ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Call tactics by ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-tactics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sub-tactics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-against-an-in-process-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test against an in-process service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-as-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics as tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-over-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics over channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#ref-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ref shape
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#lllmresolver" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        lllm.Resolver
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="lllm.Resolver">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#register-in-process-tactics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Register in-process tactics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#bind-refs-in-lllmconfigtoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Bind refs in .lllm/config.toml
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#resolver-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resolver reference
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#composition-patterns" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Composition patterns
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Composition patterns">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#call-tactics-by-ref" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Call tactics by ref
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#sub-tactics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sub-tactics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#test-against-an-in-process-service" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Test against an in-process service
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-as-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics as tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tactics-over-channels" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics over channels
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="refs-and-composition">Refs and Composition</h1>
+<p>A ref is a stable name for a package resource:</p>
+<div class="highlight"><pre><span></span><code>lllm://demo/shout/tactics/shout
+</code></pre></div>
+<p>A ref says what a resource is, not where it runs. Local config decides whether
+it resolves to an object in your process, a service on another host, or a
+channel store. Code that calls tactics by ref keeps working when one of them
+moves from a notebook into a service.</p>
+<h2 id="ref-shape">Ref shape</h2>
+<p>Refs have the form <code>lllm://ORG/PACKAGE/SECTION/NAME</code>, where <code>SECTION</code> is one of
+the package sections:</p>
+<table>
+<thead>
+<tr>
+<th>Section</th>
+<th>Names</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tactics</code></td>
+<td>A tactic.</td>
+</tr>
+<tr>
+<td><code>services</code></td>
+<td>A service.</td>
+</tr>
+<tr>
+<td><code>channels</code>, <code>snapshots</code></td>
+<td>An SSSN channel or snapshot.</td>
+</tr>
+<tr>
+<td><code>schemas</code>, <code>runs</code>, <code>configs</code>, <code>docs</code>, <code>examples</code>, <code>assets</code></td>
+<td>Other package resources.</td>
+</tr>
+</tbody>
+</table>
+<p>A package gives each resource a ref built from its <code>[package]</code> <code>org</code> and
+<code>name</code>: <code>[tactics.shout]</code> in package <code>demo/shout</code> is
+<code>lllm://demo/shout/tactics/shout</code> (see <a href="../../packages/manifest/">The lllm.toml manifest</a>).</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">TacticRef</span><span class="p">,</span> <span class="n">TacticRefError</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.protocol.refs</span><span class="w"> </span><span class="kn">import</span> <span class="n">parse_resource_ref</span>
+
+<span class="n">ref</span> <span class="o">=</span> <span class="n">TacticRef</span><span class="p">(</span><span class="s2">"lllm://demo/shout/tactics/shout"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">org</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">resource_kind</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">parse_resource_ref</span><span class="p">(</span><span class="s2">"lllm://demo/shout/channels/events"</span><span class="p">)</span><span class="o">.</span><span class="n">resource_kind</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">TacticRef</span><span class="p">(</span><span class="s2">"lllm://demo/shout/channels/events"</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">TacticRefError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>demo shout tactics shout
+channels
+Tactic ref must point at /tactics/, got /channels/: lllm://demo/shout/channels/events
+</code></pre></div>
+<p>Each segment must be a plain path segment: no whitespace, percent escapes, <code>.</code>
+or <code>..</code>, and none of <code>/</code>, <code>\</code>, <code>:</code>, <code>;</code>. Unknown sections are rejected. A
+tactic's <code>package_ref</code> is a tactic ref; its <code>service_ref</code> is a <code>/services/</code> ref
+or an <code>http(s)</code> URL.</p>
+<h2 id="lllmresolver">lllm.Resolver</h2>
+<p><code>lllm.Resolver</code> turns refs into live objects: tactics (in-process or remote),
+channel stores, and project settings.</p>
+<h3 id="register-in-process-tactics">Register in-process tactics</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resolver</span><span class="p">,</span> <span class="n">Tactic</span>
+
+<span class="n">LOWER</span> <span class="o">=</span> <span class="s2">"lllm://demo/text/tactics/lower"</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Lower</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Lowercase the text."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"lower"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">task</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+
+<span class="n">resolver</span> <span class="o">=</span> <span class="n">Resolver</span><span class="p">()</span>
+<span class="n">resolver</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">LOWER</span><span class="p">,</span> <span class="n">Lower</span><span class="p">())</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">LOWER</span><span class="p">,</span> <span class="s2">"QUIET PLEASE"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">tactic</span><span class="p">(</span><span class="n">LOWER</span><span class="p">)</span><span class="o">.</span><span class="n">package_ref</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>quiet please
+lllm://demo/text/tactics/lower
+</code></pre></div>
+<p>Registering a tactic also sets its <code>package_ref</code>, so the ref appears in its
+<code>info()</code> and, once served, in the <code>tactic_ref</code> of every request context.</p>
+<h3 id="bind-refs-in-lllmconfigtoml">Bind refs in .lllm/config.toml</h3>
+<p>A project keeps its bindings in <code>.lllm/config.toml</code>. This one points the tactic
+ref at the service from <a href="../services/#serve-a-tactic">Services</a> and gives a
+channel ref a local store:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[refs.</span><span class="s2">"lllm://demo/shout/tactics/shout"</span><span class="k">]</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"http://127.0.0.1:8000"</span>
+
+<span class="k">[refs.</span><span class="s2">"lllm://demo/shout/tactics/shout"</span><span class="k">.metadata]</span>
+<span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"docs"</span>
+<span class="n">api_key_ref</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"openai.default"</span>
+
+<span class="k">[refs.</span><span class="s2">"lllm://demo/shout/channels/events"</span><span class="k">]</span>
+<span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">".lllm/network"</span>
+
+<span class="k">[settings]</span>
+<span class="n">region</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"us"</span>
+</code></pre></div>
+<p><code>Resolver.from_config()</code> reads the file once:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resolver</span>
+
+<span class="n">resolver</span> <span class="o">=</span> <span class="n">Resolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+
+<span class="n">shout</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">tactic</span><span class="p">(</span><span class="s2">"lllm://demo/shout/tactics/shout"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">shout</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">shout</span><span class="o">.</span><span class="n">tactic_name</span><span class="p">,</span> <span class="n">shout</span><span class="o">.</span><span class="n">url</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"via config"</span><span class="p">}))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">info</span><span class="p">()</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="s2">"lllm://demo/shout/channels/events"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">store</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="s2">"region"</span><span class="p">),</span> <span class="n">resolver</span><span class="o">.</span><span class="n">setting</span><span class="p">(</span><span class="s2">"timeout"</span><span class="p">,</span> <span class="mi">30</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">refs</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>RemoteTactic shout http://127.0.0.1:8000/run
+{'text': 'VIA CONFIG', 'trace_id': None}
+{'owner': 'docs', 'api_key_ref': 'openai.default', 'ref': 'lllm://demo/shout/tactics/shout', 'url': 'http://127.0.0.1:8000/run'}
+LocalStore
+us 30
+('lllm://demo/shout/channels/events', 'lllm://demo/shout/tactics/shout')
+</code></pre></div>
+<p>The rules:</p>
+<ul>
+<li><code>from_config(path)</code> takes a project folder (and reads
+  <code>PATH/.lllm/config.toml</code>) or the path of the file itself.</li>
+<li>A tactic ref binds to <code>url</code>: an absolute <code>http(s)</code> service URL, either the
+  service base or <code>.../tactics/NAME</code> inside a multi-tactic app. It resolves to a
+  <code>RemoteTactic</code> named after the ref, with the ref as its <code>package_ref</code>. It has
+  no <code>input_type</code> or <code>output_type</code>, so it returns JSON as-is.</li>
+<li>A channel or snapshot ref binds to <code>store</code>, a relative path resolved against
+  the project folder (a <code>LocalStore</code>; opening it creates the folder), or to
+  <code>url</code>, an SSSN store service (a <code>RemoteStore</code>).</li>
+<li>
+<p>Each binding declares exactly one target. A tactic ref bound to anything but
+  a <code>url</code> is rejected:</p>
+<div class="highlight"><pre><span></span><code>TacticRefError: Tactic URL binding must declare a url target, got store: lllm://demo/shout/tactics/shout
+</code></pre></div>
+</li>
+<li>
+<p>The <code>metadata</code> table (and any extra keys) becomes binding metadata, which a
+  remote tactic reports in <code>info().metadata</code> next to <code>ref</code> and <code>url</code>. Raw
+  secrets are refused; point at credentials with a reference such as
+  <code>api_key_ref</code> instead:</p>
+<div class="highlight"><pre><span></span><code>TacticRefError: Tactic URL binding metadata must not include raw secret key 'api_key': lllm://demo/shout/tactics/shout
+</code></pre></div>
+</li>
+<li>
+<p>Refs to other sections, such as <code>/services/</code>, may sit in the same file for
+  other tools. The resolver validates their shape and otherwise leaves them
+  alone.</p>
+</li>
+<li><code>[settings]</code> is free-form; <code>setting(key, default=None)</code> reads it.</li>
+<li><code>register()</code> replaces a config binding for the current process, which is
+  handy in tests.</li>
+</ul>
+<p><code>lllm hub config-template</code> renders a starting config for a published package
+(<a href="../../packages/hub/">The Hub</a>).</p>
+<h3 id="resolver-reference">Resolver reference</h3>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Resolver()</code></td>
+<td>An empty resolver; register tactics yourself.</td>
+</tr>
+<tr>
+<td><code>Resolver.from_config(path=".")</code></td>
+<td>Load bindings and settings from <code>.lllm/config.toml</code>.</td>
+</tr>
+<tr>
+<td><code>register(ref, tactic)</code></td>
+<td>Bind a tactic ref to an in-process tactic.</td>
+</tr>
+<tr>
+<td><code>tactic(ref)</code></td>
+<td>The tactic bound to a <code>/tactics/</code> ref. Raises <code>TacticRefError</code> when unbound.</td>
+</tr>
+<tr>
+<td><code>store(ref)</code></td>
+<td>The <code>LocalStore</code> or <code>RemoteStore</code> behind a <code>/channels/</code> or <code>/snapshots/</code> ref.</td>
+</tr>
+<tr>
+<td><code>resolve(ref)</code></td>
+<td><code>tactic()</code> or <code>store()</code>, chosen by the ref's section.</td>
+</tr>
+<tr>
+<td><code>run(ref, value, *, context=None, **kwargs)</code>, <code>await arun(...)</code></td>
+<td>Resolve a tactic ref and call it.</td>
+</tr>
+<tr>
+<td><code>setting(key, default=None)</code></td>
+<td>A value from <code>[settings]</code>.</td>
+</tr>
+<tr>
+<td><code>refs()</code></td>
+<td>Every bound tactic and channel ref.</td>
+</tr>
+</tbody>
+</table>
+<p>Its parts are attributes: <code>resolver.tactics</code> is a <code>TacticResolver</code> (also
+importable from <code>lllm</code>) whose <code>bind_url(ref, url, **kwargs)</code> binds a ref to a
+service in code, passing extra keywords such as <code>input_type</code> or <code>timeout</code> to
+<code>RemoteTactic</code>. <code>resolver.channels</code> is the <code>ChannelResolver</code> from
+<code>lllm.network</code>, and <code>resolver.config</code> holds the parsed file.</p>
+<h2 id="composition-patterns">Composition patterns</h2>
+<h3 id="call-tactics-by-ref">Call tactics by ref</h3>
+<p>A tactic that holds a resolver can call other tactics without knowing where
+they run:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallContext</span><span class="p">,</span> <span class="n">Resolver</span><span class="p">,</span> <span class="n">Tactic</span>
+
+<span class="n">SHOUT</span> <span class="o">=</span> <span class="s2">"lllm://demo/shout/tactics/shout"</span>
+<span class="n">LOWER</span> <span class="o">=</span> <span class="s2">"lllm://demo/text/tactics/lower"</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Contrast</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Say it loud, then say it quietly."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"contrast"</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="nb">dict</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">resolver</span><span class="p">:</span> <span class="n">Resolver</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">resolver</span> <span class="o">=</span> <span class="n">resolver</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">loud</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">SHOUT</span><span class="p">,</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">task</span><span class="p">},</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+        <span class="n">quiet</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">resolver</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">LOWER</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"loud"</span><span class="p">:</span> <span class="n">loud</span><span class="p">[</span><span class="s2">"text"</span><span class="p">],</span> <span class="s2">"quiet"</span><span class="p">:</span> <span class="n">quiet</span><span class="p">,</span> <span class="s2">"trace_id"</span><span class="p">:</span> <span class="n">loud</span><span class="p">[</span><span class="s2">"trace_id"</span><span class="p">]}</span>
+
+
+<span class="n">resolver</span> <span class="o">=</span> <span class="n">Resolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>  <span class="c1"># SHOUT is bound to the service</span>
+<span class="n">resolver</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">LOWER</span><span class="p">,</span> <span class="n">Lower</span><span class="p">())</span>     <span class="c1"># LOWER runs in this process</span>
+
+<span class="n">contrast</span> <span class="o">=</span> <span class="n">Contrast</span><span class="p">(</span><span class="n">resolver</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">contrast</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"Hello There"</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">CallContext</span><span class="p">(</span><span class="n">trace_id</span><span class="o">=</span><span class="s2">"trace-7"</span><span class="p">)))</span>
+
+<span class="n">session</span> <span class="o">=</span> <span class="n">contrast</span><span class="p">(</span><span class="s2">"Hello There"</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">sub_tactic_sessions</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'loud': 'HELLO THERE', 'quiet': 'hello there', 'trace_id': 'trace-7'}
+['lower']
+</code></pre></div>
+<ul>
+<li><code>Contrast</code> does not know that <code>SHOUT</code> is remote. Moving <code>LOWER</code> behind a
+  service means binding its ref to a <code>url</code> in <code>.lllm/config.toml</code> instead of
+  registering it; <code>Contrast</code> stays the same.</li>
+<li>Passing <code>context</code> along carries the <code>trace_id</code> across the HTTP hop: the
+  remote tactic received <code>trace-7</code> and echoed it back.</li>
+<li>In-process tactics that run in a session, such as the <code>call()</code> program
+  <code>Lower</code>, are recorded in the caller's session (<code>lower</code> above). The remote
+  call is an HTTP request, so the service keeps its own record of it.</li>
+<li>To serve a tactic that takes constructor arguments, point <code>lllm serve</code> at a
+  factory, such as <code>def build(): return Contrast(Resolver.from_config("."))</code>,
+  which it calls once at load
+  (<a href="../runtimes/#loading-entrypoints">Loading entrypoints</a>).</li>
+</ul>
+<h3 id="sub-tactics">Sub-tactics</h3>
+<p>Inside one program, assigning a tactic to an attribute in <code>__init__</code> makes it a
+sub-tactic: it is listed in <code>self.sub_tactics</code>, and its calls roll up into the
+parent's session and cost. See
+<a href="../tactic/#sessions-for-call-programs">Sessions for call() programs</a>.</p>
+<h3 id="test-against-an-in-process-service">Test against an in-process service</h3>
+<p><code>bind_url</code> accepts httpx transports, so a test can exercise the full HTTP path
+(envelope, context, errors) without opening a port:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resolver</span><span class="p">,</span> <span class="n">create_tactic_app</span>
+
+<span class="n">resolver</span> <span class="o">=</span> <span class="n">Resolver</span><span class="p">()</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_tactic_app</span><span class="p">(</span><span class="n">Lower</span><span class="p">())</span>
+<span class="n">resolver</span><span class="o">.</span><span class="n">tactics</span><span class="o">.</span><span class="n">bind_url</span><span class="p">(</span><span class="n">LOWER</span><span class="p">,</span> <span class="s2">"http://testserver"</span><span class="p">,</span> <span class="n">async_transport</span><span class="o">=</span><span class="n">httpx</span><span class="o">.</span><span class="n">ASGITransport</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">))</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">tactic</span><span class="p">(</span><span class="n">LOWER</span><span class="p">))</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">arun</span><span class="p">(</span><span class="n">LOWER</span><span class="p">,</span> <span class="s2">"OVER HTTP"</span><span class="p">)))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>RemoteTactic
+over http
+</code></pre></div>
+<p><code>httpx.ASGITransport</code> is async-only, so call <code>arun()</code>; for synchronous <code>run()</code>,
+pass a synchronous transport as <code>transport=</code>.</p>
+<h3 id="tactics-as-tools">Tactics as tools</h3>
+<p>Any tactic, local or bound by ref, can be handed to an agent as a tool. See
+<a href="../runtimes/#tactics-as-pydantic-ai-tools">Tactics as Pydantic AI tools</a>.</p>
+<h3 id="tactics-over-channels">Tactics over channels</h3>
+<p>A channel ref resolves to a store, and a <code>TacticProcessor</code> runs a tactic over a
+channel's events, appending each output to another channel:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resolver</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">TacticProcessor</span>
+
+<span class="n">resolver</span> <span class="o">=</span> <span class="n">Resolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+<span class="n">store</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="s2">"lllm://demo/shout/channels/events"</span><span class="p">)</span>
+
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">})</span>
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"outbox"</span><span class="p">})</span>
+<span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">({</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="s2">"HELLO THERE"</span><span class="p">})</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">Lower</span><span class="p">(),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"outbox"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">parent_ids</span> <span class="o">!=</span> <span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>result hello there True
+[]
+</code></pre></div>
+<p>The processor reads through a named subscription, so a second <code>process()</code> picks
+up only new events. Each output event links back to its source through
+<code>parent_ids</code>, and the tactic receives a <code>CallContext</code> naming the channel and
+event. Channels, stores, and processors are covered in <a href="../../sssn/">SSSN</a>;
+mounting several packages and channels behind one API is <a href="../../aaax/">AAAX</a>.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="../tactic/">The Tactic</a>: the boundary every ref resolves to.</li>
+<li><a href="../services/">Services</a>: the HTTP side of a <code>url</code> binding.</li>
+<li><a href="../runtimes/">Runtimes</a>: what can sit behind a tactic.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

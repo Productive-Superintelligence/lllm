@@ -1,0 +1,1594 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/sssn/serving/">
+      
+      
+        <link rel="prev" href="../processing/">
+      
+      
+        <link rel="next" href="../../aaax/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Serving and Refs - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#serving-stores" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Serving and Refs
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../" class="psi-header-nav__link psi-header-nav__link--active">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSSN: the network module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../channels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Channels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../processing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactic Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serving and Refs
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serving and Refs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#serve-a-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serve a store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HTTP API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clients
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refs-and-lllmconfigtoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refs and .lllm/config.toml
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#serve-a-store" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serve a store
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP API
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="HTTP API">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#custom-endpoints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom endpoints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#clients" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Clients
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#refs-and-lllmconfigtoml" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Refs and .lllm/config.toml
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#package-metadata" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package metadata
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="serving-stores">Serving stores</h1>
+<p>A store becomes a service with one call: <code>create_app(store)</code> returns a FastAPI
+app that exposes every store operation over HTTP. <code>RemoteStore</code> and
+<code>AsyncRemoteStore</code> call that API with the same methods as <code>LocalStore</code>, so code
+written against a local store runs against a remote one by swapping the
+constructor (the few differences are listed under <a href="#clients">Clients</a>). Refs
+(<code>lllm://org/package/channels/name</code>) let code name a channel and leave the
+choice of store to a config file.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[server,client]"</span>
+</code></pre></div>
+<h2 id="serve-a-store">Serve a store</h2>
+<p>From the shell:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>network<span class="w"> </span>--store<span class="w"> </span>.lllm/network<span class="w"> </span>serve<span class="w"> </span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="w"> </span>--port<span class="w"> </span><span class="m">7700</span>
+</code></pre></div>
+<p><code>--store</code> defaults to <code>.lllm/network</code> and <code>--port</code> to <code>7700</code>. In Python, the
+app is a regular ASGI app:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">uvicorn</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalStore</span><span class="p">,</span> <span class="n">create_app</span>
+
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">(</span><span class="n">LocalStore</span><span class="p">(</span><span class="s2">".lllm/network"</span><span class="p">))</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">"__main__"</span><span class="p">:</span>
+    <span class="n">uvicorn</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">app</span><span class="p">,</span> <span class="n">host</span><span class="o">=</span><span class="s2">"127.0.0.1"</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">7700</span><span class="p">)</span>
+</code></pre></div>
+<p><code>create_app()</code> without a store opens <code>LocalStore(".lllm/network")</code> in the
+working directory. The app keeps the store at <code>app.state.network_store</code>.</p>
+<p>The server has no authentication. Keep it on localhost or put it behind a
+gateway that handles access control.</p>
+<h2 id="http-api">HTTP API</h2>
+<table>
+<thead>
+<tr>
+<th>Method and path</th>
+<th>Body or query</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /health</code></td>
+<td></td>
+<td><code>{"ok": true}</code></td>
+</tr>
+<tr>
+<td><code>POST /channels</code></td>
+<td>a channel: <code>name</code>, <code>schema</code>, <code>form</code>, <code>description</code>, <code>metadata</code></td>
+<td>the channel</td>
+</tr>
+<tr>
+<td><code>GET /channels</code></td>
+<td></td>
+<td>all channels</td>
+</tr>
+<tr>
+<td><code>GET /channels/{name}</code></td>
+<td></td>
+<td>one channel</td>
+</tr>
+<tr>
+<td><code>POST /events</code></td>
+<td>an event: <code>channel</code>, <code>payload</code>, <code>kind</code>, <code>source</code>, <code>schema</code>, <code>metadata</code>, <code>correlation_id</code>, <code>parent_ids</code>, optional <code>id</code> and <code>timestamp</code></td>
+<td>the stored event, with <code>cursor</code></td>
+</tr>
+<tr>
+<td><code>GET /events</code></td>
+<td><code>?channel=...&amp;after_cursor=0&amp;limit=100&amp;kind=...</code></td>
+<td>events, oldest first</td>
+</tr>
+<tr>
+<td><code>GET /events/{id}</code></td>
+<td></td>
+<td>one event</td>
+</tr>
+<tr>
+<td><code>POST /subscriptions</code></td>
+<td><code>channel</code>, <code>id</code>, <code>consumer</code>, <code>batch_size</code>, <code>filters</code>, <code>metadata</code></td>
+<td>the subscription (existing one if the id is taken on the same channel)</td>
+</tr>
+<tr>
+<td><code>GET /subscriptions/{id}</code></td>
+<td></td>
+<td>the subscription and its cursor</td>
+</tr>
+<tr>
+<td><code>POST /subscriptions/{id}/pull</code></td>
+<td><code>?limit=...</code></td>
+<td>pending events; moves the cursor</td>
+</tr>
+<tr>
+<td><code>POST /artifacts</code></td>
+<td><code>data</code>, <code>encoding</code> (<code>text</code> or <code>base64</code>), <code>channel</code>, <code>media_type</code>, <code>metadata</code>, <code>event_ids</code></td>
+<td>artifact metadata</td>
+</tr>
+<tr>
+<td><code>GET /artifacts/{id}</code></td>
+<td></td>
+<td>the raw bytes, with the artifact's media type</td>
+</tr>
+<tr>
+<td><code>GET /artifacts/{id}/metadata</code></td>
+<td></td>
+<td>artifact metadata</td>
+</tr>
+<tr>
+<td><code>PUT /snapshots/{name}</code></td>
+<td><code>value</code>, <code>channel</code>, <code>timestamp</code>, <code>schema</code>, <code>source_event_id</code>, <code>metadata</code></td>
+<td>the snapshot (replaces any previous value)</td>
+</tr>
+<tr>
+<td><code>GET /snapshots/{name}</code></td>
+<td></td>
+<td>the snapshot</td>
+</tr>
+</tbody>
+</table>
+<p>FastAPI also serves the OpenAPI schema at <code>/openapi.json</code> and interactive docs
+at <code>/docs</code>.</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">'\n'</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:7700/channels<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"name": "inbox"}'</span>
+curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">'\n'</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:7700/events<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-d<span class="w"> </span><span class="s1">'{"channel": "inbox", "kind": "message", "payload": {"text": "Checkout is down"}}'</span>
+curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">'\n'</span><span class="w"> </span><span class="s2">"http://127.0.0.1:7700/events?channel=inbox&amp;limit=10"</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{"name":"inbox","schema":null,"form":"log","description":"","metadata":{}}
+{"id":"6857626f-ce8f-4240-adee-0ac098a3622e","cursor":1,"channel":"inbox","timestamp":1793846751.1789103,"source":null,"kind":"message","payload":{"text":"Checkout is down"},"schema":null,"metadata":{},"correlation_id":null,"parent_ids":[]}
+[{"id":"6857626f-ce8f-4240-adee-0ac098a3622e","cursor":1,"channel":"inbox","timestamp":1793846751.1789103,"source":null,"kind":"message","payload":{"text":"Checkout is down"},"schema":null,"metadata":{},"correlation_id":null,"parent_ids":[]}]
+</code></pre></div>
+<h3 id="errors">Errors</h3>
+<p>Errors come back in one envelope, with the error class name as <code>type</code>:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">'\n'</span><span class="w"> </span>http://127.0.0.1:7700/channels/missing
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{"detail":{"error":{"type":"ChannelNotFoundError","message":"Channel not found: missing"}}}
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400</td>
+<td><code>InvalidPayloadError</code>, other <code>NetworkError</code>s, and request bodies that fail validation (reported as <code>InvalidPayloadError</code>).</td>
+</tr>
+<tr>
+<td>404</td>
+<td><code>ChannelNotFoundError</code>, <code>EventNotFoundError</code>, <code>SubscriptionNotFoundError</code>, <code>ArtifactNotFoundError</code>, <code>SnapshotNotFoundError</code>.</td>
+</tr>
+<tr>
+<td>409</td>
+<td><code>ChannelExistsError</code>, <code>EventExistsError</code> (an event id that is taken), <code>SubscriptionExistsError</code>.</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Anything else, with the exception's class name and message.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="custom-endpoints">Custom endpoints</h2>
+<p>Add domain routes next to the built-in ones with the <code>endpoint</code> decorators
+(<code>endpoint.get</code>, <code>.post</code>, <code>.put</code>, <code>.patch</code>, <code>.delete</code>) and pass the functions
+to <code>create_app</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">InvalidPayloadError</span><span class="p">,</span> <span class="n">LocalStore</span><span class="p">,</span> <span class="n">create_app</span><span class="p">,</span> <span class="n">endpoint</span>
+
+
+<span class="nd">@endpoint</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/channels/</span><span class="si">{name}</span><span class="s2">/count"</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">"channel"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">(</span><span class="s2">"stats"</span><span class="p">,))</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">count_events</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Count the events in a channel, or only those of one ?kind=."""</span>
+    <span class="n">kind</span> <span class="o">=</span> <span class="p">(</span><span class="n">params</span> <span class="ow">or</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"kind"</span><span class="p">)</span>
+    <span class="n">total</span><span class="p">,</span> <span class="n">cursor</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="n">batch</span> <span class="o">:=</span> <span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">after_cursor</span><span class="o">=</span><span class="n">cursor</span><span class="p">,</span> <span class="n">limit</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">):</span>
+        <span class="n">total</span> <span class="o">+=</span> <span class="nb">len</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+        <span class="n">cursor</span> <span class="o">=</span> <span class="n">batch</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">cursor</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">:</span> <span class="n">kind</span><span class="p">,</span> <span class="s2">"events"</span><span class="p">:</span> <span class="n">total</span><span class="p">}</span>
+
+
+<span class="nd">@endpoint</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/channels/</span><span class="si">{name}</span><span class="s2">/messages"</span><span class="p">,</span> <span class="n">scope</span><span class="o">=</span><span class="s2">"channel"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">post_message</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Append a message event from a {"text": ...} body."""</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="p">,</span> <span class="nb">dict</span><span class="p">)</span> <span class="ow">or</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">body</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">),</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="k">raise</span> <span class="n">InvalidPayloadError</span><span class="p">(</span><span class="s1">'body must be {"text": "..."}'</span><span class="p">)</span>
+    <span class="n">event</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"message"</span><span class="p">,</span> <span class="s2">"source"</span><span class="p">:</span> <span class="s2">"api"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">body</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]}}</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"id"</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="s2">"cursor"</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">cursor</span><span class="p">}</span>
+
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">LocalStore</span><span class="p">(</span><span class="s2">".lllm/network"</span><span class="p">)</span>
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">})</span>
+<span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">custom_endpoints</span><span class="o">=</span><span class="p">[</span><span class="n">count_events</span><span class="p">,</span> <span class="n">post_message</span><span class="p">])</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">app</span><span class="p">)</span>
+<span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/channels/inbox/messages"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Checkout is down"</span><span class="p">})</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/channels/inbox/count"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/channels/inbox/count"</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"ping"</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/channels/inbox/messages"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"txt"</span><span class="p">:</span> <span class="s2">"typo"</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'channel': 'inbox', 'kind': None, 'events': 1}
+{'channel': 'inbox', 'kind': 'ping', 'events': 0}
+{'detail': {'error': {'type': 'InvalidPayloadError', 'message': 'body must be {"text": "..."}'}}}
+</code></pre></div>
+<p>How arguments are bound:</p>
+<ul>
+<li>A parameter named <code>store</code> receives the store.</li>
+<li>A parameter named <code>body</code> receives the parsed JSON body (<code>None</code> for <code>GET</code>,
+  <code>DELETE</code>, or a body that is not JSON).</li>
+<li>Any other parameter is filled from a path parameter of the same name.</li>
+<li>A parameter named <code>params</code> that is not a path parameter receives the query
+  string as a dict of strings; for a repeated key, the last value wins.</li>
+<li>Anything else keeps its default. A parameter without one fails every
+  request with a 500 <code>TypeError</code>.</li>
+</ul>
+<p>The function may return any JSON-encodable value, or be <code>async</code>. Exceptions map
+to statuses like the built-in routes, so raise <code>NetworkError</code> subclasses for
+4xx responses.</p>
+<p>Routes must not collide with the built-in ones (<code>GET /channels/{x}</code> is taken,
+whatever the parameter is called), and endpoint names and method-plus-path
+pairs must be unique; <code>create_app</code> raises <code>ValueError</code> otherwise. Functions
+without a decorator are ignored. The decorator arguments are metadata: <code>name</code>
+(defaults to the function name), <code>scope</code> (<code>store</code>, <code>channel</code>, <code>subscription</code>,
+<code>artifact</code>, or <code>snapshot</code>), <code>description</code> (defaults to the docstring), and
+<code>tags</code> show up in the OpenAPI schema and in
+<a href="#package-metadata"><code>channel_resource</code></a>.</p>
+<h2 id="clients">Clients</h2>
+<p><code>RemoteStore</code> is the synchronous client, <code>AsyncRemoteStore</code> the async one. Both
+take <code>base_url</code>, <code>timeout=30.0</code>, and an optional httpx <code>transport</code>, and both
+have the <code>LocalStore</code> methods. With the store from the previous sections served
+on port 7700:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteStore</span><span class="p">,</span> <span class="n">RemoteStoreError</span>
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">RemoteStore</span><span class="p">(</span><span class="s2">"http://127.0.0.1:7700"</span><span class="p">)</span>
+<span class="n">event</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"message"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Search is broken"</span><span class="p">}}</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">cursor</span><span class="p">,</span> <span class="n">store</span><span class="o">.</span><span class="n">get_event</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+
+<span class="n">store</span><span class="o">.</span><span class="n">put_snapshot</span><span class="p">(</span><span class="s2">"queue-depth"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"open"</span><span class="p">:</span> <span class="mi">2</span><span class="p">},</span> <span class="n">channel</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">source_event_id</span><span class="o">=</span><span class="n">event</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">(</span><span class="s2">"queue-depth"</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">store</span><span class="o">.</span><span class="n">get_channel</span><span class="p">(</span><span class="s2">"missing"</span><span class="p">)</span>
+<span class="k">except</span> <span class="n">RemoteStoreError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">exc</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">error_type</span><span class="p">,</span> <span class="n">exc</span><span class="o">.</span><span class="n">message</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>2 {'text': 'Search is broken'}
+{'open': 2}
+404 ChannelNotFoundError Channel not found: missing
+</code></pre></div>
+<p>Where the clients differ from <code>LocalStore</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th><code>LocalStore</code></th>
+<th><code>RemoteStore</code> / <code>AsyncRemoteStore</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>write_artifact</code></td>
+<td><code>bytes</code>, <code>bytearray</code>, or <code>memoryview</code></td>
+<td><code>bytes</code> (sent base64-encoded) or <code>str</code> (sent as UTF-8 text)</td>
+</tr>
+<tr>
+<td>errors</td>
+<td><code>NetworkError</code> subclasses</td>
+<td><code>RemoteStoreError</code> for server errors, with <code>status_code</code>, <code>error_type</code>, <code>message</code>, and the raw <code>detail</code>. Names and ids are checked before sending and raise <code>InvalidPayloadError</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>RemoteStoreError</code> is a <code>RuntimeError</code>, not a <code>NetworkError</code>; branch on
+<code>error_type</code> (for example <code>"SubscriptionNotFoundError"</code>) or <code>status_code</code>.
+Each call opens its own short-lived HTTP connection.</p>
+<p><code>put_snapshot</code> has the same signature on every store:
+<code>put_snapshot(snapshot=None, value=None, *, name=None, channel=None, timestamp=None, schema=None, source_event_id=None, metadata=None)</code>.
+Pass a <code>Snapshot</code> or a dict of snapshot fields, or a name and a value. The
+value is stored exactly as given, so <code>put_snapshot("config", {"value": 3, "unit": "ms"})</code>
+stores the whole dict. The one exception is a <code>Snapshot</code> passed as the value:
+its fields are stored under the name.</p>
+<p><code>AsyncRemoteStore</code> has the same methods as coroutines. Pass
+<code>httpx.ASGITransport</code> to call an app in-process, which is the easiest way to
+test code that uses a remote store:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncRemoteStore</span><span class="p">,</span> <span class="n">LocalStore</span><span class="p">,</span> <span class="n">create_app</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">app</span> <span class="o">=</span> <span class="n">create_app</span><span class="p">(</span><span class="n">LocalStore</span><span class="p">(</span><span class="s2">"test-store"</span><span class="p">))</span>
+    <span class="n">store</span> <span class="o">=</span> <span class="n">AsyncRemoteStore</span><span class="p">(</span><span class="s2">"http://test"</span><span class="p">,</span> <span class="n">transport</span><span class="o">=</span><span class="n">httpx</span><span class="o">.</span><span class="n">ASGITransport</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">app</span><span class="p">))</span>
+    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">})</span>
+    <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">({</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">}})</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="s2">"inbox"</span><span class="p">)]</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">()))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[{'text': 'hi'}]
+</code></pre></div>
+<h2 id="refs-and-lllmconfigtoml">Refs and <code>.lllm/config.toml</code></h2>
+<p>A channel ref names a channel by package, not by location:</p>
+<div class="highlight"><pre><span></span><code>lllm://&lt;org&gt;/&lt;package&gt;/channels/&lt;name&gt;
+lllm://&lt;org&gt;/&lt;package&gt;/snapshots/&lt;name&gt;
+</code></pre></div>
+<p><code>ChannelRef</code> parses and validates one:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelRef</span>
+
+<span class="n">ref</span> <span class="o">=</span> <span class="n">ChannelRef</span><span class="p">(</span><span class="s2">"lllm://demo/support-desk/channels/inbox"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">ref</span><span class="o">.</span><span class="n">org</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">package</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">resource_kind</span><span class="p">,</span> <span class="n">ref</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>demo support-desk channels inbox
+</code></pre></div>
+<p>A project binds refs to stores in <code>.lllm/config.toml</code>, the same file that binds
+tactic refs (see <a href="../../protocol/refs/">Refs</a>). Each binding has exactly one
+target:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[refs.</span><span class="s2">"lllm://demo/support-desk/channels/inbox"</span><span class="k">]</span>
+<span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">".lllm/network"</span><span class="w">            </span><span class="c1"># a LocalStore folder, relative to the project root</span>
+
+<span class="k">[refs.</span><span class="s2">"lllm://demo/support-desk/channels/triaged"</span><span class="k">]</span>
+<span class="n">url</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"http://127.0.0.1:7700"</span><span class="w">      </span><span class="c1"># a served store</span>
+<span class="n">owner</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"support"</span><span class="w">                  </span><span class="c1"># extra keys are kept as binding metadata</span>
+
+<span class="k">[refs.</span><span class="s2">"lllm://demo/support-desk/snapshots/latest-reply"</span><span class="k">]</span>
+<span class="n">store</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"archive"</span><span class="w">                  </span><span class="c1"># names the [stores.archive] table below</span>
+
+<span class="k">[stores.archive]</span>
+<span class="n">path</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"data/support-store"</span><span class="w">        </span><span class="c1"># relative to the project root</span>
+</code></pre></div>
+<p><code>ChannelResolver</code> reads the <code>/channels/</code> and <code>/snapshots/</code> bindings and ignores
+the others (tactics, services, schemas, ...), which other resolvers read from
+the same file:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">ChannelResolver</span>
+
+<span class="n">channels</span> <span class="o">=</span> <span class="n">ChannelResolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">channels</span><span class="o">.</span><span class="n">refs</span><span class="p">())</span>
+
+<span class="n">triaged</span> <span class="o">=</span> <span class="n">channels</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"lllm://demo/support-desk/channels/triaged"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">triaged</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">triaged</span><span class="o">.</span><span class="n">url</span><span class="p">,</span> <span class="n">triaged</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">channels</span><span class="o">.</span><span class="n">local_store</span><span class="p">(</span><span class="s2">"lllm://demo/support-desk/channels/inbox"</span><span class="p">))</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">channels</span><span class="o">.</span><span class="n">client</span><span class="p">(</span><span class="s2">"lllm://demo/support-desk/channels/triaged"</span><span class="p">))</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">channels</span><span class="o">.</span><span class="n">store_path</span><span class="p">(</span><span class="s2">"lllm://demo/support-desk/snapshots/latest-reply"</span><span class="p">)</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">channels</span><span class="o">.</span><span class="n">root</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>('lllm://demo/support-desk/channels/inbox', 'lllm://demo/support-desk/channels/triaged', 'lllm://demo/support-desk/snapshots/latest-reply')
+triaged http://127.0.0.1:7700 {'owner': 'support'}
+LocalStore
+RemoteStore
+data/support-store
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ChannelResolver.from_config(path)</code></td>
+<td>A resolver for <code>path/.lllm/config.toml</code>, or for a config file path. Relative store paths resolve against the folder that contains <code>.lllm/</code>. The file must exist.</td>
+</tr>
+<tr>
+<td><code>ChannelResolver.from_text(text, *, root=None)</code></td>
+<td>A resolver for config text, parsed in memory. Relative store paths resolve against <code>root</code> (default: the working directory). Writes no files.</td>
+</tr>
+<tr>
+<td><code>ChannelResolver(root=".")</code> and <code>bind(ref, *, url=None, store=None, path=None, metadata=None)</code></td>
+<td>Bind refs in code.</td>
+</tr>
+<tr>
+<td><code>resolve(ref)</code></td>
+<td>A <code>ResolvedChannelRef</code>: <code>ref</code>, <code>resource_kind</code>, <code>name</code>, <code>url</code>, <code>store</code>, <code>path</code>, <code>metadata</code>.</td>
+</tr>
+<tr>
+<td><code>local_store(ref)</code>, <code>store_path(ref)</code></td>
+<td>A <code>LocalStore</code> (or its path) for <code>store</code>/<code>path</code> bindings.</td>
+</tr>
+<tr>
+<td><code>client(ref)</code>, <code>async_client(ref)</code></td>
+<td>A <code>RemoteStore</code> or <code>AsyncRemoteStore</code> for <code>url</code> bindings; both accept <code>timeout=</code> and <code>transport=</code>.</td>
+</tr>
+<tr>
+<td><code>refs()</code></td>
+<td>The bound refs, sorted.</td>
+</tr>
+</tbody>
+</table>
+<p>Malformed refs and unbound refs raise <code>ChannelRefError</code>. <code>path</code> is always a
+folder path. <code>store</code> is one too, unless it names a <code>[stores.&lt;name&gt;]</code> table:
+then the binding uses that table's <code>path</code> (<code>ChannelRefError</code> if the table has
+none). <code>channels.stores()</code> returns the tables.</p>
+<p>A ref resolves to a whole store; the channel inside it is the ref's last
+segment. To get a store for any ref without caring which kind of binding it
+has, use <code>lllm.Resolver</code>, which reads tactic, channel, and snapshot bindings
+from the same file:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Resolver</span>
+
+<span class="n">resolver</span> <span class="o">=</span> <span class="n">Resolver</span><span class="o">.</span><span class="n">from_config</span><span class="p">(</span><span class="s2">"."</span><span class="p">)</span>
+<span class="n">ref</span> <span class="o">=</span> <span class="s2">"lllm://demo/support-desk/channels/triaged"</span>
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">resolver</span><span class="o">.</span><span class="n">store</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span>            <span class="c1"># LocalStore or RemoteStore, per the binding</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">store</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">,</span> <span class="n">ChannelRef</span><span class="p">(</span><span class="n">ref</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">resolver</span><span class="o">.</span><span class="n">resolve</span><span class="p">(</span><span class="s2">"lllm://demo/support-desk/channels/inbox"</span><span class="p">))</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>RemoteStore triaged
+LocalStore
+</code></pre></div>
+<p><code>resolver.resolve(ref)</code> returns a tactic for <code>/tactics/</code> refs and a store for
+<code>/channels/</code> and <code>/snapshots/</code> refs. <a href="../../tutorials/11-channels/">Tutorial 11</a>
+uses it to point a worker at a served store.</p>
+<h2 id="package-metadata">Package metadata</h2>
+<p>A package declares its channels and snapshots in <code>lllm.toml</code> (see
+<a href="../../packages/manifest/">The manifest</a>):</p>
+<div class="highlight"><pre><span></span><code><span class="k">[channels.inbox]</span>
+<span class="n">form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"log"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Support messages as they arrive."</span>
+
+<span class="k">[channels.triaged]</span>
+<span class="n">form</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"log"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"One triage result per message."</span>
+
+<span class="k">[snapshots.latest-reply]</span>
+<span class="n">channel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"triaged"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"The newest drafted reply."</span>
+</code></pre></div>
+<p>A channel's <code>form</code> must be one of the forms listed in
+<a href="../channels/#channels">Channels and stores</a>; <code>load_manifest</code> rejects any other
+value.</p>
+<p><code>open_package_store(manifest, *, store=None)</code> opens the package's store,
+<code>&lt;package&gt;/.lllm/network</code> by default, and creates every declared channel that
+does not exist yet. For a package folder <code>support-desk/</code> whose <code>lllm.toml</code> has
+a <code>[package]</code> table and the sections above:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.hub</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_manifest</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network.resources</span><span class="w"> </span><span class="kn">import</span> <span class="n">open_package_store</span>
+
+<span class="n">manifest</span> <span class="o">=</span> <span class="n">load_manifest</span><span class="p">(</span><span class="s2">"support-desk"</span><span class="p">)</span>
+<span class="n">store</span> <span class="o">=</span> <span class="n">open_package_store</span><span class="p">(</span><span class="n">manifest</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">manifest</span><span class="o">.</span><span class="n">base_dir</span><span class="p">),</span> <span class="p">[</span><span class="n">channel</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">list_channels</span><span class="p">()])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>.lllm/network ['inbox', 'triaged']
+</code></pre></div>
+<p><code>lllm serve</code> uses it to serve a package's channels as a store:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>serve<span class="w"> </span>support-desk<span class="w"> </span>--resource<span class="w"> </span>channels.inbox<span class="w"> </span>--port<span class="w"> </span><span class="m">7700</span>
+</code></pre></div>
+<p>That serves the whole package store (every declared channel), not only
+<code>inbox</code>; <code>--store DIR</code> picks another folder.</p>
+<p><code>channel_resource</code> and <code>snapshot_resource</code> go the other way: they turn models
+into the dictionaries the <a href="../../packages/hub/">hub</a> indexes, including custom
+endpoint metadata:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">Channel</span><span class="p">,</span> <span class="n">Snapshot</span><span class="p">,</span> <span class="n">channel_resource</span><span class="p">,</span> <span class="n">snapshot_resource</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">channel_resource</span><span class="p">(</span>
+    <span class="n">Channel</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">form</span><span class="o">=</span><span class="s2">"log"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Support messages as they arrive."</span><span class="p">),</span>
+    <span class="n">custom_endpoints</span><span class="o">=</span><span class="p">[</span><span class="n">count_events</span><span class="p">],</span>
+<span class="p">),</span> <span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">snapshot_resource</span><span class="p">(</span><span class="n">Snapshot</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"latest-reply"</span><span class="p">,</span> <span class="n">channel</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">),</span> <span class="n">description</span><span class="o">=</span><span class="s2">"The newest drafted reply."</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{
+  "name": "inbox",
+  "schema": null,
+  "form": "log",
+  "description": "Support messages as they arrive.",
+  "metadata": {},
+  "endpoints": [
+    {
+      "name": "count_events",
+      "method": "GET",
+      "path": "/channels/{name}/count",
+      "scope": "channel",
+      "description": "Count the events in a channel, or only those of one ?kind=.",
+      "tags": [
+        "stats"
+      ]
+    }
+  ]
+}
+{'name': 'latest-reply', 'schema': None, 'channel': 'triaged', 'description': 'The newest drafted reply.', 'metadata': {}, 'endpoints': []}
+</code></pre></div>
+<h2 id="cli">CLI</h2>
+<p><code>lllm network</code> works on a local store folder. <code>--store DIR</code> (default
+<code>.lllm/network</code>) goes before the command, as in
+<code>lllm network --store ../other/.lllm/network channels</code>; the folder is created if
+it does not exist. Every command prints one JSON object per line; errors print
+a message and exit with status 2.</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>network<span class="w"> </span>create-channel<span class="w"> </span>inbox<span class="w"> </span>--description<span class="w"> </span><span class="s2">"Support messages."</span>
+lllm<span class="w"> </span>network<span class="w"> </span>append<span class="w"> </span>inbox<span class="w"> </span><span class="s1">'{"text": "Checkout is down"}'</span><span class="w"> </span>--kind<span class="w"> </span>message<span class="w"> </span>--source<span class="w"> </span>cli<span class="w"> </span>--correlation-id<span class="w"> </span>T-100
+lllm<span class="w"> </span>network<span class="w"> </span>create-subscription<span class="w"> </span>inbox<span class="w"> </span>--id<span class="w"> </span>dashboard<span class="w"> </span>--kind<span class="w"> </span>message
+lllm<span class="w"> </span>network<span class="w"> </span>pull-subscription<span class="w"> </span>dashboard
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{"name":"inbox","schema":null,"form":"log","description":"Support messages.","metadata":{}}
+{"id":"a445d7b4-acff-4b8f-9221-13c54195ad86","cursor":1,"channel":"inbox","timestamp":1793846753.0231912,"source":"cli","kind":"message","payload":{"text":"Checkout is down"},"schema":null,"metadata":{},"correlation_id":"T-100","parent_ids":[]}
+{"id":"dashboard","channel":"inbox","cursor":0,"consumer":null,"batch_size":100,"filters":{"kind":"message"},"metadata":{}}
+{"id":"a445d7b4-acff-4b8f-9221-13c54195ad86","cursor":1,"channel":"inbox","timestamp":1793846753.0231912,"source":"cli","kind":"message","payload":{"text":"Checkout is down"},"schema":null,"metadata":{},"correlation_id":"T-100","parent_ids":[]}
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Arguments and options</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>channels</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>create-channel NAME</code></td>
+<td><code>--schema</code>, <code>--form</code> (default <code>log</code>), <code>--description</code>, <code>--metadata JSON</code></td>
+</tr>
+<tr>
+<td><code>get-channel NAME</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>append CHANNEL PAYLOAD_JSON</code></td>
+<td><code>--kind</code> (default <code>event</code>), <code>--source</code>, <code>--schema</code>, <code>--timestamp</code>, <code>--metadata JSON</code>, <code>--correlation-id</code>, <code>--parent-id ID</code> (repeatable)</td>
+</tr>
+<tr>
+<td><code>query-events CHANNEL</code></td>
+<td><code>--after-cursor</code> (default 0), <code>--limit</code> (default 100), <code>--kind</code></td>
+</tr>
+<tr>
+<td><code>get-event ID</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>create-subscription CHANNEL</code></td>
+<td><code>--id</code>, <code>--consumer</code>, <code>--batch-size</code> (default 100), <code>--kind</code></td>
+</tr>
+<tr>
+<td><code>get-subscription ID</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>pull-subscription ID</code></td>
+<td><code>--limit</code></td>
+</tr>
+<tr>
+<td><code>write-artifact DATA</code></td>
+<td><code>--encoding text\|base64</code>, <code>--channel</code>, <code>--media-type</code>, <code>--metadata JSON</code>, <code>--event-id ID</code> (repeatable)</td>
+</tr>
+<tr>
+<td><code>get-artifact ID</code></td>
+<td>prints metadata</td>
+</tr>
+<tr>
+<td><code>read-artifact ID</code></td>
+<td><code>--encoding text\|base64</code>; prints the payload</td>
+</tr>
+<tr>
+<td><code>put-snapshot NAME VALUE_JSON</code></td>
+<td><code>--channel</code>, <code>--schema</code>, <code>--source-event-id</code>, <code>--metadata JSON</code></td>
+</tr>
+<tr>
+<td><code>get-snapshot NAME</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>serve</code></td>
+<td><code>--host</code> (default <code>127.0.0.1</code>), <code>--port</code> (default <code>7700</code>), <code>--log-level</code></td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="../../reference/cli/">CLI reference</a> for the other <code>lllm</code> commands.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

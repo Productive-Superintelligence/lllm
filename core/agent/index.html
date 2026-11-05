@@ -1,0 +1,2396 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/agent/">
+      
+      
+        <link rel="prev" href="../architecture/">
+      
+      
+        <link rel="next" href="../prompts/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Agent - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#agent" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Agent
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../architecture/" class="psi-header-nav__link psi-header-nav__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../architecture/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating agents
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating agents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-configuration-inside-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From configuration (inside a tactic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm-call-vs-agent-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM call vs. agent call
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-call-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The call loop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The call loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-tools-and-parsers-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where tools and parsers come from
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interrupt-and-exception-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interrupt and exception handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#respond-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        respond() arguments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dialog-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dialog management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use skills
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-skill-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local skill discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-local-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a local skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-skills-reach-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How skills reach the model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allowed-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        allowed-tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serving-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serving hints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-hints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference Hints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxies and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#creating-agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating agents
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Creating agents">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#from-configuration-inside-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        From configuration (inside a tactic)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#directly" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Directly
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quick-constructor" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Quick constructor
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#llm-call-vs-agent-call" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        LLM call vs. agent call
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-call-loop" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The call loop
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The call loop">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#key-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key types
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#where-tools-and-parsers-come-from" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Where tools and parsers come from
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#interrupt-and-exception-handling" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Interrupt and exception handling
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#respond-arguments" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        respond() arguments
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#dialog-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Dialog management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tools
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Skills
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Skills">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#when-to-use-skills" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When to use skills
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#entry-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Entry types
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#config-examples" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Config examples
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#local-skill-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Local skill discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#creating-a-local-skill" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Creating a local skill
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#how-skills-reach-the-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How skills reach the model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#allowed-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        allowed-tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#best-practices" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Best practices
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#context-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Context management
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#serving-hints" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Serving hints
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#diagnostics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Diagnostics
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="agent">Agent</h1>
+<p>An <code>Agent</code> is LLLM's "caller". It holds a system prompt, a model, and an
+invoker, and it runs prompts through a deterministic call loop. An agent is not
+a long-running process: it owns the dialogs it opens, and inside a tactic a
+fresh set of agents is built for every call.</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"task_1"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"topic"</span><span class="p">:</span> <span class="n">topic</span><span class="p">})</span>  <span class="c1"># create a dialog, seeded with the system prompt</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Analyze this paper"</span><span class="p">)</span>                  <span class="c1"># append a user turn</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>                           <span class="c1"># run the call loop, return a Message</span>
+</code></pre></div>
+<p>The point of the agent is control: each <code>respond()</code> either produces a reply
+that satisfies the active prompt's contract or raises. Parsing failures, tool
+calls, and provider errors are handled by explicit, bounded steps you can read
+and override.</p>
+<hr />
+<h2 id="creating-agents">Creating agents</h2>
+<h3 id="from-configuration-inside-a-tactic">From configuration (inside a tactic)</h3>
+<p>Agents are usually declared in config and built by a <code>Tactic</code> that sets
+<code>agent_group</code>. A config entry says which model the agent uses, which system prompt it reads, and how
+its call loop behaves.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># configs/research_writer.yaml</span>
+<span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<span class="w">  </span><span class="nt">max_exception_retry</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">3</span>
+
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research/researcher_system</span><span class="w">   </span><span class="c1"># a registered prompt</span>
+<span class="w">    </span><span class="nt">model_args</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.3</span>
+<span class="w">      </span><span class="nt">max_completion_tokens</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">4000</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">writer</span>
+<span class="w">    </span><span class="nt">system_prompt</span><span class="p">:</span><span class="w"> </span><span class="s">"You</span><span class="nv"> </span><span class="s">write</span><span class="nv"> </span><span class="s">clear</span><span class="nv"> </span><span class="s">summaries</span><span class="nv"> </span><span class="s">of</span><span class="nv"> </span><span class="s">{topic}."</span><span class="w">   </span><span class="c1"># inline prompt</span>
+<span class="w">    </span><span class="nt">model_args</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.7</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">resolve_config</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ResearchWriter</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"research_writer"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"researcher"</span><span class="p">,</span> <span class="s2">"writer"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">researcher</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"researcher"</span><span class="p">]</span>     <span class="c1"># a ready Agent</span>
+        <span class="o">...</span>
+
+
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">ResearchWriter</span><span class="p">(</span><span class="n">resolve_config</span><span class="p">(</span><span class="s2">"research_writer"</span><span class="p">))</span>
+</code></pre></div>
+<p>Each <code>agent_configs</code> entry is parsed into an <code>AgentSpec</code>; <code>spec.build(runtime,
+invoker)</code> produces the live <code>Agent</code>. Config errors (missing <code>model_name</code>, a
+system prompt path that does not resolve) surface when the tactic is
+constructed, before any model call. The full schema (<code>global</code> defaults,
+<code>model_args</code> merging, <code>base</code> inheritance) is in <a href="../config/">Configuration</a>.</p>
+<h3 id="directly">Directly</h3>
+<p><code>Agent</code> is a dataclass; build one yourself when you do not need a tactic.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.invokers</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_invoker</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Agent</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"writer"</span><span class="p">,</span>
+    <span class="n">system_prompt</span><span class="o">=</span><span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"writer/system"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"You write clear notes."</span><span class="p">),</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o-mini"</span><span class="p">,</span>
+    <span class="n">llm_invoker</span><span class="o">=</span><span class="n">build_invoker</span><span class="p">({</span><span class="s2">"invoker"</span><span class="p">:</span> <span class="s2">"litellm"</span><span class="p">}),</span>
+    <span class="n">model_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"temperature"</span><span class="p">:</span> <span class="mf">0.2</span><span class="p">},</span>
+    <span class="n">max_interrupt_steps</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"draft"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Write a short project update."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>required</td>
+<td>Agent name; also the <code>name</code> on its replies.</td>
+</tr>
+<tr>
+<td><code>system_prompt</code></td>
+<td>required</td>
+<td><code>Prompt</code> used to seed every dialog the agent opens.</td>
+</tr>
+<tr>
+<td><code>model</code></td>
+<td>required</td>
+<td>Model id passed to the invoker (for LiteLLM: <code>gpt-4o</code>, <code>anthropic/claude-...</code>, <code>ollama/llama3</code>).</td>
+</tr>
+<tr>
+<td><code>llm_invoker</code></td>
+<td>required</td>
+<td>A <code>BaseInvoker</code>. See <a href="../invokers/">Invokers</a>.</td>
+</tr>
+<tr>
+<td><code>stream_handler</code></td>
+<td><code>None</code></td>
+<td><code>BaseStreamHandler</code> that receives streamed chunks.</td>
+</tr>
+<tr>
+<td><code>runtime</code></td>
+<td>default runtime</td>
+<td>Registry used to resolve prompt paths and tool refs.</td>
+</tr>
+<tr>
+<td><code>api_type</code></td>
+<td><code>APITypes.COMPLETION</code></td>
+<td><code>COMPLETION</code> (Chat Completions) or <code>RESPONSE</code> (OpenAI Responses API).</td>
+</tr>
+<tr>
+<td><code>model_args</code></td>
+<td><code>{}</code></td>
+<td>Provider arguments (<code>temperature</code>, <code>max_tokens</code>, ...).</td>
+</tr>
+<tr>
+<td><code>max_exception_retry</code></td>
+<td><code>3</code></td>
+<td>Repair attempts when the reply fails to parse.</td>
+</tr>
+<tr>
+<td><code>max_interrupt_steps</code></td>
+<td><code>5</code></td>
+<td>Tool-call rounds per <code>respond()</code>. <code>0</code> means up to 100.</td>
+</tr>
+<tr>
+<td><code>max_llm_recall</code></td>
+<td><code>0</code></td>
+<td>Retries after a provider error (rate limits are handled separately).</td>
+</tr>
+<tr>
+<td><code>max_rate_limit_retries</code></td>
+<td><code>8</code></td>
+<td>Retries after rate-limit errors, with exponential backoff.</td>
+</tr>
+<tr>
+<td><code>context_manager</code></td>
+<td><code>None</code></td>
+<td><code>ContextManager</code> applied before each model call. See <a href="../dialog/#context-manager">Dialog</a>.</td>
+</tr>
+<tr>
+<td><code>inference_hints</code></td>
+<td><code>None</code></td>
+<td><code>InferenceHints</code> sent with each model call. See <a href="#serving-hints">Serving hints</a>.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="quick-constructor">Quick constructor</h3>
+<p>For a one-off agent without config files:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+<span class="n">agent</span> <span class="o">=</span> <span class="n">Tactic</span><span class="o">.</span><span class="n">quick</span><span class="p">(</span><span class="n">system_prompt</span><span class="o">=</span><span class="s2">"You are a helpful assistant."</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"chat"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"What is the capital of France?"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+
+<span class="n">reply</span> <span class="o">=</span> <span class="n">Tactic</span><span class="o">.</span><span class="n">quick</span><span class="p">(</span><span class="s2">"What is the capital of France?"</span><span class="p">)</span>              <span class="c1"># one-shot Message</span>
+<span class="n">reply</span><span class="p">,</span> <span class="n">agent</span> <span class="o">=</span> <span class="n">Tactic</span><span class="o">.</span><span class="n">quick</span><span class="p">(</span><span class="s2">"And of Italy?"</span><span class="p">,</span> <span class="n">return_agent</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>       <span class="c1"># Message + Agent</span>
+</code></pre></div>
+<p><code>quick(query=None, system_prompt="You are a helpful assistant.", model="gpt-4o",
+return_agent=False, **model_args)</code> returns an <code>Agent</code> named <code>"assistant"</code> when
+<code>query</code> is omitted, otherwise the reply <code>Message</code> (and the agent with
+<code>return_agent=True</code>). Extra keyword arguments become <code>model_args</code>.</p>
+<hr />
+<h2 id="llm-call-vs-agent-call">LLM call vs. agent call</h2>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>LLM call</th>
+<th>Agent call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Input</td>
+<td>A flat list of chat messages.</td>
+<td>A <code>Dialog</code> owned by the agent, seeded with a system <code>Prompt</code>.</td>
+</tr>
+<tr>
+<td>Output</td>
+<td>Raw model text plus metadata.</td>
+<td>A <code>Message</code>, or an <code>AgentCallSession</code> with every invocation and retry.</td>
+</tr>
+<tr>
+<td>Responsibility</td>
+<td>The caller decides whether to retry, parse, or continue.</td>
+<td>The agent parses, repairs, runs tools, and retries within fixed budgets.</td>
+</tr>
+<tr>
+<td>Determinism</td>
+<td>Best effort.</td>
+<td>A valid next state or an explicit exception.</td>
+</tr>
+</tbody>
+</table>
+<p>The goal of the agent call is to make an agent behave like a function: stable
+inputs, a declared output contract, and bounded side effects.</p>
+<hr />
+<h2 id="the-call-loop">The call loop</h2>
+<p><code>agent.respond()</code> runs a small state machine until it reaches a final reply.
+In async code, <code>await agent.arespond()</code> does the same off the event loop
+(inside a tactic it is recorded in the session like <code>respond()</code>).</p>
+<div class="mermaid">stateDiagram-v2
+  [*] --&gt; invoke
+  invoke --&gt; exception: reply fails to parse
+  exception --&gt; invoke: repair prompt (working dialog)
+  exception --&gt; [*]: max_exception_retry reached, raise
+  invoke --&gt; llm_recall: provider error
+  llm_recall --&gt; invoke: retry
+  llm_recall --&gt; [*]: max_llm_recall reached, raise
+  invoke --&gt; rate_limited: rate limit
+  rate_limited --&gt; invoke: back off and retry
+  rate_limited --&gt; [*]: max_rate_limit_retries reached, raise
+  invoke --&gt; interrupt: tool calls
+  interrupt --&gt; invoke: tool results appended
+  invoke --&gt; success: final reply
+  success --&gt; [*]</div>
+<p>Step by step:</p>
+<ol>
+<li><strong>Resolve the contract.</strong> The active prompt is <code>dialog.top_prompt</code> (the
+   system prompt if nothing else was sent). String tool refs and bare
+   <code>Function</code> declarations on it are resolved to executable tools, and the
+   agent's own tools are added to it (see
+   <a href="#where-tools-and-parsers-come-from">Where tools and parsers come from</a>).</li>
+<li><strong>Fork a working dialog</strong> for this step and pass it through the
+   <code>context_manager</code>, if any. The canonical dialog is never pruned or edited.</li>
+<li><strong>Invoke.</strong> The invoker calls the model with <code>model_args</code> (plus any per-call
+   <code>args</code>) and returns an <code>InvokeResult</code>; the reply is appended to the working
+   dialog.</li>
+<li><strong>Parse failure.</strong> If <code>invoke_result.has_errors</code>, the error is recorded and
+   the prompt's handler builds a repair prompt (<code>on_exception</code>), which is
+   rendered with <code>{error_message}</code> into the <em>working</em> dialog. The model is called
+   again. After <code>max_exception_retry</code> failures the <code>AgentException</code> propagates.</li>
+<li><strong>Provider error.</strong> A rate limit (LiteLLM/OpenAI <code>RateLimitError</code>, HTTP 429,
+   or a provider's "Rate limit is exceeded." / "Please wait and try again later."
+   message) is retried with exponential backoff, waiting <code>min(60, 2**n)</code> seconds
+   plus up to 1 s of jitter, up to <code>max_rate_limit_retries</code> times (default 8),
+   then re-raised. Any other exception from the invoker counts as an LLM recall
+   and is retried after 1 s, up to <code>max_llm_recall</code> times (default 0), then
+   re-raised.</li>
+<li><strong>Commit.</strong> The valid reply is appended to the canonical dialog.</li>
+<li><strong>Tool calls.</strong> If the reply requests tools, each <code>FunctionCall</code> is executed
+   against the prompt's <code>Function</code>s and the result is appended as a <code>tool</code>
+   message through the handler's <code>on_interrupt</code> prompt (<code>{call_results}</code>). An
+   identical repeated call gets a "already called, check previous results"
+   message instead of running again; a tool name the prompt does not declare
+   raises <code>KeyError</code>. Then the loop continues with the next step.</li>
+<li><strong>Tool budget.</strong> After <code>max_interrupt_steps</code> tool rounds, the handler's
+   <code>on_interrupt_final</code> prompt (no tools) asks for the final answer.</li>
+<li><strong>Success.</strong> A plain assistant reply ends the loop; it becomes
+   <code>session.delivery</code>. If the steps run out first, the session is marked
+   <code>"failure"</code> and <code>ValueError</code> is raised.</li>
+</ol>
+<p>Because repairs happen in a fork, the canonical dialog contains only the turns
+that succeeded: system prompt, user turns, tool calls and results, and the final
+reply.</p>
+<h3 id="key-types">Key types</h3>
+<p><strong><code>InvokeResult</code></strong>, returned by the invoker for each model call:</p>
+<div class="highlight"><pre><span></span><code><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">InvokeResult</span><span class="p">:</span>
+    <span class="n">raw_response</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span>                                         <span class="c1"># raw provider response</span>
+    <span class="n">model_args</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>         <span class="c1"># args actually sent</span>
+    <span class="n">execution_errors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">list</span><span class="p">)</span>  <span class="c1"># parse/validation errors</span>
+    <span class="n">message</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Message</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>                                <span class="c1"># the conversational message</span>
+</code></pre></div>
+<p>Properties: <code>has_errors</code>, <code>error_message</code> (errors joined by newlines), and
+<code>cost</code> (an <code>InvokeCost</code> computed from <code>message.usage</code>).</p>
+<p><strong><code>AgentCallSession</code></strong>, the full record of one <code>respond()</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">AgentCallSession</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">agent_name</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">max_exception_retry</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">max_interrupt_steps</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="n">max_llm_recall</span><span class="p">:</span> <span class="nb">int</span>
+
+    <span class="n">exception_retries</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># parse failures, keyed by loop step</span>
+    <span class="n">interrupts</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">FunctionCall</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>      <span class="c1"># tool calls per step</span>
+    <span class="n">llm_recalls</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="ne">Exception</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>        <span class="c1"># provider errors per step</span>
+    <span class="n">invoke_traces</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">InvokeResult</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{}</span>   <span class="c1"># every invocation, failed ones included</span>
+
+    <span class="n">delivery</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Message</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>                  <span class="c1"># final reply on success</span>
+    <span class="n">state</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"initial"</span><span class="p">,</span> <span class="s2">"exception"</span><span class="p">,</span> <span class="s2">"interrupt"</span><span class="p">,</span> <span class="s2">"llm_recall"</span><span class="p">,</span> <span class="s2">"success"</span><span class="p">,</span> <span class="s2">"failure"</span><span class="p">]</span> <span class="o">=</span> <span class="s2">"initial"</span>
+</code></pre></div>
+<p>Properties: <code>exception_retries_count</code>, <code>llm_recalls_count</code>,
+<code>reach_max_exception_retry</code>, <code>reach_max_interrupt_steps</code>,
+<code>reach_max_llm_recall</code>, and <code>cost</code> (summed over every invoke trace, failed
+attempts included).</p>
+<p>Handlers receive this object, so a repair strategy can depend on how many
+retries happened and what failed.</p>
+<hr />
+<h2 id="where-tools-and-parsers-come-from">Where tools and parsers come from</h2>
+<p>Each turn is driven by <code>dialog.top_prompt</code>, the prompt that sent the most recent
+turn. The parser, <code>format</code>, and handlers come from it:</p>
+<table>
+<thead>
+<tr>
+<th>Call</th>
+<th><code>top_prompt</code> after it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agent.open(alias, prompt_args)</code></td>
+<td>The agent's system prompt.</td>
+</tr>
+<tr>
+<td><code>agent.receive_prompt(prompt, prompt_args)</code></td>
+<td><code>prompt</code>, with its parser, format, and handler.</td>
+</tr>
+<tr>
+<td><code>agent.receive(text)</code></td>
+<td>A plain prompt for that text: no parser, so the reply is free-form.</td>
+</tr>
+<tr>
+<td><code>agent.receive_image(image)</code></td>
+<td>Unchanged.</td>
+</tr>
+<tr>
+<td>Tool results inside the loop</td>
+<td>With the default handler, a child of the current prompt that keeps its parser.</td>
+</tr>
+</tbody>
+</table>
+<p>Tools are different: they are capabilities of the agent. The tools on the
+agent's system prompt (its <code>function_list</code>, including agent-config <code>tools</code>,
+proxy tools, and skills, plus MCP servers) are merged into whatever prompt
+drives the turn, on <strong>every</strong> turn. The turn prompt can add its own tools on top
+and wins on a name clash. A prompt that must be answered without the agent's
+tools sets <code>agent_tools=False</code>.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span>
+
+<span class="n">ask</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"analyst/ask"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"</span><span class="si">{question}</span><span class="se">\n</span><span class="s2">Answer inside &lt;answer&gt; tags."</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]),</span>
+<span class="p">)</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"main"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Remember: we report in USD."</span><span class="p">)</span>          <span class="c1"># plain turn, agent tools available</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">ask</span><span class="p">,</span> <span class="p">{</span><span class="s2">"question"</span><span class="p">:</span> <span class="s2">"What changed in Q3 revenue?"</span><span class="p">})</span>
+<span class="n">reply</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>                                <span class="c1"># parser from `ask`, agent tools available</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"answer"</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
+
+<span class="n">final</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"analyst/final"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Summarise in one line: </span><span class="si">{topic}</span><span class="s2">"</span><span class="p">,</span> <span class="n">agent_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">final</span><span class="p">,</span> <span class="p">{</span><span class="s2">"topic"</span><span class="p">:</span> <span class="s2">"Q3"</span><span class="p">})</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>                                        <span class="c1"># no tools on this turn</span>
+</code></pre></div>
+<hr />
+<h2 id="interrupt-and-exception-handling">Interrupt and exception handling</h2>
+<p>Each <code>Prompt</code> carries a <code>handler</code> that the loop calls automatically:</p>
+<ul>
+<li><strong><code>on_exception(prompt, session)</code></strong> runs when parsing or validation fails.
+  Its prompt is rendered with <code>{error_message}</code>. Called up to
+  <code>max_exception_retry</code> times, always inside the forked working dialog.</li>
+<li><strong><code>on_interrupt(prompt, session)</code></strong> runs after each tool call. Its prompt is
+  rendered with <code>{call_results}</code> and stays in the dialog as the <code>tool</code> message.</li>
+<li><strong><code>on_interrupt_final(prompt, session)</code></strong> runs when <code>max_interrupt_steps</code> is
+  reached and asks for the final reply without tools.</li>
+</ul>
+<p>The default <code>DefaultSimpleHandler</code> derives each of these from the active prompt
+with <code>prompt.extend(...)</code>, so repair turns keep the parser (and, except for the
+final prompt, the tools). Custom handlers are covered in
+<a href="../prompts/#handlers">Prompts</a>.</p>
+<hr />
+<h2 id="respond-arguments"><code>respond()</code> arguments</h2>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span>
+    <span class="n">alias</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>           <span class="c1"># dialog to respond in; default: the active dialog</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>        <span class="c1"># attached to the reply Message's metadata, not sent to the model</span>
+    <span class="n">args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>            <span class="c1"># per-call model args merged over model_args, e.g. {"temperature": 0}</span>
+    <span class="n">parser_args</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>     <span class="c1"># keyword arguments forwarded to prompt.parse(...)</span>
+    <span class="n">return_session</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="c1"># True: return the AgentCallSession instead of the Message</span>
+<span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="dialog-management">Dialog management</h2>
+<p>Agents own the dialogs they create, keyed by a user-chosen alias. The alias
+makes code self-documenting and keeps dialogs from leaking between agents.</p>
+<div class="highlight"><pre><span></span><code><span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"coder"</span><span class="p">]</span>
+
+<span class="c1"># Open a dialog: seeded with the system prompt, becomes active</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"task_1"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"language"</span><span class="p">:</span> <span class="s2">"Python"</span><span class="p">})</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Write a sorting function"</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="c1"># Open a second dialog, then switch back</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"task_2"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"language"</span><span class="p">:</span> <span class="s2">"Rust"</span><span class="p">})</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">switch</span><span class="p">(</span><span class="s2">"task_1"</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Now add error handling"</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="c1"># Fork for exploration: keep the system prompt + the last 2 messages, switch to it</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">fork</span><span class="p">(</span><span class="s2">"task_1"</span><span class="p">,</span> <span class="s2">"task_1_alt"</span><span class="p">,</span> <span class="n">last_n</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">first_k</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">switch</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">agent</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Try a different algorithm"</span><span class="p">)</span>
+<span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">old</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="s2">"task_2"</span><span class="p">)</span>       <span class="c1"># detach and return the Dialog</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>open(alias, prompt_args=None, session_name=None, switch=True)</code></td>
+<td>New dialog seeded with the rendered system prompt. Raises <code>ValueError</code> if the alias exists.</td>
+</tr>
+<tr>
+<td><code>fork(alias, child_alias, last_n=0, first_k=1, switch=True)</code></td>
+<td>Branch <code>alias</code> into <code>child_alias</code> (see <a href="../dialog/#forking">Dialog forking</a>).</td>
+</tr>
+<tr>
+<td><code>switch(alias)</code></td>
+<td>Make <code>alias</code> active.</td>
+</tr>
+<tr>
+<td><code>close(alias)</code></td>
+<td>Remove the dialog and return it.</td>
+</tr>
+<tr>
+<td><code>receive(text, alias=None, role=Roles.USER, name="user")</code></td>
+<td>Append text.</td>
+</tr>
+<tr>
+<td><code>receive_prompt(prompt, prompt_args=None, alias=None, role=Roles.USER, name="user")</code></td>
+<td>Append a rendered prompt and make it the active contract.</td>
+</tr>
+<tr>
+<td><code>receive_image(image, caption=None, alias=None, role=Roles.USER, name="user")</code></td>
+<td>Append an image (path, base64 string, or PIL image).</td>
+</tr>
+<tr>
+<td><code>current_dialog</code></td>
+<td>The active <code>Dialog</code>.</td>
+</tr>
+<tr>
+<td><code>dialogs</code></td>
+<td>Snapshot dict of alias → <code>Dialog</code>.</td>
+</tr>
+<tr>
+<td><code>active_alias</code></td>
+<td>The active alias, or <code>None</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>open</code>, <code>fork</code>, and <code>switch</code> return the agent, so calls can be chained.</p>
+<p>For multi-agent collaboration, each agent keeps its own dialog. Information is
+shared explicitly by passing content between agents in the tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="n">coder</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"collab"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"language"</span><span class="p">:</span> <span class="s2">"Python"</span><span class="p">})</span>
+<span class="n">reviewer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"collab"</span><span class="p">)</span>
+
+<span class="n">coder</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="s2">"Write a REST API"</span><span class="p">)</span>
+<span class="n">code</span> <span class="o">=</span> <span class="n">coder</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">reviewer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">code</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">coder</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">review</span> <span class="o">=</span> <span class="n">reviewer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+
+<span class="n">coder</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">review</span><span class="o">.</span><span class="n">content</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">reviewer</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+<span class="n">revision</span> <span class="o">=</span> <span class="n">coder</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="tools">Tools</h2>
+<p>A prompt's <code>function_list</code> declares the tools for one turn. Agents can also
+receive standing tools through config: entries in <code>tools</code> are appended to the
+agent's system prompt when the agent is built.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<span class="w">  </span><span class="nt">tools</span><span class="p">:</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared_pkg.tools:search</span><span class="w">                </span><span class="c1"># a @tool Function</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared_pkg.tactics:code_review</span><span class="w">         </span><span class="c1"># a tactic tool</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared_pkg.tactics:research#summarize</span><span class="w">  </span><span class="c1"># a named tactic tool method</span>
+<span class="w">    </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">shared_pkg.proxies:market_data</span><span class="w">         </span><span class="c1"># a proxy (programming surface)</span>
+
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/analyst</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">writer</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/writer</span>
+<span class="w">    </span><span class="nt">tools</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[]</span><span class="w">   </span><span class="c1"># replaces the global list; writer gets none</span>
+</code></pre></div>
+<p>Like <code>skills</code>, <code>tools</code> may be set globally or per agent, and a per-agent list
+replaces the global one. The tools live on the system prompt, so they are
+offered on every turn, whichever prompt drives it, unless that prompt sets
+<code>agent_tools=False</code>; see
+<a href="#where-tools-and-parsers-come-from">Where tools and parsers come from</a>.</p>
+<p>Regular tool and tactic refs stay strings until the prompt runs, then resolve
+through the runtime: full URLs (<code>pkg.tools:name</code>) are exact, while bare names
+and <code>pkg:name</code> shorthand resolve relative to the system prompt's package before
+the runtime's default namespace. Proxy refs must be explicit
+(<code>pkg.proxies:name</code>); they are resolved when the agent is built because they
+inject <code>query_api_doc</code>, <code>run_python</code>, and an API directory into the system
+prompt. See <a href="../proxy-and-sandbox/">Proxies &amp; Sandbox</a>.</p>
+<p>Config stores references, not live objects, so there are no definition cycles.
+Keep tool modules declarative at import time: define <code>@tool</code> functions and
+<code>BaseProxy</code> classes there, and build or load any agent a tool needs inside the
+tool function body.</p>
+<hr />
+<h2 id="skills">Skills</h2>
+<p>LLLM supports agent skills following the <a href="https://agentskills.io">agentskills.io</a>
+standard: reusable, self-contained capability folders that you attach to an
+agent through config instead of baking them into the system prompt. The spec is
+young and evolving, so treat this surface as experimental.</p>
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pdf</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">skill_01abc</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">https</span><span class="p p-Indicator">:</span><span class="nv">//example.com/skills/review/SKILL.md</span><span class="p p-Indicator">]</span>
+</code></pre></div>
+<h3 id="when-to-use-skills">When to use skills</h3>
+<p>Use skills instead of system-prompt text when:</p>
+<ul>
+<li>the capability is reusable across agents or projects ("how to fill a PDF
+  form", "commit message conventions");</li>
+<li>you want to version and share capabilities independently of prompts;</li>
+<li>you need provider-hosted tool grants that must be declared server-side;</li>
+<li>the instructions are long and only some agents need them.</li>
+</ul>
+<p>Keep persona and role instructions in the system prompt, and per-call values
+(user name, date) in prompt template variables.</p>
+<h3 id="entry-types">Entry types</h3>
+<p>Each entry in <code>skills</code> is classified by its format:</p>
+<table>
+<thead>
+<tr>
+<th>Format</th>
+<th>Example</th>
+<th>Mechanism</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Local name</td>
+<td><code>pdf</code></td>
+<td>Found in the standard skill directories; catalog entry injected into the system prompt. Works with any model.</td>
+</tr>
+<tr>
+<td>Anthropic skill ID</td>
+<td><code>skill_01abc123</code></td>
+<td>Sent to the API as <code>skills=[{"id": ...}]</code> with the <code>anthropic-beta: skills-2025-10-02</code> header. Anthropic models only.</td>
+</tr>
+<tr>
+<td>URL</td>
+<td><code>https://example.com/skills/review/SKILL.md</code></td>
+<td>Downloaded when the agent is built; catalog entry injected. Works with any model.</td>
+</tr>
+<tr>
+<td><code>"*"</code></td>
+<td><code>skills: "*"</code></td>
+<td>Every locally discovered skill.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="config-examples">Config examples</h3>
+<p>Same skills for all agents:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">pdf</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">review-pr</span><span class="p p-Indicator">]</span>
+
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coder</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/coder</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reviewer</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/reviewer</span>
+</code></pre></div>
+<p>Per-agent override (a per-agent list <strong>replaces</strong> the global list):</p>
+<div class="highlight"><pre><span></span><code><span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">claude-sonnet-4-6</span>
+<span class="w">  </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">commit</span><span class="p p-Indicator">]</span>
+
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">coder</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/coder</span>
+<span class="w">    </span><span class="nt">skills</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">[</span><span class="nv">commit</span><span class="p p-Indicator">,</span><span class="w"> </span><span class="nv">pdf</span><span class="p p-Indicator">]</span>
+
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">reviewer</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/reviewer</span>
+<span class="w">    </span><span class="c1"># inherits skills: [commit]</span>
+</code></pre></div>
+<p>Mixed entry types:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">analyst</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">system/analyst</span>
+<span class="w">    </span><span class="nt">skills</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">data-analysis</span><span class="w">                              </span><span class="c1"># local skill</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">skill_01abc123def</span><span class="w">                          </span><span class="c1"># Anthropic-hosted skill</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">https://acme.com/skills/forecast/SKILL.md</span><span class="w">  </span><span class="c1"># remote skill</span>
+</code></pre></div>
+<h3 id="local-skill-discovery">Local skill discovery</h3>
+<p>Local names are resolved by scanning these directories in order; the first match
+wins, so project skills override user skills:</p>
+<div class="highlight"><pre><span></span><code>&lt;cwd&gt;/.agents/skills/&lt;name&gt;/SKILL.md
+&lt;cwd&gt;/.claude/skills/&lt;name&gt;/SKILL.md
+~/.agents/skills/&lt;name&gt;/SKILL.md
+~/.claude/skills/&lt;name&gt;/SKILL.md
+</code></pre></div>
+<p>A missing name logs a warning and is skipped.</p>
+<h3 id="creating-a-local-skill">Creating a local skill</h3>
+<p>A skill is a directory with a <code>SKILL.md</code>:</p>
+<div class="highlight"><pre><span></span><code>.agents/skills/
+└── pdf/
+    ├── SKILL.md          # frontmatter + instructions
+    ├── scripts/          # optional helpers
+    └── references/       # optional reference documents
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>---
+name: pdf
+description: Extract PDF text, fill forms, merge files. Use when handling PDFs.
+<span class="gu">allowed-tools: computer_20250124 text_editor_20250124</span>
+<span class="gu">---</span>
+
+<span class="gh"># PDF Skill</span>
+
+<span class="gu">## Extracting text</span>
+
+Run <span class="sb">`scripts/extract_text.py &lt;input.pdf&gt;`</span> and pipe the output to your analysis step.
+</code></pre></div>
+<p>LLLM reads three frontmatter fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Skill name. Defaults to the directory name.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>What the skill does and when to use it; the only text the model sees before activating it.</td>
+</tr>
+<tr>
+<td><code>allowed-tools</code></td>
+<td>Tool requirements, as a space-separated string or a YAML list.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="how-skills-reach-the-model">How skills reach the model</h3>
+<p>When the agent is built, local and URL skills follow the agentskills.io
+progressive-disclosure model.</p>
+<p><strong>Tier 1: catalog.</strong> Only names and descriptions are appended to the system
+prompt, and an <code>activate_skill</code> tool is added to its <code>function_list</code>. The block
+is brace-escaped, so braces in a description reach the model as written when the
+prompt renders with the default <code>str.format</code> renderer:</p>
+<div class="highlight"><pre><span></span><code>&lt;system prompt text&gt;
+
+When a task matches a skill's description, call the `activate_skill` tool with that skill's name to load its full instructions before proceeding.
+
+&lt;available_skills&gt;
+  &lt;skill name="pdf"&gt;
+    &lt;description&gt;Extract PDF text, fill forms, merge files. Use when handling PDFs.&lt;/description&gt;
+  &lt;/skill&gt;
+&lt;/available_skills&gt;
+</code></pre></div>
+<p><strong>Tier 2: activation.</strong> <code>activate_skill(name="pdf")</code> returns the <code>SKILL.md</code>
+body, the skill directory, and a listing of bundled files:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">&lt;skill_content</span><span class="w"> </span><span class="na">name=</span><span class="s">"pdf"</span><span class="nt">&gt;</span>
+#<span class="w"> </span>PDF<span class="w"> </span>Skill
+...
+
+Skill<span class="w"> </span>directory:<span class="w"> </span>/path/to/.agents/skills/pdf
+Relative<span class="w"> </span>paths<span class="w"> </span>in<span class="w"> </span>this<span class="w"> </span>skill<span class="w"> </span>resolve<span class="w"> </span>against<span class="w"> </span>the<span class="w"> </span>skill<span class="w"> </span>directory.
+
+<span class="nt">&lt;skill_resources&gt;</span>
+<span class="w">  </span><span class="nt">&lt;file&gt;</span>scripts/extract_text.py<span class="nt">&lt;/file&gt;</span>
+<span class="nt">&lt;/skill_resources&gt;</span>
+
+Note:<span class="w"> </span>This<span class="w"> </span>skill<span class="w"> </span>declares<span class="w"> </span>tool<span class="w"> </span>requirements:<span class="w"> </span>computer_20250124<span class="w"> </span>text_editor_20250124.<span class="w"> </span>Ensure<span class="w"> </span>the<span class="w"> </span>agent<span class="w"> </span>has<span class="w"> </span>access<span class="w"> </span>to<span class="w"> </span>these<span class="w"> </span>tools.
+<span class="nt">&lt;/skill_content&gt;</span>
+</code></pre></div>
+<p><strong>Tier 3: resources.</strong> The model reads referenced files with whatever file
+tools you gave it, only when the instructions call for them.</p>
+<p><strong>Anthropic-hosted IDs</strong> skip the tiers. When the agent is built, this patch is
+deep-merged into its <code>model_args</code>, so it is sent on every call:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+    <span class="s2">"skills"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"id"</span><span class="p">:</span> <span class="s2">"skill_01abc"</span><span class="p">}],</span>
+    <span class="s2">"extra_headers"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"anthropic-beta"</span><span class="p">:</span> <span class="s2">"skills-2025-10-02"</span><span class="p">},</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Create hosted skills with Anthropic's Skills API, then put the returned
+<code>skill_...</code> ID in the list.</p>
+<h3 id="allowed-tools"><code>allowed-tools</code></h3>
+<p>For hosted skills, <code>allowed-tools</code> grants are applied by Anthropic. For local
+and URL skills the field is informational: <code>activate_skill</code> includes a note
+listing the requirements, but the agent does not receive those tools. Add them
+to the agent's prompt yourself, or use a hosted skill for API-level tool grants.</p>
+<h3 id="best-practices">Best practices</h3>
+<ul>
+<li><strong>Rely on progressive disclosure.</strong> Many installed skills cost only a catalog
+  line each until one is activated.</li>
+<li><strong>Write <code>description</code> as a trigger, not a title.</strong> "Extract PDF text, fill
+  forms, merge files. Use when handling PDFs." beats "PDF utilities".</li>
+<li><strong>Keep <code>SKILL.md</code> short</strong> and move long reference material into files the
+  model can load on demand.</li>
+<li><strong>Scope skills to the agents that need them.</strong> Per-agent lists replace the
+  global list.</li>
+<li><strong>Commit <code>.agents/skills/</code></strong> next to your prompts and configs.</li>
+<li><strong>Cache remote skills.</strong> A tactic rebuilds its agents on every call, so URL
+  skills are fetched again each time (and local directories rescanned). An
+  unreachable URL logs a warning and the skill is skipped.</li>
+</ul>
+<hr />
+<h2 id="context-management">Context management</h2>
+<p>Set <code>context_manager</code> (or <code>context_manager:</code> in config) to prune or rewrite the
+working dialog before each model call; the canonical dialog keeps growing
+untouched. The built-in <code>DefaultContextManager</code> truncates old messages to fit
+the model's context window. See <a href="../dialog/#context-manager">Dialog</a>.</p>
+<h2 id="streaming">Streaming</h2>
+<p>Give the agent a <code>BaseStreamHandler</code> to receive chunks while the full
+<code>InvokeResult</code> is still assembled at the end:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.invokers.base</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseStreamHandler</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">PrintStream</span><span class="p">(</span><span class="n">BaseStreamHandler</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">handle_chunk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">chunk_content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">chunk_response</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">chunk_content</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s2">""</span><span class="p">,</span> <span class="n">flush</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+
+<span class="n">agent</span><span class="o">.</span><span class="n">stream_handler</span> <span class="o">=</span> <span class="n">PrintStream</span><span class="p">()</span>
+<span class="n">message</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+</code></pre></div>
+<p>See <a href="../invokers/#streaming">Invokers</a>.</p>
+<h2 id="serving-hints">Serving hints</h2>
+<p>An agent knows things a model server cannot see from a single request: which
+calls belong to the same dialog, which dialog was forked from which (a shared
+prompt prefix), and how urgent a call is. <code>inference_hints</code> turns that into
+request fields for serving stacks with KV-cache-aware routing and priority
+scheduling:</p>
+<div class="highlight"><pre><span></span><code><span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">planner/system</span>
+<span class="w">    </span><span class="nt">inference_hints</span><span class="p">:</span>
+<span class="w">      </span><span class="nt">profile</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">vllm</span><span class="w">          </span><span class="c1"># "openai" (default) | "dynamo" | "vllm" | "sglang"</span>
+<span class="w">      </span><span class="nt">priority</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">5</span><span class="w">            </span><span class="c1"># higher is more urgent</span>
+<span class="w">      </span><span class="nt">session_prefix</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">run-42</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">InferenceHints</span>
+
+<span class="n">agent</span><span class="o">.</span><span class="n">inference_hints</span> <span class="o">=</span> <span class="n">InferenceHints</span><span class="p">(</span><span class="n">profile</span><span class="o">=</span><span class="s2">"dynamo"</span><span class="p">,</span> <span class="n">priority</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div>
+<p>The session id is the dialog id being answered (prefixed with
+<code>session_prefix</code>), and a forked dialog also sends its parent's id. Each profile
+maps these to its own headers and body fields (<code>x-session-id</code>,
+<code>x-dynamo-session-id</code>, <code>nvext.agent_hints</code>, vLLM <code>priority</code> and <code>cache_salt</code>),
+merged into <code>model_args</code> as <code>extra_headers</code> / <code>extra_body</code> without overriding
+values you set yourself. Servers ignore headers they do not use, so the default
+<code>openai</code> profile is always safe.</p>
+<p><a href="../inference-hints/">Inference Hints</a> covers every profile and field, the
+server-side flags for Dynamo, vLLM, and SGLang, and what a server receives.</p>
+<hr />
+<h2 id="diagnostics">Diagnostics</h2>
+<p>Pass <code>return_session=True</code> to get the full <code>AgentCallSession</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ResearchTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"research"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"researcher"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"researcher"</span><span class="p">]</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"research"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"topic"</span><span class="p">:</span> <span class="n">task</span><span class="p">})</span>
+
+        <span class="n">session</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">(</span><span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>                          <span class="c1"># "success"</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="o">.</span><span class="n">parsed</span><span class="p">)</span>                <span class="c1"># parser output</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>                           <span class="c1"># tokens and dollars, all attempts</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">exception_retries_count</span><span class="p">)</span>        <span class="c1"># repairs needed</span>
+        <span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">interrupts</span><span class="p">))</span>                <span class="c1"># tool rounds</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">current_dialog</span><span class="o">.</span><span class="n">tree_overview</span><span class="p">())</span>   <span class="c1"># dialog tree incl. working forks</span>
+
+        <span class="k">return</span> <span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="o">.</span><span class="n">content</span>
+</code></pre></div>
+<p>Inside a tactic, every <code>respond()</code> is also recorded on the tactic's
+<code>TacticCallSession</code>; see <a href="../tactic/#session-tracking">Tactics</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

@@ -1,0 +1,1558 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/sssn/processing/">
+      
+      
+        <link rel="prev" href="../channels/">
+      
+      
+        <link rel="next" href="../serving/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Tactic Processing - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#processing-channels-with-tactics" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Tactic Processing
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../" class="psi-header-nav__link psi-header-nav__link--active">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    SSSN: the network module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../channels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Channels
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactic Processing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactic Processing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One stage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-tactic-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the tactic sees
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resuming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resuming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#without-a-sink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Without a sink
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-and-async-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote and async stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipelines
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pipelines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracing-a-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracing a result
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fan-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fan-out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latest-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latest state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-a-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running a worker
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../serving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Serving and Refs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#one-stage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        One stage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-tactic-sees" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the tactic sees
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resuming" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resuming
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#failures" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Failures
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#without-a-sink" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Without a sink
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#remote-and-async-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Remote and async stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#pipelines" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Pipelines
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Pipelines">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tracing-a-result" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tracing a result
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fan-out" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fan-out
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#latest-state" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Latest state
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#running-a-worker" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Running a worker
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="processing-channels-with-tactics">Processing channels with tactics</h1>
+<p><code>TacticProcessor</code> runs a tactic over the events of one channel. For each
+pending event it calls the tactic with the event's payload, which the tactic
+validates against its input type, and appends the output to a sink channel.
+Each output points back at its input through <code>parent_ids</code> and carries the
+input's <code>correlation_id</code>, so you can chain processors into pipelines and still
+trace every result to where it came from.</p>
+<div class="highlight"><pre><span></span><code>inbox ──subscription──▶ TacticProcessor(tactic) ──append──▶ triaged
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Argument</th>
+<th>Default</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tactic</code></td>
+<td>required</td>
+<td>Any lllm <code>Tactic</code>: a subclass, <code>as_tactic(fn)</code>, a native tactic with agents, a <code>RemoteTactic</code>.</td>
+</tr>
+<tr>
+<td><code>store</code></td>
+<td>required</td>
+<td><code>LocalStore</code> or <code>RemoteStore</code> for <code>process()</code>; any store, including <code>AsyncRemoteStore</code>, for <code>aprocess()</code>.</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>required</td>
+<td>Channel to read.</td>
+</tr>
+<tr>
+<td><code>sink</code></td>
+<td><code>None</code></td>
+<td>Channel to append outputs to. Without one, outputs are returned instead.</td>
+</tr>
+<tr>
+<td><code>consumer</code></td>
+<td><code>"&lt;tactic name&gt;-&lt;source&gt;-processor"</code>, or <code>"&lt;tactic name&gt;-&lt;source&gt;-&lt;kind&gt;-processor"</code> with a <code>kind</code></td>
+<td>Subscription id, and the <code>source</code> field of output events. See <a href="#resuming">Resuming</a>.</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>None</code></td>
+<td>Only process source events of this kind.</td>
+</tr>
+<tr>
+<td><code>output_kind</code></td>
+<td><code>"result"</code></td>
+<td><code>kind</code> of the output events.</td>
+</tr>
+<tr>
+<td><code>errors</code></td>
+<td><code>"raise"</code></td>
+<td><code>"raise"</code> stops on the first failure and retries that event on the next call; <code>"record"</code> writes an error event and continues. See <a href="#failures">Failures</a>.</td>
+</tr>
+</tbody>
+</table>
+<p>The examples on this page run top to bottom as one session.</p>
+<h2 id="one-stage">One stage</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">Event</span><span class="p">,</span> <span class="n">LocalStore</span><span class="p">,</span> <span class="n">TacticProcessor</span>
+
+<span class="n">URGENT</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"\b(down|outage|failing|broken)\b"</span><span class="p">,</span> <span class="n">re</span><span class="o">.</span><span class="n">IGNORECASE</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Ticket</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Triage</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">TriageTicket</span><span class="p">(</span><span class="n">Tactic</span><span class="p">[</span><span class="n">Ticket</span><span class="p">,</span> <span class="n">Triage</span><span class="p">]):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"triage"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Ticket</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Triage</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">priority</span> <span class="o">=</span> <span class="s2">"urgent"</span> <span class="k">if</span> <span class="n">URGENT</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">input_value</span><span class="o">.</span><span class="n">text</span><span class="p">)</span> <span class="k">else</span> <span class="s2">"normal"</span>
+        <span class="k">return</span> <span class="n">Triage</span><span class="p">(</span><span class="n">priority</span><span class="o">=</span><span class="n">priority</span><span class="p">,</span> <span class="n">summary</span><span class="o">=</span><span class="n">input_value</span><span class="o">.</span><span class="n">text</span><span class="p">[:</span><span class="mi">40</span><span class="p">])</span>
+
+
+<span class="n">store</span> <span class="o">=</span> <span class="n">LocalStore</span><span class="p">(</span><span class="s2">".lllm/network"</span><span class="p">)</span>
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">})</span>
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"triaged"</span><span class="p">})</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">submit</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">ticket</span><span class="p">):</span>
+    <span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+        <span class="n">Event</span><span class="p">(</span>
+            <span class="n">channel</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span>
+            <span class="n">source</span><span class="o">=</span><span class="s2">"web-form"</span><span class="p">,</span>
+            <span class="n">kind</span><span class="o">=</span><span class="s2">"message"</span><span class="p">,</span>
+            <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="n">text</span><span class="p">},</span>
+            <span class="n">correlation_id</span><span class="o">=</span><span class="n">ticket</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+
+
+<span class="n">submit</span><span class="p">(</span><span class="s2">"Checkout is down"</span><span class="p">,</span> <span class="s2">"T-100"</span><span class="p">)</span>
+<span class="n">submit</span><span class="p">(</span><span class="s2">"How do I export my data?"</span><span class="p">,</span> <span class="s2">"T-101"</span><span class="p">)</span>
+
+<span class="n">processor</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">():</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">source</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">correlation_id</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>triage-inbox-processor result T-100 {'priority': 'urgent', 'summary': 'Checkout is down'}
+triage-inbox-processor result T-101 {'priority': 'normal', 'summary': 'How do I export my data?'}
+</code></pre></div>
+<p><code>process()</code> returns the sink events it wrote. Each one holds:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>channel</code></td>
+<td>The sink.</td>
+</tr>
+<tr>
+<td><code>source</code></td>
+<td>The consumer name.</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>output_kind</code> (<code>"result"</code>).</td>
+</tr>
+<tr>
+<td><code>payload</code></td>
+<td>The tactic output as JSON. Pydantic models are dumped with <code>model_dump(mode="json")</code>.</td>
+</tr>
+<tr>
+<td><code>parent_ids</code></td>
+<td><code>(input_event.id,)</code></td>
+</tr>
+<tr>
+<td><code>correlation_id</code></td>
+<td>The input's <code>correlation_id</code>, or the input's <code>id</code> when it has none.</td>
+</tr>
+</tbody>
+</table>
+<p>Create the sink channel before processing. The processor does not create
+channels.</p>
+<h2 id="what-the-tactic-sees">What the tactic sees</h2>
+<p>The tactic gets the event's payload as its input and a <code>CallContext</code> that
+describes the event:</p>
+<table>
+<thead>
+<tr>
+<th>Context field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>caller</code></td>
+<td>The consumer name.</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td><code>{"channel": &lt;source&gt;}</code></td>
+</tr>
+<tr>
+<td><code>metadata["event_id"]</code></td>
+<td>The input event's id.</td>
+</tr>
+<tr>
+<td><code>metadata["event_kind"]</code></td>
+<td>The input event's kind.</td>
+</tr>
+<tr>
+<td><code>metadata["correlation_id"]</code></td>
+<td>The input's correlation id, or its id.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">as_tactic</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">show_context</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s2">"caller"</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">caller</span><span class="p">,</span>
+        <span class="s2">"tags"</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+        <span class="s2">"event_kind"</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"event_kind"</span><span class="p">],</span>
+        <span class="s2">"correlation_id"</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">metadata</span><span class="p">[</span><span class="s2">"correlation_id"</span><span class="p">],</span>
+    <span class="p">}</span>
+
+
+<span class="n">peek</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">as_tactic</span><span class="p">(</span><span class="n">show_context</span><span class="p">),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">consumer</span><span class="o">=</span><span class="s2">"peek"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">peek</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[{'caller': 'peek', 'tags': {'channel': 'inbox'}, 'event_kind': 'message', 'correlation_id': 'T-100'}]
+</code></pre></div>
+<h2 id="resuming">Resuming</h2>
+<p>The consumer name is the id of a subscription that lives in the store. The
+first <code>process()</code> call creates it; every later processor with the same
+consumer, in this process or another one, continues from its cursor:</p>
+<div class="highlight"><pre><span></span><code><span class="n">submit</span><span class="p">(</span><span class="s2">"Search is broken"</span><span class="p">,</span> <span class="s2">"T-102"</span><span class="p">)</span>
+
+<span class="n">restarted</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">event</span><span class="o">.</span><span class="n">correlation_id</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">restarted</span><span class="o">.</span><span class="n">process</span><span class="p">()])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">get_subscription</span><span class="p">(</span><span class="s2">"triage-inbox-processor"</span><span class="p">)</span><span class="o">.</span><span class="n">cursor</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>['T-102']
+5
+</code></pre></div>
+<p>The default consumer joins the tactic's name (<code>tactic.tactic_name</code>, which is
+the function name for <code>as_tactic(fn)</code>), the source channel, and the <code>kind</code>
+filter if there is one: <code>TriageTicket()</code> reading <code>inbox</code> is
+<code>triage-inbox-processor</code>, and with <code>kind="message"</code> it would be
+<code>triage-inbox-message-processor</code>. Rules that follow from this:</p>
+<ul>
+<li><strong>Name consumers explicitly</strong> when two processors would share the default.
+  The sink is not part of it, so a dry run without a sink and the real
+  processor need different names (the dry run below uses <code>consumer="dry-run"</code>).</li>
+<li>If the default would contain whitespace, <code>?</code>, or <code>#</code>, the constructor raises
+  <code>ValueError</code>; pass <code>consumer=</code>.</li>
+<li>To process a channel again from the start, use a new consumer name.</li>
+<li>A subscription keeps the channel and <code>kind</code> filter it was created with.
+  Reusing a consumer name with another channel or kind makes <code>process()</code> raise
+  <code>ValueError</code>. With the default name, a new <code>kind</code> gives a new consumer, which
+  starts at the beginning of the channel.</li>
+<li>Run one worker per consumer name. Two workers sharing a consumer can process
+  the same event twice, and with <code>errors="raise"</code> they can lose one.</li>
+</ul>
+<h2 id="failures">Failures</h2>
+<p><code>process()</code> handles one event at a time. It reads the next event at the
+subscription cursor, runs the tactic, appends the output to the sink, and only
+then acknowledges the event, which moves the cursor past it. Delivery is
+therefore at least once: an event that was not acknowledged, because
+processing raised or the worker stopped, runs again on the next call. A tactic
+can see the same event twice, and the sink can then hold more than one output
+for it, so tactics should tolerate repeats. <code>errors</code> decides what a failure
+does.</p>
+<p>With <code>errors="raise"</code> (the default), the exception propagates and the failing
+event stays pending. The next call runs it again, before any event behind it:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">SchemaError</span>
+
+<span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+    <span class="n">Event</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"message"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"subject"</span><span class="p">:</span> <span class="s2">"no text field"</span><span class="p">},</span> <span class="n">correlation_id</span><span class="o">=</span><span class="s2">"T-103"</span><span class="p">)</span>
+<span class="p">)</span>
+<span class="n">submit</span><span class="p">(</span><span class="s2">"The API is down"</span><span class="p">,</span> <span class="s2">"T-104"</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">attempt</span> <span class="ow">in</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+    <span class="k">except</span> <span class="n">SchemaError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"attempt </span><span class="si">{</span><span class="n">attempt</span><span class="si">}</span><span class="s2"> failed:"</span><span class="p">,</span> <span class="nb">type</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>attempt 1 failed: SchemaError
+attempt 2 failed: SchemaError
+</code></pre></div>
+<p>T-103 fails input validation on every call, and T-104 waits behind it. With
+<code>errors="record"</code>, a failure is written to the sink as a <code>kind="error"</code> event
+with the same lineage fields, the event is acknowledged, and processing
+continues. This processor reads the same <code>triage-inbox-processor</code>
+subscription, so it starts at T-103:</p>
+<div class="highlight"><pre><span></span><code><span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+    <span class="n">Event</span><span class="p">(</span><span class="n">channel</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s2">"message"</span><span class="p">,</span> <span class="n">payload</span><span class="o">=</span><span class="p">{</span><span class="s2">"subject"</span><span class="p">:</span> <span class="s2">"still no text"</span><span class="p">},</span> <span class="n">correlation_id</span><span class="o">=</span><span class="s2">"T-105"</span><span class="p">)</span>
+<span class="p">)</span>
+
+<span class="n">recording</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span>
+    <span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"record"</span>
+<span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">recording</span><span class="o">.</span><span class="n">process</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">([(</span><span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">correlation_id</span><span class="p">)</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">results</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">"type"</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[('error', 'T-103'), ('result', 'T-104'), ('error', 'T-105')]
+SchemaError
+</code></pre></div>
+<p>The error payload is <code>{"error": str(exc), "type": type(exc).__name__}</code>. Use
+<code>"record"</code> in long-running workers, so one bad event cannot block the
+subscription and failures stay visible in the store; read them back with
+<code>store.query_events("triaged", kind="error")</code>. <code>"record"</code> needs a sink;
+without one, it acts like <code>"raise"</code>.</p>
+<p>Any exception counts as a failure: payloads that do not match the tactic's
+input type raise <code>SchemaError</code>, the tactic's own exceptions pass through
+unchanged, and so do errors from writing the output, such as the
+<code>InvalidPayloadError</code> for an output the store cannot encode as JSON. If the
+error event cannot be written either, as when the sink channel does not exist,
+<code>process()</code> raises and the event stays pending. Create channels up front.</p>
+<h2 id="without-a-sink">Without a sink</h2>
+<p>With no <code>sink</code>, <code>process()</code> returns the tactic outputs themselves. That is
+useful for dry runs, or when the results go somewhere other than a channel.
+<code>limit</code> caps how many results one call returns:</p>
+<div class="highlight"><pre><span></span><code><span class="n">dry_run</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">consumer</span><span class="o">=</span><span class="s2">"dry-run"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">dry_run</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[Triage(priority='urgent', summary='Checkout is down'), Triage(priority='normal', summary='How do I export my data?')]
+</code></pre></div>
+<p><code>limit</code> counts outputs and recorded errors alike. <code>process()</code> with no limit
+keeps going until the subscription has nothing pending.</p>
+<h2 id="remote-and-async-stores">Remote and async stores</h2>
+<p>The processor only calls store methods, so a store served over HTTP works the
+same way. With <code>lllm network serve --port 7700</code> running on this store:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">RemoteStore</span>
+
+<span class="n">remote</span> <span class="o">=</span> <span class="n">RemoteStore</span><span class="p">(</span><span class="s2">"http://127.0.0.1:7700"</span><span class="p">)</span>
+<span class="n">remote</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"message"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Exports time out"</span><span class="p">},</span> <span class="s2">"correlation_id"</span><span class="p">:</span> <span class="s2">"T-106"</span><span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">worker</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">remote</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">event</span><span class="o">.</span><span class="n">correlation_id</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">worker</span><span class="o">.</span><span class="n">process</span><span class="p">()])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>['T-106']
+</code></pre></div>
+<p>The remote worker continued the <code>triage-inbox-processor</code> subscription where
+the local processors left it.</p>
+<p><code>aprocess()</code> is the async variant. It calls <code>tactic.arun()</code> and awaits store
+calls that return coroutines, so it works with <code>AsyncRemoteStore</code> as well as
+the sync stores. <code>process()</code> needs a sync store and raises <code>TypeError</code> when
+given an async one. This example talks to the store server in-process through
+<code>httpx.ASGITransport</code>, which is also how to test a worker without a running
+server; in production, pass only the URL.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">httpx</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">AsyncRemoteStore</span><span class="p">,</span> <span class="n">create_app</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">main</span><span class="p">():</span>
+    <span class="n">remote</span> <span class="o">=</span> <span class="n">AsyncRemoteStore</span><span class="p">(</span>
+        <span class="s2">"http://store.local"</span><span class="p">,</span> <span class="n">transport</span><span class="o">=</span><span class="n">httpx</span><span class="o">.</span><span class="n">ASGITransport</span><span class="p">(</span><span class="n">app</span><span class="o">=</span><span class="n">create_app</span><span class="p">(</span><span class="n">store</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="k">await</span> <span class="n">remote</span><span class="o">.</span><span class="n">append_event</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"inbox"</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"message"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Uploads are failing"</span><span class="p">},</span> <span class="s2">"correlation_id"</span><span class="p">:</span> <span class="s2">"T-107"</span><span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">worker</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">remote</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">event</span><span class="o">.</span><span class="n">correlation_id</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="k">await</span> <span class="n">worker</span><span class="o">.</span><span class="n">aprocess</span><span class="p">()]</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">main</span><span class="p">()))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>['T-107']
+</code></pre></div>
+<h2 id="pipelines">Pipelines</h2>
+<p>A pipeline is processors whose sink is the next one's source. Add a stage that
+drafts a reply for every triage result. The <code>kind="result"</code> filter skips the
+error events the first stage recorded:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Reply</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">priority</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">body</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">draft_reply</span><span class="p">(</span><span class="n">result</span><span class="p">:</span> <span class="n">Triage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Reply</span><span class="p">:</span>
+    <span class="n">opening</span> <span class="o">=</span> <span class="s2">"We are on it."</span> <span class="k">if</span> <span class="n">result</span><span class="o">.</span><span class="n">priority</span> <span class="o">==</span> <span class="s2">"urgent"</span> <span class="k">else</span> <span class="s2">"Thanks for writing in."</span>
+    <span class="k">return</span> <span class="n">Reply</span><span class="p">(</span><span class="n">priority</span><span class="o">=</span><span class="n">result</span><span class="o">.</span><span class="n">priority</span><span class="p">,</span> <span class="n">body</span><span class="o">=</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">opening</span><span class="si">}</span><span class="s2"> Re: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">summary</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"replies"</span><span class="p">})</span>
+
+<span class="n">stages</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="n">TacticProcessor</span><span class="p">(</span><span class="n">TriageTicket</span><span class="p">(),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">"record"</span><span class="p">),</span>
+    <span class="n">TacticProcessor</span><span class="p">(</span>
+        <span class="n">as_tactic</span><span class="p">(</span><span class="n">draft_reply</span><span class="p">),</span>
+        <span class="n">store</span><span class="p">,</span>
+        <span class="n">source</span><span class="o">=</span><span class="s2">"triaged"</span><span class="p">,</span>
+        <span class="n">sink</span><span class="o">=</span><span class="s2">"replies"</span><span class="p">,</span>
+        <span class="n">consumer</span><span class="o">=</span><span class="s2">"draft-reply"</span><span class="p">,</span>
+        <span class="n">kind</span><span class="o">=</span><span class="s2">"result"</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">]</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">drain</span><span class="p">(</span><span class="n">processors</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Run every stage until none of them finds new events."""</span>
+    <span class="k">while</span> <span class="nb">any</span><span class="p">([</span><span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">()</span> <span class="k">for</span> <span class="n">processor</span> <span class="ow">in</span> <span class="n">processors</span><span class="p">]):</span>
+        <span class="k">pass</span>
+
+
+<span class="n">submit</span><span class="p">(</span><span class="s2">"Refunds are failing for every customer"</span><span class="p">,</span> <span class="s2">"T-108"</span><span class="p">)</span>
+<span class="n">drain</span><span class="p">(</span><span class="n">stages</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">([(</span><span class="n">reply</span><span class="o">.</span><span class="n">correlation_id</span><span class="p">,</span> <span class="n">reply</span><span class="o">.</span><span class="n">payload</span><span class="p">[</span><span class="s2">"priority"</span><span class="p">])</span> <span class="k">for</span> <span class="n">reply</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="s2">"replies"</span><span class="p">)])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[('T-100', 'urgent'), ('T-101', 'normal'), ('T-102', 'urgent'), ('T-104', 'urgent'), ('T-106', 'normal'), ('T-107', 'urgent'), ('T-108', 'urgent')]
+</code></pre></div>
+<p>The new ticket went through both stages in one <code>drain</code>; the earlier results
+reached the second stage because its <code>draft-reply</code> subscription started at the
+beginning of <code>triaged</code>.</p>
+<h3 id="tracing-a-result">Tracing a result</h3>
+<p><code>parent_ids</code> lead from any output back to the event that started the chain:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">lineage</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">event</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Follow parent_ids back to the event that started the chain."""</span>
+    <span class="n">chain</span> <span class="o">=</span> <span class="p">[</span><span class="n">event</span><span class="p">]</span>
+    <span class="k">while</span> <span class="n">chain</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parent_ids</span><span class="p">:</span>
+        <span class="n">chain</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">get_event</span><span class="p">(</span><span class="n">chain</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">parent_ids</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="k">return</span> <span class="n">chain</span>
+
+
+<span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">lineage</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="s2">"replies"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">channel</span><span class="si">:</span><span class="s2">8</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">source</span><span class="si">:</span><span class="s2">23</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">event</span><span class="o">.</span><span class="n">payload</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>replies  draft-reply             {'body': 'We are on it. Re: Refunds are failing for every customer', 'priority': 'urgent'}
+triaged  triage-inbox-processor  {'priority': 'urgent', 'summary': 'Refunds are failing for every customer'}
+inbox    web-form                {'text': 'Refunds are failing for every customer'}
+</code></pre></div>
+<p><code>correlation_id</code> groups the whole thread across channels without walking
+links:</p>
+<div class="highlight"><pre><span></span><code><span class="nb">print</span><span class="p">([</span>
+    <span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">channel</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">channel</span> <span class="ow">in</span> <span class="p">(</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="s2">"triaged"</span><span class="p">,</span> <span class="s2">"replies"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="n">channel</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">event</span><span class="o">.</span><span class="n">correlation_id</span> <span class="o">==</span> <span class="s2">"T-108"</span>
+<span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[('inbox', 'message'), ('triaged', 'result'), ('replies', 'result')]
+</code></pre></div>
+<h3 id="fan-out">Fan-out</h3>
+<p>Each consumer has its own cursor, so several processors can read the same
+source and each sees every event:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">word_count</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"words"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"text"</span><span class="p">,</span> <span class="s2">""</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">())}</span>
+
+
+<span class="n">store</span><span class="o">.</span><span class="n">create_channel</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"stats"</span><span class="p">})</span>
+<span class="n">stats</span> <span class="o">=</span> <span class="n">TacticProcessor</span><span class="p">(</span>
+    <span class="n">as_tactic</span><span class="p">(</span><span class="n">word_count</span><span class="p">),</span> <span class="n">store</span><span class="p">,</span> <span class="n">source</span><span class="o">=</span><span class="s2">"inbox"</span><span class="p">,</span> <span class="n">sink</span><span class="o">=</span><span class="s2">"stats"</span><span class="p">,</span> <span class="n">consumer</span><span class="o">=</span><span class="s2">"word-count"</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">stats</span><span class="o">.</span><span class="n">process</span><span class="p">()),</span> <span class="s2">"of"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="s2">"inbox"</span><span class="p">)),</span> <span class="s2">"inbox events counted"</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>9 of 9 inbox events counted
+</code></pre></div>
+<h3 id="latest-state">Latest state</h3>
+<p>To give readers the newest result without replaying a channel, write a
+snapshot that points at the event it came from:</p>
+<div class="highlight"><pre><span></span><code><span class="n">latest</span> <span class="o">=</span> <span class="n">store</span><span class="o">.</span><span class="n">query_events</span><span class="p">(</span><span class="s2">"replies"</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<span class="n">store</span><span class="o">.</span><span class="n">put_snapshot</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"latest-reply"</span><span class="p">,</span> <span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"replies"</span><span class="p">,</span> <span class="s2">"value"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">payload</span><span class="p">,</span> <span class="s2">"source_event_id"</span><span class="p">:</span> <span class="n">latest</span><span class="o">.</span><span class="n">id</span><span class="p">}</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">store</span><span class="o">.</span><span class="n">get_snapshot</span><span class="p">(</span><span class="s2">"latest-reply"</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">[</span><span class="s2">"body"</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>We are on it. Re: Refunds are failing for every customer
+</code></pre></div>
+<h2 id="running-a-worker">Running a worker</h2>
+<p>A worker is a loop around <code>process()</code> that sleeps when there is nothing to do:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">run_worker</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">idle_seconds</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">processor</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+            <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">idle_seconds</span><span class="p">)</span>
+</code></pre></div>
+<p>The async version, for an <code>AsyncRemoteStore</code> or an event loop you already run:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run_async_worker</span><span class="p">(</span><span class="n">processor</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">idle_seconds</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="k">await</span> <span class="n">processor</span><span class="o">.</span><span class="n">aprocess</span><span class="p">(</span><span class="n">limit</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+            <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">idle_seconds</span><span class="p">)</span>
+</code></pre></div>
+<p>Give each worker its own consumer name and <code>errors="record"</code>, and stop it at
+any point: the next start resumes from the subscription cursor, and an event
+that was running when the worker stopped runs again. To serve the store these
+workers share, see <a href="../serving/">Serving</a>; to put workers, tactics, and
+channels behind one API, see <a href="../../aaax/">AAAX</a>.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

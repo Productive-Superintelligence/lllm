@@ -1,0 +1,1860 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/protocol/tactic/">
+      
+      
+        <link rel="prev" href="../../core/runtime/">
+      
+      
+        <link rel="next" href="../runtimes/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>The Tactic - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#the-tactic" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              The Tactic
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="./" class="psi-header-nav__link psi-header-nav__link--active">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="./" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Tactic
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The Tactic
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-ways-to-write-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two ways to write one
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typed-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calling-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling a tactic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Calling a tactic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#traces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traces
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-and-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming and events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#callcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CallContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#describing-a-tactic-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Describing a tactic: info()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sessions-for-call-programs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions for call() programs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sessions for call() programs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-style-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which style to use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtimes/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtimes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../services/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Services
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../refs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Refs and Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-ways-to-write-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two ways to write one
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#typed-input-and-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed input and output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#calling-a-tactic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Calling a tactic
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Calling a tactic">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#traces" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Traces
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#streaming-and-events" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Streaming and events
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#callcontext" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CallContext
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#describing-a-tactic-info" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Describing a tactic: info()
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#errors" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Errors
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#sessions-for-call-programs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Sessions for call() programs
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Sessions for call() programs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#agents" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#which-style-to-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Which style to use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-lineage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design lineage
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="the-tactic">The Tactic</h1>
+<p>A tactic is a typed unit of work. It declares what it accepts and what it
+returns, validates both on every call, and describes itself in a form that
+services, packages, and other agents can read. That one boundary is what lets
+the same piece of work be:</p>
+<ul>
+<li><strong>validated</strong>: input and output are checked against Pydantic types;</li>
+<li><strong>streamed</strong>: chunks and events have one shape for every runtime;</li>
+<li><strong>served</strong>: any tactic becomes a FastAPI app with <code>/run</code>, <code>/stream</code>, <code>/info</code>;</li>
+<li><strong>packaged</strong>: an <code>lllm.toml</code> entry points at it by name and ref;</li>
+<li><strong>composed</strong>: other tactics, Pydantic AI agents, and channel processors call
+  it without knowing how it is implemented.</li>
+</ul>
+<p>There is one class to learn:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+</code></pre></div>
+<p><code>lllm.Tactic</code> is the native program class, with agents, per-call sessions, and
+batch calls. It subclasses <code>lllm.protocol.Tactic</code>, the runtime-neutral base that
+supplies the typed boundary: <code>run()</code>, <code>arun()</code>, <code>stream()</code>, <code>aevents()</code>, and
+<code>info()</code>. Adapters for other runtimes (plain functions, Pydantic AI, remote
+services) are protocol tactics too, so everything on this page applies to them.</p>
+<h2 id="two-ways-to-write-one">Two ways to write one</h2>
+<p>Write the program in <code>call()</code>, or implement the protocol hook <code>_run()</code>. Both
+produce a tactic that validates, serves, and packages the same way.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:2"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">Program: call()</label><label for="__tabbed_1_2">Hook: _run()</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Question</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Answer</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Shout</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Shout the question back."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"shout"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Question</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Answer</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Question</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Answer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Answer</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">task</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+
+
+<span class="n">shout</span> <span class="o">=</span> <span class="n">Shout</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}))</span>   <span class="c1"># text='HELLO'</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}))</span>       <span class="c1"># text='HELLO'</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">info</span><span class="p">()</span><span class="o">.</span><span class="n">runtime_kind</span><span class="p">)</span>      <span class="c1"># native</span>
+</code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Question</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Answer</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ShoutHook</span><span class="p">(</span><span class="n">Tactic</span><span class="p">[</span><span class="n">Question</span><span class="p">,</span> <span class="n">Answer</span><span class="p">]):</span>
+<span class="w">    </span><span class="sd">"""Shout the question back."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"shout"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Question</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Answer</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_value</span><span class="p">:</span> <span class="n">Question</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Answer</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Answer</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">input_value</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+
+
+<span class="n">shout</span> <span class="o">=</span> <span class="n">ShoutHook</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}))</span>   <span class="c1"># text='HELLO'</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">info</span><span class="p">()</span><span class="o">.</span><span class="n">runtime_kind</span><span class="p">)</span>      <span class="c1"># python</span>
+</code></pre></div>
+</div>
+</div>
+</div>
+<p>The input arrives as a dict here and reaches your code as a <code>Question</code>. The
+return value is checked against <code>Answer</code> before the caller sees it.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><code>call()</code> program</th>
+<th><code>_run()</code> hook</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run()</code>, <code>arun()</code>, <code>info()</code>, serving, packaging, use as a tool</td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>tactic(task)</code>, <code>acall</code>, <code>bcall</code>, <code>ccall</code></td>
+<td>yes</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>Runs inside a <code>TacticCallSession</code></td>
+<td>every call</td>
+<td>calls through <code>tactic(task)</code>, <code>acall</code>, <code>bcall</code>, <code>ccall</code></td>
+</tr>
+<tr>
+<td>Runs on a per-call copy with fresh <code>agent_group</code> agents</td>
+<td>every call</td>
+<td>never: hooks run on the instance</td>
+</tr>
+<tr>
+<td><code>info().runtime_kind</code></td>
+<td><code>"native"</code></td>
+<td><code>"python"</code> (<code>"native"</code> with an <code>agent_group</code>)</td>
+</tr>
+<tr>
+<td>Receives</td>
+<td>the validated task, and <code>context=</code> when <code>call</code> accepts it</td>
+<td>the validated input and a <code>CallContext</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>tactic(task)</code> and the other native entry points run <code>call()</code> when the class
+writes one, else its <code>_run()</code> hook (or <code>_arun()</code>). A hook-only tactic has no
+<code>call()</code>: <code>tactic.call(task)</code> raises <code>TacticUnsupportedError</code> and points you to
+the entry points, and a hook that hands its call back with <code>super()._run()</code> or
+<code>self.call()</code> raises the same error instead of recursing. A tactic that writes
+only <code>_arun()</code> still gets <code>run()</code>, which runs <code>arun()</code> to completion, and an
+<code>async def call()</code> is awaited on every entry point.</p>
+<h2 id="typed-input-and-output">Typed input and output</h2>
+<p><code>input_type</code> and <code>output_type</code> accept anything Pydantic can validate:
+<code>BaseModel</code> subclasses, builtins such as <code>str</code> or <code>int</code>, <code>list[str]</code>,
+<code>Literal[...]</code>, dataclasses, and <code>TypedDict</code>s. <code>input_model</code> and <code>output_model</code>
+are aliases, so tactics written with the native names publish their schemas
+too. A class's own <code>input_model</code> wins over an <code>input_type</code> it inherits.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span><span class="p">,</span> <span class="n">Field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">SchemaError</span><span class="p">,</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Review</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">min_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">stars</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">ge</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Verdict</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">label</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"positive"</span><span class="p">,</span> <span class="s2">"negative"</span><span class="p">]</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Classify</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Label a product review."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"classify"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Review</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Verdict</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="n">Review</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Verdict</span><span class="p">:</span>
+        <span class="n">positive</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">stars</span> <span class="o">&gt;=</span> <span class="mi">4</span>
+        <span class="c1"># A plain dict is fine: the output is validated into Verdict.</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"label"</span><span class="p">:</span> <span class="s2">"positive"</span> <span class="k">if</span> <span class="n">positive</span> <span class="k">else</span> <span class="s2">"negative"</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">:</span> <span class="mf">0.9</span><span class="p">}</span>
+
+
+<span class="n">classify</span> <span class="o">=</span> <span class="n">Classify</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">classify</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Works great"</span><span class="p">,</span> <span class="s2">"stars"</span><span class="p">:</span> <span class="mi">5</span><span class="p">})))</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">repr</span><span class="p">(</span><span class="n">classify</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">Review</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="s2">"Broke in a day"</span><span class="p">,</span> <span class="n">stars</span><span class="o">=</span><span class="mi">1</span><span class="p">))))</span>
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">classify</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">""</span><span class="p">,</span> <span class="s2">"stars"</span><span class="p">:</span> <span class="mi">9</span><span class="p">})</span>
+<span class="k">except</span> <span class="n">SchemaError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">exc</span><span class="p">)</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()[</span><span class="mi">0</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>Verdict(label='positive', confidence=0.9)
+Verdict(label='negative', confidence=0.9)
+Value does not match schema Review: 2 validation errors for Review
+</code></pre></div>
+<p>A few rules worth knowing:</p>
+<ul>
+<li>Input can be a model instance or JSON-compatible data. Output can be the
+  model or data that validates into it.</li>
+<li>A failed check on either side raises <code>SchemaError</code>.</li>
+<li>The generic parameters in <code>Tactic[Review, Verdict]</code> are for type checkers
+  only. Validation and the published JSON schemas come from <code>input_type</code> and
+  <code>output_type</code>; a tactic without them passes values through unchecked.</li>
+<li>Pydantic's normal coercion applies, so <code>input_type = int</code> accepts <code>"21"</code>.</li>
+</ul>
+<h2 id="calling-a-tactic">Calling a tactic</h2>
+<p>Every tactic has the protocol methods:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>run(value, *, context=None, return_trace=False, **kwargs)</code></td>
+<td>The validated output, or a <code>CallResult</code> when <code>return_trace=True</code>.</td>
+</tr>
+<tr>
+<td><code>await arun(value, *, context=None, return_trace=False, **kwargs)</code></td>
+<td>The same, async.</td>
+</tr>
+<tr>
+<td><code>stream(value, *, context=None, **kwargs)</code></td>
+<td>An iterator of chunks, for tactics that stream.</td>
+</tr>
+<tr>
+<td><code>astream(...)</code></td>
+<td>An async iterator of chunks.</td>
+</tr>
+<tr>
+<td><code>aevents(...)</code></td>
+<td>An async iterator of <code>TacticEvent</code>s.</td>
+</tr>
+<tr>
+<td><code>info()</code></td>
+<td>The <code>TacticInfo</code> contract.</td>
+</tr>
+<tr>
+<td><code>supports(name)</code>, <code>capabilities()</code></td>
+<td>Whether a capability such as <code>"stream"</code> is available.</td>
+</tr>
+</tbody>
+</table>
+<p>Extra keyword arguments to <code>run()</code> and <code>arun()</code> are passed through to <code>call()</code>
+or <code>_run()</code>.</p>
+<p><code>lllm.Tactic</code> adds the native entry points, for both styles:</p>
+<table>
+<thead>
+<tr>
+<th>Method</th>
+<th>Returns</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tactic(task, session_name=None, tags=None, metadata=None, return_session=False, **kwargs)</code></td>
+<td>The result, or the call's <code>TacticCallSession</code>.</td>
+</tr>
+<tr>
+<td><code>await tactic.acall(task, ...)</code></td>
+<td>The same, awaited: an <code>async def call()</code> runs on the caller's loop, a sync one in a worker thread.</td>
+</tr>
+<tr>
+<td><code>tactic.bcall(tasks, max_workers=None, fail_fast=True, return_sessions=False, ...)</code></td>
+<td>Results in input order. With <code>fail_fast=False</code>, failures come back as exception objects in place.</td>
+</tr>
+<tr>
+<td><code>async for index, result in tactic.ccall(tasks)</code></td>
+<td><code>(index, result)</code> pairs as each call finishes.</td>
+</tr>
+</tbody>
+</table>
+<p><code>tactic(task)</code> validates input and output the same way <code>run()</code> does.</p>
+<h3 id="traces">Traces</h3>
+<p><code>return_trace=True</code> returns a <code>CallResult</code> with the output and a <code>CallTrace</code>
+(request id, state, latency, type names, and the error if there was one).
+Failures are recorded instead of raised:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallContext</span>
+
+<span class="n">result</span> <span class="o">=</span> <span class="n">shout</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">},</span>
+    <span class="n">context</span><span class="o">=</span><span class="n">CallContext</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="s2">"req-1"</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="s2">"ada"</span><span class="p">}),</span>
+    <span class="n">return_trace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">request_id</span><span class="p">,</span> <span class="n">result</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">metadata</span><span class="p">)</span>
+
+<span class="n">failed</span> <span class="o">=</span> <span class="n">shout</span><span class="o">.</span><span class="n">run</span><span class="p">({</span><span class="s2">"text"</span><span class="p">:</span> <span class="mi">5</span><span class="p">},</span> <span class="n">return_trace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">failed</span><span class="o">.</span><span class="n">output</span><span class="p">,</span> <span class="n">failed</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="n">failed</span><span class="o">.</span><span class="n">trace</span><span class="o">.</span><span class="n">error_type</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>text='HI'
+success req-1 {'user': 'ada'}
+None failure SchemaError
+</code></pre></div>
+<h2 id="streaming-and-events">Streaming and events</h2>
+<p>Implement <code>stream()</code> to make a tactic stream. Yield whatever chunks make sense,
+and yield a <code>TacticEvent</code> when you want to label one:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span><span class="p">,</span> <span class="n">TacticEvent</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Countdown</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Count down, then lift off."""</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"countdown"</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="nb">int</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="nb">str</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">"liftoff"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">stream</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">task</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">):</span>
+            <span class="k">yield</span> <span class="n">n</span>
+        <span class="k">yield</span> <span class="n">TacticEvent</span><span class="o">.</span><span class="n">result</span><span class="p">(</span><span class="s2">"liftoff"</span><span class="p">)</span>
+
+
+<span class="n">countdown</span> <span class="o">=</span> <span class="n">Countdown</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">countdown</span><span class="o">.</span><span class="n">info</span><span class="p">()</span><span class="o">.</span><span class="n">capabilities</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">countdown</span><span class="o">.</span><span class="n">stream</span><span class="p">(</span><span class="mi">3</span><span class="p">))[:</span><span class="mi">3</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>('acall', 'arun', 'call', 'run', 'stream')
+[3, 2, 1]
+</code></pre></div>
+<p><code>astream()</code> validates the input the same way <code>run()</code> does and then iterates
+<code>stream()</code> on a worker thread, one item per request, so <code>stream()</code> receives
+the typed value, a slow stream never blocks the event loop, and nothing runs
+ahead of the reader. Closing the async iterator closes the generator on that
+thread: when it is waiting at a <code>yield</code>, its cleanup has run by the time
+<code>aclose()</code> returns; otherwise it runs once the item in progress is done. <code>aevents()</code> wraps every
+chunk from <code>astream()</code> that is not already an event as
+<code>TacticEvent(kind="message", data=chunk)</code>. <code>aevents()</code> is what the service's
+<code>/stream</code> route sends:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">asyncio</span>
+
+
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">show</span><span class="p">():</span>
+    <span class="k">async</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">countdown</span><span class="o">.</span><span class="n">aevents</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">event</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">event</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+
+
+<span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="n">show</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>message 2
+message 1
+result liftoff
+</code></pre></div>
+<p>A <code>TacticEvent</code> has <code>id</code>, <code>timestamp</code>, <code>kind</code>, <code>data</code>, and <code>metadata</code>.
+<code>TacticEvent.result(value)</code> and <code>TacticEvent.error(message)</code> build the two
+common kinds. Override <code>astream()</code> when the source is natively async, or
+<code>aevents()</code> to control the event stream yourself; the tactic then advertises
+<code>"stream"</code> or <code>"events"</code> in its capabilities. On <code>lllm.Tactic</code>, a synchronous
+<code>events()</code> generator works too: <code>aevents()</code> and <code>/stream</code> serve it, passing it
+the validated input and wrapping plain items as <code>message</code> events. There, each
+stream runs like <code>call()</code>, on a per-call copy with fresh agents and its own
+session.</p>
+<p>Calling <code>stream()</code> directly skips that validation and passes the argument
+through as given, so pass it a typed value (or call <code>self.validate_input(value)</code>
+yourself). A tactic that does not stream raises <code>TacticUnsupportedError</code> from
+<code>stream()</code>.</p>
+<h2 id="callcontext">CallContext</h2>
+<p><code>CallContext</code> is the request metadata that travels with one call: ids for
+correlating logs and traces, who called, and free-form tags and metadata.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">CallContext</span>
+
+<span class="n">context</span> <span class="o">=</span> <span class="n">CallContext</span><span class="p">(</span>
+    <span class="n">trace_id</span><span class="o">=</span><span class="s2">"trace-42"</span><span class="p">,</span>
+    <span class="n">caller</span><span class="o">=</span><span class="s2">"nightly-job"</span><span class="p">,</span>
+    <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">"team"</span><span class="p">:</span> <span class="s2">"research"</span><span class="p">},</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"user"</span><span class="p">:</span> <span class="s2">"ada"</span><span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>request_id</code></td>
+<td>Unique id for this call. Generated (a UUID) when omitted.</td>
+</tr>
+<tr>
+<td><code>caller</code></td>
+<td>Who is calling: a service, worker, or user label.</td>
+</tr>
+<tr>
+<td><code>trace_id</code>, <code>span_id</code></td>
+<td>Distributed-tracing ids.</td>
+</tr>
+<tr>
+<td><code>tags</code></td>
+<td>String-to-string labels.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>Any JSON-compatible values.</td>
+</tr>
+<tr>
+<td><code>package_ref</code>, <code>service_ref</code>, <code>tactic_ref</code>, <code>endpoint</code></td>
+<td>Where the call is going; services fill in <code>tactic_ref</code> and <code>endpoint</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Id fields must be plain tokens (no whitespace or path separators); the model
+rejects anything else.</p>
+<p>How the context reaches your code:</p>
+<ul>
+<li><code>_run(input_value, *, context)</code> always gets a <code>CallContext</code>, through every
+  entry point; one is created when the caller passes none.</li>
+<li><code>call()</code> gets <code>context=</code> when its signature declares <code>context</code> (or
+  <code>**kwargs</code>). Under <code>run()</code> it is a <code>CallContext</code>; under <code>tactic(task)</code> it is
+  <code>None</code> unless the caller passes <code>context=</code>.</li>
+<li>Pass a <code>CallContext</code>. Anything else, such as a dict, raises <code>TypeError</code> from
+  <code>run()</code> and <code>arun()</code>, and from <code>tactic(task)</code>, <code>acall</code>, <code>bcall</code>, and <code>ccall</code>
+  when the program is a <code>_run()</code> or <code>_arun()</code> hook. Those four pass a <code>call()</code>
+  program the value unchecked: a dict arrives as a dict.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">WhoAsked</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"who-asked"</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="nb">dict</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">{</span><span class="s2">"task"</span><span class="p">:</span> <span class="n">task</span><span class="p">,</span> <span class="s2">"caller"</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">caller</span> <span class="k">if</span> <span class="n">context</span> <span class="k">else</span> <span class="kc">None</span><span class="p">}</span>
+
+
+<span class="nb">print</span><span class="p">(</span><span class="n">WhoAsked</span><span class="p">()</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="s2">"summarize"</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="n">context</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">WhoAsked</span><span class="p">()(</span><span class="s2">"summarize"</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'task': 'summarize', 'caller': 'nightly-job'}
+{'task': 'summarize', 'caller': None}
+</code></pre></div>
+<p>Services build the context from the request's <code>context</code> object, and
+<code>RemoteTactic</code> sends it, so a <code>trace_id</code> set by a caller arrives in the
+<code>call()</code> of a tactic running in another process. Keep configuration (models,
+keys, runtime settings) on the tactic or its runtime; the context is per
+request.</p>
+<h2 id="describing-a-tactic-info">Describing a tactic: info()</h2>
+<p><code>info()</code> returns the tactic's public contract as a <code>TacticInfo</code>. Services return
+it from <code>/info</code>, <code>lllm inspect</code> prints it, and the hub renders it into package
+cards.</p>
+<div class="highlight"><pre><span></span><code><span class="n">shout</span> <span class="o">=</span> <span class="n">Shout</span><span class="p">(</span>
+    <span class="n">package_ref</span><span class="o">=</span><span class="s2">"lllm://demo/shout/tactics/shout"</span><span class="p">,</span>
+    <span class="n">examples</span><span class="o">=</span><span class="p">[{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hi"</span><span class="p">},</span> <span class="s2">"output"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"HI"</span><span class="p">}}],</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"owner"</span><span class="p">:</span> <span class="s2">"docs"</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">shout</span><span class="o">.</span><span class="n">info</span><span class="p">()</span><span class="o">.</span><span class="n">model_dump_json</span><span class="p">(</span><span class="n">indent</span><span class="o">=</span><span class="mi">2</span><span class="p">))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"shout"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"description"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Shout the question back."</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"input_schema"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Text"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"text"</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Question"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"output_schema"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"properties"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Text"</span><span class="p">,</span>
+<span class="w">        </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"string"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="nt">"required"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">"text"</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="nt">"title"</span><span class="p">:</span><span class="w"> </span><span class="s2">"Answer"</span><span class="p">,</span>
+<span class="w">    </span><span class="nt">"type"</span><span class="p">:</span><span class="w"> </span><span class="s2">"object"</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="nt">"capabilities"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="s2">"acall"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"arun"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"call"</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">"run"</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"runtime_kind"</span><span class="p">:</span><span class="w"> </span><span class="s2">"native"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"package_ref"</span><span class="p">:</span><span class="w"> </span><span class="s2">"lllm://demo/shout/tactics/shout"</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"service_ref"</span><span class="p">:</span><span class="w"> </span><span class="kc">null</span><span class="p">,</span>
+<span class="w">  </span><span class="nt">"examples"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"input"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"hi"</span>
+<span class="w">      </span><span class="p">},</span>
+<span class="w">      </span><span class="nt">"output"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="nt">"text"</span><span class="p">:</span><span class="w"> </span><span class="s2">"HI"</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
+<span class="w">  </span><span class="nt">"metadata"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="nt">"owner"</span><span class="p">:</span><span class="w"> </span><span class="s2">"docs"</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Source</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td><code>name=</code> passed to the constructor, else the class attribute <code>name</code>, else the class name. An <code>Enum</code> member gives its value. It must be one path segment: no <code>/</code>, <code>\</code>, <code>:</code>, <code>;</code>, or <code>%</code>.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td><code>description=</code>, else the class attribute, else your class's docstring.</td>
+</tr>
+<tr>
+<td><code>input_schema</code>, <code>output_schema</code></td>
+<td>JSON Schema exported from <code>input_type</code> and <code>output_type</code>.</td>
+</tr>
+<tr>
+<td><code>capabilities</code></td>
+<td><code>run</code>, <code>arun</code>, plus <code>call</code>/<code>acall</code> on <code>lllm.Tactic</code>, and <code>stream</code>/<code>events</code> when implemented.</td>
+</tr>
+<tr>
+<td><code>runtime_kind</code></td>
+<td><code>native</code>, <code>python</code>, <code>pydantic-ai</code>, <code>http</code>, <code>proxy</code>, or <code>sandbox</code> for the built-in tactics. A class that sets <code>runtime_kind</code> passes it on to its subclasses.</td>
+</tr>
+<tr>
+<td><code>package_ref</code>, <code>service_ref</code></td>
+<td>An <code>lllm://.../tactics/...</code> ref and a service ref or URL; see <a href="../refs/">Refs</a>.</td>
+</tr>
+<tr>
+<td><code>examples</code>, <code>metadata</code></td>
+<td>Whatever you pass to the constructor.</td>
+</tr>
+</tbody>
+</table>
+<p>The constructor keywords <code>name</code>, <code>description</code>, <code>package_ref</code>, <code>service_ref</code>,
+<code>examples</code>, and <code>metadata</code> work on your own tactics. The built-in wrappers take
+fewer: <code>RemoteTactic</code> takes <code>name</code> and <code>metadata</code> and fills in <code>service_ref</code>
+and <code>metadata["url"]</code> from its URL, <code>ProxyTactic</code> takes <code>name</code>, <code>description</code>,
+and <code>metadata</code>, and <code>SandboxedTactic</code> takes <code>name</code> and <code>description</code>. <code>/info</code> and <code>lllm inspect</code> drop secret-shaped
+metadata keys such as <code>api_key</code>, <code>token</code>, <code>password</code>, and <code>cookie</code> while
+keeping references such as <code>api_key_ref</code>. Even so, keep secrets out of
+metadata.</p>
+<h2 id="errors">Errors</h2>
+<table>
+<thead>
+<tr>
+<th>Exception</th>
+<th>Raised when</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>SchemaError</code></td>
+<td>Input or output fails validation, or a type cannot be exported as JSON Schema.</td>
+</tr>
+<tr>
+<td><code>TacticUnsupportedError</code></td>
+<td>The tactic lacks the requested capability: no <code>call()</code> or <code>_run()</code>, <code>call()</code> on a tactic that implements <code>_run()</code> instead, or <code>stream()</code> on a tactic that does not stream.</td>
+</tr>
+<tr>
+<td><code>TacticRefError</code></td>
+<td>An <code>lllm://</code> tactic ref is malformed or not bound.</td>
+</tr>
+<tr>
+<td><code>RemoteTacticError</code></td>
+<td>A remote service answered with an error; see <a href="../services/#calling-a-service-from-python">Services</a>.</td>
+</tr>
+<tr>
+<td><code>TypeError</code></td>
+<td><code>context</code> is not a <code>CallContext</code> where one is required (see <a href="#callcontext">CallContext</a>), or <code>return_trace</code> is not a bool.</td>
+</tr>
+</tbody>
+</table>
+<div class="highlight"><pre><span></span><code>LLLMError (RuntimeError)
+└── ProtocolError
+    ├── SchemaError
+    └── TacticError
+        ├── TacticUnsupportedError
+        ├── TacticLoadError
+        ├── TacticRefError
+        └── TacticServiceError
+            └── RemoteTacticError
+</code></pre></div>
+<p>All of these import from <code>lllm</code>. Exceptions raised by your own code propagate
+unchanged. When a tactic running in a session fails, the
+<code>lllm.runtimes.native.core.tactic</code> logger writes one INFO line with the error
+(the traceback goes to DEBUG), the session's <code>state</code> becomes <code>"failure"</code>, and
+its <code>error_traceback</code> keeps the traceback. Over HTTP,
+<code>SchemaError</code> and <code>TacticUnsupportedError</code> become 400 responses and other
+exceptions become 500s, both with a structured body
+(<a href="../services/#errors">Services</a>).</p>
+<h2 id="sessions-for-call-programs">Sessions for call() programs</h2>
+<p>Each call of a <code>call()</code> program runs on a fresh copy of the tactic inside a
+<code>TacticCallSession</code>. Ask for it with <code>return_session=True</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">Upper</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"upper"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">task</span><span class="o">.</span><span class="n">upper</span><span class="p">()</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Twice</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"twice"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">upper</span> <span class="o">=</span> <span class="n">Upper</span><span class="p">()</span>  <span class="c1"># a tactic attribute becomes a sub-tactic</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">task</span><span class="p">)</span> <span class="o">+</span> <span class="s2">" "</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">upper</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+
+
+<span class="n">twice</span> <span class="o">=</span> <span class="n">Twice</span><span class="p">()</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">twice</span><span class="p">(</span><span class="s2">"hi"</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">,</span> <span class="nb">repr</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">sub_tactic_call_count</span><span class="p">,</span> <span class="nb">list</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">sub_tactic_sessions</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">twice</span><span class="o">.</span><span class="n">bcall</span><span class="p">([</span><span class="s2">"a"</span><span class="p">,</span> <span class="s2">"b"</span><span class="p">]))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>success 'HI HI'
+2 ['upper']
+['A A', 'B B']
+</code></pre></div>
+<p>A session records <code>state</code>, <code>delivery</code> (the result), <code>error</code> and
+<code>error_traceback</code> on failure, every agent call in <code>agent_sessions</code>, and every
+sub-tactic session in <code>sub_tactic_sessions</code>. <code>total_cost</code>, <code>agent_call_count</code>,
+and <code>sub_tactic_call_count</code> roll everything up, and <code>summary()</code> returns a small
+dict for logs. When a tactic that runs in a session is called while another
+program is running, its session is recorded in the caller's under the tactic's
+name (the constructor's <code>name=</code> when given). That includes calls made from
+<code>bcall</code> worker threads and through a <a href="../refs/#composition-patterns">Resolver</a>.
+<code>call()</code> programs always run in a session. A <code>_run()</code> hook gets one only
+through <code>tactic(task)</code>, <code>acall</code>, <code>bcall</code>, and <code>ccall</code>, not under <code>run()</code> or
+<code>arun()</code>. Tactics that are not <code>lllm.Tactic</code> subclasses (wrapped functions,
+Pydantic AI and remote tactics) do not create sessions.</p>
+<h3 id="agents">Agents</h3>
+<p>Set <code>agent_group</code> and pass agent configs, and every call gets fresh native
+agents in <code>self.agents</code>, each tracked by the call's session. Agents reach models
+through LiteLLM by default (<code>pip install "lllm-core[native]"</code>). This example
+calls a model, so it needs a provider key (for example <code>OPENAI_API_KEY</code>):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Brief</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"brief"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"writer"</span><span class="p">,</span> <span class="s2">"critic"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">writer</span><span class="p">,</span> <span class="n">critic</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"writer"</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"critic"</span><span class="p">]</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"draft"</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">task</span><span class="p">)</span>
+        <span class="n">draft</span> <span class="o">=</span> <span class="n">writer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+        <span class="n">critic</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"review"</span><span class="p">)</span>
+        <span class="n">critic</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="n">draft</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">critic</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o-mini"</span><span class="p">},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"writer"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"You write a three-bullet brief."</span><span class="p">},</span>
+        <span class="p">{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"critic"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"You tighten the brief. Reply with the final text."</span><span class="p">},</span>
+    <span class="p">],</span>
+<span class="p">}</span>
+
+<span class="n">brief</span> <span class="o">=</span> <span class="n">Brief</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">session</span> <span class="o">=</span> <span class="n">brief</span><span class="p">(</span><span class="s2">"Why typed tactic boundaries matter"</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">agent_call_count</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span>
+</code></pre></div>
+<p>For a single agent with no configuration at all, <code>Tactic.quick()</code> returns the
+reply (or, without a query, the agent itself):</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+<span class="n">reply</span> <span class="o">=</span> <span class="n">Tactic</span><span class="o">.</span><span class="n">quick</span><span class="p">(</span><span class="s2">"In one sentence, what is a tactic?"</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s2">"gpt-4o-mini"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+</code></pre></div>
+<p>Agents, prompts, configs, and the call loop are covered in the
+<a href="../../core/tactic/">Tactic reference</a> and the <a href="../../core/agent/">Agent reference</a>.</p>
+<h2 id="which-style-to-use">Which style to use</h2>
+<ul>
+<li><strong><code>call()</code></strong> for agentic programs: the tactic orchestrates native agents or
+  other tactics, and you want a session with cost roll-up on every call.</li>
+<li><strong><code>_run()</code></strong> for deterministic steps, adapters, and glue code that only needs
+  the typed boundary. For a single function, <code>as_tactic(fn)</code> is shorter still
+  (<a href="../runtimes/#plain-python">Runtimes</a>).</li>
+<li><strong>Wrap, don't subclass</strong>, when the work already lives elsewhere:
+  <code>PydanticAITactic</code> for Pydantic AI agents and <code>RemoteTactic</code> for running
+  services (<a href="../runtimes/">Runtimes</a>).</li>
+</ul>
+<p>Callers cannot tell the difference: they use <code>run()</code>, <code>arun()</code>, and <code>stream()</code>,
+and services and packages read the same <code>info()</code>.</p>
+<h2 id="design-lineage">Design lineage</h2>
+<p>The tactic boundary grew out of the reusable reasoning units in Analytica,
+which decomposes complex societal, economic, political, and scientific
+questions into grounded subpropositions, runs specialized agents or tools over
+them, and synthesizes the results into a more stable analysis. LLLM keeps the
+boundary and drops the domain: a tactic is not tied to propositional reasoning,
+forecasting, or any one agent architecture.</p>
+<p>Apeiron applied the same boundary to autonomous software development:
+full-lifecycle application synthesis with demand modeling, computer-use agent
+evaluation, activity tracing, and locality-controlled iteration. Analysis
+agents, software-building agents, evaluators, tools, and deployment services
+all fit behind one small, typed callable.</p>
+<ul>
+<li>Cheng, Junyan, Kyle Richardson, and Peter Chin. "Analytica: Soft Propositional
+  Reasoning for Robust and Scalable LLM-Driven Analysis." <em>The Fourteenth
+  International Conference on Learning Representations (ICLR)</em>, 2026.</li>
+<li>Cheng, Junyan, Ankit Srivastava, Jessie Zeng, Milenko Drinic, and Jack W.
+  Stokes. "Apeiron: A Scalable LLM-agentic Framework for Autonomous
+  Full-lifecycle Demand-optimized Application Synthesis." <em>Findings of the
+  Association for Computational Linguistics: ACL 2026</em>, 2026, pp. 3868-3899.</li>
+</ul>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="../runtimes/">Runtimes</a>: native, plain Python, Pydantic AI, and remote
+  tactics.</li>
+<li><a href="../services/">Services</a>: serve a tactic over HTTP and call it back.</li>
+<li><a href="../refs/">Refs and Composition</a>: name tactics with <code>lllm://</code> refs and wire
+  them together.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

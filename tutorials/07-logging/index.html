@@ -1,0 +1,1717 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/tutorials/07-logging/">
+      
+      
+        <link rel="prev" href="../06-packages-and-hub/">
+      
+      
+        <link rel="next" href="../08-advanced-patterns/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>7. Logging and Cost Tracking - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#7-logging-and-cost-tracking" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              7. Logging and Cost Tracking
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../" class="psi-header-nav__link psi-header-nav__link--active">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../01-quick-start/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    1. Quick Start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../02-agents-and-dialogs/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    2. Agents and Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../03-prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    3. Prompts and Structured Output
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../04-tools/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    4. Tools, Proxies, and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../05-native-tactics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    5. Native Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../06-packages-and-hub/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    6. Packages and the Hub
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    7. Logging and Cost Tracking
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-turn-on-python-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Turn on Python logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-read-a-tactic-call-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Read a tactic call session
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-drill-into-agent-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Drill into agent calls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-track-tokens-and-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Track tokens and cost
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-persist-every-call-with-an-observer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Persist every call with an observer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-tag-runs-and-query-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Tag runs and query them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-debug-failed-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Debug failed calls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-save-full-transcripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Save full transcripts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-9-use-stable-tactic-identities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Use stable tactic identities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../08-advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    8. Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../09-serving/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    9. Serving and Composition
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../10-pydantic-ai/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    10. Pydantic AI Agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../11-channels/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    11. Channels with SSSN
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#prerequisites" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prerequisites
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-turn-on-python-logging" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Turn on Python logging
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-read-a-tactic-call-session" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Read a tactic call session
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-drill-into-agent-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Drill into agent calls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-4-track-tokens-and-cost" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: Track tokens and cost
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-5-persist-every-call-with-an-observer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Persist every call with an observer
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-6-tag-runs-and-query-them" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Tag runs and query them
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-7-debug-failed-calls" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: Debug failed calls
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-8-save-full-transcripts" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 8: Save full transcripts
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-9-use-stable-tactic-identities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 9: Use stable tactic identities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#summary" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Summary
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="7-logging-and-cost-tracking">7. Logging and Cost Tracking</h1>
+<p><strong>Goal:</strong> see what LLLM logs, read the session every call produces, track tokens
+and dollars, persist every tactic call with an observer, tag and query runs,
+debug failures from their tracebacks, and save full transcripts.</p>
+<p>Every turn in LLLM leaves a structured trace. Each <code>respond()</code> produces an
+<code>AgentCallSession</code> that records every model call, parse repair, tool round,
+provider retry, and its cost. Each tactic call produces a <code>TacticCallSession</code>
+that collects the agent sessions, the sessions of sub-tactics it called, the
+result or the error with its traceback, and the total cost. An <strong>observer</strong>
+hook on the tactic lets you persist these traces wherever you keep experiment
+data.</p>
+<p>This matters for research work: runs must be inspectable after the fact, costs
+must add up across thousands of calls, and a failure in the middle of a batch
+should leave enough behind to debug it.</p>
+<p>Where Pydantic fits: sessions, messages, and costs are Pydantic models, so you
+can read their fields directly, and <code>session.summary()</code> and <code>Message.to_dict()</code>
+give JSON-ready views.</p>
+<h2 id="prerequisites">Prerequisites</h2>
+<p>Finish <a href="../05-native-tactics/">Lesson 5</a>. The examples use this tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">SummarizerTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"summarizer"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"writer"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">writer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"writer"</span><span class="p">]</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"session"</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span><span class="sa">f</span><span class="s2">"Summarize this text in 3 bullet points:</span><span class="se">\n\n</span><span class="si">{</span><span class="n">task</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">writer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+
+
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o"</span><span class="p">},</span>
+    <span class="s2">"agent_configs"</span><span class="p">:</span> <span class="p">[{</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"writer"</span><span class="p">,</span> <span class="s2">"system_prompt"</span><span class="p">:</span> <span class="s2">"You are a concise technical writer."</span><span class="p">}],</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr />
+<h2 id="step-1-turn-on-python-logging">Step 1: Turn on Python logging</h2>
+<p>LLLM's native runtime logs through Python's standard <code>logging</code> module under the
+<code>lllm</code> logger hierarchy. Configure it like any other library:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">logging</span>
+
+<span class="n">logging</span><span class="o">.</span><span class="n">basicConfig</span><span class="p">(</span><span class="n">level</span><span class="o">=</span><span class="n">logging</span><span class="o">.</span><span class="n">INFO</span><span class="p">,</span> <span class="nb">format</span><span class="o">=</span><span class="s2">"</span><span class="si">%(levelname)s</span><span class="s2"> </span><span class="si">%(name)s</span><span class="s2">: </span><span class="si">%(message)s</span><span class="s2">"</span><span class="p">)</span>
+
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">SummarizerTactic</span><span class="p">(</span><span class="n">config</span><span class="p">)</span>
+<span class="n">tactic</span><span class="p">(</span><span class="s2">"LLLM records a session for every tactic call."</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>INFO lllm.runtimes.native.core.tactic: Tactic 'summarizer' started — session_name=summarizer_&lt;hash&gt;_&lt;timestamp&gt;
+INFO lllm.runtimes.native.core.tactic: Tactic 'summarizer' completed — cost=&lt;dollars&gt; agent_calls=1
+</code></pre></div>
+<p>What each level shows:</p>
+<table>
+<thead>
+<tr>
+<th>Level</th>
+<th>Messages</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DEBUG</code></td>
+<td>Every tool call with its arguments, successful agent calls, and the traceback of a failed tactic call</td>
+</tr>
+<tr>
+<td><code>INFO</code></td>
+<td>Tactic start and completion with cost and agent-call count, and one line per failed call (<code>Tactic 'summarizer' failed: ValueError: ...</code>)</td>
+</tr>
+<tr>
+<td><code>WARNING</code></td>
+<td>Parse repairs (<code>[writer] Handling exception (retry 0/3): ...</code>) and provider retries</td>
+</tr>
+<tr>
+<td><code>ERROR</code></td>
+<td>An agent call that uses up its tool rounds without a final reply (<code>[writer] Agent call failed</code>)</td>
+</tr>
+</tbody>
+</table>
+<p>An agent call that runs out of parse repairs, provider retries, or rate-limit
+retries logs nothing at <code>ERROR</code>: it raises the last error, and the tactic's
+INFO failure line reports it.</p>
+<p>To see tool calls without turning on debug output for every library:</p>
+<div class="highlight"><pre><span></span><code><span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s2">"lllm"</span><span class="p">)</span><span class="o">.</span><span class="n">setLevel</span><span class="p">(</span><span class="n">logging</span><span class="o">.</span><span class="n">DEBUG</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="step-2-read-a-tactic-call-session">Step 2: Read a tactic call session</h2>
+<p><code>return_session=True</code> returns the <code>TacticCallSession</code> instead of the result:</p>
+<div class="highlight"><pre><span></span><code><span class="n">session</span> <span class="o">=</span> <span class="n">tactic</span><span class="p">(</span><span class="s2">"Sessions record every agent call."</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">tactic_name</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">tactic_path</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">delivery</span><span class="p">)</span>           <span class="c1"># what call() returned</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">agent_call_count</span><span class="p">)</span>   <span class="c1"># respond() calls across all agents</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">summary</span><span class="p">())</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field or property</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tactic_name</code></td>
+<td>The tactic's name (a <code>name=</code> given to the constructor wins over the class <code>name</code>)</td>
+</tr>
+<tr>
+<td><code>tactic_path</code></td>
+<td>Stable identifier used for filtering (Step 9)</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td><code>"success"</code> or <code>"failure"</code> (<code>"running"</code> while in flight)</td>
+</tr>
+<tr>
+<td><code>delivery</code></td>
+<td>The value <code>call()</code> returned</td>
+</tr>
+<tr>
+<td><code>error</code>, <code>error_traceback</code></td>
+<td>Exception summary and full traceback on failure</td>
+</tr>
+<tr>
+<td><code>agent_sessions</code></td>
+<td>Agent name to the list of its <code>AgentCallSession</code>s</td>
+</tr>
+<tr>
+<td><code>sub_tactic_sessions</code></td>
+<td>Tactic name to the sessions of sub-tactics called inside <code>call()</code> (<a href="../05-native-tactics/">Lesson 5</a>, Step 7)</td>
+</tr>
+<tr>
+<td><code>total_cost</code></td>
+<td><code>InvokeCost</code> summed over agent and sub-tactic sessions</td>
+</tr>
+<tr>
+<td><code>agent_call_count</code>, <code>sub_tactic_call_count</code></td>
+<td>Counts</td>
+</tr>
+<tr>
+<td><code>summary()</code></td>
+<td>Compact dict with tactic, state, counts, and cost</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="step-3-drill-into-agent-calls">Step 3: Drill into agent calls</h2>
+<p>Each <code>respond()</code> inside the tactic left an <code>AgentCallSession</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">for</span> <span class="n">agent_name</span><span class="p">,</span> <span class="n">calls</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_sessions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">call</span> <span class="ow">in</span> <span class="n">calls</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">agent_name</span><span class="p">,</span>
+            <span class="n">call</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="s2">"repairs:"</span><span class="p">,</span> <span class="n">call</span><span class="o">.</span><span class="n">exception_retries_count</span><span class="p">,</span>
+            <span class="s2">"tool rounds:"</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">call</span><span class="o">.</span><span class="n">interrupts</span><span class="p">),</span>
+            <span class="s2">"provider retries:"</span><span class="p">,</span> <span class="n">call</span><span class="o">.</span><span class="n">llm_recalls_count</span><span class="p">,</span>
+            <span class="s2">"cost:"</span><span class="p">,</span> <span class="n">call</span><span class="o">.</span><span class="n">cost</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span>
+        <span class="p">)</span>
+</code></pre></div>
+<p>The dictionaries are keyed by the loop step (one step per tool round):</p>
+<ul>
+<li><code>exception_retries[step]</code>: the parse or validation errors that triggered
+  repairs;</li>
+<li><code>interrupts[step]</code>: the tool calls requested in that round;</li>
+<li><code>llm_recalls[step]</code>: provider errors that were retried;</li>
+<li><code>invoke_traces[step]</code>: one <code>InvokeResult</code> per model call, including failed
+  attempts, with the exact <code>model_args</code> sent, any <code>execution_errors</code>, the
+  returned <code>message</code>, and the provider's <code>raw_response</code>.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="n">call</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_sessions</span><span class="p">[</span><span class="s2">"writer"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">step</span><span class="p">,</span> <span class="n">traces</span> <span class="ow">in</span> <span class="n">call</span><span class="o">.</span><span class="n">invoke_traces</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+    <span class="k">for</span> <span class="n">trace</span> <span class="ow">in</span> <span class="n">traces</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">step</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">model_args</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">has_errors</span><span class="p">,</span> <span class="n">trace</span><span class="o">.</span><span class="n">message</span><span class="o">.</span><span class="n">content</span><span class="p">[:</span><span class="mi">60</span><span class="p">])</span>
+</code></pre></div>
+<p><code>call.delivery</code> is the accepted reply, the same <code>Message</code> <code>respond()</code> returned.</p>
+<hr />
+<h2 id="step-4-track-tokens-and-cost">Step 4: Track tokens and cost</h2>
+<p>Costs are <code>InvokeCost</code> objects at three levels:</p>
+<div class="highlight"><pre><span></span><code><span class="n">reply</span> <span class="o">=</span> <span class="n">call</span><span class="o">.</span><span class="n">delivery</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">reply</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>                  <span class="c1"># one message</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">total_cost</span><span class="p">)</span>          <span class="c1"># one tactic call</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">total_cost</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>     <span class="c1"># total dollars as a float</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">total_cost</span><span class="o">.</span><span class="n">prompt_tokens</span><span class="p">,</span> <span class="n">session</span><span class="o">.</span><span class="n">total_cost</span><span class="o">.</span><span class="n">completion_tokens</span><span class="p">)</span>
+</code></pre></div>
+<p>Printing an <code>InvokeCost</code> gives a readable breakdown:</p>
+<div class="highlight"><pre><span></span><code>Tokens: &lt;total&gt; (Prompt: &lt;n&gt; [Cached: &lt;n&gt;], Completion: &lt;n&gt; [Reasoning: &lt;n&gt;])
+Cost Breakdown: Prompt: $&lt;x&gt;, Completion: $&lt;y&gt; | Total Cost: $&lt;z&gt;
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>prompt_tokens</code>, <code>completion_tokens</code>, <code>total_tokens</code></td>
+<td>Token counts reported by the provider</td>
+</tr>
+<tr>
+<td><code>cached_prompt_tokens</code>, <code>reasoning_tokens</code></td>
+<td>Cached-prompt and reasoning token counts, when reported</td>
+</tr>
+<tr>
+<td><code>prompt_cost</code>, <code>completion_cost</code>, <code>cost</code></td>
+<td>Dollar amounts</td>
+</tr>
+<tr>
+<td><code>input_cost_per_token</code>, <code>output_cost_per_token</code></td>
+<td>Per-token rates recorded on individual messages; zero in sums</td>
+</tr>
+</tbody>
+</table>
+<p>Dollar amounts come from LiteLLM's model price list. For a model LiteLLM has no
+price for, token counts are still recorded and dollar amounts are <code>0.0</code>. A
+dialog sums its own messages with <code>dialog.cost</code>
+(<a href="../02-agents-and-dialogs/">Lesson 2</a>).</p>
+<hr />
+<h2 id="step-5-persist-every-call-with-an-observer">Step 5: Persist every call with an observer</h2>
+<p>Pass an <code>observer</code> when you construct a tactic. LLLM calls its hooks for every
+tactic call, passing the session, the task, and the tags and metadata of that
+call:</p>
+<ul>
+<li><code>on_tactic_success(*, tactic, session, task, result, span, tags, metadata)</code></li>
+<li><code>on_tactic_failure(*, tactic, session, task, exception, span, tags, metadata)</code></li>
+<li>optionally <code>observe_tactic(*, tactic, session, task, session_name, tags, metadata)</code>,
+  a context manager wrapped around the call; whatever it yields is passed to
+  the other hooks as <code>span</code>. Use it for timing or tracing spans.</li>
+</ul>
+<p>Every hook is optional, and an exception inside a hook is logged without
+breaking the call. This observer appends one JSON line per call:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">json</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">time</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">JsonlRunLog</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">"""Append one JSON record per tactic call."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">path</span> <span class="o">=</span> <span class="n">path</span>
+
+    <span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">observe_tactic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tactic</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">session_name</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">metadata</span><span class="p">):</span>
+        <span class="k">yield</span> <span class="p">{</span><span class="s2">"session_name"</span><span class="p">:</span> <span class="n">session_name</span><span class="p">,</span> <span class="s2">"started"</span><span class="p">:</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_tactic_success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tactic</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">metadata</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_tactic_failure</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tactic</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">exception</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">metadata</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_write</span><span class="p">(</span><span class="n">session</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_write</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="p">):</span>
+        <span class="n">cost</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">total_cost</span>
+        <span class="n">record</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">"session_name"</span><span class="p">:</span> <span class="n">span</span><span class="p">[</span><span class="s2">"session_name"</span><span class="p">],</span>
+            <span class="s2">"seconds"</span><span class="p">:</span> <span class="nb">round</span><span class="p">(</span><span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">span</span><span class="p">[</span><span class="s2">"started"</span><span class="p">],</span> <span class="mi">3</span><span class="p">),</span>
+            <span class="s2">"tactic"</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">tactic_path</span><span class="p">,</span>
+            <span class="s2">"state"</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">state</span><span class="p">,</span>
+            <span class="s2">"tags"</span><span class="p">:</span> <span class="n">tags</span> <span class="ow">or</span> <span class="p">{},</span>
+            <span class="s2">"agent_calls"</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">agent_call_count</span><span class="p">,</span>
+            <span class="s2">"cost_usd"</span><span class="p">:</span> <span class="n">cost</span><span class="o">.</span><span class="n">cost</span><span class="p">,</span>
+            <span class="s2">"prompt_tokens"</span><span class="p">:</span> <span class="n">cost</span><span class="o">.</span><span class="n">prompt_tokens</span><span class="p">,</span>
+            <span class="s2">"completion_tokens"</span><span class="p">:</span> <span class="n">cost</span><span class="o">.</span><span class="n">completion_tokens</span><span class="p">,</span>
+            <span class="s2">"error"</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">error</span><span class="p">,</span>
+            <span class="s2">"traceback"</span><span class="p">:</span> <span class="n">session</span><span class="o">.</span><span class="n">error_traceback</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="s2">"a"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">record</span><span class="p">)</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="n">run_log</span> <span class="o">=</span> <span class="n">JsonlRunLog</span><span class="p">(</span><span class="s2">"runs.jsonl"</span><span class="p">)</span>
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">SummarizerTactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">observer</span><span class="o">=</span><span class="n">run_log</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="step-6-tag-runs-and-query-them">Step 6: Tag runs and query them</h2>
+<p>Tags are string key-value pairs attached at call time. They reach the observer,
+so you can filter on them later:</p>
+<div class="highlight"><pre><span></span><code><span class="n">tactic</span><span class="p">(</span><span class="s2">"First document ..."</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">"env"</span><span class="p">:</span> <span class="s2">"dev"</span><span class="p">,</span> <span class="s2">"experiment"</span><span class="p">:</span> <span class="s2">"prompt-b"</span><span class="p">})</span>
+<span class="n">tactic</span><span class="o">.</span><span class="n">bcall</span><span class="p">([</span><span class="s2">"Second document ..."</span><span class="p">,</span> <span class="s2">"Third document ..."</span><span class="p">],</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">"env"</span><span class="p">:</span> <span class="s2">"dev"</span><span class="p">,</span> <span class="s2">"experiment"</span><span class="p">:</span> <span class="s2">"prompt-b"</span><span class="p">})</span>
+</code></pre></div>
+<p><code>metadata={...}</code> works the same way for values that are not strings. Querying
+the log is ordinary Python:</p>
+<div class="highlight"><pre><span></span><code><span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"runs.jsonl"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">runs</span> <span class="o">=</span> <span class="p">[</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">line</span><span class="p">)</span> <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">f</span><span class="p">]</span>
+
+<span class="n">prompt_b</span> <span class="o">=</span> <span class="p">[</span><span class="n">run</span> <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">runs</span> <span class="k">if</span> <span class="n">run</span><span class="p">[</span><span class="s2">"tags"</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"experiment"</span><span class="p">)</span> <span class="o">==</span> <span class="s2">"prompt-b"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">prompt_b</span><span class="p">)</span><span class="si">}</span><span class="s2"> runs, $</span><span class="si">{</span><span class="nb">sum</span><span class="p">(</span><span class="n">run</span><span class="p">[</span><span class="s1">'cost_usd'</span><span class="p">]</span><span class="w"> </span><span class="k">for</span><span class="w"> </span><span class="n">run</span><span class="w"> </span><span class="ow">in</span><span class="w"> </span><span class="n">prompt_b</span><span class="p">)</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2"> total"</span><span class="p">)</span>
+
+<span class="n">by_tactic</span> <span class="o">=</span> <span class="p">{}</span>
+<span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="n">runs</span><span class="p">:</span>
+    <span class="n">by_tactic</span><span class="p">[</span><span class="n">run</span><span class="p">[</span><span class="s2">"tactic"</span><span class="p">]]</span> <span class="o">=</span> <span class="n">by_tactic</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">run</span><span class="p">[</span><span class="s2">"tactic"</span><span class="p">],</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> <span class="n">run</span><span class="p">[</span><span class="s2">"cost_usd"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">by_tactic</span><span class="p">)</span>
+</code></pre></div>
+<p>The same observer can write to SQLite, a data warehouse, or an experiment
+tracker instead of a JSONL file; only <code>_write()</code> changes.</p>
+<hr />
+<h2 id="step-7-debug-failed-calls">Step 7: Debug failed calls</h2>
+<p>A failing call raises as usual, and the observer still receives the session,
+with <code>state="failure"</code>, the exception summary, and the full traceback:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FlakyTactic</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"flaky"</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"cannot handle </span><span class="si">{</span><span class="n">task</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+
+
+<span class="k">try</span><span class="p">:</span>
+    <span class="n">FlakyTactic</span><span class="p">(</span><span class="n">observer</span><span class="o">=</span><span class="n">run_log</span><span class="p">)(</span><span class="s2">"bad input"</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="p">{</span><span class="s2">"env"</span><span class="p">:</span> <span class="s2">"dev"</span><span class="p">})</span>
+<span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+    <span class="k">pass</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">"runs.jsonl"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="n">failures</span> <span class="o">=</span> <span class="p">[</span><span class="n">run</span> <span class="k">for</span> <span class="n">run</span> <span class="ow">in</span> <span class="nb">map</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span> <span class="k">if</span> <span class="n">run</span><span class="p">[</span><span class="s2">"state"</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"failure"</span><span class="p">]</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">failures</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"error"</span><span class="p">])</span>       <span class="c1"># ValueError: cannot handle 'bad input'</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">failures</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">"traceback"</span><span class="p">])</span>
+</code></pre></div>
+<p>The <code>session</code> passed to <code>on_tactic_failure</code> also holds the agent sessions
+recorded before the failure, so you can see how far the call got.</p>
+<hr />
+<h2 id="step-8-save-full-transcripts">Step 8: Save full transcripts</h2>
+<p>Sessions keep the accepted replies; the complete dialogs live on the agents of
+each call. The <code>tactic</code> passed to the observer hooks is the per-call copy, so
+its agents still hold every dialog they opened:</p>
+<div class="highlight"><pre><span></span><code><span class="k">class</span><span class="w"> </span><span class="nc">TranscriptLog</span><span class="p">(</span><span class="n">JsonlRunLog</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Also save every dialog of every agent, one JSON file per call."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_tactic_success</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">tactic</span><span class="p">,</span> <span class="n">session</span><span class="p">,</span> <span class="n">task</span><span class="p">,</span> <span class="n">result</span><span class="p">,</span> <span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="p">,</span> <span class="n">metadata</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">on_tactic_success</span><span class="p">(</span>
+            <span class="n">tactic</span><span class="o">=</span><span class="n">tactic</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="n">session</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="n">task</span><span class="p">,</span> <span class="n">result</span><span class="o">=</span><span class="n">result</span><span class="p">,</span>
+            <span class="n">span</span><span class="o">=</span><span class="n">span</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="n">transcripts</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">agent_name</span><span class="p">:</span> <span class="p">{</span><span class="n">alias</span><span class="p">:</span> <span class="n">dialog</span><span class="o">.</span><span class="n">to_dict</span><span class="p">()</span> <span class="k">for</span> <span class="n">alias</span><span class="p">,</span> <span class="n">dialog</span> <span class="ow">in</span> <span class="n">agent</span><span class="o">.</span><span class="n">dialogs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+            <span class="k">for</span> <span class="n">agent_name</span><span class="p">,</span> <span class="n">agent</span> <span class="ow">in</span> <span class="n">tactic</span><span class="o">.</span><span class="n">agents</span><span class="o">.</span><span class="n">items</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">span</span><span class="p">[</span><span class="s1">'session_name'</span><span class="p">]</span><span class="si">}</span><span class="s2">.dialogs.json"</span><span class="p">,</span> <span class="s2">"w"</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s2">"utf-8"</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+            <span class="n">json</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">transcripts</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
+
+
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">SummarizerTactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">observer</span><span class="o">=</span><span class="n">TranscriptLog</span><span class="p">(</span><span class="s2">"runs.jsonl"</span><span class="p">))</span>
+<span class="n">tactic</span><span class="p">(</span><span class="s2">"Save the whole conversation."</span><span class="p">)</span>
+</code></pre></div>
+<p><code>dialog.to_dict()</code> produces JSON-ready data with the messages (including tool
+calls and parsed output), the dialog's lineage, and its latest prompt. Load a
+saved dialog with <code>Dialog.from_dict(data)</code> to review it, replay it, or build
+datasets from it (<a href="../02-agents-and-dialogs/">Lesson 2</a>, Step 9).</p>
+<hr />
+<h2 id="step-9-use-stable-tactic-identities">Step 9: Use stable tactic identities</h2>
+<p><code>session.tactic_path</code> identifies the tactic in logs. When a tactic is built from
+a package registry it has the form <code>"&lt;package&gt;::&lt;tactic name&gt;"</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runtime</span><span class="p">,</span> <span class="n">build_tactic</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">Runtime</span><span class="p">()</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_tactic</span><span class="p">(</span><span class="s2">"summarizer"</span><span class="p">,</span> <span class="n">SummarizerTactic</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_project.tactics"</span><span class="p">)</span>
+
+<span class="n">packaged</span> <span class="o">=</span> <span class="n">build_tactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"my_project.tactics:summarizer"</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">runtime</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">packaged</span><span class="p">(</span><span class="s2">"Stable ids."</span><span class="p">,</span> <span class="n">return_session</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">tactic_path</span><span class="p">)</span>   <span class="c1"># my_project::summarizer</span>
+</code></pre></div>
+<p>Loading an LLLM package registers its tactics this way
+(<a href="../06-packages-and-hub/">Lesson 6</a>). The identifier does not depend on file
+paths inside the package, so log queries keep working when you reorganize a
+project; only renaming the package or the tactic's <code>name</code> changes it. A tactic
+constructed directly uses its <code>name</code>.</p>
+<hr />
+<h2 id="summary">Summary</h2>
+<table>
+<thead>
+<tr>
+<th>Task</th>
+<th>API</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>See runtime logs</td>
+<td><code>logging.basicConfig(level=logging.INFO)</code>; <code>logging.getLogger("lllm")</code></td>
+</tr>
+<tr>
+<td>Session of one call</td>
+<td><code>tactic(task, return_session=True)</code></td>
+</tr>
+<tr>
+<td>Per-respond details</td>
+<td><code>session.agent_sessions[name][i]</code>: retries, interrupts, invoke traces</td>
+</tr>
+<tr>
+<td>Sub-tactic sessions</td>
+<td><code>session.sub_tactic_sessions[name]</code></td>
+</tr>
+<tr>
+<td>Cost</td>
+<td><code>message.cost</code>, <code>dialog.cost</code>, <code>session.total_cost</code></td>
+</tr>
+<tr>
+<td>Persist every call</td>
+<td><code>MyTactic(config, observer=obj)</code> with <code>on_tactic_success</code> / <code>on_tactic_failure</code></td>
+</tr>
+<tr>
+<td>Timing or tracing spans</td>
+<td><code>observe_tactic(...)</code> context manager on the observer</td>
+</tr>
+<tr>
+<td>Tag runs</td>
+<td><code>tactic(task, tags={...}, metadata={...})</code>, <code>tactic.bcall(tasks, tags={...})</code></td>
+</tr>
+<tr>
+<td>Debug failures</td>
+<td><code>session.error</code>, <code>session.error_traceback</code> in <code>on_tactic_failure</code></td>
+</tr>
+<tr>
+<td>Save transcripts</td>
+<td><code>dialog.to_dict()</code> for each agent of the per-call <code>tactic</code></td>
+</tr>
+<tr>
+<td>Stable identity</td>
+<td><code>session.tactic_path</code>, <code>"&lt;package&gt;::&lt;name&gt;"</code> for packaged tactics</td>
+</tr>
+</tbody>
+</table>
+<p>See the <a href="../../core/logging/">Logging reference</a> for details.</p>
+<p><strong>Next:</strong> <a href="../08-advanced-patterns/">8. Advanced Patterns</a></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

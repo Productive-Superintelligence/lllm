@@ -1,0 +1,1812 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/runtime/">
+      
+      
+        <link rel="prev" href="../logging/">
+      
+      
+        <link rel="next" href="../../protocol/tactic/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Runtime - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#runtime-registries" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Runtime
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../architecture/" class="psi-header-nav__link psi-header-nav__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../architecture/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../prompts/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-hints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference Hints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxies and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#loading-a-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading a package
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-default-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The default runtime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#named-runtimes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Named runtimes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internal-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registering-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registering resources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registering resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#through-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Through discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typed-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-level-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Low-level API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieving-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieving resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isolated-runtimes-for-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isolated runtimes for testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registry-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry / Runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-level-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module-level helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#package-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#loading-a-package" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading a package
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-default-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The default runtime
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#named-runtimes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Named runtimes
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#internal-architecture" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Internal architecture
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resource-resolution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resource resolution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#registering-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registering resources
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Registering resources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#through-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Through discovery
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#typed-methods" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Typed methods
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#low-level-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Low-level API
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#retrieving-resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Retrieving resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#isolated-runtimes-for-testing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Isolated runtimes for testing
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#api-reference" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        API reference
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="API reference">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#registry-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Registry / Runtime
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#module-level-helpers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Module-level helpers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#package-management" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Package management
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#design-notes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Design notes
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="runtime-registries">Runtime &amp; Registries</h1>
+<div class="admonition note">
+<p class="admonition-title">Most code only needs <code>load_runtime()</code></p>
+<p>Call <code>load_runtime()</code> once at startup to load your package, then refer to
+resources by name. Read on if you write tests with isolated registries, run
+parallel experiments with separate runtimes, or embed LLLM in a system that
+manages its own package loading.</p>
+</div>
+<p>A runtime is a registry: one store of <code>ResourceNode</code> objects keyed by namespaced
+URLs. It is where prompts, tools, proxies, tactics, configs, assets, and context
+managers are looked up by name.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Runtime</span>   <span class="c1"># Runtime is an alias of Registry</span>
+</code></pre></div>
+<hr />
+<h2 id="loading-a-package">Loading a package</h2>
+<p>Nothing is loaded when you import <code>lllm</code>. Populate the default runtime
+explicitly:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_runtime</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">load_runtime</span><span class="p">()</span>   <span class="c1"># finds lllm.toml, loads the package tree, sets it as default</span>
+</code></pre></div>
+<p>Projects generated by <code>lllm create my-app</code> do this in <code>main.py</code>. Looking up a
+resource in a runtime that nothing has been loaded into raises a <code>KeyError</code>
+that says to call <code>lllm.load_runtime()</code>.</p>
+<p><code>load_runtime(toml_path=None, name=None, *, discover_cwd=True,
+discover_shared_packages=True)</code>:</p>
+<ol>
+<li><strong>Find the manifest.</strong> With <code>toml_path</code>, that file (or the <code>lllm.toml</code> in that
+   folder). Otherwise <code>$LLLM_CONFIG</code> if set, then the first <code>lllm.toml</code>,
+   <code>.lllm.toml</code>, or <code>LLLM.toml</code> in the working directory or its parents (a
+   <code>template/</code> subfolder at each level is checked too).</li>
+<li><strong>Load the package tree</strong>: the package, its dependencies (recursively, with
+   cycle detection), and every resource section. See
+   <a href="../../packages/discovery/">Package Discovery</a>.</li>
+<li><strong>No manifest?</strong> With <code>discover_cwd=True</code>, the working directory is scanned
+   for the standard folders (<code>prompts/</code>, <code>tools/</code>, <code>proxies/</code>, <code>configs/</code>,
+   <code>tactics/</code>, <code>assets/</code>, <code>services/</code>). If any exist they are loaded as a package named after
+   the directory, with a <code>RuntimeWarning</code> suggesting you add an <code>lllm.toml</code>.
+   Otherwise the runtime stays empty. Pass <code>discover_cwd=False</code> for a strict,
+   deterministic boot.</li>
+<li><strong>Shared packages.</strong> With <code>discover_shared_packages=True</code>, every sub-folder
+   with an <code>lllm.toml</code> in <code>&lt;project root&gt;/lllm_packages/</code> and
+   <code>~/.lllm/packages/</code> is loaded too.</li>
+<li><strong>Store it.</strong> <code>name=None</code> makes the new runtime the default; a name stores it
+   as a named runtime and leaves the default alone.</li>
+</ol>
+<hr />
+<h2 id="the-default-runtime">The default runtime</h2>
+<p>A process-wide default runtime exists from import time, empty and without side
+effects. Everything that takes <code>runtime=</code> / <code>registry=</code> falls back to it:
+<code>Agent</code>, <code>Dialog</code>, <code>Tactic</code>, <code>ProxyManager</code>, <code>ProxyRegistrator</code>,
+<code>register_prompt</code>, and the <code>load_*</code> helpers.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_runtime</span><span class="p">,</span> <span class="n">set_default_runtime</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">get_default_runtime</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">runtime</span><span class="o">.</span><span class="n">keys</span><span class="p">(</span><span class="s2">"prompt"</span><span class="p">))</span>   <span class="c1"># qualified keys of every prompt</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">runtime</span><span class="o">.</span><span class="n">default_namespace</span><span class="p">)</span>  <span class="c1"># root package name, used for bare keys</span>
+</code></pre></div>
+<hr />
+<h2 id="named-runtimes">Named runtimes</h2>
+<p>For parallel experiments or tests, keep separate runtimes:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_runtime</span><span class="p">,</span> <span class="n">load_runtime</span>
+
+<span class="n">load_runtime</span><span class="p">(</span><span class="s2">"experiment_a/lllm.toml"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"exp_a"</span><span class="p">)</span>
+<span class="n">load_runtime</span><span class="p">(</span><span class="s2">"experiment_b/lllm.toml"</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s2">"exp_b"</span><span class="p">)</span>
+
+<span class="n">rt_a</span> <span class="o">=</span> <span class="n">get_runtime</span><span class="p">(</span><span class="s2">"exp_a"</span><span class="p">)</span>
+<span class="n">rt_b</span> <span class="o">=</span> <span class="n">get_runtime</span><span class="p">(</span><span class="s2">"exp_b"</span><span class="p">)</span>
+
+<span class="n">tactic_a</span> <span class="o">=</span> <span class="n">MyTactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">rt_a</span><span class="p">)</span>
+</code></pre></div>
+<p>Each runtime has its own registry. <code>get_runtime()</code> with no name returns the
+default; an unknown name raises <code>KeyError</code>.</p>
+<hr />
+<h2 id="internal-architecture">Internal architecture</h2>
+<p>All resources are <code>ResourceNode</code> objects in one <code>_resources</code> dict, keyed by
+qualified key (<code>"my_pkg.prompts:greet/hello"</code>). A <code>_type_index</code> maps resource
+types to keys for fast filtered iteration.</p>
+<div class="highlight"><pre><span></span><code>Registry
+├── _resources: Dict[str, ResourceNode]    # "pkg.section:key" -&gt; node
+├── _type_index: Dict[str, Set[str]]       # "prompt" -&gt; {"pkg.prompts:a", ...}
+├── packages: Dict[str, PackageInfo]       # "pkg_name" (or alias) -&gt; metadata
+├── _loaded_package_paths: Set[str]        # cycle detection
+└── _default_namespace: Optional[str]      # root package name
+</code></pre></div>
+<p><code>PackageInfo(name, version, description, base_dir, alias)</code> describes a loaded
+package; <code>effective_name</code> is the alias if set.</p>
+<hr />
+<h2 id="resource-resolution">Resource resolution</h2>
+<p><code>runtime.get(key, resource_type=None)</code> and the typed helpers resolve keys in
+this order:</p>
+<ol>
+<li><strong>Exact match</strong>: <code>key</code> is a qualified key in the store.</li>
+<li><strong>Default namespace</strong>: for a key without <code>:</code>, try
+   <code>&lt;default&gt;.&lt;section&gt;:&lt;key&gt;</code> for the requested type's section (<code>prompt</code> -&gt;
+   <code>prompts</code>, <code>proxy</code> -&gt; <code>proxies</code>, ...), then each built-in section in order:
+   tactics, services, configs, assets, prompts, tools, proxies.</li>
+<li><strong>Package shorthand</strong>: for <code>pkg:key</code> with no <code>.</code> in the package part and a
+   requested type, try <code>pkg.&lt;section&gt;:key</code>.</li>
+</ol>
+<p>So:</p>
+<ul>
+<li><code>get_prompt("greet/hello")</code> tries <code>my_system.prompts:greet/hello</code></li>
+<li><code>get_prompt("child_pkg:greet/hello")</code> tries <code>child_pkg.prompts:greet/hello</code></li>
+<li><code>get("my_pkg.prompts:greet/hello")</code> is an exact match</li>
+</ul>
+<p>A miss raises <code>KeyError</code> listing the closest registered keys (or, in a runtime
+nothing has been loaded into, suggesting <code>lllm.load_runtime()</code>).</p>
+<hr />
+<h2 id="registering-resources">Registering resources</h2>
+<h3 id="through-discovery">Through discovery</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_package</span>
+
+<span class="n">load_package</span><span class="p">(</span><span class="s2">"path/to/lllm.toml"</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">)</span>
+<span class="c1"># every prompt, tool, proxy, tactic, config, and asset is now registered</span>
+</code></pre></div>
+<p><code>load_package(config_path=None, *, runtime=None, registry=None)</code> loads one
+package tree into an existing runtime without the shared-package scan. The first
+package loaded into a runtime becomes its default namespace.</p>
+<h3 id="typed-methods">Typed methods</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Runtime</span><span class="p">,</span> <span class="n">tool</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">Runtime</span><span class="p">()</span>
+
+<span class="c1"># Prompt: key is prompt.path</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_prompt</span><span class="p">(</span><span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"test/greeting"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Hello </span><span class="si">{name}</span><span class="s2">!"</span><span class="p">),</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.prompts"</span><span class="p">)</span>
+
+
+<span class="c1"># Tool: the key's last segment must equal the tool's name</span>
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Search documents."</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">query</span>
+
+
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_tool</span><span class="p">(</span><span class="s2">"search"</span><span class="p">,</span> <span class="n">search</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.tools"</span><span class="p">)</span>
+
+<span class="c1"># Proxy and tactic classes</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_proxy</span><span class="p">(</span><span class="s2">"search/web"</span><span class="p">,</span> <span class="n">WebProxy</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.proxies"</span><span class="p">)</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_tactic</span><span class="p">(</span><span class="s2">"analytica"</span><span class="p">,</span> <span class="n">Analytica</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.tactics"</span><span class="p">)</span>
+
+<span class="c1"># Config: eager, or lazy with a loader</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_config</span><span class="p">(</span><span class="s2">"default"</span><span class="p">,</span> <span class="p">{</span><span class="s2">"global"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"model_name"</span><span class="p">:</span> <span class="s2">"gpt-4o"</span><span class="p">}},</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.configs"</span><span class="p">)</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_config</span><span class="p">(</span><span class="s2">"heavy"</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">yaml</span><span class="o">.</span><span class="n">safe_load</span><span class="p">(</span><span class="nb">open</span><span class="p">(</span><span class="s2">"heavy.yaml"</span><span class="p">)),</span>
+                        <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.configs"</span><span class="p">)</span>
+
+<span class="c1"># Context manager class: key is cls.name</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_context_manager</span><span class="p">(</span><span class="n">KeepLastTurns</span><span class="p">)</span>
+</code></pre></div>
+<p><code>register_tool</code> rejects a key whose last segment differs from <code>tool.name</code>; that
+exact-name rule is what binds prompt <code>Function</code> declarations to
+implementations. <code>register_proxy</code> and <code>register_tactic</code> default to
+<code>overwrite=False</code> and raise <code>ValueError</code> on a duplicate key; the other typed
+methods overwrite by default. Registering a prompt, tool, proxy, or tactic also
+records its qualified key and namespace on the object, which is how bare refs
+on a prompt resolve inside its own package.</p>
+<p>Decorators that register at import time, such as <code>@ProxyRegistrator</code> without a
+<code>runtime=</code>, write to the default runtime.</p>
+<h3 id="low-level-api">Low-level API</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.core.resource</span><span class="w"> </span><span class="kn">import</span> <span class="n">ResourceNode</span>
+
+<span class="n">node</span> <span class="o">=</span> <span class="n">ResourceNode</span><span class="o">.</span><span class="n">eager</span><span class="p">(</span><span class="s2">"logo.png"</span><span class="p">,</span> <span class="n">image_bytes</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.assets"</span><span class="p">,</span> <span class="n">resource_type</span><span class="o">=</span><span class="s2">"asset"</span><span class="p">)</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+
+<span class="c1"># Lazy: the loader runs on first .value access, then the result is cached</span>
+<span class="n">node</span> <span class="o">=</span> <span class="n">ResourceNode</span><span class="o">.</span><span class="n">lazy</span><span class="p">(</span><span class="s2">"big_data"</span><span class="p">,</span> <span class="n">loader</span><span class="o">=</span><span class="k">lambda</span><span class="p">:</span> <span class="n">load_parquet</span><span class="p">(</span><span class="s2">"data.parquet"</span><span class="p">),</span>
+                         <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.datasets"</span><span class="p">,</span> <span class="n">resource_type</span><span class="o">=</span><span class="s2">"dataset"</span><span class="p">)</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">register</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+</code></pre></div>
+<p><code>ResourceNode</code> is a wrapper, not a base class: <code>Prompt</code>, <code>Function</code>, <code>Tactic</code>,
+and <code>BaseProxy</code> do not inherit from it. Extra keyword arguments to <code>eager</code> /
+<code>lazy</code> land in <code>node.metadata</code> (discovered files store <code>file_path</code> there).
+<code>node.category</code> is <code>"platform"</code> for tactics, services, configs, and assets,
+<code>"native"</code> for prompts, tools, proxies, and context managers, and <code>"custom"</code>
+otherwise.</p>
+<hr />
+<h2 id="retrieving-resources">Retrieving resources</h2>
+<div class="highlight"><pre><span></span><code><span class="c1"># Typed (section inferred)</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">"greet/hello"</span><span class="p">)</span>
+<span class="n">tool_fn</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_tool</span><span class="p">(</span><span class="s2">"my_pkg:search"</span><span class="p">)</span>
+<span class="n">tactic_cls</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_tactic</span><span class="p">(</span><span class="s2">"analytica"</span><span class="p">)</span>
+<span class="n">proxy_cls</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_proxy</span><span class="p">(</span><span class="s2">"my_pkg.proxies:search/web"</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_config</span><span class="p">(</span><span class="s2">"default"</span><span class="p">)</span>          <span class="c1"># triggers the lazy load</span>
+<span class="n">asset</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_asset</span><span class="p">(</span><span class="s2">"my_pkg:logo.png"</span><span class="p">)</span>
+<span class="n">proxy_cls</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_proxy</span><span class="p">(</span><span class="s2">"my_pkg:search/web"</span><span class="p">)</span>  <span class="c1"># package shorthand works for every type</span>
+
+<span class="c1"># Generic</span>
+<span class="n">value</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"my_pkg.assets:logo.png"</span><span class="p">)</span>
+<span class="n">node</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_node</span><span class="p">(</span><span class="s2">"my_pkg.assets:logo.png"</span><span class="p">)</span>
+<span class="n">runtime</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s2">"my_pkg.prompts:greet/hello"</span><span class="p">)</span>       <span class="c1"># True / False</span>
+
+<span class="c1"># Module-level helpers (default runtime unless runtime=/registry= is given)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_config</span><span class="p">,</span> <span class="n">load_prompt</span><span class="p">,</span> <span class="n">load_proxy</span><span class="p">,</span> <span class="n">load_resource</span><span class="p">,</span> <span class="n">load_tactic</span><span class="p">,</span> <span class="n">load_tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native.core.resource</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_asset</span><span class="p">,</span> <span class="n">load_service_ref</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">load_prompt</span><span class="p">(</span><span class="s2">"child_pkg:greet/hello"</span><span class="p">)</span>
+<span class="n">config</span> <span class="o">=</span> <span class="n">load_config</span><span class="p">(</span><span class="s2">"experiments/ablation"</span><span class="p">,</span> <span class="n">runtime</span><span class="o">=</span><span class="n">runtime</span><span class="p">)</span>
+<span class="n">asset</span> <span class="o">=</span> <span class="n">load_resource</span><span class="p">(</span><span class="s2">"my_pkg.assets:logo.png"</span><span class="p">)</span>
+</code></pre></div>
+<p><code>load_resource</code> requires a <code>:</code> and accepts <code>"pkg.section:key"</code> or
+<code>"section:key"</code> (the section is looked up in the default package). A typed
+lookup that finds a resource of another type raises <code>TypeError</code>.</p>
+<hr />
+<h2 id="isolated-runtimes-for-testing">Isolated runtimes for testing</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">Runtime</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">test_my_tactic</span><span class="p">():</span>
+    <span class="n">runtime</span> <span class="o">=</span> <span class="n">Runtime</span><span class="p">()</span>
+    <span class="n">runtime</span><span class="o">.</span><span class="n">register_prompt</span><span class="p">(</span><span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"test/prompt"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Hi </span><span class="si">{name}</span><span class="s2">"</span><span class="p">),</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"test.prompts"</span><span class="p">)</span>
+    <span class="n">tactic</span> <span class="o">=</span> <span class="n">MyTactic</span><span class="p">(</span><span class="n">config</span><span class="p">,</span> <span class="n">registry</span><span class="o">=</span><span class="n">runtime</span><span class="p">)</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">tactic</span><span class="p">(</span><span class="s2">"hello"</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">runtime</span><span class="o">.</span><span class="n">has</span><span class="p">(</span><span class="s2">"test.prompts:test/prompt"</span><span class="p">)</span>
+</code></pre></div>
+<p>Pair this with a scripted invoker (see <a href="../invokers/#custom-invokers">Invokers</a>)
+to test tactics without network access.</p>
+<p><code>runtime.reset()</code> clears every registry and the default namespace:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">import</span><span class="w"> </span><span class="nn">pytest</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_default_runtime</span>
+
+
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">fixture</span><span class="p">(</span><span class="n">autouse</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">clean_runtime</span><span class="p">():</span>
+    <span class="k">yield</span>
+    <span class="n">get_default_runtime</span><span class="p">()</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="api-reference">API reference</h2>
+<h3 id="registry-runtime"><code>Registry</code> / <code>Runtime</code></h3>
+<table>
+<thead>
+<tr>
+<th>Member</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>register(node, overwrite=True)</code></td>
+<td>Register any <code>ResourceNode</code>.</td>
+</tr>
+<tr>
+<td><code>get(key, resource_type=None)</code></td>
+<td>Resolve a key and return the node's value.</td>
+</tr>
+<tr>
+<td><code>get_node(key, resource_type=None)</code></td>
+<td>Resolve a key and return the <code>ResourceNode</code>.</td>
+</tr>
+<tr>
+<td><code>has(key)</code></td>
+<td>Whether a key resolves.</td>
+</tr>
+<tr>
+<td><code>keys(resource_type=None)</code></td>
+<td>Sorted qualified keys, optionally filtered by type.</td>
+</tr>
+<tr>
+<td><code>iter_items(resource_type=None)</code> / <code>iter_nodes(...)</code></td>
+<td>Deterministic iteration over <code>(key, node)</code> pairs / nodes.</td>
+</tr>
+<tr>
+<td><code>register_prompt(prompt, overwrite=True, namespace="")</code></td>
+<td>Register a prompt under <code>prompt.path</code>.</td>
+</tr>
+<tr>
+<td><code>get_prompt(path)</code></td>
+<td>Typed lookup.</td>
+</tr>
+<tr>
+<td><code>register_tool(name, tool, overwrite=True, namespace="")</code></td>
+<td>Register a <code>Function</code>; the key's last segment must equal <code>tool.name</code>.</td>
+</tr>
+<tr>
+<td><code>get_tool(path)</code></td>
+<td>Typed lookup.</td>
+</tr>
+<tr>
+<td><code>register_proxy(name, proxy_cls, overwrite=False, namespace="")</code></td>
+<td>Register a proxy class.</td>
+</tr>
+<tr>
+<td><code>get_proxy(path)</code></td>
+<td>Typed lookup.</td>
+</tr>
+<tr>
+<td><code>register_tactic(tactic_type, tactic_cls, overwrite=False, namespace="")</code></td>
+<td>Register a tactic class.</td>
+</tr>
+<tr>
+<td><code>get_tactic(name)</code></td>
+<td>Typed lookup.</td>
+</tr>
+<tr>
+<td><code>register_config(name, config_data=None, overwrite=True, namespace="", loader=None)</code></td>
+<td>Register a config, eager or lazy.</td>
+</tr>
+<tr>
+<td><code>get_config(path)</code></td>
+<td>Typed lookup (runs a lazy loader).</td>
+</tr>
+<tr>
+<td><code>get_asset(path)</code></td>
+<td>Typed lookup for <code>[assets]</code> files.</td>
+</tr>
+<tr>
+<td><code>register_service(name, service, overwrite=True, namespace="", loader=None)</code> / <code>get_service(path)</code></td>
+<td>Service resources (ASGI apps, service spec files).</td>
+</tr>
+<tr>
+<td><code>register_context_manager(cm_cls, overwrite=True, namespace="")</code></td>
+<td>Register a <code>ContextManager</code> class under <code>cm_cls.name</code>.</td>
+</tr>
+<tr>
+<td><code>get_context_manager(name)</code></td>
+<td>Typed lookup.</td>
+</tr>
+<tr>
+<td><code>register_package(pkg)</code></td>
+<td>Record a <code>PackageInfo</code>.</td>
+</tr>
+<tr>
+<td><code>packages</code></td>
+<td>Dict of loaded packages (aliases included).</td>
+</tr>
+<tr>
+<td><code>default_namespace</code></td>
+<td>Root package name used for bare keys.</td>
+</tr>
+<tr>
+<td><code>discovery_done</code></td>
+<td><code>True</code> after <code>load_runtime</code> finished.</td>
+</tr>
+<tr>
+<td><code>loaded_package_paths</code></td>
+<td>Frozen set of loaded package folders.</td>
+</tr>
+<tr>
+<td><code>reset()</code></td>
+<td>Clear all state.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="module-level-helpers">Module-level helpers</h3>
+<p>Importable from <code>lllm</code> (defined in <code>lllm.runtimes.native.core.runtime</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get_default_runtime()</code></td>
+<td>The process-wide default runtime.</td>
+</tr>
+<tr>
+<td><code>set_default_runtime(rt)</code></td>
+<td>Replace the default.</td>
+</tr>
+<tr>
+<td><code>get_runtime(name=None)</code></td>
+<td>A named runtime (<code>None</code> = default).</td>
+</tr>
+<tr>
+<td><code>load_runtime(toml_path=None, name=None, *, discover_cwd=True, discover_shared_packages=True)</code></td>
+<td>Create, populate, and store a runtime.</td>
+</tr>
+</tbody>
+</table>
+<p><code>get_default_registry</code>, <code>set_default_registry</code>, <code>get_registry</code>, and
+<code>load_registry</code> (in <code>lllm.runtimes.native.core.runtime</code>) are aliases.</p>
+<h3 id="package-management">Package management</h3>
+<p>Also importable from <code>lllm</code>; see
+<a href="../../packages/discovery/#sharing-packages">Package Discovery</a> for the workflow.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>install_package(zip_path, *, alias=None, scope="user", load=True, runtime=None)</code></td>
+<td>Install a package zip into <code>~/.lllm/packages/</code> (<code>scope="user"</code>) or <code>&lt;project root&gt;/lllm_packages/</code> (<code>scope="project"</code>). <code>alias</code> renames the package namespace; <code>load=False</code> skips loading it. Returns the installed folder.</td>
+</tr>
+<tr>
+<td><code>export_package(package_name, output_path, *, bundle_deps=False, runtime=None)</code></td>
+<td>Zip a loaded package (<code>.zip</code> is appended to the path if missing). <code>bundle_deps=True</code> packs its transitive dependencies under <code>lllm_packages/</code> inside the zip. Returns the zip path.</td>
+</tr>
+<tr>
+<td><code>list_packages(scope=None, *, runtime=None)</code></td>
+<td>Dicts with <code>name</code>, <code>version</code>, <code>description</code>, <code>scope</code>, <code>path</code> for installed packages, plus packages loaded in the runtime from elsewhere (<code>scope="unknown"</code>).</td>
+</tr>
+<tr>
+<td><code>remove_package(name, *, scope=None, runtime=None)</code></td>
+<td>Delete an installed package and unregister it. Raises <code>ValueError</code> if it exists in both scopes and no scope is given.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="design-notes">Design notes</h2>
+<ul>
+<li><strong>Creating a runtime has no side effects.</strong> No scanning, no imports; it is an
+  empty container until something registers into it.</li>
+<li><strong>One store, smart resolution.</strong> Each resource is stored once under its
+  qualified key. Bare keys and package shorthand are resolved at read time, not
+  stored as duplicates (aliases are the exception: an aliased dependency is
+  registered again under its alias namespace).</li>
+<li><strong>Not thread-safe for concurrent registration.</strong> The normal pattern (load once
+  at startup, read many times during agent calls) has no contention. If you
+  register concurrently, use a lock or separate runtimes.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

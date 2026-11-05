@@ -1,0 +1,1525 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/aaax/">
+      
+      
+        <link rel="prev" href="../sssn/serving/">
+      
+      
+        <link rel="next" href="../reference/cli/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>AAAX: the shell module - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#aaax-the-shell-module" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              AAAX: the shell module
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href=".." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../core/architecture/" class="psi-header-nav__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="./" class="psi-header-nav__link psi-header-nav__link--active">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href=".." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../core/architecture/" class="psi-drawer-sections__link">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="./" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AAAX: the shell module
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    AAAX: the shell module
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A first strategy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tactics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#channels-and-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels and stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-runner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The runner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#a-first-strategy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A first strategy
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#resources" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Resources
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#tactics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tactics
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#channels-and-stores" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Channels and stores
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#packages" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Packages
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-runner" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The runner
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#http-surface" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        HTTP surface
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#loading-strategies" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Loading strategies
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CLI
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#status" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Status
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Next
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="aaax-the-shell-module">AAAX: the shell module</h1>
+<p>AAAX, the <strong>Advanced Autonomous Agent Executor</strong>, is the shell around an
+agentic system. It mounts tactics, packages, and channels into one <code>Strategy</code>
+and serves them as a single HTTP API: every tactic gets its full service
+surface, the strategy's channel store gets the network API, and the strategy
+adds a resource table and a top-level <code>/run</code>. In code, AAAX is <code>lllm.shell</code>.</p>
+<p>AAAX is an experimental module of LLLM.</p>
+<div class="highlight"><pre><span></span><code>pip<span class="w"> </span>install<span class="w"> </span><span class="s2">"lllm-core[server,client]"</span><span class="w">   </span><span class="c1"># client adds httpx, which TestClient needs</span>
+</code></pre></div>
+<h2 id="a-first-strategy">A first strategy</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.shell</span><span class="w"> </span><span class="kn">import</span> <span class="n">Strategy</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Text</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">text</span><span class="p">:</span> <span class="nb">str</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Shout</span><span class="p">(</span><span class="n">Tactic</span><span class="p">[</span><span class="n">Text</span><span class="p">,</span> <span class="n">Text</span><span class="p">]):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"shout"</span>
+    <span class="n">description</span> <span class="o">=</span> <span class="s2">"Upper-case a message."</span>
+    <span class="n">input_type</span> <span class="o">=</span> <span class="n">Text</span>
+    <span class="n">output_type</span> <span class="o">=</span> <span class="n">Text</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">Text</span><span class="p">(</span><span class="n">text</span><span class="o">=</span><span class="n">input_value</span><span class="o">.</span><span class="n">text</span><span class="o">.</span><span class="n">upper</span><span class="p">())</span>
+
+
+<span class="n">strategy</span> <span class="o">=</span> <span class="n">Strategy</span><span class="p">(</span><span class="s2">"loud-desk"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Shout at things."</span><span class="p">)</span>
+<span class="n">strategy</span><span class="o">.</span><span class="n">add_tactic</span><span class="p">(</span><span class="n">Shout</span><span class="p">(),</span> <span class="n">ref</span><span class="o">=</span><span class="s2">"lllm://demo/loud-desk/tactics/shout"</span><span class="p">)</span>
+
+
+<span class="nd">@strategy</span><span class="o">.</span><span class="n">runner</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">first</span> <span class="o">=</span> <span class="k">await</span> <span class="n">strategy</span><span class="o">.</span><span class="n">tactics</span><span class="p">()[</span><span class="s2">"shout"</span><span class="p">]</span><span class="o">.</span><span class="n">arun</span><span class="p">(</span><span class="n">input_value</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"once"</span><span class="p">:</span> <span class="n">first</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">"twice"</span><span class="p">:</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">first</span><span class="o">.</span><span class="n">text</span><span class="si">}</span><span class="s2">!!"</span><span class="p">}</span>
+</code></pre></div>
+<p><code>create_strategy_app</code> turns it into a FastAPI app:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">fastapi.testclient</span><span class="w"> </span><span class="kn">import</span> <span class="n">TestClient</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.shell</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_strategy_app</span>
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">create_strategy_app</span><span class="p">(</span><span class="n">strategy</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/tactics/shout/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}})</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"output"</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}})</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'text': 'HELLO'}
+{'output': {'once': 'HELLO', 'twice': 'HELLO!!'}, 'strategy': 'loud-desk', 'metadata': {}}
+</code></pre></div>
+<p>Saved as <code>desk.py</code>, the same strategy runs from the shell with
+<code>lllm shell serve desk.py</code> (see <a href="#cli">CLI</a>).</p>
+<h2 id="resources">Resources</h2>
+<p><code>Strategy(name, *, description="", resources=(), runner=None, metadata=None)</code>
+is a table of resources plus an optional runner. The strategy <code>name</code> follows
+the same rule as resource names, so <code>Strategy("My Strategy")</code> raises
+<code>ValueError</code>. Each resource is a <code>StrategyResource</code>:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name</code></td>
+<td>Local name, unique across the whole strategy, used in URLs. A path segment: no whitespace, <code>/</code>, <code>:</code>, <code>\</code>, or <code>%</code>, and not <code>.</code> or <code>..</code>.</td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td><code>tactic</code>, <code>channel</code>, <code>service</code>, <code>schema</code>, <code>package</code>, <code>run</code>, <code>config</code>, <code>doc</code>, <code>example</code>, <code>snapshot</code>, <code>asset</code>, or <code>custom</code>.</td>
+</tr>
+<tr>
+<td><code>ref</code></td>
+<td>Stable external identity, usually an <code>lllm://</code> ref.</td>
+</tr>
+<tr>
+<td><code>entrypoint</code></td>
+<td>Python import target (<code>module:attr</code>) for package resources.</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>Free text.</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td>Any JSON-friendly dict: runtime, schema, package, version, card.</td>
+</tr>
+</tbody>
+</table>
+<p>Names are local and refs are stable: mounting the same package twice under
+different prefixes changes the names but keeps the refs. Add resources with
+the helpers <code>strategy.tactic()</code>, <code>.channel()</code>, <code>.service()</code>, <code>.package()</code>,
+<code>.snapshot()</code>, the general <code>strategy.resource(kind, name, ...)</code>, or
+<code>add_resource(StrategyResource(...))</code>. Each takes <code>ref</code>, <code>entrypoint</code>,
+<code>description</code>, <code>metadata</code>, and an optional <code>handler</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">strategy</span><span class="o">.</span><span class="n">channel</span><span class="p">(</span><span class="s2">"log"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="s2">"lllm://demo/loud-desk/channels/log"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Everything shouted."</span><span class="p">)</span>
+<span class="n">strategy</span><span class="o">.</span><span class="n">resource</span><span class="p">(</span><span class="s2">"doc"</span><span class="p">,</span> <span class="s2">"readme"</span><span class="p">,</span> <span class="n">ref</span><span class="o">=</span><span class="s2">"lllm://demo/loud-desk/docs/readme"</span><span class="p">,</span> <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"path"</span><span class="p">:</span> <span class="s2">"README.md"</span><span class="p">})</span>
+
+<span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">strategy</span><span class="o">.</span><span class="n">resources</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">resource</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">resource</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>tactic shout lllm://demo/loud-desk/tactics/shout
+channel log lllm://demo/loud-desk/channels/log
+doc readme lllm://demo/loud-desk/docs/readme
+</code></pre></div>
+<p>A resource without a handler is metadata: it shows up in <code>/strategy</code> and
+<code>/resources</code>, and invoking it echoes the resource record, the input, and the
+context back. A handler makes it callable. Channels are the exception: on a
+strategy with a store, a channel without a handler is backed by the store
+(<a href="#channels-and-stores">below</a>).</p>
+<h2 id="tactics">Tactics</h2>
+<p><code>add_tactic(tactic, *, name=None, ref=None, description=None, metadata=None)</code>
+mounts an lllm tactic. The name defaults to <code>tactic.info().name</code>, the ref to the
+tactic's <code>package_ref</code>, and the runtime kind is recorded in metadata.</p>
+<p>A plain function also works as a tactic handler. <code>strategy.tactics()</code> wraps it
+with <code>lllm.as_tactic</code>, so it is served like any other tactic:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">count_words</span><span class="p">(</span><span class="n">payload</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"words"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">payload</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">())}</span>
+
+
+<span class="n">strategy</span><span class="o">.</span><span class="n">tactic</span><span class="p">(</span><span class="s2">"count"</span><span class="p">,</span> <span class="n">handler</span><span class="o">=</span><span class="n">count_words</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Count words."</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="nb">sorted</span><span class="p">(</span><span class="n">strategy</span><span class="o">.</span><span class="n">tactics</span><span class="p">()))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>['count', 'shout']
+</code></pre></div>
+<p><code>strategy.tactics()</code> returns every tactic resource that has a handler as an lllm
+<code>Tactic</code>. Each one is mounted with <code>create_tactic_app</code> at <code>/tactics/&lt;name&gt;/</code>,
+so it gets the full <a href="../protocol/services/">service surface</a>: <code>run</code>,
+<code>stream</code>, <code>info</code>, and any custom tactic endpoints, with the services request
+and error envelopes.</p>
+<h2 id="channels-and-stores">Channels and stores</h2>
+<p><code>attach_store(store)</code> backs the strategy's channels with a store and mounts the
+<a href="../sssn/serving/#http-api">store API</a> at <code>/network/</code>. Every channel resource
+without a handler, like <code>log</code> above, is backed by the store channel of the
+same name:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm.network</span><span class="w"> </span><span class="kn">import</span> <span class="n">LocalStore</span>
+
+<span class="n">strategy</span><span class="o">.</span><span class="n">attach_store</span><span class="p">(</span><span class="n">LocalStore</span><span class="p">(</span><span class="s2">".lllm/network"</span><span class="p">))</span>
+
+
+<span class="nd">@strategy</span><span class="o">.</span><span class="n">runner</span>
+<span class="k">async</span> <span class="k">def</span><span class="w"> </span><span class="nf">run</span><span class="p">(</span><span class="n">input_value</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="n">output</span> <span class="o">=</span> <span class="k">await</span> <span class="n">strategy</span><span class="o">.</span><span class="n">tactics</span><span class="p">()[</span><span class="s2">"shout"</span><span class="p">]</span><span class="o">.</span><span class="n">arun</span><span class="p">(</span><span class="n">input_value</span><span class="p">)</span>
+    <span class="n">strategy</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">append_event</span><span class="p">({</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"log"</span><span class="p">,</span> <span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"shout"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="n">output</span><span class="p">})</span>
+    <span class="k">return</span> <span class="n">output</span>
+
+
+<span class="n">client</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">create_strategy_app</span><span class="p">(</span><span class="n">strategy</span><span class="p">))</span>
+<span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"hello"</span><span class="p">}})</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">event</span><span class="p">[</span><span class="s2">"payload"</span><span class="p">]</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/network/events"</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="p">{</span><span class="s2">"channel"</span><span class="p">:</span> <span class="s2">"log"</span><span class="p">})</span><span class="o">.</span><span class="n">json</span><span class="p">()])</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">event</span><span class="p">[</span><span class="s2">"payload"</span><span class="p">]</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/channels/log/events"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"output"</span><span class="p">]])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[{'text': 'HELLO'}]
+[{'text': 'HELLO'}]
+</code></pre></div>
+<p>The store creates each declared channel on first use: when the app is built or
+a store method is called. Channels that already exist are left as they are.
+<code>strategy.store</code> wraps the store you attached and forwards store methods to it,
+as the runner's <code>append_event</code> shows. Without a store, a channel resource is
+metadata like any other. Use a synchronous store, a <code>LocalStore</code> or a
+<code>RemoteStore</code>: the channel routes and <code>/network/</code> do not work with an
+<code>AsyncRemoteStore</code>.</p>
+<p>A strategy has one store. Attaching a different one raises <code>ValueError</code>
+instead of replacing it, so attach yours before mounting packages, which share
+it (<a href="#packages">below</a>). A <a href="../sssn/processing/"><code>TacticProcessor</code></a> over
+<code>strategy.store</code> is the usual way to connect a mounted tactic to a channel;
+<a href="../tutorials/11-channels/">Tutorial 11</a> does that inside a runner.</p>
+<h2 id="packages">Packages</h2>
+<p>A package folder with an <code>lllm.toml</code> (see <a href="../packages/manifest/">The manifest</a>)
+mounts in one call:</p>
+<div class="highlight"><pre><span></span><code>support-desk/
+  lllm.toml
+  tactics.py
+</code></pre></div>
+<p><code>support-desk/lllm.toml</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">[package]</span>
+<span class="n">org</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"demo"</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"support-desk"</span>
+<span class="n">version</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"0.1.0"</span>
+<span class="n">kind</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"app"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Triage support messages."</span>
+
+<span class="k">[tactics.triage]</span>
+<span class="n">entry</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"tactics:triage"</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Assign a priority to a support message."</span>
+
+<span class="k">[channels.inbox]</span>
+<span class="n">description</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"Support messages as they arrive."</span>
+</code></pre></div>
+<p><code>support-desk/tactics.py</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">triage</span><span class="p">(</span><span class="n">ticket</span><span class="p">:</span> <span class="nb">dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+    <span class="n">urgent</span> <span class="o">=</span> <span class="s2">"down"</span> <span class="ow">in</span> <span class="n">ticket</span><span class="p">[</span><span class="s2">"text"</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+    <span class="k">return</span> <span class="p">{</span><span class="s2">"priority"</span><span class="p">:</span> <span class="s2">"urgent"</span> <span class="k">if</span> <span class="n">urgent</span> <span class="k">else</span> <span class="s2">"normal"</span><span class="p">}</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pathlib</span><span class="w"> </span><span class="kn">import</span> <span class="n">Path</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.shell</span><span class="w"> </span><span class="kn">import</span> <span class="n">strategy_from_package</span>
+
+<span class="n">desk</span> <span class="o">=</span> <span class="n">strategy_from_package</span><span class="p">(</span><span class="s2">"support-desk"</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">desk</span><span class="o">.</span><span class="n">resources</span><span class="p">:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">resource</span><span class="o">.</span><span class="n">kind</span><span class="p">,</span> <span class="n">resource</span><span class="o">.</span><span class="n">name</span><span class="p">,</span> <span class="n">resource</span><span class="o">.</span><span class="n">ref</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">desk</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="n">root</span><span class="o">.</span><span class="n">relative_to</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="s2">"support-desk"</span><span class="p">)</span><span class="o">.</span><span class="n">resolve</span><span class="p">()))</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>package support-desk lllm://demo/support-desk
+tactic triage lllm://demo/support-desk/tactics/triage
+channel inbox lllm://demo/support-desk/channels/inbox
+.lllm/network
+</code></pre></div>
+<p><code>desk</code> had no store, so mounting the package gave it one at
+<code>&lt;package&gt;/.lllm/network</code>. The folder and the <code>inbox</code> channel are created on
+first use, here when the app is built, and the shortcuts work:</p>
+<div class="highlight"><pre><span></span><code><span class="n">client</span> <span class="o">=</span> <span class="n">TestClient</span><span class="p">(</span><span class="n">create_strategy_app</span><span class="p">(</span><span class="n">desk</span><span class="p">))</span>
+<span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/channels/inbox/events"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"kind"</span><span class="p">:</span> <span class="s2">"message"</span><span class="p">,</span> <span class="s2">"payload"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"text"</span><span class="p">:</span> <span class="s2">"Checkout is down"</span><span class="p">}}},</span>
+<span class="p">)</span>
+<span class="n">events</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/channels/inbox/events"</span><span class="p">)</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"output"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">([(</span><span class="n">event</span><span class="p">[</span><span class="s2">"kind"</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s2">"source"</span><span class="p">],</span> <span class="n">event</span><span class="p">[</span><span class="s2">"payload"</span><span class="p">])</span> <span class="k">for</span> <span class="n">event</span> <span class="ow">in</span> <span class="n">events</span><span class="p">])</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/tactics/triage/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="n">events</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">"payload"</span><span class="p">]})</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"output"</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>[('message', 'lllm.shell', {'text': 'Checkout is down'})]
+{'priority': 'urgent'}
+</code></pre></div>
+<p>Packages load lazily: building or inspecting the strategy never imports
+package code or creates the store folder. Building the app, calling
+<code>strategy.tactics()</code>, or invoking the resource imports the code. A package
+tactic that declares no <code>package_ref</code> reports its manifest ref,
+<code>lllm://demo/support-desk/tactics/triage</code> here, in <code>/tactics/triage/info</code> and
+as the <code>tactic_ref</code> of the <code>CallContext</code> it receives.</p>
+<p>To combine packages and your own resources, mount packages into a strategy
+with <code>use_package</code> (or <code>add_package(strategy, path, ...)</code>). A <code>prefix</code> keeps
+names apart:</p>
+<div class="highlight"><pre><span></span><code><span class="n">ops</span> <span class="o">=</span> <span class="n">Strategy</span><span class="p">(</span><span class="s2">"ops"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Support and loud desks in one API."</span><span class="p">)</span>
+<span class="n">ops</span><span class="o">.</span><span class="n">use_package</span><span class="p">(</span><span class="s2">"support-desk"</span><span class="p">,</span> <span class="n">prefix</span><span class="o">=</span><span class="s2">"support"</span><span class="p">)</span>
+<span class="n">ops</span><span class="o">.</span><span class="n">add_tactic</span><span class="p">(</span><span class="n">Shout</span><span class="p">())</span>
+<span class="nb">print</span><span class="p">([</span><span class="n">resource</span><span class="o">.</span><span class="n">name</span> <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">ops</span><span class="o">.</span><span class="n">resources</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>['support.support-desk', 'support.triage', 'support.inbox', 'shout']
+</code></pre></div>
+<p>The prefixed tactic is served at <code>/tactics/support.triage/run</code> and the channel
+at <code>/channels/support.inbox/events</code>, backed by the store channel
+<code>support.inbox</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Function</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>strategy_from_package(path, *, name=None, prefix=None, store=None, bind=True)</code></td>
+<td>A new strategy named after the package, with the package card and version in its metadata.</td>
+</tr>
+<tr>
+<td><code>strategy.use_package(path, *, prefix=None, store=None, bind=True)</code></td>
+<td>Mount a package into an existing strategy. Same as <code>add_package(strategy, path, ...)</code>.</td>
+</tr>
+</tbody>
+</table>
+<p><code>path</code> is a package folder or an <code>lllm.toml</code> file. <code>store</code> picks the store
+folder for a strategy that has no store yet (see below). <code>bind=False</code> mounts
+metadata only: no handlers, no store, and no tactic routes.</p>
+<p>Every manifest section becomes resources:</p>
+<table>
+<thead>
+<tr>
+<th>Manifest section</th>
+<th>Resource kind</th>
+<th>Handler when bound</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>[package]</code></td>
+<td><code>package</code> (named after the package)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>[config]</code></td>
+<td><code>config</code> named <code>default</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[schemas.&lt;name&gt;]</code></td>
+<td><code>schema</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[tactics.&lt;name&gt;]</code></td>
+<td><code>tactic</code></td>
+<td>the imported entrypoint, as a tactic</td>
+</tr>
+<tr>
+<td><code>[channels.&lt;name&gt;]</code></td>
+<td><code>channel</code></td>
+<td>append, query, info on the strategy's store</td>
+</tr>
+<tr>
+<td><code>[snapshots.&lt;name&gt;]</code></td>
+<td><code>snapshot</code></td>
+<td></td>
+</tr>
+<tr>
+<td><code>[services.&lt;name&gt;]</code></td>
+<td><code>service</code></td>
+<td>its <code>tactic</code>'s handler, when it names one</td>
+</tr>
+<tr>
+<td><code>[runs.&lt;name&gt;]</code>, <code>[docs.&lt;name&gt;]</code>, <code>[examples.&lt;name&gt;]</code>, <code>[assets.&lt;name&gt;]</code></td>
+<td><code>run</code>, <code>doc</code>, <code>example</code>, <code>asset</code></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>A tactic entry loads through
+<a href="../protocol/runtimes/#loading-entrypoints"><code>coerce_tactic</code></a>. A <code>Tactic</code>
+instance is mounted, and a class that can be built without arguments is
+instantiated. A callable that takes no parameters, or that can be called
+without arguments and is annotated to return a <code>Tactic</code>, is a factory: it is
+called once, when the tactic loads. Any other callable, like <code>triage</code>, is a
+handler called once per input.</p>
+<p>Things to know when mounting several packages:</p>
+<ul>
+<li>A strategy has one store. The first package with channels gives the
+  strategy its store, at <code>store=</code> or <code>&lt;package&gt;/.lllm/network</code>, unless it
+  already has one. Later packages share it, and <code>/network/</code> serves it; a later
+  <code>store=</code> naming another folder raises <code>ValueError</code>.</li>
+<li>Package channels are created in the store under their resource names
+  (<code>support.inbox</code>), so a prefix keeps two packages' channels apart.</li>
+<li>A package whose names clash with resources already in the strategy is
+  rejected before anything is added; the <code>ValueError</code> suggests a prefix.</li>
+<li>Package code is imported into the server process and stays loaded, so give
+  packages you mount together distinct top-level module names: two packages
+  that both ship a <code>helpers.py</code> share one copy of it.</li>
+</ul>
+<h2 id="the-runner">The runner</h2>
+<p><code>/run</code> calls the strategy's runner, set with the <code>@strategy.runner</code> decorator or
+<code>Strategy(..., runner=fn)</code>. The runner may be sync or async and is called as
+<code>runner(input_value, context=...)</code>. It receives <code>context</code> only if it declares
+that parameter (or <code>**kwargs</code>), and the input only if it has a positional
+parameter besides <code>context</code> (or <code>*args</code>): <code>def run(*, context=None)</code> is called
+without the input. Handlers follow the same rules. Without a runner, <code>/run</code>
+returns the strategy name, the input, and the resources, which makes a fresh
+mount easy to check. <code>desk</code> has no runner:</p>
+<div class="highlight"><pre><span></span><code><span class="n">output</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="s2">"/run"</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"q"</span><span class="p">:</span> <span class="mi">1</span><span class="p">}})</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">"output"</span><span class="p">]</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">output</span><span class="p">[</span><span class="s2">"strategy"</span><span class="p">],</span> <span class="n">output</span><span class="p">[</span><span class="s2">"input"</span><span class="p">],</span> <span class="p">[</span><span class="n">resource</span><span class="p">[</span><span class="s2">"name"</span><span class="p">]</span> <span class="k">for</span> <span class="n">resource</span> <span class="ow">in</span> <span class="n">output</span><span class="p">[</span><span class="s2">"resources"</span><span class="p">]])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>support-desk {'q': 1} ['support-desk', 'triage', 'inbox']
+</code></pre></div>
+<p><code>await strategy.arun(input_value, context=None)</code> and
+<code>await strategy.invoke_resource(name, input_value, context=None)</code> do the same
+from Python.</p>
+<h2 id="http-surface">HTTP surface</h2>
+<table>
+<thead>
+<tr>
+<th>Route</th>
+<th>What it does</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /health</code></td>
+<td><code>{"ok": true, "strategy": "&lt;name&gt;"}</code></td>
+</tr>
+<tr>
+<td><code>GET /strategy</code></td>
+<td>The <code>StrategyInfo</code>: name, description, resources, metadata.</td>
+</tr>
+<tr>
+<td><code>GET /resources</code></td>
+<td>Every resource.</td>
+</tr>
+<tr>
+<td><code>GET /packages</code>, <code>GET /tactics</code>, <code>GET /channels</code></td>
+<td>Resources of one kind.</td>
+</tr>
+<tr>
+<td><code>POST /run</code></td>
+<td>Call the runner.</td>
+</tr>
+<tr>
+<td><code>POST /resources/{name}/invoke</code></td>
+<td>Call any resource: run its tactic or handler, or use its store channel.</td>
+</tr>
+<tr>
+<td><code>GET /channels/{name}/events</code></td>
+<td>Query a channel resource: <code>?after_cursor=0&amp;limit=100&amp;kind=...</code>.</td>
+</tr>
+<tr>
+<td><code>POST /channels/{name}/events</code></td>
+<td>Append to a channel resource. The <code>input</code> is an object of event fields: <code>payload</code>, <code>kind</code> (default <code>event</code>), <code>source</code> (default <code>lllm.shell</code>), <code>schema</code>, <code>metadata</code>, <code>correlation_id</code>, <code>parent_ids</code>.</td>
+</tr>
+<tr>
+<td><code>/tactics/{name}/...</code></td>
+<td>The mounted tactic service: <code>POST run</code>, <code>POST stream</code>, <code>GET info</code>, custom endpoints.</td>
+</tr>
+<tr>
+<td><code>/network/...</code></td>
+<td>The store API, when the strategy has a store.</td>
+</tr>
+</tbody>
+</table>
+<p>The shell routes (<code>/run</code>, <code>/resources/...</code>, <code>/channels/...</code>) take a
+<code>StrategyRunRequest</code>, <code>{"input": ..., "context": {...}}</code> (the <code>GET</code> channel
+route takes query parameters), and return a <code>StrategyRunResponse</code>,
+<code>{"output": ..., "strategy": ..., "metadata": {...}}</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+    <span class="s2">"/resources/inbox/invoke"</span><span class="p">,</span>
+    <span class="n">json</span><span class="o">=</span><span class="p">{</span><span class="s2">"input"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"op"</span><span class="p">:</span> <span class="s2">"info"</span><span class="p">},</span> <span class="s2">"context"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"request"</span><span class="p">:</span> <span class="s2">"demo"</span><span class="p">}},</span>
+<span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{'output': {'name': 'inbox', 'schema': None, 'form': 'log', 'description': 'Support messages as they arrive.', 'metadata': {}}, 'strategy': 'support-desk', 'metadata': {'resource': 'inbox', 'endpoint': 'resource'}}
+</code></pre></div>
+<p>A tactic resource runs the same way on <code>/resources/{name}/invoke</code> as on
+<code>/tactics/{name}/run</code>: <code>context</code> has the shape of a <code>CallContext</code>
+(<code>request_id</code>, <code>trace_id</code>, <code>caller</code>, <code>tags</code>, <code>metadata</code>, and the
+<a href="../protocol/services/#requests-and-responses">other fields</a>; keys that are
+not <code>CallContext</code> fields are dropped), the tactic receives a <code>CallContext</code>, and
+failures get the same status codes. Only the response differs: the
+<code>/tactics/{name}/</code> routes return the services envelope,
+<code>{"output": ..., "request_id": ..., "tactic": ...}</code>. The runner and the
+handlers of other resources get <code>context</code> as a plain dict; a <code>Tactic</code> used as
+such a handler receives it as <code>CallContext.metadata</code>.
+<code>/resources/{name}/invoke</code> with a store-backed channel takes an <code>op</code>:
+<code>append</code>, <code>query</code> (the default), or <code>info</code>, plus that op's fields.</p>
+<p>The shell routes report errors in the
+<a href="../protocol/services/#errors">services error envelope</a>, as the tactic
+routes do:</p>
+<div class="highlight"><pre><span></span><code><span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">"/channels/triage/events"</span><span class="p">)</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">response</span><span class="o">.</span><span class="n">status_code</span><span class="p">,</span> <span class="n">response</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>404 {'detail': {'error': {'type': 'ResourceNotFoundError', 'message': 'Strategy channel not found: triage', 'tactic': None, 'endpoint': 'channel', 'request_id': None, 'metadata': {'resource': 'triage'}}}}
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Status</th>
+<th>When</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>400</td>
+<td>A malformed request, an appended event whose <code>input</code> is not an object, or a <code>ValueError</code>, <code>SchemaError</code>, or <code>TacticUnsupportedError</code> from the runner or a handler.</td>
+</tr>
+<tr>
+<td>404</td>
+<td>The resource named in the URL does not exist, or a <code>/channels/</code> route names a resource that is not a channel.</td>
+</tr>
+<tr>
+<td>Its own</td>
+<td>An <code>HTTPException</code> from the runner or a handler keeps its status and its plain <code>detail</code>, without the envelope; a store error keeps the <a href="../sssn/serving/#errors">store API's code</a>.</td>
+</tr>
+<tr>
+<td>500</td>
+<td>Anything else the runner or a handler raises, including a resource lookup that fails inside it.</td>
+</tr>
+</tbody>
+</table>
+<p>A tactic resource fails with the codes of <code>POST /tactics/{name}/run</code> instead,
+on both routes: 400 for <code>SchemaError</code> and <code>TacticUnsupportedError</code>, 500 for
+anything else, a <code>ValueError</code>, <code>HTTPException</code>, or store error included. The
+store API at <code>/network/</code> uses the same envelope with only <code>type</code> and <code>message</code>.</p>
+<h2 id="loading-strategies">Loading strategies</h2>
+<p><code>load_strategy(target)</code> accepts:</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Loads</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>a directory</td>
+<td><code>strategy.py</code>, else <code>shell.py</code>, else its <code>lllm.toml</code> as a package</td>
+</tr>
+<tr>
+<td>a <code>.py</code> file</td>
+<td>its <code>build_strategy()</code> factory, else its <code>strategy</code> object</td>
+</tr>
+<tr>
+<td>an <code>lllm.toml</code> file</td>
+<td>the package, as with <code>strategy_from_package</code></td>
+</tr>
+<tr>
+<td><code>module:attr</code></td>
+<td>a <code>Strategy</code> or a no-argument factory that returns one, imported from the working directory</td>
+</tr>
+</tbody>
+</table>
+<p>The CLI uses the same loader.</p>
+<h2 id="cli">CLI</h2>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>shell<span class="w"> </span>inspect<span class="w"> </span>TARGET<span class="w"> </span><span class="o">[</span>--json<span class="o">]</span>
+lllm<span class="w"> </span>shell<span class="w"> </span>serve<span class="w"> </span>TARGET<span class="w"> </span><span class="o">[</span>--host<span class="w"> </span><span class="m">127</span>.0.0.1<span class="o">]</span><span class="w"> </span><span class="o">[</span>--port<span class="w"> </span><span class="m">8400</span><span class="o">]</span><span class="w"> </span><span class="o">[</span>--log-level<span class="w"> </span>info<span class="o">]</span>
+</code></pre></div>
+<p><code>inspect</code> prints the resource table without starting a server; <code>--json</code> prints
+the full <code>StrategyInfo</code>. With <code>desk.py</code> holding the strategy from the first
+section:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>shell<span class="w"> </span>inspect<span class="w"> </span>desk.py
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>loud-desk: Shout at things.
+tactic shout lllm://demo/loud-desk/tactics/shout
+</code></pre></div>
+<p><code>serve</code> builds the app and runs it with uvicorn; <code>launch</code> is an alias:</p>
+<div class="highlight"><pre><span></span><code>lllm<span class="w"> </span>shell<span class="w"> </span>serve<span class="w"> </span>desk.py<span class="w"> </span>--port<span class="w"> </span><span class="m">8400</span>
+</code></pre></div>
+<p>From another terminal:</p>
+<div class="highlight"><pre><span></span><code>curl<span class="w"> </span>-s<span class="w"> </span>-w<span class="w"> </span><span class="s1">'\n'</span><span class="w"> </span>-X<span class="w"> </span>POST<span class="w"> </span>http://127.0.0.1:8400/tactics/shout/run<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>-H<span class="w"> </span><span class="s1">'content-type: application/json'</span><span class="w"> </span>-d<span class="w"> </span><span class="s1">'{"input": {"text": "hello"}}'</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code>{"output":{"text":"HELLO"},"request_id":"af421ae3-e594-4fc9-90af-2694b1b5d25b","tactic":"shout"}
+</code></pre></div>
+<p>Inspecting a package neither imports its code nor creates its store folder;
+serving does both.</p>
+<h2 id="status">Status</h2>
+<p>Names and routes may change between releases. The strategy app has no
+authentication and handlers run in the server process, so serve it on
+localhost or behind your own gateway.</p>
+<h2 id="next">Next</h2>
+<ul>
+<li><a href="../tutorials/11-channels/">Tutorial 11: Channels with SSSN</a> ends by
+  serving a package and a <code>TacticProcessor</code> as one strategy.</li>
+<li><a href="../sssn/">SSSN</a>: the channels and stores a strategy mounts.</li>
+<li><a href="../protocol/services/">Services</a>: the tactic service each tactic gets.</li>
+</ul>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>

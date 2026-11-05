@@ -1,0 +1,2513 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Low-Level Language Models. A lightweight framework for advanced agentic systems.">
+      
+      
+      
+        <link rel="canonical" href="https://lllm.one/core/prompts/">
+      
+      
+        <link rel="prev" href="../agent/">
+      
+      
+        <link rel="next" href="../dialog/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/logo.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.8.0">
+    
+    
+      
+        <title>Prompts - LLLM</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.57a0d79d.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.fb2fffe2.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Newsreader:300,300i,400,400i,700,700i%7CSpace+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Newsreader";--md-code-font:"Space Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/custom.20260702.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#prompts" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="https://lllm.one/" title="LLLM" class="md-header__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            LLLM
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Prompts
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="psi-header-nav" aria-label="Primary navigation">
+      
+        
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-header-nav__link">
+      Home
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-header-nav__link">
+      Tutorials
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../architecture/" class="psi-header-nav__link psi-header-nav__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-header-nav__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-header-nav__link">
+      Packages
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-header-nav__link">
+      SSSN
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-header-nav__link">
+      AAAX
+    </a>
+  
+
+  
+
+      
+        
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-header-nav__link">
+      Reference
+    </a>
+  
+
+  
+
+      
+    </div>
+    
+      <div class="psi-doc-switch" aria-label="Documentation switcher">
+        <details>
+          <summary>Docs</summary>
+          <div class="psi-doc-switch__menu">
+            
+              <a href="/" class="psi-doc-switch__link psi-doc-switch__link--active">
+                LLLM
+              </a>
+            
+              <a href="/hub/" class="psi-doc-switch__link">
+                Hub
+              </a>
+            
+              <a href="/sssn/" class="psi-doc-switch__link">
+                SSSN
+              </a>
+            
+              <a href="/aaax/" class="psi-doc-switch__link">
+                AAAX
+              </a>
+            
+          </div>
+        </details>
+      </div>
+    
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="white" data-md-color-accent="black"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+
+  
+
+  
+
+  
+    
+  
+
+  
+
+  
+
+  
+
+  
+
+  
+
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="https://lllm.one/" title="LLLM" class="md-nav__button md-logo" aria-label="LLLM" data-md-component="logo">
+      
+  <img src="../../assets/logo.svg" alt="logo">
+
+    </a>
+    LLLM
+  </label>
+  
+    <div class="md-nav__source">
+      
+<a href="https://github.com/Productive-Superintelligence/lllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    Productive-Superintelligence/lllm
+  </div>
+</a>
+    </div>
+  
+  <div class="psi-drawer-sections" aria-label="Top-level navigation">
+    
+      
+  
+  
+    
+  
+  
+    <a href="../.." class="psi-drawer-sections__link">
+      Home
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../tutorials/" class="psi-drawer-sections__link">
+      Tutorials
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../architecture/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+      Native Runtime
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../protocol/tactic/" class="psi-drawer-sections__link">
+      Tactic Protocol
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../packages/manifest/" class="psi-drawer-sections__link">
+      Packages
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../sssn/" class="psi-drawer-sections__link">
+      SSSN
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../aaax/" class="psi-drawer-sections__link">
+      AAAX
+    </a>
+  
+
+  
+
+    
+      
+  
+  
+    
+  
+  
+    <a href="../../reference/cli/" class="psi-drawer-sections__link">
+      Reference
+    </a>
+  
+
+  
+
+    
+    
+      <span class="psi-drawer-sections__label">Docs</span>
+      
+        <a href="/" class="psi-drawer-sections__link psi-drawer-sections__link--active">
+          LLLM
+        </a>
+      
+        <a href="/hub/" class="psi-drawer-sections__link">
+          Hub
+        </a>
+      
+        <a href="/sssn/" class="psi-drawer-sections__link">
+          SSSN
+        </a>
+      
+        <a href="/aaax/" class="psi-drawer-sections__link">
+          AAAX
+        </a>
+      
+    
+  </div>
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../architecture/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../agent/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Agent
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Prompts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rendering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom renderer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parsing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parsing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-parser-free-form" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No parser: free-form
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-parser-xml-and-markdown-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag parser: XML and Markdown blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-output-pydantic-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured output: Pydantic model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Defining tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-coupled-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @tool: coupled tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-declarations-schema-and-implementation-apart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function declarations: schema and implementation apart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom result formatting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent-tools-and-agent_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent tools and agent_tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handlers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-default-handler-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the default handler does
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-rule-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler: rule-based
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-agentic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler: agentic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompt-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organization-and-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organization and discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-and-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata and tracking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example-a-prompt-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete example: a prompt file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dialog/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Dialogs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../tactic/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tactics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../config/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../invokers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Invokers
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../inference-hints/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Inference Hints
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../proxy-and-sandbox/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Proxies and Sandbox
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../logging/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Logging
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+        
+        
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../runtime/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Runtime
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+      
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#anatomy-of-a-prompt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Anatomy of a prompt
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#rendering" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Rendering
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Rendering">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-renderer" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom renderer
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parsing" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Parsing
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parsing">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#no-parser-free-form" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        No parser: free-form
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#tag-parser-xml-and-markdown-blocks" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Tag parser: XML and Markdown blocks
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#structured-output-pydantic-model" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Structured output: Pydantic model
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-parser" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom parser
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#defining-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Defining tools
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Defining tools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#tool-coupled-tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        @tool: coupled tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#function-declarations-schema-and-implementation-apart" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Function declarations: schema and implementation apart
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-result-formatting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom result formatting
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#mcp-servers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        MCP servers
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#agent-tools-and-agent_tools" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agent tools and agent_tools
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#handlers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Handlers
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Handlers">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-the-default-handler-does" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the default handler does
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-rule-based" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler: rule-based
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-handler-agentic" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Custom handler: agentic
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#prompt-composition" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Prompt composition
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#provider-capabilities" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Provider capabilities
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#organization-and-discovery" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Organization and discovery
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#metadata-and-tracking" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Metadata and tracking
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#complete-example-a-prompt-file" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Complete example: a prompt file
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="prompts">Prompts</h1>
+<p>A <code>Prompt</code> is the complete behavioural definition for one agent turn. It bundles
+four concerns into one object:</p>
+<ol>
+<li><strong>Template</strong>: the text sent to the model, with <code>{variable}</code> placeholders.</li>
+<li><strong>Output contract</strong>: a <code>parser</code> (or a structured-output <code>format</code>) that defines
+   what a valid reply looks like. The agent loop keeps repairing until it gets
+   one, within its retry budget.</li>
+<li><strong>Tool surface</strong>: the <code>Function</code> and <code>MCP</code> objects the model may call during
+   this turn.</li>
+<li><strong>Handler strategy</strong>: a <code>BaseHandler</code> that decides what to send back when a
+   tool result arrives or when parsing fails.</li>
+</ol>
+<p>The key design principle: <strong>the agent is a function, and the <code>Prompt</code> is its
+type signature</strong>. The invoker reads the parser, format, and handler from
+<code>dialog.top_prompt</code>, the prompt that sent the latest turn (<code>agent.open()</code> for
+the system prompt, <code>agent.receive_prompt()</code> for a user turn). The turn's tools
+are that prompt's <code>function_list</code> plus the agent's own tools (those on its
+system prompt), unless the prompt sets <code>agent_tools=False</code>. This is what gives
+you turn-level control: every turn declares exactly what it accepts and how
+failure is handled.</p>
+<hr />
+<h2 id="anatomy-of-a-prompt">Anatomy of a prompt</h2>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Get current weather for a city"</span><span class="p">,</span>
+    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">"location"</span><span class="p">:</span> <span class="s2">"City name, e.g. San Francisco, CA"</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_weather</span><span class="p">(</span><span class="n">location</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">units</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">"celsius"</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Sunny, 22 degrees (</span><span class="si">{</span><span class="n">units</span><span class="si">}</span><span class="s2">) in </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="n">weather_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"weather/bot"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">"You are a weather assistant.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"Answer the user's question: </span><span class="si">{question}</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"Put your answer inside &lt;answer&gt; tags."</span>
+    <span class="p">),</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]),</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">get_weather</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"author"</span><span class="p">:</span> <span class="s2">"team-weather"</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">:</span> <span class="s2">"1.0"</span><span class="p">},</span>
+<span class="p">)</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>path</code></td>
+<td><code>str</code></td>
+<td>Identifier and registry key, e.g. <code>runtime.get_prompt(path)</code>.</td>
+</tr>
+<tr>
+<td><code>prompt</code></td>
+<td><code>str</code></td>
+<td>Template, rendered by <code>renderer</code> (default: <code>str.format</code>).</td>
+</tr>
+<tr>
+<td><code>metadata</code></td>
+<td><code>dict</code></td>
+<td>Tracking info: version, author, experiment name.</td>
+</tr>
+<tr>
+<td><code>parser</code></td>
+<td>object with <code>parse()</code>, a callable, or <code>None</code></td>
+<td>Defines a valid reply. <code>None</code> = free-form.</td>
+</tr>
+<tr>
+<td><code>format</code></td>
+<td>Pydantic model class, JSON-schema dict, or <code>None</code></td>
+<td>Structured output (Chat Completions API).</td>
+</tr>
+<tr>
+<td><code>function_list</code></td>
+<td><code>list[Function \| str]</code></td>
+<td>Tools for this turn. Strings are package refs resolved when the prompt runs.</td>
+</tr>
+<tr>
+<td><code>mcp_servers_list</code></td>
+<td><code>list[MCP]</code></td>
+<td>MCP server declarations.</td>
+</tr>
+<tr>
+<td><code>agent_tools</code></td>
+<td><code>bool</code></td>
+<td>Also offer the agent's own tools on this turn. Default <code>True</code>; <code>False</code> for a turn that must answer without them.</td>
+</tr>
+<tr>
+<td><code>addon_args</code></td>
+<td><code>dict</code></td>
+<td>Provider features such as web search or computer use.</td>
+</tr>
+<tr>
+<td><code>handler</code></td>
+<td><code>BaseHandler</code></td>
+<td>Exception and tool-interrupt strategy. Default: <code>DefaultSimpleHandler()</code>.</td>
+</tr>
+<tr>
+<td><code>renderer</code></td>
+<td><code>BaseRenderer</code></td>
+<td>Template renderer. Default: <code>StringFormatterRenderer()</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Read-only helpers: <code>functions</code> (name → <code>Function</code>), <code>mcp_servers</code>,
+<code>template_vars</code>, <code>allow_web_search</code>, <code>computer_use_config</code>.</p>
+<hr />
+<h2 id="rendering">Rendering</h2>
+<p>Calling a prompt renders it:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"greeter"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Hello </span><span class="si">{name}</span><span class="s2">, welcome to </span><span class="si">{place}</span><span class="s2">!"</span><span class="p">)</span>
+
+<span class="n">prompt</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"Alice"</span><span class="p">,</span> <span class="n">place</span><span class="o">=</span><span class="s2">"Wonderland"</span><span class="p">)</span>   <span class="c1"># 'Hello Alice, welcome to Wonderland!'</span>
+<span class="n">prompt</span><span class="o">.</span><span class="n">template_vars</span>                        <span class="c1"># {'name', 'place'}</span>
+<span class="n">prompt</span><span class="o">.</span><span class="n">validate_args</span><span class="p">({</span><span class="s2">"name"</span><span class="p">:</span> <span class="s2">"Alice"</span><span class="p">})</span>     <span class="c1"># ['place'] (missing variables)</span>
+</code></pre></div>
+<p><code>template_vars</code> is read from the current template text, so a copy made with
+<code>prompt.model_copy(update={"prompt": ...})</code> reports its own variables. Every
+variable must be supplied; a missing one raises <code>ValueError</code> before anything is
+sent. Templates are always formatted, so literal braces are written
+doubled (<code>{{</code> and <code>}}</code>) and come out single, whether or not the template has
+variables:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+
+<span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"json/hint"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s1">'Reply as {{"answer": ...}}'</span><span class="p">)()</span>   <span class="c1"># 'Reply as {"answer": ...}'</span>
+</code></pre></div>
+<p><code>Dialog.put_prompt()</code> and <code>Agent.receive_prompt()</code> render the prompt with the
+<code>prompt_args</code> you pass.</p>
+<h3 id="custom-renderer">Custom renderer</h3>
+<p>Subclass <code>BaseRenderer</code> to change how values are rendered:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseRenderer</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">BulletRenderer</span><span class="p">(</span><span class="n">BaseRenderer</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Render list values as bullet lists, everything else with str.format."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">render</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">fmt</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+                <span class="k">return</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="sa">f</span><span class="s2">"- </span><span class="si">{</span><span class="n">item</span><span class="si">}</span><span class="s2">"</span> <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">value</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">value</span>
+
+        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="o">**</span><span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">fmt</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()})</span>
+
+
+<span class="n">report</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"report/items"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Summarise these findings:</span><span class="se">\n</span><span class="si">{items}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">renderer</span><span class="o">=</span><span class="n">BulletRenderer</span><span class="p">(),</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">(</span><span class="n">items</span><span class="o">=</span><span class="p">[</span><span class="s2">"apples"</span><span class="p">,</span> <span class="s2">"bananas"</span><span class="p">,</span> <span class="s2">"cherries"</span><span class="p">]))</span>
+</code></pre></div>
+<p>The renderer runs for every render, with or without variables. Required
+variables are still detected with <code>str.format</code> field syntax before it runs, and
+each <code>{name}</code> field must be supplied, so a renderer should keep <code>{name}</code> fields
+for its variables. Engines with their own syntax (Jinja's <code>{% %}</code> blocks) do not
+fit this contract.</p>
+<hr />
+<h2 id="parsing">Parsing</h2>
+<p>The parser defines the <strong>return type</strong> of the turn. The invoker runs it on the
+reply; any exception it raises becomes a parse error, and the agent loop sends a
+repair prompt until the reply parses or retries run out.</p>
+<h3 id="no-parser-free-form">No parser: free-form</h3>
+<div class="highlight"><pre><span></span><code><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"chat"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Say hello to </span><span class="si">{name}</span><span class="s2">."</span><span class="p">)</span>
+<span class="c1"># reply.content is the text; reply.parsed == {}</span>
+</code></pre></div>
+<p><code>prompt.parse(text)</code> on a parser-less prompt returns <code>{"raw": text}</code>.</p>
+<h3 id="tag-parser-xml-and-markdown-blocks">Tag parser: XML and Markdown blocks</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"analyst/report"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">"Analyse the following text: </span><span class="si">{text}</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="s2">"Respond with:</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"&lt;reasoning&gt;your step-by-step reasoning&lt;/reasoning&gt;</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"&lt;answer&gt;your final answer&lt;/answer&gt;</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"End with &lt;DONE&gt; when complete."</span>
+    <span class="p">),</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span>
+        <span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"reasoning"</span><span class="p">,</span> <span class="s2">"answer"</span><span class="p">],</span>   <span class="c1"># extracted; each must appear</span>
+        <span class="n">signal_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"DONE"</span><span class="p">],</span>               <span class="c1"># presence check only</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">parsed</span> <span class="o">=</span> <span class="n">prompt</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span>
+    <span class="s2">"&lt;reasoning&gt;step 1 ...&lt;/reasoning&gt;&lt;answer&gt;The answer is 42.&lt;/answer&gt; &lt;DONE&gt;"</span>
+<span class="p">)</span>
+<span class="c1"># {</span>
+<span class="c1">#     "raw": "...",</span>
+<span class="c1">#     "xml_tags": {"reasoning": ["step 1 ..."], "answer": ["The answer is 42."]},</span>
+<span class="c1">#     "md_tags": {},</span>
+<span class="c1">#     "signal_tags": {"DONE": True},</span>
+<span class="c1"># }</span>
+</code></pre></div>
+<p><code>DefaultTagParser</code> fields:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>xml_tags</code></td>
+<td><code>&lt;tag&gt;...&lt;/tag&gt;</code> blocks to extract. A listed tag that never appears is a parse error.</td>
+</tr>
+<tr>
+<td><code>md_tags</code></td>
+<td>Fenced blocks to extract (<code>```python ... ```</code>). A listed tag that never appears is a parse error.</td>
+</tr>
+<tr>
+<td><code>required_xml_tags</code> / <code>required_md_tags</code></td>
+<td>Also extracted, and also errors when missing. Use them when you only list required tags.</td>
+</tr>
+<tr>
+<td><code>signal_tags</code></td>
+<td><code>True</code>/<code>False</code> for whether <code>&lt;TAG&gt;</code> occurs anywhere.</td>
+</tr>
+<tr>
+<td><code>parser_args</code></td>
+<td>Free-form dict for subclasses.</td>
+</tr>
+</tbody>
+</table>
+<p>Each extracted entry is a list, because a tag may occur several times. Missing
+tags raise <code>ParseError</code> with a message such as
+<code>No answer tags found, it should be provided as &lt;answer&gt;...&lt;/answer&gt;</code>, and that
+message is what the model sees in the repair prompt. The native <code>ParseError</code>
+subclasses <code>lllm.ParseError</code>, so <code>except lllm.ParseError</code> catches both.</p>
+<div class="highlight"><pre><span></span><code><span class="n">parser</span> <span class="o">=</span> <span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">md_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"python"</span><span class="p">])</span>
+<span class="n">parser</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">"Here:</span><span class="se">\n</span><span class="s2">```python</span><span class="se">\n</span><span class="s2">print('hi')</span><span class="se">\n</span><span class="s2">```"</span><span class="p">)[</span><span class="s2">"md_tags"</span><span class="p">]</span>   <span class="c1"># {'python': ["print('hi')"]}</span>
+</code></pre></div>
+<p>If you need optional tags, the runtime-agnostic <code>lllm.DefaultTagParser</code> has the
+same fields but only enforces the <code>required_*</code> lists. Any object with a
+<code>parse(content, **kwargs)</code> method works as a prompt parser.</p>
+<h3 id="structured-output-pydantic-model">Structured output: Pydantic model</h3>
+<p>For JSON-mode replies use <code>format</code> instead of <code>parser</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">pydantic</span><span class="w"> </span><span class="kn">import</span> <span class="n">BaseModel</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ResearchReport</span><span class="p">(</span><span class="n">BaseModel</span><span class="p">):</span>
+    <span class="n">title</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">summary</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="n">confidence</span><span class="p">:</span> <span class="nb">float</span>
+    <span class="n">sources</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"researcher/report"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Research the following topic and return a structured report: </span><span class="si">{topic}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="nb">format</span><span class="o">=</span><span class="n">ResearchReport</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># reply.parsed == {"title": "...", "summary": "...", "confidence": 0.9, "sources": [...]}</span>
+<span class="c1"># report = ResearchReport.model_validate(reply.parsed)</span>
+</code></pre></div>
+<p>With a Pydantic class, the LiteLLM invoker sends it as <code>response_format</code>; with a
+dict it requests <code>{"type": "json_object"}</code>. The reply is decoded with
+<code>json.loads</code> (invalid JSON triggers a repair turn) and the <code>parser</code> is not run.
+<code>format</code> is not supported with the Responses API (<code>api_type="response"</code>).</p>
+<p>To validate the decoded object against the model <em>and</em> get repair turns with
+Pydantic's error message, use a validating parser instead; see
+<a href="../architecture/#composing-with-pydantic">Composing with Pydantic</a>.</p>
+<h3 id="custom-parser">Custom parser</h3>
+<p>Subclass <code>DefaultTagParser</code> to add domain validation on top of tag extraction:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span><span class="p">,</span> <span class="n">ParseError</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">GraphParser</span><span class="p">(</span><span class="n">DefaultTagParser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Parse an edge list in &lt;graph&gt; tags and reject cycles."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">edges</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="nb">tuple</span><span class="p">(</span><span class="n">part</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span> <span class="k">for</span> <span class="n">part</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">"-&gt;"</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"graph"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">splitlines</span><span class="p">()</span>
+            <span class="k">if</span> <span class="s2">"-&gt;"</span> <span class="ow">in</span> <span class="n">line</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="n">has_cycle</span><span class="p">(</span><span class="n">edges</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span>
+                <span class="s2">"The graph you returned contains a cycle. "</span>
+                <span class="s2">"Please revise so all edges point forward."</span>
+            <span class="p">)</span>
+        <span class="n">parsed</span><span class="p">[</span><span class="s2">"edges"</span><span class="p">]</span> <span class="o">=</span> <span class="n">edges</span>
+        <span class="k">return</span> <span class="n">parsed</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">has_cycle</span><span class="p">(</span><span class="n">edges</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="n">graph</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">edges</span><span class="p">:</span>
+        <span class="n">graph</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="p">[])</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
+    <span class="n">seen</span><span class="p">,</span> <span class="n">stack</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(),</span> <span class="nb">set</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">visit</span><span class="p">(</span><span class="n">node</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">stack</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">if</span> <span class="n">node</span> <span class="ow">in</span> <span class="n">seen</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+        <span class="n">seen</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">stack</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="n">cyclic</span> <span class="o">=</span> <span class="nb">any</span><span class="p">(</span><span class="n">visit</span><span class="p">(</span><span class="n">nxt</span><span class="p">)</span> <span class="k">for</span> <span class="n">nxt</span> <span class="ow">in</span> <span class="n">graph</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="p">[]))</span>
+        <span class="n">stack</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="n">node</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cyclic</span>
+
+    <span class="k">return</span> <span class="nb">any</span><span class="p">(</span><span class="n">visit</span><span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="k">for</span> <span class="n">node</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">graph</span><span class="p">))</span>
+
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"planner/dag"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Build a dependency graph for: </span><span class="si">{task}</span><span class="s2">. Return edges like 'a -&gt; b' in &lt;graph&gt; tags."</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">GraphParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"graph"</span><span class="p">]),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>A parser can also be a plain function. A non-dict return value is wrapped as
+<code>{"value": ...}</code>, and <code>"raw"</code> is always added:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">word_count</span><span class="p">(</span><span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="n">content</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+
+<span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"wc"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Write a haiku."</span><span class="p">,</span> <span class="n">parser</span><span class="o">=</span><span class="n">word_count</span><span class="p">)</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="s2">"an old silent pond"</span><span class="p">)</span>
+<span class="c1"># {'value': 4, 'raw': 'an old silent pond'}</span>
+</code></pre></div>
+<p><code>parser_args</code> passed to <code>agent.respond(parser_args={...})</code> arrive as keyword
+arguments to <code>parse()</code>.</p>
+<hr />
+<h2 id="defining-tools">Defining tools</h2>
+<p>LLLM has one regular tool type, <code>Function</code>, and two ways to program against it:</p>
+<ul>
+<li><strong>Coupled declaration and implementation:</strong> <code>@tool</code> turns a Python function
+  into a <code>Function</code> that carries both schema and implementation. Pass it
+  directly in <code>function_list</code>, or reference the package resource by URL.</li>
+<li><strong>Decoupled declaration and implementation:</strong> put a bare <code>Function</code>
+  declaration in the prompt, like a header file, and provide a package
+  <code>@tool(name=...)</code> implementation with the same name. LLLM binds them by
+  exact name when the prompt runs.</li>
+</ul>
+<p>Tactic tools and proxies are built on top of this model: a tactic tool is a
+generated <code>Function</code> backed by a tactic method, and a proxy exposes many
+endpoints through <code>query_api_doc</code>, <code>run_python</code>, and <code>CALL_API</code>. See
+<a href="../tactic/#tactics-as-tools">Tactics</a> and <a href="../proxy-and-sandbox/">Proxies &amp; Sandbox</a>.</p>
+<h3 id="tool-coupled-tools"><code>@tool</code>: coupled tools</h3>
+<p>The decorator builds the JSON schema from type hints:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">tool</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Search the web for current information"</span><span class="p">,</span>
+    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"query"</span><span class="p">:</span> <span class="s2">"The search query string"</span><span class="p">,</span>
+        <span class="s2">"max_results"</span><span class="p">:</span> <span class="s2">"Maximum number of results to return"</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">max_results</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">max_results</span><span class="si">}</span><span class="s2"> results for </span><span class="si">{</span><span class="n">query</span><span class="si">!r}</span><span class="s2">"</span>   <span class="c1"># call a real API here</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Evaluate an arithmetic expression"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">calculator</span><span class="p">(</span><span class="n">expression</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="nb">eval</span><span class="p">(</span><span class="n">expression</span><span class="p">,</span> <span class="p">{</span><span class="s2">"__builtins__"</span><span class="p">:</span> <span class="p">{}}))</span>   <span class="c1"># demo only</span>
+
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"research/agent"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Answer the following question using your tools: </span><span class="si">{question}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">calculator</span><span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>tool(description=None, prop_desc=None, *, name=None, strict=None, processor=...)</code>:</p>
+<ul>
+<li>Parameter schemas follow the annotations, through Pydantic: <code>list[str]</code> gives
+  an array with string items, <code>Literal["fast", "deep"]</code> an enum, a <code>BaseModel</code>
+  a nested object, <code>Optional[...]</code> a nullable value. Unannotated parameters are
+  strings.</li>
+<li>Nested models are inlined, since tool schemas have no <code>$defs</code>. A recursive
+  model is spelled out once; references back into it become its type and
+  title, such as <code>{"type": "object", "title": "Node"}</code>.</li>
+<li>Parameters without defaults are <code>required</code>; defaults are added to the
+  property description.</li>
+<li><code>strict=None</code> (the default) turns on strict tool schemas when every
+  parameter is required and flat (a string, number, boolean, enum, or a list of
+  these), which is what OpenAI-style strict mode accepts. An object parameter,
+  such as a model or a dict, keeps it off, because strict mode needs
+  <code>additionalProperties: false</code> on every object. Pass <code>strict=True</code> or
+  <code>strict=False</code> to decide yourself.</li>
+<li><code>description</code> defaults to the docstring, <code>name</code> to the function name. Names
+  may not contain whitespace, <code>/</code>, <code>:</code>, <code>\</code>, <code>;</code>, or <code>%</code>.</li>
+<li><code>Function.from_callable(fn, ...)</code> does the same without the decorator.</li>
+</ul>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Literal</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Search the archive"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">archive_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">mode</span><span class="p">:</span> <span class="n">Literal</span><span class="p">[</span><span class="s2">"fast"</span><span class="p">,</span> <span class="s2">"deep"</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"</span><span class="si">{</span><span class="n">mode</span><span class="si">}</span><span class="s2"> search for </span><span class="si">{</span><span class="n">query</span><span class="si">!r}</span><span class="s2"> in </span><span class="si">{</span><span class="n">tags</span><span class="si">}</span><span class="s2">"</span>
+
+
+<span class="n">archive_search</span><span class="o">.</span><span class="n">properties</span><span class="p">[</span><span class="s2">"mode"</span><span class="p">]</span>   <span class="c1"># {'enum': ['fast', 'deep'], 'type': 'string'}</span>
+<span class="n">archive_search</span><span class="o">.</span><span class="n">strict</span>               <span class="c1"># True: every parameter required, all flat</span>
+</code></pre></div>
+<p>When the model calls a tool, the loop runs the implementation with the call's
+arguments. An exception inside the tool does not crash the loop: the model
+receives <code>Error: &lt;message&gt;</code> as the result and can recover.</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">FunctionCall</span>
+
+<span class="n">call</span> <span class="o">=</span> <span class="n">web_search</span><span class="p">(</span><span class="n">FunctionCall</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"web_search"</span><span class="p">,</span> <span class="n">arguments</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="s2">"LLLM"</span><span class="p">}))</span>
+<span class="n">call</span><span class="o">.</span><span class="n">result</span>       <span class="c1"># '5 results for ...'</span>
+<span class="n">call</span><span class="o">.</span><span class="n">result_str</span>   <span class="c1"># formatted text the model sees</span>
+</code></pre></div>
+<p>Package-discovered tools can be referenced by URL instead of imported:</p>
+<div class="highlight"><pre><span></span><code><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"research/agent"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Answer the following question using your tools: </span><span class="si">{question}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span>
+        <span class="s2">"shared_pkg.tools:web_search"</span><span class="p">,</span>
+        <span class="s2">"shared_pkg.tactics:code_review"</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>String refs are resolved when the prompt runs. Full URLs are exact; bare names
+and <code>pkg:name</code> shorthand resolve relative to the prompt's own package, then
+the runtime's default namespace. A ref that matches both a tool and a tactic is
+an error; use the full URL. Proxy refs are not allowed in <code>function_list</code>; put
+<code>pkg.proxies:name</code> in the agent config <code>tools</code> instead.</p>
+<h3 id="function-declarations-schema-and-implementation-apart"><code>Function</code> declarations: schema and implementation apart</h3>
+<p>Useful when the prompt file should define <em>what</em> tools exist and a tool module
+defines <em>how</em> they run:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># prompts/research.py: declaration, versioned with the prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Function</span><span class="p">,</span> <span class="n">Prompt</span>
+
+<span class="n">search_schema</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"search"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Search an internal knowledge base"</span><span class="p">,</span>
+    <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"query"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Search query"</span><span class="p">},</span>
+        <span class="s2">"top_k"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"integer"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Number of results"</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">"query"</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">research</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="s2">"system"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"Use search when needed."</span><span class="p">,</span> <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">search_schema</span><span class="p">])</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># tools/search.py: implementation</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"search"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Search internal documents."</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">top_k</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">my_retriever</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="n">query</span><span class="p">,</span> <span class="n">top_k</span><span class="o">=</span><span class="n">top_k</span><span class="p">)</span>
+</code></pre></div>
+<p>When the prompt runs, <code>search_schema</code> binds to the tool registered under
+<code>&lt;package&gt;.tools:search</code>: the declaration keeps its own schema and borrows the
+implementation. The implementation's registered key must equal the declared
+name, so give a decoupled tool its own module named after it (<code>tools/search.py</code>),
+or register it explicitly with <code>runtime.register_tool("search", search,
+namespace="pkg.tools")</code>. If no implementation matches, resolution fails instead
+of silently binding the wrong callable. Calling an unbound declaration directly
+raises <code>RuntimeError</code>.</p>
+<h3 id="custom-result-formatting">Custom result formatting</h3>
+<p>By default a tool result reaches the model as:</p>
+<div class="highlight"><pre><span></span><code>Return of calling function &lt;name&gt; with arguments &lt;args&gt;:
+---
+&lt;result&gt;
+---
+</code></pre></div>
+<p>Override it per tool with a <code>processor(result, function_call) -&gt; str</code>:</p>
+<div class="highlight"><pre><span></span><code><span class="k">def</span><span class="w"> </span><span class="nf">compact_processor</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">function_call</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Get stock price"</span><span class="p">,</span>
+    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">"ticker"</span><span class="p">:</span> <span class="s2">"Stock ticker symbol, e.g. AAPL"</span><span class="p">},</span>
+    <span class="n">processor</span><span class="o">=</span><span class="n">compact_processor</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">get_stock_price</span><span class="p">(</span><span class="n">ticker</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"$123.45 (</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s2">)"</span>
+</code></pre></div>
+<h3 id="mcp-servers">MCP servers</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">MCP</span><span class="p">,</span> <span class="n">Prompt</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"docs/search"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Search the docs when needed."</span><span class="p">,</span>
+    <span class="n">mcp_servers_list</span><span class="o">=</span><span class="p">[</span>
+        <span class="n">MCP</span><span class="p">(</span>
+            <span class="n">server_label</span><span class="o">=</span><span class="s2">"docs"</span><span class="p">,</span>
+            <span class="n">server_url</span><span class="o">=</span><span class="s2">"https://example.com/mcp"</span><span class="p">,</span>
+            <span class="n">require_approval</span><span class="o">=</span><span class="s2">"never"</span><span class="p">,</span>       <span class="c1"># "never" | "manual" | "auto"</span>
+            <span class="n">allowed_tools</span><span class="o">=</span><span class="p">[</span><span class="s2">"search"</span><span class="p">],</span>
+        <span class="p">)</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>MCP.to_tool()</code> produces the <code>{"type": "mcp", ...}</code> entry the LiteLLM invoker
+sends next to function tools.</p>
+<h3 id="agent-tools-and-agent_tools">Agent tools and <code>agent_tools</code></h3>
+<p>A prompt's <code>function_list</code> is the tool surface specific to its turn. When an
+agent runs the prompt, it adds its own tools: everything on its system prompt,
+including agent-config <code>tools</code>, proxy tools (<code>query_api_doc</code>, <code>run_python</code>), and
+<code>activate_skill</code>. A user-turn prompt therefore never has to repeat them, and a
+tool on the turn prompt wins over an agent tool with the same name. Set
+<code>agent_tools=False</code> for a turn that must be answered without the agent's tools:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+
+<span class="n">summary</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"analyst/summary"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Summarise the findings so far in three bullets."</span><span class="p">,</span>
+    <span class="n">agent_tools</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>       <span class="c1"># answer from the conversation only</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The handler's final prompt, sent when the tool budget runs out, has no tools
+either.</p>
+<hr />
+<h2 id="handlers">Handlers</h2>
+<p>When the loop meets a parse error or a tool result, it asks
+<code>dialog.top_prompt.on_exception(session)</code> or <code>on_interrupt(session)</code> for the
+next prompt. The <code>handler</code> field is the object that answers. All three methods
+receive the active prompt and the current <code>AgentCallSession</code> and return a
+<code>Prompt</code>.</p>
+<h3 id="what-the-default-handler-does">What the default handler does</h3>
+<table>
+<thead>
+<tr>
+<th>Event</th>
+<th>Message sent to the model</th>
+<th>Inherits tools?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Parse error</td>
+<td><code>"Error: {error_message}. Please fix."</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Tool result</td>
+<td><code>"{call_results}"</code></td>
+<td>Yes</td>
+</tr>
+<tr>
+<td>Tool budget exhausted</td>
+<td><code>"You are reaching the limit of tool calls. Provide the final response."</code></td>
+<td>No</td>
+</tr>
+</tbody>
+</table>
+<p>Each message is wrapped in a child prompt via <code>extend()</code>, so it keeps the
+parent's parser. The messages are fields, so simple changes need no subclass:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultSimpleHandler</span><span class="p">,</span> <span class="n">DefaultTagParser</span>
+
+<span class="n">strict</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"analyst/strict"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Analyse </span><span class="si">{topic}</span><span class="s2">. Put your answer in &lt;answer&gt; tags."</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]),</span>
+    <span class="n">handler</span><span class="o">=</span><span class="n">DefaultSimpleHandler</span><span class="p">(</span>
+        <span class="n">exception_msg</span><span class="o">=</span><span class="s2">"That reply was not valid: </span><span class="si">{error_message}</span><span class="se">\n</span><span class="s2">Resend it in the required format."</span><span class="p">,</span>
+        <span class="n">interrupt_final_msg</span><span class="o">=</span><span class="s2">"Stop calling tools and give your final answer now."</span><span class="p">,</span>
+    <span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div>
+<h3 id="custom-handler-rule-based">Custom handler: rule-based</h3>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentCallSession</span><span class="p">,</span> <span class="n">BaseHandler</span><span class="p">,</span> <span class="n">DefaultTagParser</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RetryWithHintHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""First failure: a gentle hint. Later failures: a strict format reminder."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">AgentCallSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+        <span class="n">retry</span> <span class="o">=</span> <span class="n">session</span><span class="o">.</span><span class="n">exception_retries_count</span>
+        <span class="k">if</span> <span class="n">retry</span> <span class="o">&lt;=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="s2">"Your response had a formatting error: </span><span class="si">{error_message}</span><span class="s2">. Please try again."</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="sa">f</span><span class="s2">"Formatting error (attempt </span><span class="si">{</span><span class="n">retry</span><span class="si">}</span><span class="s2">): </span><span class="se">{{</span><span class="s2">error_message</span><span class="se">}}\n</span><span class="s2">"</span>
+                <span class="s2">"You MUST wrap your answer in &lt;answer&gt; tags. No other format is accepted."</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">"__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_exception_</span><span class="si">{</span><span class="n">retry</span><span class="si">}</span><span class="s2">"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">AgentCallSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">"__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_interrupt"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="s2">"</span><span class="si">{call_results}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt_final</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">AgentCallSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+            <span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">"__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_interrupt_final"</span><span class="p">,</span>
+            <span class="n">prompt</span><span class="o">=</span><span class="sa">f</span><span class="s2">"You have used all </span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">max_interrupt_steps</span><span class="si">}</span><span class="s2"> tool rounds. Answer now."</span><span class="p">,</span>
+            <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">mcp_servers_list</span><span class="o">=</span><span class="p">[],</span>
+            <span class="n">addon_args</span><span class="o">=</span><span class="p">{},</span>
+        <span class="p">)</span>
+
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"analyst/strict"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Analyse </span><span class="si">{topic}</span><span class="s2">. Put your answer in &lt;answer&gt; tags."</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]),</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">],</span>
+    <span class="n">handler</span><span class="o">=</span><span class="n">RetryWithHintHandler</span><span class="p">(),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>The exception prompt is rendered with <code>{error_message}</code> and the interrupt prompt
+with <code>{call_results}</code>, so keep exactly those placeholders (and escape other
+braces).</p>
+<h3 id="custom-handler-agentic">Custom handler: agentic</h3>
+<p>The handler gets the full session, so it can call another agent:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Agent</span><span class="p">,</span> <span class="n">Prompt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">AgentCallSession</span><span class="p">,</span> <span class="n">BaseHandler</span><span class="p">,</span> <span class="n">DefaultSimpleHandler</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">FixerHandler</span><span class="p">(</span><span class="n">BaseHandler</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Ask a second agent how to repair a failed reply."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">fixer</span><span class="p">:</span> <span class="n">Agent</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixer</span> <span class="o">=</span> <span class="n">fixer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fallback</span> <span class="o">=</span> <span class="n">DefaultSimpleHandler</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_exception</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">:</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">:</span> <span class="n">AgentCallSession</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Prompt</span><span class="p">:</span>
+        <span class="n">step</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">session</span><span class="o">.</span><span class="n">exception_retries</span><span class="p">)</span>                 <span class="c1"># latest loop step</span>
+        <span class="n">errors</span> <span class="o">=</span> <span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)</span> <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">session</span><span class="o">.</span><span class="n">exception_retries</span><span class="p">[</span><span class="n">step</span><span class="p">])</span>
+        <span class="n">alias</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">"fix_</span><span class="si">{</span><span class="nb">id</span><span class="p">(</span><span class="n">session</span><span class="p">)</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">session</span><span class="o">.</span><span class="n">exception_retries_count</span><span class="si">}</span><span class="s2">"</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixer</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">alias</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixer</span><span class="o">.</span><span class="n">receive</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">"A reply failed validation:</span><span class="se">\n</span><span class="si">{</span><span class="n">errors</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="sa">f</span><span class="s2">"Original instructions:</span><span class="se">\n</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">prompt</span><span class="si">}</span><span class="se">\n\n</span><span class="s2">"</span>
+            <span class="s2">"Write one short repair instruction for the author."</span>
+        <span class="p">)</span>
+        <span class="n">advice</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fixer</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">content</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fixer</span><span class="o">.</span><span class="n">close</span><span class="p">(</span><span class="n">alias</span><span class="p">)</span>
+
+        <span class="n">safe</span> <span class="o">=</span> <span class="n">advice</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"{"</span><span class="p">,</span> <span class="s2">"{{"</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">"}"</span><span class="p">,</span> <span class="s2">"}}"</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">prompt</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="n">path</span><span class="o">=</span><span class="sa">f</span><span class="s2">"__</span><span class="si">{</span><span class="n">prompt</span><span class="o">.</span><span class="n">path</span><span class="si">}</span><span class="s2">_fix"</span><span class="p">,</span> <span class="n">prompt</span><span class="o">=</span><span class="n">safe</span> <span class="o">+</span> <span class="s2">"</span><span class="se">\n\n</span><span class="s2">Parser said: </span><span class="si">{error_message}</span><span class="s2">"</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fallback</span><span class="o">.</span><span class="n">on_interrupt</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">on_interrupt_final</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fallback</span><span class="o">.</span><span class="n">on_interrupt_final</span><span class="p">(</span><span class="n">prompt</span><span class="p">,</span> <span class="n">session</span><span class="p">)</span>
+</code></pre></div>
+<hr />
+<h2 id="prompt-composition">Prompt composition</h2>
+<p><code>extend()</code> creates a child prompt that inherits every field, with overrides. A
+new <code>path</code> is required.</p>
+<div class="highlight"><pre><span></span><code><span class="n">base</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"base/analyst"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"You are a research analyst.</span><span class="se">\n\n</span><span class="s2">Task: </span><span class="si">{task}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"reasoning"</span><span class="p">,</span> <span class="s2">"answer"</span><span class="p">]),</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">calculator</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="c1"># Specialise the persona, keep everything else</span>
+<span class="n">finance_analyst</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"finance/analyst"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"You are a financial research analyst.</span><span class="se">\n\n</span><span class="s2">Task: </span><span class="si">{task}</span><span class="s2">"</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># Strip tools for a lightweight summary turn</span>
+<span class="n">summariser</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"base/summariser"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Summarise the following research: </span><span class="si">{research}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>
+<span class="p">)</span>
+
+<span class="c1"># Require an extra tag</span>
+<span class="n">strict_analyst</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"base/analyst_strict"</span><span class="p">,</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"reasoning"</span><span class="p">,</span> <span class="s2">"answer"</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">]),</span>
+<span class="p">)</span>
+</code></pre></div>
+<p><code>extend()</code> copies field values directly rather than serializing, so custom
+parsers, renderers, and handler instances carry over.</p>
+<hr />
+<h2 id="provider-capabilities">Provider capabilities</h2>
+<p>Provider-specific features live in <code>addon_args</code>, so new provider features never
+need new <code>Prompt</code> fields:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># OpenAI web search</span>
+<span class="n">search_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"web/searcher"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Research this question using web search: </span><span class="si">{question}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">addon_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"web_search"</span><span class="p">:</span> <span class="kc">True</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="c1"># Computer use</span>
+<span class="n">cua_prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"browser/agent"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Complete the following browser task: </span><span class="si">{task}</span><span class="s2">"</span><span class="p">,</span>
+    <span class="n">addon_args</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"computer_use"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"display_width"</span><span class="p">:</span> <span class="mi">1280</span><span class="p">,</span> <span class="s2">"display_height"</span><span class="p">:</span> <span class="mi">800</span><span class="p">,</span> <span class="s2">"environment"</span><span class="p">:</span> <span class="s2">"browser"</span><span class="p">}</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">search_prompt</span><span class="o">.</span><span class="n">allow_web_search</span>      <span class="c1"># True</span>
+<span class="n">cua_prompt</span><span class="o">.</span><span class="n">computer_use_config</span>      <span class="c1"># {'display_width': 1280, ...}</span>
+</code></pre></div>
+<p>The LiteLLM invoker turns these into native tools on the Responses API
+(<code>api_type: response</code>): <code>web_search</code> adds <code>{"type": "web_search_preview"}</code> and
+<code>computer_use</code> adds a <code>computer_use_preview</code> tool. On the default Chat
+Completions API they are ignored. See <a href="../invokers/#6-chat-completions-vs-responses-api">Invokers</a>.</p>
+<hr />
+<h2 id="organization-and-discovery">Organization and discovery</h2>
+<p>Prompts are Python objects at module scope in <code>.py</code> files. <code>lllm.toml</code> names the
+folders, and discovery registers every <code>Prompt</code> it finds:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># lllm.toml</span>
+<span class="k">[package]</span>
+<span class="n">name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s2">"my_pkg"</span>
+
+<span class="k">[prompts]</span>
+<span class="n">paths</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="s2">"prompts"</span><span class="p">]</span>
+</code></pre></div>
+<p>The registry key is the file path (without <code>.py</code>) plus the prompt's own <code>path</code>.
+A prompt with <code>path="system"</code> in <code>prompts/weather/bot.py</code> registers as
+<code>my_pkg.prompts:weather/bot/system</code>:</p>
+<div class="highlight"><pre><span></span><code>prompts/
+├── weather/
+│   └── bot.py          # system, analysis
+├── finance/
+│   └── analyst.py      # research, summary
+└── coding/
+    └── agent.py        # planner, executor, reviewer
+</code></pre></div>
+<p>Register without discovery:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">register_prompt</span>
+
+<span class="n">register_prompt</span><span class="p">(</span><span class="n">my_prompt</span><span class="p">)</span>          <span class="c1"># default runtime, key = my_prompt.path, overwrites</span>
+<span class="c1"># register_prompt(my_prompt, overwrite=False) raises ValueError if the key exists</span>
+
+<span class="n">runtime</span><span class="o">.</span><span class="n">register_prompt</span><span class="p">(</span><span class="n">my_prompt</span><span class="p">,</span> <span class="n">namespace</span><span class="o">=</span><span class="s2">"my_pkg.prompts"</span><span class="p">)</span>   <span class="c1"># a specific runtime</span>
+</code></pre></div>
+<p>Retrieve:</p>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">load_prompt</span>
+
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">load_prompt</span><span class="p">(</span><span class="s2">"weather/bot/system"</span><span class="p">)</span>               <span class="c1"># default package</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">load_prompt</span><span class="p">(</span><span class="s2">"my_pkg:weather/bot/system"</span><span class="p">)</span>        <span class="c1"># package-qualified</span>
+<span class="n">prompt</span> <span class="o">=</span> <span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">"my_pkg.prompts:weather/bot/system"</span><span class="p">)</span>
+</code></pre></div>
+<p>A registered prompt remembers its package, which is what lets bare tool refs
+and <code>Function</code> declarations on it resolve inside that package. See
+<a href="../../packages/discovery/">Package Discovery</a>.</p>
+<hr />
+<h2 id="metadata-and-tracking">Metadata and tracking</h2>
+<p><code>metadata</code> accepts any JSON-like dict. <code>info_dict()</code> produces a snapshot for
+experiment tracking:</p>
+<div class="highlight"><pre><span></span><code><span class="n">prompt</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"analyst/v2"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="s2">"Analyse </span><span class="si">{topic}</span><span class="s2">."</span><span class="p">,</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"author"</span><span class="p">:</span> <span class="s2">"junyan"</span><span class="p">,</span> <span class="s2">"experiment"</span><span class="p">:</span> <span class="s2">"ablation-no-cot"</span><span class="p">,</span> <span class="s2">"version"</span><span class="p">:</span> <span class="s2">"2.1"</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">prompt</span><span class="o">.</span><span class="n">info_dict</span><span class="p">()</span>
+<span class="c1"># {</span>
+<span class="c1">#     "path": "analyst/v2",</span>
+<span class="c1">#     "prompt_hash": "...",            # first 12 hex chars of SHA-256 of the template</span>
+<span class="c1">#     "metadata": {"author": "junyan", "experiment": "ablation-no-cot", "version": "2.1"},</span>
+<span class="c1">#     "functions": [],</span>
+<span class="c1">#     "mcp_servers": [],</span>
+<span class="c1">#     "addon_args": {},</span>
+<span class="c1">#     "has_parser": False,</span>
+<span class="c1">#     "has_format": False,</span>
+<span class="c1"># }</span>
+</code></pre></div>
+<p><code>prompt_hash</code> changes whenever the template text changes, which makes prompt
+drift across experiments easy to detect.</p>
+<p><code>to_dict()</code> returns a JSON-safe snapshot: tools are stored as their schemas
+(implementations are not included; they are re-bound by name to registered
+<code>@tool</code> implementations when the prompt next runs), a Pydantic <code>format</code> model is
+stored as <code>{"model": "module:Qualname", "schema": {...}}</code>, and the parser,
+handler, and renderer are left out. <code>Prompt.from_dict()</code> rebuilds the prompt
+without importing code: it uses the <code>format</code> model class only when its module
+is already imported, and the stored JSON schema otherwise.</p>
+<hr />
+<h2 id="complete-example-a-prompt-file">Complete example: a prompt file</h2>
+<p>A real prompt module. Discovery registers every module-level <code>Prompt</code>, prefixed
+with the file path.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># prompts/research/agent.py</span>
+<span class="c1">#</span>
+<span class="c1"># Registered keys (package "research_pkg"):</span>
+<span class="c1">#   research_pkg.prompts:research/agent/system</span>
+<span class="c1">#   research_pkg.prompts:research/agent/task</span>
+<span class="c1">#   research_pkg.prompts:research/agent/summarise</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Function</span><span class="p">,</span> <span class="n">Prompt</span><span class="p">,</span> <span class="n">tool</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm.runtimes.native</span><span class="w"> </span><span class="kn">import</span> <span class="n">DefaultTagParser</span><span class="p">,</span> <span class="n">ParseError</span>
+
+
+<span class="c1"># -- Tools -------------------------------------------------------------------</span>
+
+<span class="nd">@tool</span><span class="p">(</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Search the web for current information on a topic"</span><span class="p">,</span>
+    <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">"query"</span><span class="p">:</span> <span class="s2">"Search query string"</span><span class="p">},</span>
+<span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">web_search</span><span class="p">(</span><span class="n">query</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"[Search results for: </span><span class="si">{</span><span class="n">query</span><span class="si">}</span><span class="s2">]"</span>   <span class="c1"># call a real search API here</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">"Fetch the full text of a URL"</span><span class="p">,</span> <span class="n">prop_desc</span><span class="o">=</span><span class="p">{</span><span class="s2">"url"</span><span class="p">:</span> <span class="s2">"The URL to fetch"</span><span class="p">})</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">fetch_url</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"[Content of: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">]"</span>
+
+
+<span class="c1"># Declared here for the model; implemented by tools/save_note.py in this package.</span>
+<span class="n">save_note</span> <span class="o">=</span> <span class="n">Function</span><span class="p">(</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">"save_note"</span><span class="p">,</span>
+    <span class="n">description</span><span class="o">=</span><span class="s2">"Save a research note to the session store"</span><span class="p">,</span>
+    <span class="n">properties</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">"title"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Note title"</span><span class="p">},</span>
+        <span class="s2">"content"</span><span class="p">:</span> <span class="p">{</span><span class="s2">"type"</span><span class="p">:</span> <span class="s2">"string"</span><span class="p">,</span> <span class="s2">"description"</span><span class="p">:</span> <span class="s2">"Note content"</span><span class="p">},</span>
+    <span class="p">},</span>
+    <span class="n">required</span><span class="o">=</span><span class="p">[</span><span class="s2">"title"</span><span class="p">,</span> <span class="s2">"content"</span><span class="p">],</span>
+<span class="p">)</span>
+
+
+<span class="c1"># -- Parser ------------------------------------------------------------------</span>
+
+<span class="k">class</span><span class="w"> </span><span class="nc">ResearchParser</span><span class="p">(</span><span class="n">DefaultTagParser</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Tag extraction plus a range check on &lt;confidence&gt;."""</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">parse</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
+        <span class="n">parsed</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">parse</span><span class="p">(</span><span class="n">content</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">raw</span> <span class="o">=</span> <span class="n">parsed</span><span class="p">[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"confidence"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;confidence&gt; must be a number, got </span><span class="si">{</span><span class="n">raw</span><span class="si">!r}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mf">0.0</span> <span class="o">&lt;=</span> <span class="n">confidence</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">ParseError</span><span class="p">(</span><span class="sa">f</span><span class="s2">"&lt;confidence&gt; must be between 0 and 1, got </span><span class="si">{</span><span class="n">confidence</span><span class="si">}</span><span class="s2">"</span><span class="p">)</span>
+        <span class="n">parsed</span><span class="p">[</span><span class="s2">"confidence"</span><span class="p">]</span> <span class="o">=</span> <span class="n">confidence</span>
+        <span class="k">return</span> <span class="n">parsed</span>
+
+
+<span class="c1"># -- Prompts -----------------------------------------------------------------</span>
+
+<span class="n">system</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"system"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">"You are a careful research assistant with access to web search.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"Verify claims with at least two sources before concluding.</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"Current date: </span><span class="si">{date}</span><span class="s2">"</span>
+    <span class="p">),</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"role"</span><span class="p">:</span> <span class="s2">"system"</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">task</span> <span class="o">=</span> <span class="n">Prompt</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"task"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">"Research the following question thoroughly: </span><span class="si">{question}</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="s2">"Use your tools, then respond with:</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"&lt;reasoning&gt;your research process&lt;/reasoning&gt;</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"&lt;answer&gt;your final, sourced answer&lt;/answer&gt;</span><span class="se">\n</span><span class="s2">"</span>
+        <span class="s2">"&lt;confidence&gt;a number between 0 and 1&lt;/confidence&gt;"</span>
+    <span class="p">),</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">ResearchParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"reasoning"</span><span class="p">,</span> <span class="s2">"answer"</span><span class="p">,</span> <span class="s2">"confidence"</span><span class="p">]),</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[</span><span class="n">web_search</span><span class="p">,</span> <span class="n">fetch_url</span><span class="p">,</span> <span class="n">save_note</span><span class="p">],</span>
+    <span class="n">metadata</span><span class="o">=</span><span class="p">{</span><span class="s2">"version"</span><span class="p">:</span> <span class="s2">"1.2"</span><span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">summarise</span> <span class="o">=</span> <span class="n">task</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span>
+    <span class="n">path</span><span class="o">=</span><span class="s2">"summarise"</span><span class="p">,</span>
+    <span class="n">prompt</span><span class="o">=</span><span class="p">(</span>
+        <span class="s2">"Summarise these findings in 2-3 sentences: </span><span class="si">{findings}</span><span class="se">\n\n</span><span class="s2">"</span>
+        <span class="s2">"&lt;answer&gt;your summary&lt;/answer&gt;"</span>
+    <span class="p">),</span>
+    <span class="n">function_list</span><span class="o">=</span><span class="p">[],</span>
+    <span class="n">parser</span><span class="o">=</span><span class="n">DefaultTagParser</span><span class="p">(</span><span class="n">xml_tags</span><span class="o">=</span><span class="p">[</span><span class="s2">"answer"</span><span class="p">]),</span>
+<span class="p">)</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># tools/save_note.py</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">tool</span>
+
+<span class="n">NOTES</span><span class="p">:</span> <span class="nb">list</span><span class="p">[</span><span class="nb">tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+
+
+<span class="nd">@tool</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s2">"save_note"</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">"Save a research note to the session store"</span><span class="p">)</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">save_note</span><span class="p">(</span><span class="n">title</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">NOTES</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">title</span><span class="p">,</span> <span class="n">content</span><span class="p">))</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">"Note </span><span class="si">{</span><span class="n">title</span><span class="si">!r}</span><span class="s2"> saved."</span>
+</code></pre></div>
+<p>And a tactic that uses these prompts:</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># tactics/researcher.py</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">datetime</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">Tactic</span>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">Researcher</span><span class="p">(</span><span class="n">Tactic</span><span class="p">):</span>
+    <span class="n">name</span> <span class="o">=</span> <span class="s2">"researcher"</span>
+    <span class="n">agent_group</span> <span class="o">=</span> <span class="p">[</span><span class="s2">"researcher"</span><span class="p">]</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">call</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">task</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">agent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">agents</span><span class="p">[</span><span class="s2">"researcher"</span><span class="p">]</span>
+        <span class="n">agent</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="s2">"research"</span><span class="p">,</span> <span class="n">prompt_args</span><span class="o">=</span><span class="p">{</span><span class="s2">"date"</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">date</span><span class="o">.</span><span class="n">today</span><span class="p">()</span><span class="o">.</span><span class="n">isoformat</span><span class="p">()})</span>
+
+        <span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span><span class="n">agent</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">"research/agent/task"</span><span class="p">),</span> <span class="p">{</span><span class="s2">"question"</span><span class="p">:</span> <span class="n">task</span><span class="p">})</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span>
+        <span class="n">answer</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"answer"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"confidence"</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">0.5</span><span class="p">:</span>
+            <span class="c1"># Low confidence: consolidate in a tool-free summary turn.</span>
+            <span class="n">agent</span><span class="o">.</span><span class="n">receive_prompt</span><span class="p">(</span>
+                <span class="n">agent</span><span class="o">.</span><span class="n">runtime</span><span class="o">.</span><span class="n">get_prompt</span><span class="p">(</span><span class="s2">"research/agent/summarise"</span><span class="p">),</span> <span class="p">{</span><span class="s2">"findings"</span><span class="p">:</span> <span class="n">answer</span><span class="p">}</span>
+            <span class="p">)</span>
+            <span class="n">answer</span> <span class="o">=</span> <span class="n">agent</span><span class="o">.</span><span class="n">respond</span><span class="p">()</span><span class="o">.</span><span class="n">parsed</span><span class="p">[</span><span class="s2">"xml_tags"</span><span class="p">][</span><span class="s2">"answer"</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">answer</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="c1"># configs/default.yaml</span>
+<span class="nt">tactic_type</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher</span>
+<span class="nt">global</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">model_name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gpt-4o</span>
+<span class="w">  </span><span class="nt">model_args</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">temperature</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">0.2</span>
+<span class="nt">agent_configs</span><span class="p">:</span>
+<span class="w">  </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">researcher</span>
+<span class="w">    </span><span class="nt">system_prompt_path</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">research/agent/system</span>
+</code></pre></div>
+<div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">lllm</span><span class="w"> </span><span class="kn">import</span> <span class="n">build_tactic</span><span class="p">,</span> <span class="n">load_runtime</span><span class="p">,</span> <span class="n">resolve_config</span>
+
+<span class="n">load_runtime</span><span class="p">(</span><span class="s2">"research_pkg/lllm.toml"</span><span class="p">)</span>
+<span class="n">tactic</span> <span class="o">=</span> <span class="n">build_tactic</span><span class="p">(</span><span class="n">resolve_config</span><span class="p">(</span><span class="s2">"default"</span><span class="p">))</span>
+<span class="nb">print</span><span class="p">(</span><span class="n">tactic</span><span class="p">(</span><span class="s2">"What architecture do modern LLMs use?"</span><span class="p">))</span>
+</code></pre></div>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+  <script>var tabs=__md_get("__tabs");if(Array.isArray(tabs))e:for(var set of document.querySelectorAll(".tabbed-set")){var labels=set.querySelector(".tabbed-labels");for(var tab of tabs)for(var label of labels.getElementsByTagName("label"))if(label.innerText.trim()===tab){var input=document.getElementById(label.htmlFor);input.checked=!0;continue e}}</script>
+
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      <a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>
+    </div>
+  
+  
+</div>
+      
+        
+<div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/Productive-Superintelligence/lllm" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M173.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M252.8 8C114.1 8 8 113.3 8 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C436.2 457.8 504 362.9 504 252 504 113.3 391.5 8 252.8 8M105.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.indexes", "navigation.top", "navigation.tracking", "toc.follow", "content.code.copy", "content.tabs.link", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.a7633da7.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.c21346df.min.js"></script>
+      
+        <script src="../../javascripts/vendor/mermaid.min.js"></script>
+      
+        <script src="../../javascripts/mermaid-init.20260629.js"></script>
+      
+    
+  </body>
+</html>
