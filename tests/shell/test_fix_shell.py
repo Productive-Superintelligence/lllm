@@ -4,9 +4,14 @@ from __future__ import annotations
 
 import asyncio
 import builtins
+import sys
+import threading
+import time
+import types
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
@@ -17,9 +22,12 @@ from lllm.network import (
     ChannelNotFoundError,
     InvalidPayloadError,
     LocalStore,
+    NetworkError,
+    RemoteStore,
     TacticProcessor,
 )
-from lllm.protocol import CallContext
+from lllm.network.server import create_app as create_store_app
+from lllm.protocol import CallContext, SchemaError
 from lllm.shell import Strategy, create_strategy_app, load_strategy
 from lllm.shell.cli import main
 from lllm.shell.strategy import ResourceNotFoundError, StrategyStore
@@ -63,8 +71,68 @@ description = "Echo tactic."
     return root
 
 
+def _tactic_package(root: Path, name: str, tactic: str, entry: str) -> Path:
+    root.mkdir(parents=True)
+    (root / "lllm.toml").write_text(
+        f"""
+[package]
+org = "demo"
+name = "{name}"
+version = "0.1.0"
+kind = "app"
+
+[tactics."{tactic}"]
+entry = "{entry}"
+""".lstrip(),
+        encoding="utf-8",
+    )
+    return root
+
+
 def _error(response) -> dict[str, Any]:
     return response.json()["detail"]["error"]
+
+
+def _run_together(count: int, fn) -> list[Exception]:
+    """Call ``fn(0)`` .. ``fn(count - 1)`` in threads released at once; return their errors."""
+
+    barrier = threading.Barrier(count)
+    errors: list[Exception] = []
+
+    def run(index: int) -> None:
+        barrier.wait()
+        try:
+            fn(index)
+        except Exception as exc:
+            errors.append(exc)
+
+    threads = [threading.Thread(target=run, args=(index,)) for index in range(count)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+    return errors
+
+
+def _forward_to(app) -> httpx.MockTransport:
+    """An httpx transport that serves requests with ``app`` in-process."""
+
+    client = TestClient(app)
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        response = client.request(
+            request.method,
+            request.url.raw_path.decode(),
+            content=request.content,
+            headers={"content-type": request.headers.get("content-type", "application/json")},
+        )
+        return httpx.Response(
+            response.status_code,
+            content=response.content,
+            headers={"content-type": response.headers.get("content-type", "application/json")},
+        )
+
+    return httpx.MockTransport(handle)
 
 
 # SH1: channels declared with strategy.channel() are backed by the attached store.
@@ -192,6 +260,22 @@ def test_a_strategy_never_swaps_its_store_silently(tmp_path: Path):
     assert strategy.store.root == alpha_store.resolve()
 
 
+def test_attaching_none_is_a_no_op_without_a_store_and_never_drops_one(tmp_path: Path):
+    bare = Strategy("bare").attach_store(None)
+    bare.store = None
+
+    assert bare.store is None
+
+    store = LocalStore(tmp_path / "store")
+    strategy = Strategy("kept").attach_store(store)
+    with pytest.raises(ValueError, match="cannot drop it: a strategy has one store"):
+        strategy.attach_store(None)
+    with pytest.raises(ValueError, match="cannot drop it: a strategy has one store"):
+        strategy.store = None
+
+    assert strategy.store.same_as(store)
+
+
 def test_unbound_package_channels_stay_metadata_only(tmp_path: Path):
     store = LocalStore(tmp_path / "store")
     strategy = Strategy("meta").attach_store(store)
@@ -314,6 +398,101 @@ def test_shell_errors_have_the_tactic_service_envelope_shape():
     assert set(_error(shell_error)) == set(_error(service_error))
     assert set(_error(missing)) == set(_error(service_error))
     assert _error(shell_error)["message"] == "tactic broke"
+
+
+@pytest.mark.parametrize(
+    ("error", "status"),
+    [(ValueError("value must be positive"), 500), (SchemaError("value must be a number"), 400)],
+)
+def test_a_tactic_error_has_the_same_status_on_both_tactic_routes(error, status):
+    class Picky(Tactic[Any, Any]):
+        name = "picky"
+
+        def _run(self, input_value, *, context=None):
+            raise error
+
+    def plain(input_value, *, context=None):
+        raise error
+
+    strategy = Strategy("status").add_tactic(Picky())
+    strategy.tactic("plain", handler=plain)
+    client = TestClient(create_strategy_app(strategy))
+
+    for name in ("picky", "plain"):
+        via_tactic = client.post(f"/tactics/{name}/run", json={"input": -1})
+        via_resource = client.post(f"/resources/{name}/invoke", json={"input": -1})
+
+        assert via_tactic.status_code == via_resource.status_code == status
+        assert _error(via_resource)["type"] == _error(via_tactic)["type"] == type(error).__name__
+        assert _error(via_resource)["message"] == str(error)
+
+
+def test_store_errors_get_the_store_servers_own_status_codes(monkeypatch):
+    import lllm.network.server.fastapi as store_server
+
+    class EventConflict(NetworkError):
+        """A store error the store server reports as a conflict."""
+
+    store_http_error = store_server._http_error
+
+    def http_error(exc):
+        error = store_http_error(exc)
+        if isinstance(exc, EventConflict):
+            error.status_code = 409
+        return error
+
+    def handler(input_value=None):
+        raise EventConflict("Event already exists: e1")
+
+    monkeypatch.setattr(store_server, "_http_error", http_error)
+    strategy = Strategy("errs")
+    strategy.channel("dup", handler=handler)
+
+    response = TestClient(create_strategy_app(strategy)).get("/channels/dup/events")
+
+    assert response.status_code == 409
+    assert _error(response)["type"] == "EventConflict"
+    assert _error(response)["message"] == "Event already exists: e1"
+
+
+def test_remote_store_client_errors_keep_the_remote_status(tmp_path: Path):
+    backend = LocalStore(tmp_path / "backend")
+    remote = RemoteStore("http://store", transport=_forward_to(create_store_app(backend)))
+    strategy = Strategy("remote").channel("log").attach_store(remote)
+    strategy.service("recreate", handler=lambda value: remote.create_channel({"name": "log"}))
+    client = TestClient(create_strategy_app(strategy))
+
+    appended = client.post("/channels/log/events", json={"input": {"payload": 1}})
+    orphan = client.post(
+        "/channels/log/events",
+        json={"input": {"payload": 2, "parent_ids": ["missing"]}},
+    )
+    conflict = client.post("/resources/recreate/invoke", json={"input": None})
+
+    assert appended.status_code == 200
+    assert [event.payload for event in backend.query_events("log")] == [1]
+    assert orphan.status_code == 404
+    assert _error(orphan)["type"] == "RemoteStoreError"
+    assert "(EventNotFoundError): Event not found: missing" in _error(orphan)["message"]
+    assert _error(orphan)["metadata"] == {"resource": "log"}
+    assert conflict.status_code == 409
+    assert "(ChannelExistsError)" in _error(conflict)["message"]
+
+
+def test_other_remote_store_failures_stay_500():
+    def broken(request: httpx.Request) -> httpx.Response:
+        if request.method == "POST" and request.url.path == "/channels":
+            return httpx.Response(200, json={"name": "log"})
+        return httpx.Response(200, text="not json")  # a 2xx answer the client rejects
+
+    remote = RemoteStore("http://store", transport=httpx.MockTransport(broken))
+    strategy = Strategy("remote").channel("log").attach_store(remote)
+    client = TestClient(create_strategy_app(strategy))
+
+    response = client.post("/resources/log/invoke", json={"input": {"op": "info"}})
+
+    assert response.status_code == 500
+    assert _error(response)["type"] == "RemoteStoreError"
 
 
 def test_handler_http_exceptions_keep_their_status():
@@ -461,6 +640,51 @@ def test_package_tactics_report_the_manifest_ref(tmp_path: Path):
     assert invoked["tactic_ref"] == ref
 
 
+def test_packages_sharing_a_tactic_object_each_report_their_own_ref(
+    tmp_path: Path, monkeypatch
+):
+    class Summarize(Tactic[Any, Any]):
+        name = "summarize"
+
+        def _run(self, input_value, *, context=None):
+            return context.tactic_ref
+
+    # A module-level instance in an installed module, which both packages name.
+    shared = Summarize()
+    module = types.ModuleType("fix_shell_shared_tactics")
+    module.summarize = shared
+    monkeypatch.setitem(sys.modules, "fix_shell_shared_tactics", module)
+    entry = "fix_shell_shared_tactics:summarize"
+    strategy = (
+        Strategy("ops")
+        .use_package(_tactic_package(tmp_path / "alpha", "alpha", "summarize", entry), prefix="a")
+        .use_package(_tactic_package(tmp_path / "beta", "beta", "summarize", entry), prefix="b")
+    )
+    client = TestClient(create_strategy_app(strategy))
+
+    for prefix, package in (("a", "alpha"), ("b", "beta")):
+        ref = f"lllm://demo/{package}/tactics/summarize"
+        assert client.get(f"/tactics/{prefix}.summarize/info").json()["package_ref"] == ref
+        run = client.post(f"/tactics/{prefix}.summarize/run", json={"input": 1})
+        assert run.json()["output"] == ref
+    assert shared.package_ref is None
+
+
+def test_a_tactic_name_a_ref_cannot_carry_still_serves(tmp_path: Path):
+    package = _tactic_package(tmp_path / "pkg", "odd", "a#b", "odd_code:run")
+    (package / "odd_code.py").write_text(
+        "def run(input_value, *, context=None):\n    return context.tactic_ref\n",
+        encoding="utf-8",
+    )
+
+    client = TestClient(create_strategy_app(load_strategy(package)))
+
+    assert client.get("/tactics/a%23b/info").json()["package_ref"] is None
+    invoked = client.post("/resources/a%23b/invoke", json={"input": 1})
+    assert invoked.status_code == 200
+    assert invoked.json()["output"] is None
+
+
 # SH6: building or inspecting a strategy never creates its store.
 
 
@@ -502,3 +726,53 @@ def test_serving_opens_the_store_with_its_declared_channels(tmp_path: Path):
     channels = {channel["name"]: channel for channel in client.get("/network/channels").json()}
     assert sorted(channels) == ["alerts", "events"]
     assert channels["alerts"]["description"] == "The alerts stream."
+
+
+def test_threads_using_an_attached_store_first_create_each_channel_once(tmp_path: Path):
+    created: list[str] = []
+
+    class SlowStore(LocalStore):
+        def create_channel(self, channel):
+            time.sleep(0.01)  # keep the other threads arriving mid-creation
+            created.append(channel["name"])
+            return super().create_channel(channel)
+
+    strategy = Strategy("busy").attach_store(SlowStore(tmp_path / "store"))
+    for index in range(4):
+        strategy.channel(f"c{index}")
+
+    errors = _run_together(
+        4,
+        lambda index: strategy.store.append_event({"channel": f"c{index}", "payload": index}),
+    )
+
+    assert errors == []
+    assert sorted(created) == ["c0", "c1", "c2", "c3"]
+    for index in range(4):
+        assert [event.payload for event in strategy.store.query_events(f"c{index}")] == [index]
+
+
+def test_threads_using_a_package_store_first_open_it_once(tmp_path: Path, monkeypatch):
+    opened: list[Path] = []
+
+    class SlowLocalStore(LocalStore):
+        def __init__(self, root):
+            time.sleep(0.01)  # keep the other threads arriving mid-open
+            opened.append(root)
+            super().__init__(root)
+
+    monkeypatch.setattr("lllm.network.stores.LocalStore", SlowLocalStore)
+    package = _package(tmp_path / "pkg", channels=("c0", "c1", "c2", "c3"))
+    strategy = load_strategy(package)
+
+    errors = _run_together(
+        4,
+        lambda index: asyncio.run(
+            strategy.invoke_resource(f"c{index}", {"op": "append", "payload": index})
+        ),
+    )
+
+    assert errors == []
+    assert opened == [(package / ".lllm" / "network").resolve()]
+    for index in range(4):
+        assert [event.payload for event in strategy.store.query_events(f"c{index}")] == [index]

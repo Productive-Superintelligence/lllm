@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import copy
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from ..protocol.refs import tactic_ref_value
 from .models import StrategyResource
 from .strategy import Strategy, StrategyStore
 
@@ -312,7 +314,10 @@ class PackageTactic:
 
     Building or inspecting a strategy never imports package code; serving it
     (or invoking the resource) does. A loaded tactic without a ``package_ref``
-    gets ``ref``, the manifest ref ``lllm://org/package/tactics/name``.
+    gets ``ref``, the manifest ref ``lllm://org/package/tactics/name``, on a
+    copy: the imported object may be shared with other packages or modules,
+    and it is left as it is. A ``ref`` that is not a valid tactic ref (the hub
+    accepts tactic names, like ``a#b``, that a ref cannot carry) is not used.
     """
 
     def __init__(
@@ -326,13 +331,14 @@ class PackageTactic:
         self.entrypoint = entrypoint
         self.base_dir = base_dir
         self.name = name
-        self.ref = ref
+        self.ref = _tactic_ref(ref)
         self._tactic: Any = None
 
     def load(self) -> Any:
         if self._tactic is None:
             tactic = _load_tactic(self.entrypoint, base_dir=self.base_dir, name=self.name)
             if self.ref is not None and tactic.package_ref is None:
+                tactic = copy.copy(tactic)
                 tactic.package_ref = self.ref
             self._tactic = tactic
         return self._tactic
@@ -351,6 +357,15 @@ def _load_tactic(entrypoint: str, *, base_dir: Path, name: str) -> Any:
     from ..runtimes import coerce_tactic
 
     return coerce_tactic(import_entrypoint(entrypoint, base_dir=base_dir), name=name)
+
+
+def _tactic_ref(ref: str | None) -> str | None:
+    if ref is None:
+        return None
+    try:
+        return tactic_ref_value(ref)
+    except ValueError:
+        return None
 
 
 def _check_names(strategy: Strategy, manifest: Any, prefix: str | None) -> None:

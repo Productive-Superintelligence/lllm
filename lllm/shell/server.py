@@ -8,9 +8,12 @@ network store API at ``/network/``. The shell adds its own surface on top:
 
 The shell routes report errors in the services error envelope,
 ``{"detail": {"error": {"type": ..., "message": ...}}}``: an unknown resource
-is a 404; invalid input (a malformed request, or a ``ValueError`` or
-``SchemaError`` from a handler) is a 400; channel store errors keep the store
-server's codes (404 not found, 409 conflict, 400 otherwise); anything else is
+is a 404, and a malformed request is a 400. A tactic resource fails with the
+status ``POST /tactics/<name>/run`` uses (400 for ``SchemaError`` and
+``TacticUnsupportedError``, 500 otherwise). For other handlers, a
+``ValueError`` or ``SchemaError`` is a 400; channel store errors keep the
+store server's codes (404 not found, 409 conflict, 400 otherwise), and a
+remote store's 4xx errors keep the code its server returned; anything else is
 a 500.
 """
 
@@ -27,6 +30,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from ..protocol import SchemaError, TacticUnsupportedError
 from ..services import ErrorDetail, ErrorResponse, create_tactic_app
+from ..services.fastapi import _status_code_for_error
 from .models import StrategyRunRequest, StrategyRunResponse
 from .strategy import ResourceNotFoundError, Strategy
 
@@ -139,8 +143,9 @@ def create_strategy_app(strategy: Strategy) -> FastAPI:
         """Call a resource's handler.
 
         A tactic resource runs as ``POST /tactics/{name}/run`` runs it: the
-        ``context`` has the shape of a ``CallContext`` and the tactic receives
-        one. Other handlers receive the ``context`` as a plain object.
+        ``context`` has the shape of a ``CallContext``, the tactic receives
+        one, and its errors get the same status codes. Other handlers receive
+        the ``context`` as a plain object.
         """
 
         return await _invoke(strategy, name, request, endpoint="resource")
@@ -172,7 +177,8 @@ async def _invoke(
     except StarletteHTTPException:
         raise
     except Exception as exc:
-        raise _http_error(exc, endpoint=endpoint, resource=name) from exc
+        tactic = name in strategy._tactics
+        raise _http_error(exc, endpoint=endpoint, resource=name, tactic=tactic) from exc
     return StrategyRunResponse(
         output=jsonable_encoder(output),
         strategy=strategy.name,
@@ -185,9 +191,10 @@ def _http_error(
     *,
     endpoint: str,
     resource: str | None = None,
+    tactic: bool = False,
 ) -> HTTPException:
     return HTTPException(
-        status_code=_status_code(exc),
+        status_code=_status_code(exc, tactic=tactic),
         detail=_error_payload(
             exc,
             endpoint=endpoint,
@@ -202,27 +209,28 @@ def _error_payload(exc: Exception, **fields: Any) -> dict[str, Any]:
     ).model_dump(mode="json")
 
 
-def _status_code(exc: Exception) -> int:
+def _status_code(exc: Exception, *, tactic: bool = False) -> int:
     if isinstance(exc, ResourceNotFoundError):
         return 404
-    # A network error exists only once lllm.network is imported; looking it up
+    if tactic:
+        # The tactic service's mapping, so both tactic routes agree.
+        return _status_code_for_error(exc)
+    # Store errors exist only once lllm.network is imported; looking them up
     # here keeps strategies without channels from importing it.
-    network = sys.modules.get("lllm.network.core.errors")
-    if network is not None and isinstance(exc, network.NetworkError):
-        if isinstance(
-            exc,
-            (
-                network.ChannelNotFoundError,
-                network.EventNotFoundError,
-                network.ArtifactNotFoundError,
-                network.SnapshotNotFoundError,
-                network.SubscriptionNotFoundError,
-            ),
-        ):
-            return 404
-        if isinstance(exc, (network.ChannelExistsError, network.SubscriptionExistsError)):
-            return 409
-        return 400
+    errors = sys.modules.get("lllm.network.core.errors")
+    if errors is not None and isinstance(exc, errors.NetworkError):
+        # The store server's own mapping, so both report a store error alike.
+        from ..network.server.fastapi import _http_error as _store_http_error
+
+        return _store_http_error(exc).status_code
+    client = sys.modules.get("lllm.network.client.http")
+    if (
+        client is not None
+        and isinstance(exc, client.RemoteStoreError)
+        and 400 <= exc.status_code < 500
+    ):
+        # A remote store's server already mapped the store error.
+        return exc.status_code
     if isinstance(exc, (ValueError, SchemaError, TacticUnsupportedError)):
         return 400
     return 500

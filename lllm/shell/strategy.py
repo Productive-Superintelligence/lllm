@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+import threading
 from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
 from typing import Any
@@ -29,7 +30,8 @@ class StrategyStore:
     never touches disk. The strategy declares its channels here; they are
     created in the store (existing channels are left as they are) the first
     time any store method is called. Call store methods on this object
-    directly; :meth:`open` returns the underlying store.
+    directly; :meth:`open` returns the underlying store. Threads may share
+    it: the store is opened, and each channel created, once.
     """
 
     def __init__(self, store: Any = None, *, root: str | Path | None = None) -> None:
@@ -41,24 +43,31 @@ class StrategyStore:
         #: The store folder, or None for a store without one (a remote store).
         self.root = None if root is None else Path(root).expanduser().resolve()
         self._pending: dict[str, dict[str, Any]] = {}
+        self._lock = threading.Lock()
 
     def declare(self, channel: Mapping[str, Any]) -> None:
         """Create ``channel``, a ``create_channel`` payload, on the next use."""
 
-        self._pending[channel["name"]] = dict(channel)
+        with self._lock:
+            self._pending[channel["name"]] = dict(channel)
 
     def open(self) -> Any:
         """Open the store, create the declared channels, and return the store."""
 
-        if self._store is None:
-            from ..network.stores import LocalStore
+        store = self._store
+        if store is not None and not self._pending:
+            return store
+        # One thread opens the store and creates the channels while the others
+        # wait, so no caller gets the store before its channels exist.
+        with self._lock:
+            if self._store is None:
+                from ..network.stores import LocalStore
 
-            self._store = LocalStore(self.root)
-        while self._pending:
-            name, channel = next(iter(self._pending.items()))
-            _create_channel(self._store, channel)
-            del self._pending[name]
-        return self._store
+                self._store = LocalStore(self.root)
+            for name, channel in list(self._pending.items()):
+                _create_channel(self._store, channel)
+                del self._pending[name]
+            return self._store
 
     def same_as(self, store: Any) -> bool:
         """Whether ``store`` is this store: the same object or the same folder."""
@@ -214,20 +223,24 @@ class Strategy:
         first time the store is used. Packages that declare channels share the
         strategy's store (see :func:`lllm.shell.add_package`), so attach your
         store before mounting them. Attaching the store the strategy already
-        has (the same object or folder) does nothing; attaching another one
-        raises ``ValueError``.
+        has (the same object or folder), or ``None`` to a strategy without a
+        store, does nothing. Attaching another store, or ``None`` to a strategy
+        that has one, raises ``ValueError``: a store is never replaced or
+        dropped silently.
         """
 
         if self._store is not None:
             if self._store.same_as(store):
                 return self
+            change = "drop it" if store is None else f"also use {_store_label(store)}"
             raise ValueError(
                 f"Strategy {self.name!r} already has a channel store "
-                f"({_store_label(self._store)}) and cannot also use "
-                f"{_store_label(store)}: a strategy has one store, served at "
-                "/network/. Attach it before mounting packages, and mount "
-                "packages without store= to share it."
+                f"({_store_label(self._store)}) and cannot {change}: a strategy "
+                "has one store, served at /network/. Attach it before mounting "
+                "packages, and mount packages without store= to share it."
             )
+        if store is None:
+            return self
         self._store = store if isinstance(store, StrategyStore) else StrategyStore(store)
         for channel in self._channels.values():
             self._store.declare(channel)
