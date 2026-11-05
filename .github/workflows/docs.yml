@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  id-token: write
 
 concurrency:
   group: docs
@@ -23,7 +24,21 @@ jobs:
       - run: python -m pip install -U pip
       - run: python -m pip install -e ".[docs]"
       - run: mkdocs build --strict --site-dir site
-      - run: |
+      # Firebase Hosting serves lllm.one and routes /hub to the hub website
+      # (firebase.json). Until the FIREBASE_PROJECT variable is set, the docs
+      # deploy to GitHub Pages instead.
+      - if: vars.FIREBASE_PROJECT != ''
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      - if: vars.FIREBASE_PROJECT != ''
+        run: |
+          mkdir -p build/redirect
+          echo '<!doctype html><title>Moved to lllm.one</title>' > build/redirect/index.html
+          npx --yes firebase-tools@15 deploy --only hosting --project "${{ vars.FIREBASE_PROJECT }}" --non-interactive
+      - if: vars.FIREBASE_PROJECT == ''
+        run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mkdocs gh-deploy --force --clean --remote-branch gh-pages --message "Deploy docs from ${GITHUB_SHA}"

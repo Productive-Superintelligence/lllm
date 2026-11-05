@@ -1,0 +1,8 @@
+{
+  "projects": { "default": "prosi-501105" },
+  "targets": {
+    "prosi-501105": {
+      "hosting": { "docs": ["lllm-one"], "sssn": ["sssn-one"], "aaax": ["aaax-one"] }
+    }
+  }
+}
