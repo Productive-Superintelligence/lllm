@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import asyncio
+import concurrent.futures
 import contextvars
 import inspect
+import logging
+import queue
 import threading
 import time
 import traceback
 from collections.abc import AsyncIterator, Callable, Iterator, Mapping
+from contextlib import aclosing
 from enum import Enum
 from typing import Any, ClassVar, Generic, TypeVar
 
@@ -29,6 +33,8 @@ from .errors import TacticUnsupportedError
 from .events import TacticEvent
 from .refs import optional_service_ref_value, optional_tactic_ref_value
 from .schema import SchemaRef, export_json_schema, type_name, validate_with_schema
+
+logger = logging.getLogger(__name__)
 
 InputT = TypeVar("InputT")
 OutputT = TypeVar("OutputT")
@@ -309,10 +315,11 @@ class Tactic(Generic[InputT, OutputT]):
         context = _call_context(context)
         # Validate like run() does, so stream() receives the typed input.
         validated = self.validate_input(input_value)
-        async for item in iterate_in_thread(
-            lambda: self.stream(validated, context=context, **kwargs)
-        ):
-            yield item
+        async with aclosing(
+            iterate_in_thread(lambda: self.stream(validated, context=context, **kwargs))
+        ) as items:
+            async for item in items:
+                yield item
 
     async def aevents(
         self,
@@ -322,11 +329,12 @@ class Tactic(Generic[InputT, OutputT]):
         **kwargs: Any,
     ) -> AsyncIterator[TacticEvent]:
         context = _call_context(context)
-        async for item in self.astream(input_value, context=context, **kwargs):
-            if isinstance(item, TacticEvent):
-                yield item
-            else:
-                yield TacticEvent(data=item)
+        async with aclosing(self.astream(input_value, context=context, **kwargs)) as items:
+            async for item in items:
+                if isinstance(item, TacticEvent):
+                    yield item
+                else:
+                    yield TacticEvent(data=item)
 
     def supports(self, capability: str) -> bool:
         return capability in self.capabilities()
@@ -351,57 +359,84 @@ class Tactic(Generic[InputT, OutputT]):
 _DONE = object()
 
 
+class _StreamWorker:
+    """One daemon thread that runs submitted calls in order, in one context."""
+
+    def __init__(self, context: contextvars.Context) -> None:
+        self._context = context
+        self._calls: queue.SimpleQueue[Any] = queue.SimpleQueue()
+        threading.Thread(target=self._serve, name="lllm-stream", daemon=True).start()
+
+    def _serve(self) -> None:
+        while True:
+            entry = self._calls.get()
+            if entry is None:
+                return
+            future, fn, args = entry
+            if not future.set_running_or_notify_cancel():
+                continue
+            try:
+                future.set_result(self._context.run(fn, *args))
+            except BaseException as exc:  # handed to whoever awaits the future
+                future.set_exception(exc)
+
+    def submit(self, fn: Callable[..., Any], *args: Any) -> concurrent.futures.Future:
+        future: concurrent.futures.Future = concurrent.futures.Future()
+        self._calls.put((future, fn, args))
+        return future
+
+    def stop(self) -> None:
+        self._calls.put(None)
+
+
+def _log_close_error(future: concurrent.futures.Future) -> None:
+    if not future.cancelled() and future.exception() is not None:
+        logger.warning("Closing a stream failed: %r", future.exception())
+
+
 async def iterate_in_thread(make_iterator: Callable[[], Iterator[Any]]) -> AsyncIterator[Any]:
     """Yield the items of a blocking iterator without blocking the event loop.
 
-    The iterator is created and advanced in one worker thread that carries the
-    caller's context variables, so a sync ``stream()`` that waits on a model
-    or an API between items never stalls other requests. Errors are raised to
-    the consumer; closing the async iterator stops the producer before its
-    next item.
+    The iterator is created and advanced on one worker thread that carries
+    the caller's context variables, one item per request: a slow consumer
+    slows the producer down, and nothing runs ahead. Errors reach the
+    consumer. Closing the async iterator closes the iterator on the same
+    thread; when it is waiting at a ``yield``, its cleanup has run by the
+    time ``aclose()`` returns, otherwise it runs once the current item is
+    done.
     """
 
-    loop = asyncio.get_running_loop()
-    queue: asyncio.Queue[tuple[bool, Any]] = asyncio.Queue()
-    stop = threading.Event()
-
-    def post(entry: tuple[bool, Any]) -> None:
-        try:
-            loop.call_soon_threadsafe(queue.put_nowait, entry)
-        except RuntimeError:  # the loop is gone; nobody is listening
-            stop.set()
-
-    def produce() -> None:
-        try:
-            iterator = iter(make_iterator())
-            try:
-                for item in iterator:
-                    if stop.is_set():
-                        break
-                    post((True, item))
-            finally:
-                close = getattr(iterator, "close", None)
-                if close is not None:
-                    close()
-        except BaseException as exc:  # forwarded to the consumer
-            post((False, exc))
-        else:
-            post((True, _DONE))
-
-    worker = threading.Thread(
-        target=contextvars.copy_context().run, args=(produce,), daemon=True
-    )
-    worker.start()
+    worker = _StreamWorker(contextvars.copy_context())
+    iterator: Iterator[Any] | None = None
+    in_flight = False
     try:
+        in_flight = True
+        iterator = await asyncio.wrap_future(worker.submit(_make_iterator, make_iterator))
         while True:
-            ok, item = await queue.get()
-            if not ok:
-                raise item
+            in_flight = True
+            try:
+                item = await asyncio.wrap_future(worker.submit(next, iterator, _DONE))
+            except asyncio.CancelledError:
+                raise  # next() is still running on the worker
+            except BaseException:
+                in_flight = False  # the iterator raised and is finished
+                raise
+            in_flight = False
             if item is _DONE:
                 return
             yield item
     finally:
-        stop.set()
+        close = getattr(iterator, "close", None)
+        if close is not None:
+            closing = worker.submit(close)  # runs after any item in progress
+            closing.add_done_callback(_log_close_error)
+            if not in_flight:
+                await asyncio.wait([asyncio.wrap_future(closing)])
+        worker.stop()
+
+
+def _make_iterator(make_iterator: Callable[[], Iterator[Any]]) -> Iterator[Any]:
+    return iter(make_iterator())
 
 
 def _call_context(value: Any) -> CallContext:

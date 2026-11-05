@@ -2,6 +2,7 @@
 
 import copy
 import inspect
+from contextlib import aclosing
 import json
 import logging
 import re
@@ -772,8 +773,11 @@ async def _event_chunks(
     context: CallContext | None = None,
 ):
     try:
-        async for item in _aiter_custom_result(result):
-            yield _sse_chunk(item)
+        # Close the tactic's stream as soon as the response ends (a client
+        # that disconnects included), not whenever it is garbage collected.
+        async with aclosing(_aiter_custom_result(result)) as items:
+            async for item in items:
+                yield _sse_chunk(item)
     except Exception as exc:
         yield _sse_chunk(
             TacticEvent.error(
@@ -830,8 +834,13 @@ async def _aiter_custom_result(result: Any) -> AsyncIterator[Any]:
                 yield item
         return
     if hasattr(result, "__aiter__"):
-        async for item in result:
-            yield item
+        if hasattr(result, "aclose"):
+            async with aclosing(result) as stream:
+                async for item in stream:
+                    yield item
+        else:
+            async for item in result:
+                yield item
         return
     if _is_iterable(result):
         for item in result:

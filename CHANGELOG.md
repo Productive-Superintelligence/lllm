@@ -22,11 +22,18 @@ modules, with a single `lllm` command.
   and `/stream`. A hook that hands its call back (`super()._run()`,
   `self.call()`) raises `TacticUnsupportedError` at once instead of
   recursing.
-- `call()` and every stream run on a per-call copy with fresh agents and
-  their own session, so repeated `/stream` requests start with clean
-  dialogs; protocol hooks run on the instance, like any protocol tactic
-  (declaring `agent_group` on a hook-only class warns). Sync streams run in
-  a worker thread, so a slow `stream()` never blocks the event loop.
+- `call()` and every stream from an overridden sync `events()`/`stream()`
+  run on a per-call copy with fresh agents and their own observed session,
+  so repeated `/stream` requests start with clean dialogs; protocol hooks
+  and async stream overrides run on the instance, like any protocol tactic
+  (with `agent_group` they warn). Sync streams are pulled one item at a
+  time on a worker thread: they never block the event loop or run ahead of
+  the reader, and closing a stream (or a client disconnecting) closes the
+  generator. A stream closed early leaves its session `"cancelled"`.
+- Async `call()` programs are awaited on the caller's loop by `acall`,
+  `arun`, `ccall` and a service's `/run`, and run on one long-lived
+  background loop from `tactic(x)`, `run()` and `bcall`, so clients they
+  keep between calls (an `httpx.AsyncClient`) stay usable.
 - Sub-tactic calls roll up into the caller's session and cost. Sessions and
   sub-tactic records use the instance name, so `Tactic(name=...)` wins over
   the class `name`.
@@ -153,6 +160,10 @@ modules, with a single `lllm` command.
   reference such as `api_key_ref`.
 - A hook-only tactic (`_run()`/`_arun()`) runs on the instance under
   `tactic(x)`, `acall`, `bcall` and `ccall` too, not on a per-call copy.
+- `tactic(x)` on an `async def call()` returns the result instead of a
+  coroutine: in async code, `await tactic.acall(x)`. Calling `tactic(x)` on
+  an async program from inside another async program raises
+  `TacticUnsupportedError`.
 - Static hub catalogs write zips to `packages/<org>/<name>/<version>.zip`
   (was `packages/<org>-<name>-<version>.zip`), with the package files at
   the archive root instead of under a folder; `install_package()` reads

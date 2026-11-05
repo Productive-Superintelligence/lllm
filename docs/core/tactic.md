@@ -105,7 +105,12 @@ upper.run("hi")   # 'HI'
   raises the same error at once instead of recursing.
 - An `_arun()`-only tactic also gets `run()` and `tactic(task)`, which run the
   hook to completion.
-- `call()` may be `async def`; every entry point awaits it.
+- `call()` may be `async def`. The async entry points (`acall`, `arun`,
+  `ccall`, and a service's `/run`) await it on the caller's event loop; the
+  sync ones (`tactic(task)`, `run()`, `bcall`) run it on one long-lived
+  background loop, so clients it keeps between calls stay usable. From async
+  code, use the async entry points: calling `tactic(task)` on an async
+  program from inside another async program raises `TacticUnsupportedError`.
 - A tactic that writes neither raises `TacticUnsupportedError` when called.
 
 `NativeTactic` is a thin subclass that only insists on `agent_group` (raising
@@ -224,8 +229,8 @@ The constructor also builds the invoker (LiteLLM unless the config sets
 
 ## Stateless execution and per-call isolation
 
-A tactic holds no per-call state. Each `tactic(task)` runs on a shallow copy
-with fresh agents:
+A tactic holds no per-call state. Each call of a `call()` program, whatever the
+entry point, runs on a shallow copy with fresh agents:
 
 ```python
 result_a = tactic("Analyze this paper")        # call 1
@@ -238,13 +243,17 @@ For each call, `__call__`:
    agent specs;
 2. builds fresh `Agent`s from the specs, each with no dialogs, and wraps them in
    `_TrackedAgent` proxies that record every `respond()`;
-3. validates the task against the input type, runs `call()` (or the hook,
-   awaiting it if it is async), validates the result against the output type;
+3. validates the task against the input type, runs `call()` (awaiting it if it
+   is async), validates the result against the output type;
 4. marks the `TacticCallSession` as `"success"` or `"failure"` (re-raising the
    exception).
 
 Concurrent calls (`bcall`, threads) never share mutable state: each gets its own
-agents, dialogs, and session.
+agents, dialogs, and session. Streams from an overridden sync `events()` or
+`stream()` get the same treatment, one copy per stream. Protocol hooks
+(`_run()`, `_arun()`) and async `astream()`/`aevents()` overrides run on the
+instance itself, like any protocol tactic: keep per-call state out of `self`
+there (an `agent_group` tactic that overrides them warns).
 
 ---
 
@@ -743,7 +752,7 @@ the one you serve:
 | `tactic.run(value, context=None, return_trace=False)` | Protocol call: validates input and output; `return_trace=True` returns a `CallResult` with a `CallTrace`. |
 | `await tactic.arun(value, context=None)` | Async protocol call. |
 | `tactic.info()` | `TacticInfo`: name, description (the class docstring unless overridden), input/output JSON schemas, capabilities, `runtime_kind`. |
-| `tactic.events(task)` | Override it to stream: `aevents()` and a service's `/stream` route serve what it yields, as `TacticEvent`s. Each stream runs like `call()`: on a per-call copy with fresh agents and its own session, in a worker thread so a slow stream never blocks the event loop. Overriding the protocol's `stream()` works the same way. |
+| `tactic.events(task)` | Override it to stream: `aevents()` and a service's `/stream` route serve what it yields, as `TacticEvent`s. Each stream runs like `call()`: on a per-call copy with fresh agents and its own observed session. It is pulled one item at a time on a worker thread, so a slow stream never blocks the event loop and nothing runs ahead of the reader; closing the stream (or a client disconnecting) closes the generator. Overriding the protocol's sync `stream()` works the same way. |
 
 `runtime_kind` is `"native"` for tactics that write `call()` (or declare
 `agent_group`) and `"python"` for ones that only implement `_run()` or

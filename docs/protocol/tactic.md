@@ -99,7 +99,8 @@ return value is checked against `Answer` before the caller sees it.
 | --- | --- | --- |
 | `run()`, `arun()`, `info()`, serving, packaging, use as a tool | yes | yes |
 | `tactic(task)`, `acall`, `bcall`, `ccall` | yes | yes |
-| Runs on a fresh copy of the tactic, with fresh `agent_group` agents, inside a `TacticCallSession` | every call | calls through `tactic(task)`, `acall`, `bcall`, `ccall` |
+| Runs inside a `TacticCallSession` | every call | calls through `tactic(task)`, `acall`, `bcall`, `ccall` |
+| Runs on a per-call copy with fresh `agent_group` agents | every call | never: hooks run on the instance |
 | `info().runtime_kind` | `"native"` | `"python"` (`"native"` with an `agent_group`) |
 | Receives | the validated task, and `context=` when `call` accepts it | the validated input and a `CallContext` |
 
@@ -266,9 +267,11 @@ print(list(countdown.stream(3))[:3])
 ```
 
 `astream()` validates the input the same way `run()` does and then iterates
-`stream()` in a worker thread, so `stream()` receives the typed value and a
-slow stream never blocks the event loop (closing the async iterator stops
-`stream()` before its next item). `aevents()` wraps every
+`stream()` on a worker thread, one item per request, so `stream()` receives
+the typed value, a slow stream never blocks the event loop, and nothing runs
+ahead of the reader. Closing the async iterator closes the generator on that
+thread: when it is waiting at a `yield`, its cleanup has run by the time
+`aclose()` returns; otherwise it runs once the item in progress is done. `aevents()` wraps every
 chunk from `astream()` that is not already an event as
 `TacticEvent(kind="message", data=chunk)`. `aevents()` is what the service's
 `/stream` route sends:

@@ -21,11 +21,12 @@ import hashlib
 import inspect
 import logging
 import sys
+import threading
 import traceback as tb
 import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
-from contextlib import contextmanager
+from contextlib import aclosing, contextmanager
 from dataclasses import dataclass
 from typing import (
     Any,
@@ -382,6 +383,24 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                 "agents built at construction. Write call() instead.",
                 stacklevel=2,
             )
+        if cls.__dict__.get("agent_group") or (cls.agent_group and (
+            "astream" in cls.__dict__ or "aevents" in cls.__dict__
+        )):
+            async_streams = [
+                name
+                for name in ("astream", "aevents")
+                if name in cls.__dict__
+                and inspect.isasyncgenfunction(inspect.unwrap(cls.__dict__[name]))
+            ]
+            if async_streams:
+                warnings.warn(
+                    f"{cls.__name__} declares agent_group and overrides "
+                    f"{' and '.join(f'{name}()' for name in async_streams)}: async "
+                    "streams run on the instance, so they would share the agents "
+                    "built at construction. Override the sync events() or stream() "
+                    "instead, which get fresh agents per stream.",
+                    stacklevel=2,
+                )
         if "runtime_kind" in cls.__dict__:
             cls._runtime_kind_declared = True
         elif not cls._runtime_kind_declared:
@@ -552,18 +571,24 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         """Yield the events of an overridden :meth:`events`, else of ``astream()``."""
 
         if type(self).events is Tactic.events:
-            async for event in super().aevents(input_value, context=context, **kwargs):
-                yield event
+            async with aclosing(
+                super().aevents(input_value, context=context, **kwargs)
+            ) as events:
+                async for event in events:
+                    yield event
             return
         context = _call_context(context)
         # Validate like run() does, so events() receives the typed input.
         validated = self.validate_input(input_value)
         if _accepts_context(type(self).events):
             kwargs.setdefault("context", context)
-        async for item in iterate_in_thread(
-            lambda: self._scoped_stream("events", validated, context, kwargs)
-        ):
-            yield item if isinstance(item, TacticEvent) else TacticEvent(data=item)
+        async with aclosing(
+            iterate_in_thread(
+                lambda: self._scoped_stream("events", validated, context, kwargs)
+            )
+        ) as items:
+            async for item in items:
+                yield item if isinstance(item, TacticEvent) else TacticEvent(data=item)
 
     async def astream(
         self, input_value: Any, *, context: Any = None, **kwargs: Any
@@ -571,16 +596,22 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         """Yield the items of an overridden ``stream()``, run like :meth:`call`."""
 
         if type(self).stream is _ProtocolTactic.stream:
-            async for item in super().astream(input_value, context=context, **kwargs):
-                yield item
+            async with aclosing(
+                super().astream(input_value, context=context, **kwargs)
+            ) as items:
+                async for item in items:
+                    yield item
             return
         context = _call_context(context)
         validated = self.validate_input(input_value)
         kwargs["context"] = context
-        async for item in iterate_in_thread(
-            lambda: self._scoped_stream("stream", validated, context, kwargs)
-        ):
-            yield item
+        async with aclosing(
+            iterate_in_thread(
+                lambda: self._scoped_stream("stream", validated, context, kwargs)
+            )
+        ) as items:
+            async for item in items:
+                yield item
 
     def _scoped_stream(
         self, method: str, task: Any, context: Any, kwargs: Dict[str, Any]
@@ -591,13 +622,27 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         every ``/stream`` request) starts with clean dialogs.
         """
 
-        with self._call_scope(task, context) as (ctx, session, _session_name):
-            try:
-                yield from getattr(ctx, method)(task, **kwargs)
-            except Exception as exc:
-                session.failure(exc)
-                raise
-            session.success(None)
+        with self._call_scope(task, context) as (ctx, session, session_name):
+            observer = ctx.context.observer
+            with _observe_tactic_call(
+                observer,
+                tactic=ctx,
+                session=session,
+                task=task,
+                session_name=session_name,
+                tags=None,
+                metadata=None,
+            ) as span:
+                try:
+                    yield from getattr(ctx, method)(task, **kwargs)
+                except GeneratorExit:
+                    # Closed before the end (a consumer stopped, a client left).
+                    session.state = "cancelled"
+                    raise
+                except Exception as exc:
+                    ctx._record_failure(session, observer, span, task, exc, None, None)
+                    raise
+                ctx._record_success(session, observer, span, task, None, None, None)
 
     def run(
         self,
@@ -633,21 +678,34 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
 
         kwargs.pop("return_session", None)
         return self._execute(
-            input_value, context=context, validate=False, program="call", **kwargs
+            input_value, context=context, validate=False, _program="call", **kwargs
         )
 
     async def _arun(
         self, input_value: Any, *, context: Any = None, **kwargs: Any
     ) -> Any:
-        """Protocol hook: run the sync program off the event loop."""
+        """Protocol hook: await an async ``call()`` here, run a sync one off the loop."""
 
-        if type(self)._native_program == "_arun":
+        program = type(self)._native_program
+        if program == "_arun":
             # Reached only through super()._arun() from an _arun() hook: there
             # is no sync program to fall back to.
             raise TacticUnsupportedError(
                 f"{type(self).__name__} must implement call() or _run()."
             )
+        kwargs.pop("return_session", None)
+        if program == "call" and type(self)._program_is_async("call"):
+            return await self._aexecute(
+                input_value, context=context, validate=False, _program="call", **kwargs
+            )
         return await asyncio.to_thread(self._run, input_value, context=context, **kwargs)
+
+    @classmethod
+    def _program_is_async(cls, program: str) -> bool:
+        if program == "_arun":
+            return True
+        method = cls.call if program == "call" else cls._run
+        return inspect.iscoroutinefunction(inspect.unwrap(method))
 
     def _copy_for_call(self) -> "Tactic":
         ctx = copy.copy(self)
@@ -726,10 +784,11 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         return_session: bool = False,
         context: Any = None,
         validate: bool = True,
-        program: Optional[str] = None,
+        *,
+        _program: Optional[str] = None,
         **kwargs,
     ) -> Any:
-        program = program or type(self)._native_program
+        program = _program or type(self)._native_program
         # call() programs run on a per-call copy with fresh agents; protocol
         # hooks run on the instance, as they do under run() and arun().
         with self._call_scope(
@@ -737,16 +796,46 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         ) as (ctx, session, session_name):
             result = ctx._run_observed(
                 task,
+                kwargs,
                 session=session,
                 session_name=session_name,
                 tags=tags,
                 metadata=metadata,
                 context=context,
                 validate=validate,
-                observer=ctx.context.observer,
-                tactic_name=session.tactic_name,
                 program=program,
-                **kwargs,
+            )
+        return session if return_session else result
+
+    async def _aexecute(
+        self,
+        task: Any,
+        session_name: Optional[str] = None,
+        tags: Optional[Dict[str, str]] = None,
+        metadata: Optional[Dict[str, Any]] = None,
+        return_session: bool = False,
+        context: Any = None,
+        validate: bool = True,
+        *,
+        _program: Optional[str] = None,
+        **kwargs,
+    ) -> Any:
+        """:meth:`_execute` for async programs, awaited on the caller's loop."""
+
+        program = _program or type(self)._native_program
+        with self._call_scope(
+            task, context, session_name=session_name, per_call_copy=program == "call"
+        ) as (ctx, session, session_name):
+            result = await ctx._arun_observed(
+                task,
+                kwargs,
+                session=session,
+                session_name=session_name,
+                tags=tags,
+                metadata=metadata,
+                context=context,
+                validate=validate,
+                program=program,
             )
         return session if return_session else result
 
@@ -795,6 +884,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
     def _run_observed(
         self,
         task: Any,
+        kwargs: Dict[str, Any],
         *,
         session: "TacticCallSession",
         session_name: str,
@@ -802,74 +892,124 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         metadata: Optional[Dict[str, Any]],
         context: Any,
         validate: bool,
-        observer: Any,
-        tactic_name: str,
-        program: str = "call",
-        **kwargs: Any,
+        program: str,
     ) -> Any:
-        ctx = self
+        observer = self.context.observer
         with _observe_tactic_call(
             observer,
-            tactic=ctx,
+            tactic=self,
             session=session,
             task=task,
             session_name=session_name,
             tags=tags,
             metadata=metadata,
-        ) as observer_span:
+        ) as span:
             try:
-                validated_task = ctx.validate_input(task) if validate else task
-                if program == "call":
-                    if context is not None and _accepts_context(type(ctx).call):
-                        kwargs.setdefault("context", context)
-                    result = ctx.call(validated_task, **kwargs)
-                else:
-                    hook = getattr(ctx, program)
-                    result = hook(validated_task, context=_call_context(context), **kwargs)
-                # An async call() (or an _arun() hook) returns an awaitable.
-                result = _resolve_awaitable(result)
-                result = ctx.validate_output(result) if validate else result
-                session.success(result)
-                _notify_tactic_observer(
-                    observer,
-                    "success",
-                    tactic=ctx,
-                    session=session,
-                    task=validated_task,
-                    result=result,
-                    span=observer_span,
-                    tags=tags,
-                    metadata=metadata,
+                validated = self.validate_input(task) if validate else task
+                # An async program called from a sync entry point runs on the
+                # shared background loop.
+                result = _resolve_awaitable(
+                    self._invoke_program(program, validated, context, kwargs)
                 )
-                logger.info(
-                    "Tactic '%s' completed — cost=%s agent_calls=%d",
-                    tactic_name,
-                    session.total_cost.cost,
-                    session.agent_call_count,
-                )
-            except Exception as e:
-                session.failure(e)
-                _notify_tactic_observer(
-                    observer,
-                    "failure",
-                    tactic=ctx,
-                    session=session,
-                    task=task,
-                    exception=e,
-                    span=observer_span,
-                    tags=tags,
-                    metadata=metadata,
-                )
-                # The exception reaches the caller and the session and observer
-                # record it, so keep the traceback out of the default logs.
-                logger.info(
-                    "Tactic '%s' failed: %s: %s", tactic_name, type(e).__name__, e
-                )
-                logger.debug(
-                    "Tactic '%s' failure traceback:", tactic_name, exc_info=True
-                )
+                result = self.validate_output(result) if validate else result
+            except Exception as exc:
+                self._record_failure(session, observer, span, task, exc, tags, metadata)
                 raise
+            self._record_success(session, observer, span, validated, result, tags, metadata)
         return result
+
+    async def _arun_observed(
+        self,
+        task: Any,
+        kwargs: Dict[str, Any],
+        *,
+        session: "TacticCallSession",
+        session_name: str,
+        tags: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, Any]],
+        context: Any,
+        validate: bool,
+        program: str,
+    ) -> Any:
+        observer = self.context.observer
+        with _observe_tactic_call(
+            observer,
+            tactic=self,
+            session=session,
+            task=task,
+            session_name=session_name,
+            tags=tags,
+            metadata=metadata,
+        ) as span:
+            try:
+                validated = self.validate_input(task) if validate else task
+                result = self._invoke_program(program, validated, context, kwargs)
+                if inspect.isawaitable(result):
+                    result = await result
+                result = self.validate_output(result) if validate else result
+            except Exception as exc:
+                self._record_failure(session, observer, span, task, exc, tags, metadata)
+                raise
+            self._record_success(session, observer, span, validated, result, tags, metadata)
+        return result
+
+    def _invoke_program(
+        self, program: str, task: Any, context: Any, kwargs: Dict[str, Any]
+    ) -> Any:
+        """Call the program; an async one returns an awaitable."""
+
+        kwargs = dict(kwargs)
+        if program == "call":
+            if context is not None and _accepts_context(type(self).call):
+                kwargs.setdefault("context", context)
+            return self.call(task, **kwargs)
+        if program == "_run":
+            return self._run(task, context=_call_context(context), **kwargs)
+        if program == "_arun":
+            return self._arun(task, context=_call_context(context), **kwargs)
+        raise ValueError(f"Unknown tactic program: {program!r}")
+
+    def _record_success(
+        self, session, observer, span, task, result, tags, metadata
+    ) -> None:
+        session.success(result)
+        _notify_tactic_observer(
+            observer,
+            "success",
+            tactic=self,
+            session=session,
+            task=task,
+            result=result,
+            span=span,
+            tags=tags,
+            metadata=metadata,
+        )
+        logger.info(
+            "Tactic '%s' completed — cost=%s agent_calls=%d",
+            session.tactic_name,
+            session.total_cost.cost,
+            session.agent_call_count,
+        )
+
+    def _record_failure(self, session, observer, span, task, exc, tags, metadata) -> None:
+        session.failure(exc)
+        _notify_tactic_observer(
+            observer,
+            "failure",
+            tactic=self,
+            session=session,
+            task=task,
+            exception=exc,
+            span=span,
+            tags=tags,
+            metadata=metadata,
+        )
+        # The exception reaches the caller and the session and observer record
+        # it, so keep the traceback out of the default logs.
+        logger.info(
+            "Tactic '%s' failed: %s: %s", session.tactic_name, type(exc).__name__, exc
+        )
+        logger.debug("Tactic '%s' failure traceback:", session.tactic_name, exc_info=True)
 
     def __call__(
         self,
@@ -892,6 +1032,14 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
     async def acall(
         self, task, tags=None, metadata=None, return_session=False, **kwargs
     ):
+        if type(self)._program_is_async(type(self)._native_program):
+            return await self._aexecute(
+                task,
+                tags=tags,
+                metadata=metadata,
+                return_session=return_session,
+                **kwargs,
+            )
         loop = asyncio.get_running_loop()
         run_in_context = contextvars.copy_context().run
         return await loop.run_in_executor(
@@ -951,6 +1099,27 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         **kwargs,
     ):
         workers = max_workers or self._max_workers
+        if type(self)._program_is_async(type(self)._native_program):
+            limit = asyncio.Semaphore(workers)
+
+            async def run_one(idx, t):
+                async with limit:
+                    return idx, await self._aexecute(
+                        t,
+                        tags=tags,
+                        metadata=metadata,
+                        return_session=return_sessions,
+                        **kwargs,
+                    )
+
+            pending = [asyncio.ensure_future(run_one(i, t)) for i, t in enumerate(tasks)]
+            try:
+                for next_done in asyncio.as_completed(pending):
+                    yield await next_done
+            finally:
+                for task_future in pending:
+                    task_future.cancel()
+            return
         loop = asyncio.get_running_loop()
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
 
@@ -1087,25 +1256,69 @@ def _accepts_context(fn: Any) -> bool:
     )
 
 
+_BACKGROUND_LOOP: Optional[asyncio.AbstractEventLoop] = None
+_BACKGROUND_THREAD: Optional[threading.Thread] = None
+_BACKGROUND_LOCK = threading.Lock()
+
+
+def _background_loop() -> Tuple[asyncio.AbstractEventLoop, threading.Thread]:
+    """The event loop that runs async programs for sync callers.
+
+    One loop for the process, so clients and pools an async program keeps
+    between calls (an ``httpx.AsyncClient``, say) stay bound to a live loop.
+    """
+
+    global _BACKGROUND_LOOP, _BACKGROUND_THREAD
+    with _BACKGROUND_LOCK:
+        if _BACKGROUND_LOOP is None or _BACKGROUND_LOOP.is_closed():
+            loop = asyncio.new_event_loop()
+            thread = threading.Thread(
+                target=loop.run_forever, name="lllm-async-programs", daemon=True
+            )
+            thread.start()
+            _BACKGROUND_LOOP, _BACKGROUND_THREAD = loop, thread
+        return _BACKGROUND_LOOP, _BACKGROUND_THREAD
+
+
 def _resolve_awaitable(value: Any) -> Any:
     """Return ``value``, first running it to completion if it is awaitable.
 
-    Uses ``asyncio.run`` when no event loop is running in this thread;
-    otherwise runs it on its own loop in a worker thread, so the running loop
-    is never re-entered. The worker carries the current context, so the
-    active session still records sub-tactic calls.
+    Awaitables run on the shared background loop (see :func:`_background_loop`)
+    with the caller's context variables, so sub-tactic calls still roll up
+    into the active session. Async code should await ``acall()``/``arun()``
+    instead, which run async programs on its own loop.
     """
 
     if not inspect.isawaitable(value):
         return value
+    loop, thread = _background_loop()
+    if threading.current_thread() is thread:
+        if inspect.iscoroutine(value):
+            value.close()
+        raise TacticUnsupportedError(
+            "An async tactic program called a sync entry point of another async "
+            "program; use `await tactic.acall(...)` (or `await tactic.arun(...)`) "
+            "from async code."
+        )
 
     async def wait() -> Any:
         return await value
 
-    try:
-        asyncio.get_running_loop()
-    except RuntimeError:
-        return asyncio.run(wait())
-    run_in_context = contextvars.copy_context().run
-    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
-        return pool.submit(run_in_context, asyncio.run, wait()).result()
+    result: concurrent.futures.Future = concurrent.futures.Future()
+
+    def start() -> None:
+        # Created inside the caller's context, so the task copies it.
+        task = loop.create_task(wait())
+
+        def done(finished: "asyncio.Task[Any]") -> None:
+            if finished.cancelled():
+                result.cancel()
+            elif finished.exception() is not None:
+                result.set_exception(finished.exception())
+            else:
+                result.set_result(finished.result())
+
+        task.add_done_callback(done)
+
+    loop.call_soon_threadsafe(start, context=contextvars.copy_context())
+    return result.result()

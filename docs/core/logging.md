@@ -104,13 +104,16 @@ optional and called with keyword arguments.
 | `on_tactic_success(...)` | After `call()` (or the hook) returns and the output validates. | `tactic`, `session`, `task`, `result`, `span`, `tags`, `metadata` |
 | `on_tactic_failure(...)` | When `call()`, the hook, or validation raises. | `tactic`, `session`, `task`, `exception`, `span`, `tags`, `metadata` |
 
-`tactic` is the per-call copy, so `tactic.agents` holds this call's agents and
-their dialogs. An exception inside an observer is logged as a warning and never
-breaks the tactic call. The observer sees every call that runs in a session:
-`tactic(task)`, `acall`, `bcall`, and `ccall` on any tactic, and `run()` /
-`arun()` on tactics that write `call()`. A tactic that only implements the
-`_run()` or `_arun()` hook runs it directly from `run()` / `arun()`, without a
-session.
+For a `call()` program, `tactic` is the per-call copy, so `tactic.agents` holds
+this call's agents and their dialogs; for a protocol hook it is the tactic
+itself. An exception inside an observer is logged as a warning and never breaks
+the tactic call. The observer sees every call that runs in a session:
+`tactic(task)`, `acall`, `bcall`, and `ccall` on any tactic, `run()` / `arun()`
+on tactics that write `call()`, and every stream from an overridden sync
+`events()` or `stream()` (`on_tactic_success` gets `result=None` when the stream
+ends; a stream closed early leaves its session `"cancelled"` with no callback).
+A tactic that only implements the `_run()` or `_arun()` hook runs it directly
+from `run()` / `arun()`, without a session.
 
 ### Example: a JSON Lines session log
 

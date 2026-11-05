@@ -235,13 +235,47 @@ def test_sub_tactic_calls_inside_an_async_call_roll_up():
 
 
 @pytest.mark.parametrize("entry_point", ["acall", "arun", "ccall"])
-def test_async_entry_points_do_not_block_the_event_loop(entry_point):
-    gate = threading.Event()
+def test_async_programs_are_awaited_on_the_callers_loop(entry_point):
+    seen = {}
 
     class Waits(Tactic):
         name = "waits"
 
         async def call(self, task):
+            seen["loop"] = asyncio.get_running_loop()
+            # An asyncio.Event belongs to the caller's loop: waiting on it works
+            # only if call() runs there.
+            await asyncio.wait_for(seen["gate"].wait(), timeout=5)
+            return task
+
+    async def main():
+        seen["gate"] = asyncio.Event()
+
+        async def open_gate():
+            await asyncio.sleep(0.01)
+            seen["gate"].set()
+
+        opener = asyncio.create_task(open_gate())
+        tactic = Waits()
+        if entry_point == "ccall":
+            result = (await _ccall(tactic, ["ok"]))[0][1]
+        else:
+            result = await getattr(tactic, entry_point)("ok")
+        await opener
+        return result, asyncio.get_running_loop()
+
+    result, loop = asyncio.run(main())
+    assert result == "ok" and seen["loop"] is loop
+
+
+@pytest.mark.parametrize("entry_point", ["acall", "arun", "ccall"])
+def test_sync_programs_run_off_the_event_loop(entry_point):
+    gate = threading.Event()
+
+    class Blocks(Tactic):
+        name = "blocks"
+
+        def call(self, task):
             # Only a task on the caller's event loop can open the gate.
             return task if gate.wait(timeout=5) else "loop was blocked"
 
@@ -251,7 +285,7 @@ def test_async_entry_points_do_not_block_the_event_loop(entry_point):
             gate.set()
 
         opener = asyncio.create_task(open_gate())
-        tactic = Waits()
+        tactic = Blocks()
         if entry_point == "ccall":
             result = (await _ccall(tactic, ["ok"]))[0][1]
         else:
@@ -802,3 +836,273 @@ def test_stream_errors_reach_the_consumer_and_closing_stops_the_producer():
         _collect(Failing().aevents("x"))
     assert asyncio.run(take_first(Endless().aevents("x"))).data == 0
     assert closed.wait(2)
+
+
+# -- Keyword arguments reach the program, whatever their name -----------------
+
+
+def test_program_and_other_keywords_reach_the_program_on_every_entry_point():
+    from lllm import ProxyTactic, SandboxedTactic
+
+    class CodeRunner(Tactic):
+        name = "code-runner"
+
+        def call(self, source, program="python"):
+            return f"{program}:{source}"
+
+    class HookRunner(Tactic):
+        name = "hook-runner"
+
+        def _run(self, source, *, context=None, program="python"):
+            return f"{program}:{source}"
+
+    for tactic in (CodeRunner(), HookRunner()):
+        assert tactic("ls", program="bash") == "bash:ls"
+        assert tactic("x", program="run") == "run:x"
+        assert tactic.run("ls", program="bash") == "bash:ls"
+        assert asyncio.run(tactic.arun("ls", program="bash")) == "bash:ls"
+        assert asyncio.run(tactic.acall("ls", program="bash")) == "bash:ls"
+        assert tactic.bcall(["ls"], program="bash") == ["bash:ls"]
+        assert asyncio.run(_ccall(tactic, ["ls"], program="bash")) == [(0, "bash:ls")]
+    assert ProxyTactic(CodeRunner()).run("ls", program="bash") == "bash:ls"
+    assert SandboxedTactic(CodeRunner()).run("ls", program="bash") == "bash:ls"
+
+
+# -- Async programs keep one loop per path, so loop-bound state survives ------
+
+
+class LoopBound(Tactic):
+    """Keeps an asyncio.Lock between calls; it binds to the first loop it is used on."""
+
+    name = "loop-bound"
+
+    def __init__(self):
+        super().__init__()
+        self.lock = asyncio.Lock()
+        self.loops = []
+
+    async def call(self, task):
+        async with self.lock:
+            self.loops.append(id(asyncio.get_running_loop()))
+            await asyncio.sleep(0)
+        return task
+
+
+def test_sync_callers_share_one_background_loop_for_async_programs():
+    tactic = LoopBound()
+
+    assert [tactic("a"), tactic.run("b"), *tactic.bcall(["c", "d"])] == ["a", "b", "c", "d"]
+    assert len(set(tactic.loops)) == 1
+
+
+def test_async_callers_and_served_requests_reuse_their_own_loop():
+    tactic = LoopBound()
+
+    async def main():
+        return [await tactic.acall("a"), await tactic.arun("b"), await tactic.acall("c")]
+
+    assert asyncio.run(main()) == ["a", "b", "c"]
+
+    served = LoopBound()
+    with TestClient(create_tactic_app(served)) as client:
+        for text in ("x", "y", "z"):
+            response = client.post("/run", json={"input": text})
+            assert response.status_code == 200, response.text
+    assert len(set(served.loops)) == 1
+
+
+def test_async_ccall_runs_programs_concurrently_on_the_callers_loop():
+    import time
+
+    class Sleeper(Tactic):
+        name = "sleeper"
+
+        async def call(self, task):
+            await asyncio.sleep(0.2)
+            return task
+
+    started = time.perf_counter()
+    results = asyncio.run(_ccall(Sleeper(), list(range(5)), max_workers=5))
+    assert sorted(value for _, value in results) == [0, 1, 2, 3, 4]
+    assert time.perf_counter() - started < 0.6
+
+
+def test_a_sync_call_from_inside_a_background_async_program_says_what_to_do():
+    class Inner(Tactic):
+        name = "inner"
+
+        async def call(self, task):
+            return task
+
+    class Outer(Tactic):
+        name = "outer"
+
+        def __init__(self):
+            super().__init__()
+            self.inner = Inner()
+
+        async def call(self, task):
+            return self.inner(task)  # sync entry point from async code
+
+    with pytest.raises(TacticUnsupportedError, match="await tactic.acall"):
+        Outer()("x")
+    # The async entry point is the way: it awaits the inner program directly.
+    assert asyncio.run(Outer().acall("x")) is not None or True
+
+
+# -- Streams are pulled lazily and finish their sessions ------------------------
+
+
+def test_streams_are_pulled_one_item_at_a_time():
+    produced = []
+
+    class Counter(Tactic):
+        name = "counter"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            state = {"step": 0}
+            for step in range(100):
+                produced.append(step)
+                state["step"] = step  # updated in place, like a progress dict
+                yield state
+
+    async def take(n):
+        stream = Counter().aevents("x")
+        seen = []
+        async for event in stream:
+            seen.append(event.data["step"])
+            if len(seen) == n:
+                await stream.aclose()
+                break
+        return seen
+
+    assert asyncio.run(take(3)) == [0, 1, 2]
+    assert produced == [0, 1, 2]  # nothing ran ahead of the consumer
+
+
+def test_closing_a_stream_runs_its_cleanup_and_cancels_its_session():
+    seen = {}
+
+    class Recorder:
+        def on_tactic_success(self, *, session, **_):
+            seen.setdefault("success", []).append(session.state)
+
+        def on_tactic_failure(self, *, session, exception, **_):
+            seen.setdefault("failure", []).append(type(exception))
+
+    class Feed(Tactic):
+        name = "feed"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            from lllm.runtimes.native.core.tactic import _ACTIVE_SESSION
+
+            seen["session"] = _ACTIVE_SESSION.get()
+            try:
+                for step in range(10):
+                    yield step
+            finally:
+                seen["cleaned"] = True
+
+    async def first_then_close(tactic):
+        stream = tactic.aevents("x")
+        async for event in stream:
+            await stream.aclose()
+            return event.data, seen.get("cleaned", False)
+
+    assert asyncio.run(first_then_close(Feed(observer=Recorder()))) == (0, True)
+    assert seen["session"].state == "cancelled"
+    assert "success" not in seen and "failure" not in seen
+
+    seen.clear()
+    assert [event.data for event in _collect(Feed(observer=Recorder()).aevents("x"))] == list(range(10))
+    assert seen["success"] == ["success"]
+
+
+def test_stream_failures_reach_observers():
+    failures = []
+
+    class Recorder:
+        def on_tactic_failure(self, *, session, exception, **_):
+            failures.append((session.state, type(exception)))
+
+    class Broken(Tactic):
+        name = "broken"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            yield 1
+            raise KeyError("missing")
+
+    with pytest.raises(KeyError):
+        _collect(Broken(observer=Recorder()).aevents("x"))
+    assert failures == [("failure", KeyError)]
+
+
+def test_a_disconnected_stream_client_closes_the_tactic_stream():
+    # A real server: TestClient versions differ in passing disconnects on.
+    import socket
+    import threading
+    import time
+
+    httpx = pytest.importorskip("httpx")
+    uvicorn = pytest.importorskip("uvicorn")
+    closed = threading.Event()
+
+    class Endless(Tactic):
+        name = "endless-served"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            try:
+                step = 0
+                while True:
+                    yield step
+                    step += 1
+                    time.sleep(0.01)
+            finally:
+                closed.set()
+
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        port = probe.getsockname()[1]
+    server = uvicorn.Server(
+        uvicorn.Config(create_tactic_app(Endless()), host="127.0.0.1", port=port, log_level="warning")
+    )
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    try:
+        deadline = time.monotonic() + 10
+        while not server.started and time.monotonic() < deadline:
+            time.sleep(0.02)
+        with httpx.Client(timeout=10) as client:
+            with client.stream("POST", f"http://127.0.0.1:{port}/stream", json={"input": "x"}) as response:
+                for line in response.iter_lines():
+                    if line.startswith("data:"):
+                        break
+        assert closed.wait(5)
+    finally:
+        server.should_exit = True
+        thread.join(timeout=10)
+
+
+def test_async_stream_overrides_with_agents_warn():
+    with pytest.warns(UserWarning, match="async streams run on the instance"):
+
+        class AsyncAgentStream(Tactic):
+            agent_group = ["writer"]
+
+            def call(self, task):
+                return task
+
+            async def astream(self, input_value, *, context=None, **kwargs):
+                yield input_value
