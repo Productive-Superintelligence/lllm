@@ -6,17 +6,20 @@ adapter only supplies the typed tactic boundary and service-friendly metadata.
 
 from __future__ import annotations
 
+import dataclasses
 import inspect
 from collections.abc import Callable, Mapping
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictStr, field_validator
+from pydantic_core import to_jsonable_python
 
-from ..protocol import CallContext, Tactic, TacticInfo
+from ..protocol import CallContext, Tactic, TacticEvent, TacticInfo
 from ..protocol._validation import (
     copy_boundary_value,
     mapping_sequence_field_value,
     metadata_field_value,
+    token_value,
 )
 from ..protocol.refs import optional_service_ref_value, optional_tactic_ref_value
 
@@ -166,10 +169,21 @@ class PydanticAITactic(Tactic[Any, Any]):
         self.input_mapper = input_mapper or cfg.input_mapper
         self.output_mapper = output_mapper or cfg.output_mapper
         self.input_type = input_type or cfg.input_type or self.input_type
-        self.output_type = output_type or cfg.output_type or getattr(agent, "output_type", None)
+        # Result mode returns the raw run result, so the agent's output type
+        # does not describe it; validate nothing unless the caller opts in.
+        self.output_type = (
+            output_type
+            or cfg.output_type
+            or (Any if self.result_mode == "result" else getattr(agent, "output_type", None))
+        )
         agent_description = description if description is not None else cfg.description
         if agent_description is None:
-            agent_description = getattr(agent, "description", None) or inspect.getdoc(agent) or ""
+            agent_description = (
+                getattr(agent, "description", None)
+                or _subclass_description(type(self))
+                or _user_agent_docstring(agent)
+                or ""
+            )
         tactic_name = name if name is not None else getattr(agent, "name", None)
         super().__init__(
             name=tactic_name,
@@ -218,7 +232,7 @@ class PydanticAITactic(Tactic[Any, Any]):
         method = getattr(self.agent, "run_stream_sync", None)
         if method is None:
             return super().stream(input_value, context=context, **kwargs)
-        task = self._map_input(input_value)
+        task = self._map_input(self.validate_input(input_value))
         result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
         return _iter_stream_result(result, mode=self.stream_mode)
 
@@ -231,7 +245,7 @@ class PydanticAITactic(Tactic[Any, Any]):
     ):
         method = getattr(self.agent, "run_stream", None)
         if method is not None:
-            task = self._map_input(input_value)
+            task = self._map_input(self.validate_input(input_value))
             result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
             if inspect.isawaitable(result):
                 result = await result
@@ -240,7 +254,7 @@ class PydanticAITactic(Tactic[Any, Any]):
             return
         sync_method = getattr(self.agent, "run_stream_sync", None)
         if sync_method is not None:
-            task = self._map_input(input_value)
+            task = self._map_input(self.validate_input(input_value))
             result = sync_method(
                 task,
                 **self._merged_kwargs(kwargs, context=context, method=sync_method),
@@ -257,12 +271,12 @@ class PydanticAITactic(Tactic[Any, Any]):
             async for event in super().aevents(input_value, context=context, **kwargs):
                 yield event
             return
-        task = self._map_input(input_value)
+        task = self._map_input(self.validate_input(input_value))
         result = method(task, **self._merged_kwargs(kwargs, context=context, method=method))
         if inspect.isawaitable(result):
             result = await result
         async for item in _aiter_any(result):
-            yield item
+            yield _tactic_event(item)
 
     def info(self) -> TacticInfo:
         info = super().info()
@@ -352,13 +366,20 @@ def tactic_as_tool(
             return tactic.run(_kwargs_to_task(input_schema, kwargs))
 
         if _is_basemodel_type(input_schema):
-            tool.__signature__ = _signature_from_model(input_schema, output_schema)  # type: ignore[attr-defined]
+            signature = _signature_from_model(input_schema, output_schema)
+        else:
+            signature = inspect.Signature(
+                parameters=[
+                    inspect.Parameter("kwargs", inspect.Parameter.VAR_KEYWORD, annotation=Any)
+                ],
+                return_annotation=output_schema or Any,
+            )
     else:
 
         def tool(task: Any) -> Any:
             return tactic.run(task)
 
-        tool.__signature__ = inspect.Signature(  # type: ignore[attr-defined]
+        signature = inspect.Signature(
             parameters=[
                 inspect.Parameter(
                     "task",
@@ -369,10 +390,48 @@ def tactic_as_tool(
             return_annotation=output_schema or Any,
         )
 
+    _set_signature(tool, signature)
     tool.__name__ = tool_name
     tool.__qualname__ = tool_name
     tool.__doc__ = description or tactic.info().description or f"Run {tactic.tactic_name}."
     return tool
+
+
+def _tactic_event(item: Any) -> TacticEvent:
+    """Wrap a runtime-native stream event in a JSON-safe ``TacticEvent``."""
+
+    if isinstance(item, TacticEvent):
+        return item
+    return TacticEvent(
+        kind=_event_kind(item),
+        data=_portable_value(item),
+        metadata={"event_type": type(item).__name__},
+    )
+
+
+def _event_kind(item: Any) -> str:
+    try:
+        return token_value(getattr(item, "event_kind", None), "event.kind")
+    except (TypeError, ValueError):
+        return "message"
+
+
+def _portable_value(value: Any) -> Any:
+    if isinstance(value, BaseModel):
+        return value.model_dump(mode="json")
+    if dataclasses.is_dataclass(value) and not isinstance(value, type):
+        # Like ``dataclasses.asdict()``, but JSON-safe and without private
+        # fields (Pydantic AI keeps whole run state in underscored fields).
+        return {
+            field.name: _portable_value(getattr(value, field.name))
+            for field in dataclasses.fields(value)
+            if not field.name.startswith("_")
+        }
+    if isinstance(value, Mapping):
+        return {str(key): _portable_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return [_portable_value(item) for item in value]
+    return to_jsonable_python(value, bytes_mode="base64", serialize_unknown=True)
 
 
 async def _aiter_any(value: Any):
@@ -438,6 +497,31 @@ def _select_stream(value: Any, mode: StreamMode):
     return None
 
 
+def _subclass_description(cls: type) -> str | None:
+    """Return a description declared by a user subclass of ``PydanticAITactic``."""
+
+    for klass in cls.__mro__:
+        if klass is PydanticAITactic:
+            return None
+        declared = klass.__dict__.get("description")
+        if isinstance(declared, str) and declared:
+            return declared
+        doc = klass.__dict__.get("__doc__")
+        if isinstance(doc, str) and doc.strip():
+            return inspect.cleandoc(doc)
+    return None
+
+
+def _user_agent_docstring(agent: Any) -> str | None:
+    """Return the agent's own class docstring unless Pydantic AI defines it."""
+
+    if type(agent).__module__.partition(".")[0] == "pydantic_ai":
+        return None
+    # For instances, ``getdoc`` only reads the docstring declared on the
+    # agent's own class, never one inherited from a runtime base class.
+    return inspect.getdoc(agent)
+
+
 def _agent_output_json_schema(agent: Any) -> dict[str, Any] | None:
     if not _has_static_callable(agent, "output_json_schema"):
         return None
@@ -482,6 +566,17 @@ def _signature_from_model(model: type[BaseModel], output_schema: Any) -> inspect
         parameters=parameters,
         return_annotation=output_schema or Any,
     )
+
+
+def _set_signature(function: Callable[..., Any], signature: inspect.Signature) -> None:
+    # Tool runtimes such as Pydantic AI read parameter types through
+    # ``get_type_hints()``, which only sees ``__annotations__``.
+    function.__signature__ = signature  # type: ignore[attr-defined]
+    annotations = {
+        name: parameter.annotation for name, parameter in signature.parameters.items()
+    }
+    annotations["return"] = signature.return_annotation
+    function.__annotations__ = annotations
 
 
 def _is_basemodel_type(value: Any) -> bool:
