@@ -8,7 +8,15 @@ from pydantic_core import PydanticSerializationError
 from lllm import Resolver, Tactic, as_tactic
 from fastapi.testclient import TestClient
 
-from lllm.network import AsyncRemoteStore, Event, LocalStore, RemoteStore, TacticProcessor
+from lllm.network import (
+    AsyncRemoteStore,
+    ChannelNotFoundError,
+    Event,
+    InvalidPayloadError,
+    LocalStore,
+    RemoteStore,
+    TacticProcessor,
+)
 from lllm.network.server import create_app
 
 
@@ -60,7 +68,7 @@ def test_processor_writes_traceable_outputs_and_resumes(tmp_path):
     assert output.payload == {"summary": "HELLO", "length": 5}
     assert output.parent_ids == (first.id,)
     assert output.correlation_id == "episode-1"
-    assert output.source == "summarize-processor"
+    assert output.source == "summarize-raw-processor"
     context = SEEN_CONTEXTS[-1]
     assert context.metadata["event_id"] == first.id
     assert context.metadata["correlation_id"] == "episode-1"
@@ -106,7 +114,7 @@ def test_processor_errors_raise_without_skipping_later_events(tmp_path):
     with pytest.raises(RuntimeError, match="boom"):
         processor.process()
     assert store.query_events("summaries") == ()
-    assert store.get_subscription("summarize-processor").cursor == 0
+    assert store.get_subscription("summarize-raw-processor").cursor == 0
 
 
 def test_processor_can_record_errors_as_events(tmp_path):
@@ -260,9 +268,9 @@ def test_processor_default_consumer_uses_the_tactic_instance_name(tmp_path):
     quiet = TacticProcessor(as_tactic(whisper), store, source="raw")
     renamed = TacticProcessor(Summarize(name="digest"), store, source="raw")
 
-    assert loud.consumer == "shout-processor"
-    assert quiet.consumer == "whisper-processor"
-    assert renamed.consumer == "digest-processor"
+    assert loud.consumer == "shout-raw-processor"
+    assert quiet.consumer == "whisper-raw-processor"
+    assert renamed.consumer == "digest-raw-processor"
     # Distinct subscriptions, so every processor sees the event.
     assert loud.process() == [{"text": "HI"}]
     assert quiet.process() == [{"text": "hi"}]
@@ -272,25 +280,31 @@ def test_processor_default_consumer_uses_the_tactic_instance_name(tmp_path):
 def test_processor_rejects_a_consumer_subscribed_to_another_channel(tmp_path):
     store = make_store(tmp_path)
     store.create_channel({"name": "other", "form": "log"})
-    TacticProcessor(Summarize(), store, source="raw").process()
+    TacticProcessor(Summarize(), store, source="raw", consumer="shared").process()
+    other = TacticProcessor(Summarize(), store, source="other", consumer="shared")
 
     with pytest.raises(ValueError, match="'raw'.*'other'.*consumer="):
-        TacticProcessor(Summarize(), store, source="other").process()
+        other.process()
     with pytest.raises(ValueError, match="consumer="):
-        asyncio.run(TacticProcessor(Summarize(), store, source="other").aprocess())
+        asyncio.run(other.aprocess())
 
 
 def test_processor_rejects_a_consumer_with_another_kind_filter(tmp_path):
     store = make_store(tmp_path)
-    TacticProcessor(Summarize(), store, source="raw", kind="message").process()
+
+    def processor(kind):
+        return TacticProcessor(
+            Summarize(), store, source="raw", consumer="shared", kind=kind
+        )
+
+    processor("message").process()
 
     for kind in ("note", None):
         with pytest.raises(ValueError, match="kind filter 'message'.*consumer="):
-            TacticProcessor(Summarize(), store, source="raw", kind=kind).process()
+            processor(kind).process()
 
     append(store, "again")
-    resumed = TacticProcessor(Summarize(), store, source="raw", kind="message")
-    assert resumed.process() == [Summary(summary="AGAIN", length=5)]
+    assert processor("message").process() == [Summary(summary="AGAIN", length=5)]
 
 
 def test_processor_retries_a_failed_event_on_the_next_call(tmp_path):
@@ -305,7 +319,7 @@ def test_processor_retries_a_failed_event_on_the_next_call(tmp_path):
     for _ in range(2):
         with pytest.raises(RuntimeError, match="transient failure on boom"):
             processor.process()
-    assert store.get_subscription("flaky-processor").cursor == 0
+    assert store.get_subscription("flaky-raw-message-processor").cursor == 0
     assert store.query_events("summaries") == ()
 
     outputs = processor.process()
@@ -363,7 +377,9 @@ def test_processor_record_mode_acknowledges_the_failed_event(tmp_path):
 
 
 @pytest.mark.parametrize("mode", ["sync", "async"])
-def test_processor_does_not_emit_events_another_worker_acknowledged(tmp_path, mode):
+def test_processor_runs_the_event_its_acknowledgment_took_from_another_worker(
+    tmp_path, mode
+):
     store = make_store(tmp_path)
     append(store, "first")
     append(store, "second")
@@ -372,16 +388,18 @@ def test_processor_does_not_emit_events_another_worker_acknowledged(tmp_path, mo
         def _run(self, input_value, *, context=None):
             if input_value.text == "first":
                 # Another worker on this subscription acknowledges "first" meanwhile.
-                store.pull_subscription("summarize-processor", limit=1)
+                store.pull_subscription("summarize-raw-processor", limit=1)
             return super()._run(input_value, context=context)
 
     processor = TacticProcessor(Raced(), store, source="raw", sink="summaries")
     outputs = processor.process() if mode == "sync" else asyncio.run(processor.aprocess())
 
-    # "first" belongs to the other worker; "second", which this processor's
-    # acknowledgment pulled, is still processed exactly once.
-    assert summaries(outputs) == ["SECOND"]
-    assert summaries(store.query_events("summaries")) == ["SECOND"]
+    # The output for "first" is written before acknowledging it shows the other
+    # worker had it. That acknowledgment took "second", which is still
+    # processed, exactly once.
+    assert summaries(outputs) == ["FIRST", "SECOND"]
+    assert summaries(store.query_events("summaries")) == ["FIRST", "SECOND"]
+    assert processor.process() == []
 
 
 def test_processor_process_rejects_async_stores_with_a_clear_error(tmp_path):
@@ -445,7 +463,7 @@ def test_processor_records_outputs_that_cannot_become_sink_events(tmp_path, mode
     assert events[0].parent_ids == (failing.id,)
     assert "cannot serialize binary" in events[0].payload["error"]
     assert [event.payload for event in events[1:]] == [{"text": "hello"}, {"text": "world"}]
-    assert store.get_subscription("echo-processor").cursor == 3
+    assert store.get_subscription("echo-raw-processor").cursor == 3
     assert run() == []
 
 
@@ -459,7 +477,7 @@ def test_processor_retries_outputs_that_cannot_become_sink_events(tmp_path, mode
     for _ in range(2):
         with pytest.raises(PydanticSerializationError, match="cannot serialize binary"):
             run()
-    assert store.get_subscription("echo-processor").cursor == 0
+    assert store.get_subscription("echo-raw-processor").cursor == 0
     assert store.query_events("summaries") == ()
 
     # The same subscription picks up at the failed event, not after it.
@@ -482,10 +500,119 @@ def test_processor_needs_a_consumer_for_tactic_names_that_cannot_name_one(
     # Valid tactic names, but whitespace is not valid in a subscription id and
     # "?" or "#" would cut a RemoteStore URL short.
     for tactic in (as_tactic(shout, name=name), Summarize(name=name)):
-        with pytest.raises(ValueError, match=r"tactic name .*Pass consumer="):
+        with pytest.raises(ValueError, match=r"default consumer .*Pass consumer="):
             TacticProcessor(tactic, store, source="raw")
 
     named = TacticProcessor(
         as_tactic(shout, name=name), store, source="raw", consumer="shout"
     )
     assert named.process() == [{"text": "HI"}]
+
+
+class Opaque:
+    """An output no store can serialize."""
+
+
+class Unstorable(Tactic):
+    name = "unstorable"
+
+    def _run(self, input_value, *, context=None):
+        if input_value["text"] == "bad":
+            return Opaque()
+        return {"text": input_value["text"]}
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+def test_processor_records_outputs_the_store_rejects(tmp_path, mode):
+    store = make_store(tmp_path)
+    failing = append(store, "bad")
+    append(store, "good")
+    processor = TacticProcessor(
+        Unstorable(), store, source="raw", sink="summaries", errors="record"
+    )
+    run = runner(processor, mode)
+
+    events = run()
+
+    # The rejected append is recorded like a tactic failure, before the event
+    # is acknowledged, so it neither raises nor blocks the event behind it.
+    assert [event.kind for event in events] == ["error", "result"]
+    assert events[0].parent_ids == (failing.id,)
+    assert events[0].payload["type"] == "InvalidPayloadError"
+    assert events[1].payload == {"text": "good"}
+    assert [event.id for event in store.query_events("summaries")] == [
+        event.id for event in events
+    ]
+    assert run() == []
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+def test_processor_retries_outputs_the_store_rejects(tmp_path, mode):
+    store = make_store(tmp_path)
+    append(store, "bad")
+    append(store, "good")
+    processor = TacticProcessor(Unstorable(), store, source="raw", sink="summaries")
+    run = runner(processor, mode)
+
+    # Not acknowledged, so the next call runs the same event again rather than
+    # skipping ahead to "good".
+    for _ in range(2):
+        with pytest.raises(InvalidPayloadError, match="not JSON serializable"):
+            run()
+    assert store.get_subscription("unstorable-raw-processor").cursor == 0
+    assert store.query_events("summaries") == ()
+
+
+@pytest.mark.parametrize("errors", ["raise", "record"])
+@pytest.mark.parametrize("mode", ["sync", "async"])
+def test_processor_keeps_events_whose_sink_write_failed(tmp_path, errors, mode):
+    store = LocalStore(tmp_path / "store")
+    store.create_channel({"name": "raw", "form": "log"})
+    append(store, "hello")
+    processor = TacticProcessor(
+        Summarize(), store, source="raw", sink="summaries", errors=errors
+    )
+    run = runner(processor, mode)
+
+    # Without the sink channel neither the output nor an error event can be
+    # written, so the event stays unacknowledged instead of being lost.
+    with pytest.raises(ChannelNotFoundError):
+        run()
+    assert store.get_subscription("summarize-raw-processor").cursor == 0
+
+    store.create_channel({"name": "summaries", "form": "log"})
+    assert summaries(run()) == ["HELLO"]
+
+
+def test_processor_default_consumer_is_per_source_and_kind(tmp_path):
+    store = make_store(tmp_path)
+    store.create_channel({"name": "other", "form": "log"})
+    append(store, "raw")
+    store.append_event(
+        Event(channel="other", source="test", kind="message", payload={"text": "other"})
+    )
+
+    on_raw = TacticProcessor(Summarize(), store, source="raw")
+    on_other = TacticProcessor(Summarize(), store, source="other")
+    messages = TacticProcessor(Summarize(), store, source="raw", kind="message")
+
+    assert on_raw.consumer == "summarize-raw-processor"
+    assert on_other.consumer == "summarize-other-processor"
+    assert messages.consumer == "summarize-raw-message-processor"
+    # One subscription each, so every processor reads its own events.
+    assert on_raw.process() == [Summary(summary="RAW", length=3)]
+    assert on_other.process() == [Summary(summary="OTHER", length=5)]
+    assert messages.process() == [Summary(summary="RAW", length=3)]
+
+
+@pytest.mark.parametrize("fields", [{"source": "in?box"}, {"kind": "a#b"}])
+def test_processor_needs_a_consumer_for_sources_and_kinds_that_cannot_name_one(
+    tmp_path, fields
+):
+    store = make_store(tmp_path)
+    fields = {"source": "raw", **fields}
+
+    with pytest.raises(ValueError, match=r"default consumer .*Pass consumer="):
+        TacticProcessor(Summarize(), store, **fields)
+    named = TacticProcessor(Summarize(), store, consumer="digest", **fields)
+    assert named.subscription_id == "digest"

@@ -26,28 +26,30 @@ class TacticProcessor:
 
     ``source`` events are read through a named subscription, so a processor
     resumes where it stopped across restarts. ``consumer`` names that
-    subscription and defaults to ``"<tactic name>-processor"``; a tactic whose
-    name contains whitespace, ``?``, or ``#`` needs an explicit ``consumer``.
+    subscription and defaults to ``"<tactic name>-<source>-processor"``, or
+    ``"<tactic name>-<source>-<kind>-processor"`` with a ``kind`` filter, so
+    one tactic can process several channels. If those names contain
+    whitespace, ``?``, or ``#``, pass ``consumer`` explicitly.
 
     Events are processed one at a time and at least once: the tactic runs on
-    an event, and its output is turned into a sink event, before the event is
-    acknowledged (the subscription cursor moves past it). The sink event is
-    appended only after that, so a failed append raises and is not retried.
-    ``errors`` decides what a failure in the tactic or in building the sink
-    event does. With ``errors="raise"`` the failing event stays unacknowledged
-    and the exception propagates, so the next call runs that same event again
-    before any event behind it. With ``errors="record"`` the event is
-    acknowledged, the failure is written to ``sink`` as a ``kind="error"``
-    event, and processing continues; without a ``sink`` it acts like
-    ``"raise"``. A tactic can see an event more than once (after a failure or
-    an interrupted run), so it should tolerate repeats.
+    an event and its output is appended to ``sink`` before the event is
+    acknowledged (the subscription cursor moves past it). ``errors`` decides
+    what a failure in the tactic or in writing its output does. With
+    ``errors="raise"`` the failing event stays unacknowledged and the
+    exception propagates, so the next call runs that same event again before
+    any event behind it. With ``errors="record"`` the failure is written to
+    ``sink`` as a ``kind="error"`` event, the event is acknowledged, and
+    processing continues; without a ``sink`` it acts like ``"raise"``. A
+    tactic can see an event more than once (after a failure or an interrupted
+    run), so it should tolerate repeats, and ``sink`` can then hold more than
+    one output for that event.
 
     Run one worker per ``consumer``; the guarantees above assume it. Workers
     sharing a consumer can process the same event twice, and can lose one:
-    when another worker acknowledges the event this processor ran, the
-    processor drops its output for it, and its own acknowledgement covers the
-    next pending event instead, which it runs right away. That event is
-    already acknowledged, so with ``errors="raise"`` a failure loses it.
+    when another worker acknowledges the event this processor ran, this
+    processor's acknowledgement covers the next pending event instead, which
+    it runs right away, even past ``limit``. That event is already
+    acknowledged, so with ``errors="raise"`` a failure loses it.
     """
 
     def __init__(
@@ -68,7 +70,7 @@ class TacticProcessor:
         self.store = store
         self.source = source
         self.sink = sink
-        self.consumer = consumer or _default_consumer(tactic)
+        self.consumer = consumer or _default_consumer(tactic, source, kind)
         self.output_kind = output_kind
         self.errors = errors
         self.kind = kind
@@ -79,7 +81,7 @@ class TacticProcessor:
         """Process pending events; return sink events (or raw outputs without a sink).
 
         Each event is peeked at the subscription cursor, run through the
-        tactic, acknowledged, and only then written to ``sink``. ``limit`` caps
+        tactic, written to ``sink``, and only then acknowledged. ``limit`` caps
         the number of results, outputs and recorded errors alike. This method
         needs a synchronous store; use :meth:`aprocess` with async stores such
         as :class:`~lllm.network.AsyncRemoteStore`.
@@ -96,19 +98,15 @@ class TacticProcessor:
             event = self._peek()
             if event is None:
                 break
-            output, sink_event = self._call(event)
+            results.append(self._call(event))
             acked = self.store.pull_subscription(self.subscription_id, limit=1)
             if not acked:
                 break
             if acked[0].id != event.id:
-                # Another worker acknowledged ``event`` first, so its output is
-                # theirs to write. The event this pull acknowledged is ours now;
-                # it is already acknowledged, so a raised failure is not retried.
-                event = acked[0]
-                output, sink_event = self._call(event)
-            results.append(
-                output if sink_event is None else self.store.append_event(sink_event)
-            )
+                # Another worker acknowledged ``event`` first, so this pull
+                # acknowledged the next event. Run it now: it is already
+                # acknowledged, so a raised failure is not retried.
+                results.append(self._call(acked[0]))
         return results
 
     async def aprocess(self, limit: int | None = None) -> list[Event | Any]:
@@ -124,23 +122,17 @@ class TacticProcessor:
             event = await self._apeek()
             if event is None:
                 break
-            output, sink_event = await self._acall(event)
+            results.append(await self._acall(event))
             acked = await _maybe_await(
                 self.store.pull_subscription(self.subscription_id, limit=1)
             )
             if not acked:
                 break
             if acked[0].id != event.id:
-                # Another worker acknowledged ``event`` first, so its output is
-                # theirs to write. The event this pull acknowledged is ours now;
-                # it is already acknowledged, so a raised failure is not retried.
-                event = acked[0]
-                output, sink_event = await self._acall(event)
-            results.append(
-                output
-                if sink_event is None
-                else await _maybe_await(self.store.append_event(sink_event))
-            )
+                # Another worker acknowledged ``event`` first, so this pull
+                # acknowledged the next event. Run it now: it is already
+                # acknowledged, so a raised failure is not retried.
+                results.append(await self._acall(acked[0]))
         return results
 
     def _peek(self) -> Event | None:
@@ -167,19 +159,24 @@ class TacticProcessor:
         )
         return events[0] if events else None
 
-    def _call(self, event: Event) -> tuple[Any, Event | None]:
+    def _call(self, event: Event) -> Event | Any:
         try:
             output = self.tactic.run(event.payload, context=self._context(event))
-            return output, self._output_event(event, output)
+            sink_event = self._output_event(event, output)
+            return output if sink_event is None else self.store.append_event(sink_event)
         except Exception as exc:
-            return None, self._error_event(event, exc)
+            return self.store.append_event(self._error_event(event, exc))
 
-    async def _acall(self, event: Event) -> tuple[Any, Event | None]:
+    async def _acall(self, event: Event) -> Event | Any:
         try:
             output = await self.tactic.arun(event.payload, context=self._context(event))
-            return output, self._output_event(event, output)
+            sink_event = self._output_event(event, output)
+            if sink_event is None:
+                return output
+            return await _maybe_await(self.store.append_event(sink_event))
         except Exception as exc:
-            return None, self._error_event(event, exc)
+            error_event = self._error_event(event, exc)
+            return await _maybe_await(self.store.append_event(error_event))
 
     def _subscribe(self) -> None:
         if self._subscribed:
@@ -266,18 +263,21 @@ class TacticProcessor:
         )
 
 
-def _default_consumer(tactic: Tactic[Any, Any]) -> str:
-    # Tactic names may hold characters a subscription id cannot: whitespace is
-    # not a valid id, and "?" or "#" would cut a RemoteStore URL short.
-    name = tactic.tactic_name
-    if any(ch.isspace() or ch in "?#" for ch in name):
+def _default_consumer(tactic: Tactic[Any, Any], source: str, kind: str | None) -> str:
+    # One subscription per tactic, source, and kind filter, so the same tactic
+    # can process several channels. The names may hold characters a
+    # subscription id cannot: whitespace is not a valid id (tactic names allow
+    # it), and "?" or "#" would cut a RemoteStore URL short.
+    parts = (tactic.tactic_name, source, kind, "processor")
+    consumer = "-".join(part for part in parts if part)
+    if any(ch.isspace() or ch in "?#" for ch in consumer):
         raise ValueError(
-            f"Cannot derive a consumer from tactic name {name!r}: a consumer "
-            "name cannot contain whitespace, and '?' or '#' would break "
-            "RemoteStore URLs. Pass consumer= to name this processor's "
-            "subscription."
+            f"Cannot use the default consumer {consumer!r} (tactic name, source, "
+            "and kind): a consumer name cannot contain whitespace, and '?' or "
+            "'#' would break RemoteStore URLs. Pass consumer= to name this "
+            "processor's subscription."
         )
-    return f"{name}-processor"
+    return consumer
 
 
 def _payload(value: Any) -> Any:
