@@ -271,7 +271,7 @@ def create_service_app(
                     context=context,
                 ) from exc
 
-        _document_tactic_schemas(app, only)
+        _document_tactic_schemas(app, only, jsonable_encoder)
 
     reserved_routes = _reserved_routes(
         tactic_map,
@@ -509,56 +509,78 @@ def _public_tactic_info(tactic: Tactic[Any, Any], jsonable_encoder: Any) -> dict
     return payload
 
 
-def _document_tactic_schemas(app: Any, tactic: Tactic[Any, Any]) -> None:
+def _document_tactic_schemas(
+    app: Any,
+    tactic: Tactic[Any, Any],
+    jsonable_encoder: Any,
+) -> None:
     """Show the tactic's input/output schemas on ``/run`` and ``/stream`` in OpenAPI.
 
     These routes read the raw request (protocol envelope or raw JSON, with LLLM
     error envelopes), so FastAPI cannot infer their bodies from typed
     parameters. Instead, each generated document is patched once with the
-    schemas that ``tactic.info()`` advertises on ``/info``. This is best
-    effort: if ``info()`` fails, the document is served without them (``/info``
-    reports the error) and patching is retried on the next call.
+    schemas that ``tactic.info()`` advertises on ``/info``, encoded the same
+    way. This is best effort: if ``info()`` fails or its schemas cannot be
+    rendered as JSON, the document is served without them and patching is
+    retried on the next call. A warning is logged when patching starts
+    failing; retries that fail again are logged at debug level.
     """
 
     generate_openapi = app.openapi
     lock = threading.Lock()
     documented: dict[str, Any] | None = None
+    failing = False
 
     def openapi() -> dict[str, Any]:
-        nonlocal documented
+        nonlocal documented, failing
         with lock:
             document = generate_openapi()
             if document is not documented:
                 try:
-                    _add_tactic_schemas(document, tactic)
+                    _add_tactic_schemas(document, tactic, jsonable_encoder)
                 except Exception:
-                    logger.warning(
+                    logger.log(
+                        logging.DEBUG if failing else logging.WARNING,
                         "Could not add the schemas of tactic %r to the OpenAPI document.",
                         tactic.tactic_name,
                         exc_info=True,
                     )
+                    failing = True
                     return document
-                documented = document
+                documented, failing = document, False
             return document
 
     app.openapi = openapi
 
 
-def _add_tactic_schemas(document: dict[str, Any], tactic: Tactic[Any, Any]) -> None:
+def _add_tactic_schemas(
+    document: dict[str, Any],
+    tactic: Tactic[Any, Any],
+    jsonable_encoder: Any,
+) -> None:
     """Patch *document* in place, leaving it untouched if anything fails."""
 
-    info = tactic.info()
+    # Encoded as on /info: inf and nan become null; UUIDs, dates and decimals
+    # become strings.
+    info = jsonable_encoder(tactic.info(), include={"input_schema", "output_schema"})
     run = document["paths"]["/run"]["post"]
     stream = document["paths"]["/stream"]["post"]
     components = dict(document.get("components", {}).get("schemas", {}))
     input_schema, output_schema = _openapi_schemas(
-        [info.input_schema, info.output_schema],
+        [info["input_schema"], info["output_schema"]],
         components,
     )
     request_schema = RunRequest.model_json_schema()
     request_schema["properties"]["input"] = input_schema
     response_schema = RunResponse.model_json_schema(mode="serialization")
     response_schema["properties"]["output"] = output_schema
+    # /openapi.json is rendered as strict UTF-8 JSON (Starlette's JSONResponse),
+    # so anything it would reject must fail here, before the document changes.
+    json.dumps(
+        [components, request_schema, response_schema],
+        ensure_ascii=False,
+        allow_nan=False,
+    ).encode("utf-8")
     document.setdefault("components", {})["schemas"] = components
     for operation in (run, stream):
         operation["requestBody"] = {

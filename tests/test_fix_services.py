@@ -2,16 +2,20 @@
 (custom GET/DELETE endpoints without a body) and S3 (tactic schemas in OpenAPI)."""
 
 import asyncio
+import datetime
+import decimal
 import enum
 import json
+import math
 import threading
+import uuid
 from typing import Annotated, Literal, Union
 
 import httpx
 import pytest
 from pydantic import BaseModel, ConfigDict, Field
 
-from lllm import Tactic, endpoint
+from lllm import Tactic, TacticInfo, endpoint
 from lllm.services import RemoteTactic, create_service_app, create_tactic_app
 from lllm.services.endpoints import EndpointSpec, endpoint_requires_body
 
@@ -347,23 +351,33 @@ def test_openapi_hoists_nested_defs_without_clobbering_components():
 
 
 def test_openapi_keeps_same_named_input_and_output_models_apart():
-    class OtherAddress(BaseModel):
+    class Address(BaseModel):
+        """Not the Address used by RichInput, but defined under the same name."""
+
         zip: str
 
-    OtherAddress.__name__ = "Address"
-
     class OtherOutput(BaseModel):
-        address: OtherAddress
+        address: Address
+        more: list[Address] = []
 
     class ConflictTactic(RichTactic):
         output_type = OtherOutput
 
+    # A real clash: both schemas name a different model "Address" in $defs.
+    assert "Address" in RichInput.model_json_schema()["$defs"]
+    assert set(OtherOutput.model_json_schema()["$defs"]) == {"Address"}
+
     document = create_tactic_app(ConflictTactic()).openapi()
 
-    input_ref = _request_schema(document)["properties"]["input"]["properties"]["address"]
-    output_ref = _response_schema(document)["properties"]["output"]["properties"]["address"]
-    assert "city" in _resolve(document, input_ref["anyOf"][0]["$ref"])["properties"]
-    assert "zip" in _resolve(document, output_ref["$ref"])["properties"]
+    input_address = _request_schema(document)["properties"]["input"]["properties"]["address"]
+    output = _response_schema(document)["properties"]["output"]["properties"]
+    assert input_address["anyOf"][0] == {"$ref": "#/components/schemas/Address"}
+    assert output["address"] == {"$ref": "#/components/schemas/Address2"}
+    assert output["more"]["items"] == output["address"]
+    assert "city" in _resolve(document, "#/components/schemas/Address")["properties"]
+    assert _resolve(document, "#/components/schemas/Address2")["properties"] == {
+        "zip": {"title": "Zip", "type": "string"}
+    }
     _assert_refs_resolve(document)
 
 
@@ -514,6 +528,36 @@ def test_openapi_is_served_while_tactic_info_fails(caplog):
     _assert_refs_resolve(document)
 
 
+def test_openapi_warns_once_while_adding_schemas_keeps_failing(caplog):
+    failing = True
+
+    class FlakyInfoTactic(RichTactic):
+        def info(self):
+            if failing:
+                raise RuntimeError("info backend unavailable")
+            return super().info()
+
+    app = create_service_app([FlakyInfoTactic()], expose_single_tactic_routes=True)
+
+    def records():
+        return [record for record in caplog.records if record.name == "lllm.services.fastapi"]
+
+    with caplog.at_level("DEBUG", logger="lllm.services.fastapi"):
+        for _ in range(3):
+            assert call(app, "GET", "/openapi.json").status_code == 200
+        streak = [record.levelname for record in records()]
+        failing = False
+        recovered = call(app, "GET", "/openapi.json").json()
+        failing = True
+        app.openapi_schema = None  # A regenerated document starts a new streak.
+        assert call(app, "GET", "/openapi.json").status_code == 200
+
+    assert streak == ["WARNING", "DEBUG", "DEBUG"]
+    assert "requestBody" in recovered["paths"]["/run"]["post"]
+    assert [record.levelname for record in records()] == streak + ["WARNING"]
+    assert all(record.exc_info for record in records())
+
+
 def test_openapi_is_served_when_tactic_schema_cannot_be_exported():
     class Opaque:
         pass
@@ -536,6 +580,98 @@ def test_openapi_is_served_when_tactic_schema_cannot_be_exported():
 
     assert response.status_code == 200
     assert "requestBody" not in response.json()["paths"]["/run"]["post"]
+
+
+class Budget(BaseModel):
+    text: str
+    max_cost: float = math.inf
+    min_cost: float = -math.inf
+    ratio: float = math.nan
+
+
+class Order(BaseModel):
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "id": uuid.UUID(int=7),
+                    "placed_at": datetime.datetime(2024, 1, 1),
+                    "total": decimal.Decimal("1.5"),
+                }
+            ]
+        }
+    )
+
+    id: uuid.UUID
+
+
+@pytest.mark.parametrize("model", [Budget, Order])
+@pytest.mark.parametrize("role", ["input", "output"])
+def test_served_openapi_encodes_tactic_schemas_like_info(model, role):
+    class EncodedTactic(Tactic):
+        name = "encoded"
+        input_type = model if role == "input" else None
+        output_type = model if role == "output" else None
+
+        def _run(self, input_value, *, context=None):
+            return input_value
+
+    app = create_tactic_app(EncodedTactic())
+
+    served = call(app, "GET", "/openapi.json")
+    info = call(app, "GET", "/info").json()
+
+    assert served.status_code == 200
+    document = served.json()
+    if role == "input":
+        documented = _request_schema(document)["properties"]["input"]
+    else:
+        documented = _response_schema(document)["properties"]["output"]
+    assert documented == info[f"{role}_schema"]
+    _assert_refs_resolve(document)
+
+
+def _non_finite_info_tactic():
+    class NonFiniteInfo(TacticInfo):
+        model_config = ConfigDict(ser_json_inf_nan="constants")
+
+    class NonFiniteInfoTactic(Tactic):
+        name = "constants"
+        input_type = Budget
+
+        def _run(self, input_value, *, context=None):
+            return None
+
+        def info(self):
+            return NonFiniteInfo(**super().info().model_dump())
+
+    return NonFiniteInfoTactic()
+
+
+def _unpaired_surrogate_tactic():
+    class SurrogateInput(BaseModel):
+        text: str = Field(description="unpaired \ud800")
+
+    class SurrogateTactic(Tactic):
+        name = "surrogate"
+        input_type = SurrogateInput
+
+        def _run(self, input_value, *, context=None):
+            return None
+
+    return SurrogateTactic()
+
+
+@pytest.mark.parametrize("make_tactic", [_non_finite_info_tactic, _unpaired_surrogate_tactic])
+def test_openapi_is_served_without_schemas_it_cannot_render(make_tactic, caplog):
+    app = create_tactic_app(make_tactic())
+
+    with caplog.at_level("WARNING", logger="lllm.services.fastapi"):
+        response = call(app, "GET", "/openapi.json")
+
+    assert response.status_code == 200
+    assert "requestBody" not in response.json()["paths"]["/run"]["post"]
+    assert "Could not add the schemas of tactic" in caplog.text
 
 
 def test_openapi_documents_schemas_once_for_concurrent_first_callers():
