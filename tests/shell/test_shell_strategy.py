@@ -51,10 +51,10 @@ def test_strategy_app_runs_and_invokes_resources():
     assert run_response.status_code == 200
     assert run_response.json()["output"]["resource_count"] == 2
     assert invoke_response.status_code == 200
-    assert invoke_response.json()["output"] == {
-        "handled": {"records": []},
-        "context": {},
-    }
+    # A tactic resource runs as /tactics/<name>/run runs it: with a CallContext.
+    assert invoke_response.json()["output"]["handled"] == {"records": []}
+    assert invoke_response.json()["output"]["context"]["metadata"] == {}
+    assert invoke_response.json()["output"]["context"]["endpoint"] == "run"
 
 
 def test_strategy_loader_from_directory(tmp_path: Path):
