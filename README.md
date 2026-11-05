@@ -4,305 +4,149 @@
   <img src="assets/lllm-logo-text-dark.png" alt="LLLM" width="420">
 </p>
 
-Low-Level Language Models (LLLM) is a small protocol and service layer for
-reusable agentic tactics.
+LLLM is a lightweight framework for building advanced agentic systems: the
+kind that decompose hard questions, call many tools, write and run code, and
+need to be inspected turn by turn. It is *low-level* on purpose: instead of
+hiding the agent loop, it gives you small, plain abstractions for every part
+of it, so research and production systems can be customised without fighting
+the framework.
 
-The center model is `Tactic`: a typed, runtime-agnostic unit that does one
-thing well and can be called locally, exposed through FastAPI, described for a
-LLLM hub package, and composed later through refs and local config.
-
-## Install
+Docs: [lllm.one](https://lllm.one) · Packages: [lllm.one/hub](https://lllm.one/hub/)
 
 ```bash
-pip install lllm-core
+pip install "lllm-core[native]"
 ```
-
-The PyPI distribution is `lllm-core`; the import package remains `lllm`:
 
 ```python
-import lllm
+from lllm import Tactic
+
+print(Tactic.quick("What is the capital of France?").content)
 ```
 
-For local development:
+## Design
 
-```bash
-pip install -e ".[dev]"
-```
+An agentic system is a **program**:
 
-## Smallest Tactic
+- **Tactic is the program.** It owns a typed task interface and orchestrates
+  agents; tactics compose, and a whole tactic can be handed to an agent as a
+  tool.
+- **Agent is the caller.** A model plus a call loop that handles retries,
+  parse failures, and tool calls.
+- **Prompt is the function.** A template with a parser, tools, and
+  exception/interrupt handlers: the full specification of one turn.
+- **Dialog is the mental state.** Each agent's own history, as a tree you can
+  fork, replay, and inspect.
+
+Configuration is declaration (prompts, tools, proxies, and agents are
+discovered from `lllm.toml` and YAML configs and referenced by key), proxies
+give agents an API surface they can program against (`run_python`,
+`CALL_API`), and everything is typed with Pydantic.
 
 ```python
 from pydantic import BaseModel
-from lllm import Tactic
+from lllm import Prompt, Tactic
+
+TASK = Prompt(path="brief/task", prompt="Write three bullets about {topic}.")
 
 
-class EchoInput(BaseModel):
-    text: str
+class Topic(BaseModel):
+    topic: str
 
 
-class EchoOutput(BaseModel):
-    text: str
+class BriefTactic(Tactic):
+    name = "brief"
+    agent_group = ["writer", "editor"]
+    input_model = Topic
+
+    def call(self, task: Topic) -> str:
+        writer, editor = self.agents["writer"], self.agents["editor"]
+        writer.open("draft")
+        writer.receive_prompt(TASK, {"topic": task.topic})
+        editor.open("edit")
+        editor.receive(f"Tighten this:\n{writer.respond().content}")
+        return editor.respond().content
 
 
-class EchoTactic(Tactic[EchoInput, EchoOutput]):
-    name = "echo"
-    input_type = EchoInput
-    output_type = EchoOutput
-
-    def _run(self, input_value, *, context=None):
-        return EchoOutput(text=input_value.text.upper())
-
-
-assert EchoTactic().run({"text": "hello"}).text == "HELLO"
+brief = BriefTactic({
+    "global": {"model_name": "gpt-4o-mini"},
+    "agent_configs": [
+        {"name": "writer", "system_prompt": "You write crisp technical briefs."},
+        {"name": "editor", "system_prompt": "You cut every unnecessary word."},
+    ],
+})
+print(brief({"topic": "KV caches"}))
 ```
 
-## Serve It
+## One boundary for every runtime
 
-```python
-from lllm.services import create_tactic_app
-
-app = create_tactic_app(EchoTactic())
-```
+`Tactic` is also a typed service boundary. Native programs, protocol-style
+tactics (`_run`), Pydantic AI agents (`PydanticAITactic`), and plain functions
+(`lllm.as_tactic`) are all validated, streamed, and served the same way:
 
 ```bash
-uvicorn app:app --reload
-curl -X POST http://127.0.0.1:8000/run \
-  -H 'content-type: application/json' \
-  -d '{"input":{"text":"hello"}}'
+lllm serve tactics:brief --port 8000     # POST /run, POST /stream, GET /info
 ```
 
-Remote clients normalize base service URLs into `/run` and `/stream`
-endpoints. `RemoteTactic.arun()` calls the JSON run endpoint, while
-`RemoteTactic.astream()` consumes the service-sent event stream and yields the
-same raw data items as local `Tactic.astream()`. Use
-`RemoteTactic.aevents()` when you need the full `TacticEvent` envelopes.
-`RemoteTactic.fetch_info()` and `RemoteTactic.afetch_info()` retrieve the
-service-advertised `TacticInfo` from `/info` without making local `info()` do
-network I/O.
+`RemoteTactic` calls a served tactic as if it were local, `lllm://` refs and
+`lllm.Resolver` wire systems together by name, and native agents can send
+[inference hints](https://lllm.one/core/inference-hints/) (session identity
+from dialogs, priorities, expected output length) to KV-cache-aware serving
+stacks such as NVIDIA Dynamo, vLLM, and SGLang.
 
-## Pydantic AI
-
-Pydantic AI remains the runtime owner. Configure the agent normally, then wrap
-it:
-
-```python
-from lllm.runtimes import PydanticAITactic
-
-tactic = PydanticAITactic(agent, input_type=str, output_type=str)
-```
-
-LLLM forwards request metadata where the agent run method accepts `metadata`.
-`examples/pydantic_ai_tactic/structured_agent.py` shows structured
-input/output, streaming, and tool wrapping with an offline fake agent.
-`examples/pydantic_ai_tactic/surrounding_features.py` shows that normal
-runtime-owned kwargs such as model settings, deps, eval hooks, durable IDs,
-graph/workflow state, and tool approval pass through the wrapper.
-
-Live provider credentials can be smoke-checked without sending prompts:
+## Packages and the hub
 
 ```bash
-if [ -f .env ]; then
-  set -a
-  source .env
-  set +a
-fi
-LLLM_LIVE_PROVIDER_TESTS=1 pytest tests/test_live_providers.py
+lllm create my-app        # lllm.toml, prompts/, configs/, tactics/, main.py, tests
+cd my-app
+lllm hub validate .
+lllm serve .              # serve the package's primary tactic
+lllm hub publish . --local
 ```
 
-Those opt-in tests list models using whichever credentials are available:
-`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, and `TOGETHER_API_KEY`. Together is
-included as an expected-soft-failure check because some networks return an
-edge-level `403 error code: 1010` before API-key validation.
+One `lllm.toml` tells the native runtime what to discover and tells the hub
+what the package is. Browse and download packages at
+[lllm.one/hub](https://lllm.one/hub/).
 
-## Parsers
+## Modules
 
-Shared parser utilities live outside runtime adapters:
+| Module | | Status |
+| --- | --- | --- |
+| `lllm` | Tactics, the native runtime (agents, prompts, dialogs, proxies, sandbox), runtimes, services | Stable |
+| `lllm.hub` | The `lllm.toml` package format, validation, local hub, cards, static catalogs | Stable |
+| `lllm.network` (SSSN) | Channels, events, artifacts, snapshots; `TacticProcessor` runs tactics over channels | Experimental |
+| `lllm.shell` (AAAX) | Strategies that mount packages, tactics, and channels into one served API | Experimental |
 
-```python
-from lllm.parsers import DefaultTagParser
+One command covers them all: `lllm create | init | setup | inspect | serve | hub | network | shell`.
 
-parser = DefaultTagParser(required_xml_tags=["answer"])
-parsed = parser.parse("<answer>Hello</answer>")
-```
+## Install options
 
-Native prompts can use the same parser objects, and plain Python or Pydantic AI
-wrappers can call them directly around tactic output.
+| Extra | Adds |
+| --- | --- |
+| `native` | LiteLLM and YAML configs for native agents |
+| `server` | FastAPI and Uvicorn |
+| `client` | `httpx` for remote tactics and stores |
+| `pydantic-ai` | the Pydantic AI adapter |
+| `sandbox` | the Jupyter sandbox |
+| `secure` | OS keyring for `lllm setup` |
+| `all` | everything |
 
-## Proxies
+For development: `pip install -e ".[dev,docs]"` and `pytest`.
 
-Proxy utilities live at the `Tactic` boundary, so they can wrap any runtime:
+## Where it comes from
 
-```python
-from lllm import InMemoryProxyLog, ProxyTactic
+LLLM's tactic design grew out of the reusable reasoning units of Analytica,
+which decomposes complex questions into grounded subpropositions, runs
+specialised agents over them, and synthesises a robust analysis; it has since
+served autonomous software development in Apeiron.
 
-log = InMemoryProxyLog()
-proxy = ProxyTactic(EchoTactic(), sink=log.append)
-assert proxy.run({"text": "hello"}).text == "HELLO"
-```
+- Cheng, Junyan, Kyle Richardson, and Peter Chin. "Analytica: Soft
+  Propositional Reasoning for Robust and Scalable LLM-Driven Analysis."
+  *ICLR*, 2026.
+- Cheng, Junyan, Ankit Srivastava, Jessie Zeng, Milenko Drinic, and Jack W.
+  Stokes. "Apeiron: A Scalable LLM-agentic Framework for Autonomous
+  Full-lifecycle Demand-optimized Application Synthesis." *Findings of ACL*,
+  2026, pp. 3868-3899.
 
-Use proxy hooks for small call-boundary transforms, observability, or local
-guardrails. Payload capture is opt-in with `capture_inputs` and
-`capture_outputs`. Proxies mirror wrapped tactic capabilities, including
-streaming, and record captured stream chunks after the stream is consumed.
+## License
 
-## Sandboxes
-
-Sandbox utilities provide application-level guardrails around a tactic:
-
-```python
-from lllm import SandboxPolicy, SandboxedTactic
-
-sandboxed = SandboxedTactic(
-    EchoTactic(),
-    policy=SandboxPolicy(max_input_bytes=4096, timeout_seconds=2.0),
-)
-```
-
-Use them for payload budgets, request-metadata allowlists, and async/service
-deadlines. Metadata allowlist keys must be plain string tokens, without
-whitespace, percent escapes, or path separators. They are not OS-level
-isolation for untrusted code.
-
-## Native Prompt/Dialog Core
-
-The native namespace preserves prompt and dialog primitives without letting them
-shape the `Tactic` protocol:
-
-```python
-from lllm.runtimes.native import Dialog, Prompt, Role
-
-system = Prompt(path="agent/system", prompt="You are a {style} assistant.")
-dialog = Dialog(owner="agent")
-dialog.put_prompt(system, prompt_args={"style": "careful"}, role=Role.SYSTEM)
-dialog.put_text("Draft the next checkpoint.")
-
-retry = dialog.fork(last_n=1, first_k=1)
-```
-
-Use these pieces for native runtime transcripts, prompt templates, tool schemas,
-and forked histories. Wrap executable native agents with `NativeTacticAdapter`
-when they need to cross the reusable tactic boundary.
-`examples/native_service/` shows an offline native prompt/dialog workflow
-served through the same FastAPI API as ordinary tactics.
-
-## Create A Project
-
-Generate a runnable tactic/service project:
-
-```bash
-lllm create plain my-tactic
-cd my-tactic
-pip install -e ".[dev,server]"
-pytest
-uvicorn app:app --reload
-```
-
-Or serve the generated tactic entrypoint directly:
-
-```bash
-lllm serve my_tactic.tactics:build_tactic --port 8000
-```
-
-Templates:
-
-- `plain`: typed Python `Tactic`.
-- `pydantic-ai`: a Pydantic AI-style agent wrapped as a tactic.
-- `native`: a native-style object wrapped behind the tactic boundary.
-
-Add package metadata later with `lllm hub init`.
-
-## Boundaries
-
-- LLLM owns the `Tactic` protocol and service adapter.
-- LLLM hub owns `lllm.toml`, package validation, package cards, local hub storage,
-  downloads, and config templates.
-- Native runtime ideas live under `lllm.runtimes.native` and do not shape the
-  protocol layer.
-
-## Compose Tactics
-
-One tactic can call another directly or through an HTTP service. LLLM keeps this
-as ref resolution, not service launching:
-
-```python
-from lllm import TacticResolver
-
-resolver = TacticResolver()
-resolver.register("lllm://demo/echo/tactics/echo", EchoTactic())
-
-result = resolver.run(
-    "lllm://demo/echo/tactics/echo",
-    {"text": "hello"},
-)
-```
-
-Local config can bind the same ref to a running service:
-
-```toml
-[refs."lllm://demo/echo/tactics/echo"]
-url = "http://127.0.0.1:8000/tactics/echo"
-
-[refs."lllm://demo/echo/tactics/echo".metadata]
-policy_url = "http://127.0.0.1:9000"
-```
-
-```python
-resolver = TacticResolver.from_config(".")
-tactic = resolver.resolve("lllm://demo/echo/tactics/echo")
-```
-
-Tactic refs are strict package resource identifiers:
-`lllm://org/package/tactics/name` with no semicolon params, query string,
-fragment, or path-control separators in ref segments.
-Shared config may include non-tactic refs from known PSI resource sections,
-including `schemas`, `services`, `channels`, `snapshots`, `runs`, `configs`,
-`docs`, `examples`, and `assets`, but malformed refs and unknown resource
-sections fail validation.
-`TacticResolver.from_config()` preserves `[refs."...".metadata]` on tactic URL
-bindings; legacy top-level extras still work, and explicit metadata table
-values win on duplicate keys. Tactic URL bindings must not also declare a
-`store`, `path`, or `object` target. Tactic refs with a concrete target must
-use `url`; `store`, `path`, and serialized `object` targets belong to other
-layers or direct in-process registration. URL bindings must not include URL
-params, query strings, fragments, embedded credentials, percent escapes,
-backslashes, colons, empty segments, or dot segments in URL paths, and binding
-metadata must not include raw secret-shaped
-keys such as `api_key`/`apiKey`/`apikey`, tokens,
-`accessToken`/`accesstoken`, passwords, cookies, `authorization`, or
-credentials. Use local credential refs such as
-`api_key_ref`/`apiKeyRef`/`apikeyref` or auth hooks instead.
-Metadata maps must use string keys; direct Python metadata with non-string keys
-is rejected before Pydantic can coerce keys into text.
-
-Remote service failures raise `RemoteTacticError` with `status_code`,
-`error_type`, `message`, `tactic`, `endpoint`, `request_id`, and raw `detail`
-fields parsed from the service envelope.
-Protocol and schema errors use HTTP 400; unexpected tactic runtime failures use
-HTTP 500.
-
-## Package Metadata Helpers
-
-LLLM does not own `lllm.toml`, but it can export tactic metadata for LLLM hub:
-
-```python
-from lllm.integrations import tactic_resource
-
-resource = tactic_resource(EchoTactic())
-```
-
-Custom endpoint decorators and tactic examples are included in that metadata so
-package cards can show domain routes and concrete calls alongside the portable
-`/run` interface. Use `@endpoint.get`, `@endpoint.post`, `@endpoint.put`,
-`@endpoint.patch`, or `@endpoint.delete` to declare typed service routes without
-changing the tactic protocol. Public service info and LLLM hub metadata exports
-filter raw secret-shaped keys from examples and user metadata, including
-`api_key`/`apiKey`/`apikey`, tokens, `accessToken`/`accesstoken`, passwords,
-cookies, `authorization`, and credentials, while preserving local refs such as
-`api_key_ref`, `apiKeyRef`, and `apikeyref`.
-SSE stream event metadata goes through the same public filter before it is
-written to the response; event data is left as the tactic output.
-Runtime adapters such as `as_tactic`, `PydanticAITactic`, and
-`NativeTacticAdapter` accept package refs, service refs, descriptions, examples,
-and metadata so wrapper-created tactics can keep the same package-facing
-contract as subclassed tactics.
-Those metadata maps must use string keys, including nested maps.
+Apache-2.0

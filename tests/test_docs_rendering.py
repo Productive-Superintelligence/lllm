@@ -762,8 +762,19 @@ def test_tutorials_keep_step_by_step_shape():
         text = path.read_text(encoding="utf-8")
         name = path.relative_to(ROOT)
         assert "Goal" in text, f"{name} missing a goal"
-        assert re.search(r"^## (Step )?1[.:]", text, re.M), f"{name} missing numbered steps"
+        assert re.search(
+            r"^#{2,3} (?:(?:Step|Part|Pattern) )?1[.:]", text, re.M
+        ), f"{name} missing numbered steps"
         assert "Next" in text, f"{name} missing a next link"
+
+
+def prose(path: Path) -> str:
+    """File text with fenced code blocks removed (code is not links)."""
+
+    text = path.read_text(encoding="utf-8")
+    if path.suffix != ".md":
+        return text
+    return re.sub(r"^(```|~~~).*?^\1", "", text, flags=re.M | re.S)
 
 
 def test_readme_and_docs_local_links_resolve():
@@ -774,7 +785,7 @@ def test_readme_and_docs_local_links_resolve():
 
     missing = []
     for path in sorted(text_paths):
-        for match in pattern.finditer(path.read_text(encoding="utf-8")):
+        for match in pattern.finditer(prose(path)):
             target = match.group(1).strip()
             if not target or target.startswith(skip_prefixes) or "://" in target:
                 continue
@@ -800,8 +811,10 @@ def test_docs_local_asset_references_resolve():
 
     missing = []
     for path in sorted(text_paths):
-        text = path.read_text(encoding="utf-8")
+        text = prose(path)
         for pattern in patterns:
+            if pattern.pattern.startswith("url") and path.suffix != ".css":
+                continue  # CSS url(...) only applies to stylesheets
             for match in pattern.finditer(text):
                 target = match.group(1).strip()
                 if (

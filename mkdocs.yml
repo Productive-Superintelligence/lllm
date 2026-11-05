@@ -1,13 +1,9 @@
 site_name: LLLM
-site_description: Protocol and service layer for reusable agentic tactics.
+site_description: Low-Level Language Models. A lightweight framework for advanced agentic systems.
 site_url: https://lllm.one/
 repo_name: Productive-Superintelligence/lllm
 repo_url: https://github.com/Productive-Superintelligence/lllm
 edit_uri: edit/main/docs/
-not_in_nav: |
-  guides/native-runtime.md
-  guides/pydantic-ai.md
-  tutorials/pydantic-ai-compat.md
 copyright: '<a class="psi-footer-brand" href="https://lllm.one/"><span class="psi-footer-wordmark" aria-hidden="true"></span><span class="psi-footer-text">LLLM</span></a>'
 
 theme:
@@ -34,72 +30,72 @@ theme:
     - search.highlight
 
 nav:
-  - Overview:
+  - Home:
       - Overview: index.md
       - Getting Started: getting-started.md
-      - Concepts:
-          - Tactics: concepts/tactics.md
-          - Services: concepts/services.md
-          - Packages: concepts/packages.md
-          - Runtime Boundary: concepts/runtime-boundary.md
-  - Tactic:
-      - Tactic: protocol/index.md
-      - Tactic Boundary: protocol/tactic-boundary.md
-      - Service Boundary: protocol/service-boundary.md
-      - Package Contract: protocol/package-contract.md
-      - Refs And Resolution: protocol/refs-resolution.md
-      - Composition: guides/composition.md
-  - Runtime:
-      - Runtime: runtime/index.md
-      - Pydantic AI: runtime/pydantic-ai.md
-      - Native Runtime:
-          - Overview: runtime/native.md
-          - Core Primitives:
-              - Prompt And Dialog: runtime/native/prompt-dialog.md
-              - Parsers And Tools: runtime/native/parsers-tools.md
-          - Agent Runtime:
-              - Agent Loop: runtime/native/agent-loop.md
-              - Registry And Invokers: runtime/native/registry-invokers.md
-          - Tactics:
-              - Native Tactics: runtime/native/tactics.md
-              - Protocol Adapter: runtime/native/adapter.md
-          - Surroundings:
-              - Proxies, Skills, And Sandbox: runtime/native/proxies-skills-sandbox.md
-              - Boundary And Verification: runtime/native/boundary-verification.md
-      - Plain Python: runtime/python.md
   - Tutorials:
-      - Tactic Level:
-          - First Tactic: tutorials/first-tactic.md
-          - Proxies: tutorials/proxies.md
-          - Sandboxes: tutorials/sandboxes.md
-      - Runtime:
-          - Pydantic AI Runtime: tutorials/pydantic-ai-runtime.md
-          - Native Core: tutorials/native-core.md
-          - Parsers: tutorials/parsers.md
+      - tutorials/index.md
+      - 1. Quick Start: tutorials/01-quick-start.md
+      - 2. Agents and Dialogs: tutorials/02-agents-and-dialogs.md
+      - 3. Prompts and Structured Output: tutorials/03-prompts.md
+      - 4. Tools, Proxies, and Sandbox: tutorials/04-tools.md
+      - 5. Native Tactics: tutorials/05-native-tactics.md
+      - 6. Packages and the Hub: tutorials/06-packages-and-hub.md
+      - 7. Logging and Cost Tracking: tutorials/07-logging.md
+      - 8. Advanced Patterns: tutorials/08-advanced-patterns.md
+      - 9. Serving and Composition: tutorials/09-serving.md
+      - 10. Pydantic AI Agents: tutorials/10-pydantic-ai.md
+      - 11. Channels with SSSN: tutorials/11-channels.md
+  - Native Runtime:
+      - Architecture: core/architecture.md
+      - Agent: core/agent.md
+      - Prompts: core/prompts.md
+      - Dialogs: core/dialog.md
+      - Tactics: core/tactic.md
+      - Configs: core/config.md
+      - Invokers: core/invokers.md
+      - Inference Hints: core/inference-hints.md
+      - Proxies and Sandbox: core/proxy-and-sandbox.md
+      - Logging: core/logging.md
+      - Runtime: core/runtime.md
+  - Tactic Protocol:
+      - The Tactic: protocol/tactic.md
+      - Runtimes: protocol/runtimes.md
+      - Services: protocol/services.md
+      - Refs and Composition: protocol/refs.md
+  - Packages:
+      - The Manifest: packages/manifest.md
+      - Discovery: packages/discovery.md
+      - The Hub: packages/hub.md
+  - SSSN:
+      - sssn/index.md
+      - Channels: sssn/channels.md
+      - Tactic Processing: sssn/processing.md
+      - Serving and Refs: sssn/serving.md
+  - AAAX:
+      - aaax/index.md
   - Reference:
-      - Protocol API: reference/protocol.md
-      - Service API: reference/service-api.md
-      - Native Preservation Audit: reference/native-preservation.md
       - CLI: reference/cli.md
-      - LLLM hub Metadata: reference/hub-metadata.md
+      - Service API: reference/service-api.md
+      - Hub Metadata: reference/hub-metadata.md
 
 extra:
   generator: false
   homepage: https://lllm.one/
   current_doc: lllm
   docs_switch:
-    - key: psi
-      title: Psi
-      url: https://prosi.io/docs/
     - key: lllm
       title: LLLM
-      url: https://lllm.one/
+      url: /
+    - key: hub
+      title: Hub
+      url: /hub/
     - key: sssn
       title: SSSN
-      url: https://sssn.one/
+      url: /sssn/
     - key: aaax
       title: AAAX
-      url: https://aaax.one/
+      url: /aaax/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/Productive-Superintelligence/lllm

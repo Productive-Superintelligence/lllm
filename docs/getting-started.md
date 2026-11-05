@@ -1,127 +1,127 @@
 # Getting Started
 
-This guide gets you from a checkout to a running tactic service. It uses the
-offline echo example so the path works without provider keys.
+From install to a multi-agent program, a served API, and a package, in a few
+minutes.
 
 ## Install
 
-From PyPI:
-
 ```bash
-python -m pip install lllm-core
+pip install "lllm-core[native,server]"
 ```
 
-The distribution name is `lllm-core`; the Python import remains `lllm`.
+The distribution is `lllm-core`; the import is `lllm`.
 
-For local development:
+| Extra | Adds |
+| --- | --- |
+| `native` | LiteLLM (any provider) and YAML configs for the native agent runtime |
+| `server` | FastAPI and Uvicorn for `lllm serve` and the service apps |
+| `client` | `httpx` for `RemoteTactic` and `RemoteStore` |
+| `pydantic-ai` | the Pydantic AI runtime adapter |
+| `sandbox` | the Jupyter sandbox for program synthesis |
+| `secure` | OS keyring storage for `lllm setup` |
+| `all` | everything above |
 
-```bash
-python -m pip install -e ".[dev,server]"
+Set a provider key (for example `OPENAI_API_KEY`), or point LLLM at a local
+OpenAI-compatible server as shown in [the quick start](tutorials/01-quick-start.md#step-4-run-against-a-local-model).
+
+## 1. One line
+
+```python
+from lllm import Tactic
+
+print(Tactic.quick("What is the capital of France?").content)
 ```
 
-For documentation work:
+`Tactic.quick` builds one agent with no configuration. Keep it with
+`return_agent=True` and continue the conversation with
+`agent.receive(...)` and `agent.respond()`.
 
-```bash
-python -m pip install -e ".[docs]"
-mkdocs serve
-```
+## 2. A program with agents
 
-Run the package tests before changing protocol or service behavior:
+A tactic is the program of an agentic system. Declare the agents it needs in
+`agent_group`; every call gets fresh agents built from the config, and a call
+session records what they did and what it cost:
 
-```bash
-python -m pytest
-```
+```python
+from pydantic import BaseModel
+from lllm import Prompt, Tactic
 
-## Run The Echo Example
+TASK = Prompt(path="brief/task", prompt="Write three bullets about {topic}.")
 
-The example contains a typed tactic and a FastAPI app:
 
-```text
-examples/echo_service/
-  app.py
-  tactics.py
-```
+class Topic(BaseModel):
+    topic: str
 
-Start the service:
 
-```bash
-cd examples/echo_service
-uvicorn app:app --reload
-```
+class BriefTactic(Tactic):
+    name = "brief"
+    agent_group = ["writer", "editor"]
+    input_model = Topic
 
-Call the portable run endpoint:
+    def call(self, task: Topic) -> str:
+        writer, editor = self.agents["writer"], self.agents["editor"]
+        writer.open("draft")
+        writer.receive_prompt(TASK, {"topic": task.topic})
+        draft = writer.respond().content
+        editor.open("edit")
+        editor.receive(f"Tighten this:\n{draft}")
+        return editor.respond().content
 
-```bash
-curl -X POST http://127.0.0.1:8000/run \
-  -H 'content-type: application/json' \
-  -d '{"input":{"text":"hello"}}'
-```
 
-Expected response includes:
-
-```json
-{
-  "output": {
-    "text": "HELLO"
-  }
+config = {
+    "global": {"model_name": "gpt-4o-mini"},
+    "agent_configs": [
+        {"name": "writer", "system_prompt": "You write crisp technical briefs."},
+        {"name": "editor", "system_prompt": "You cut every unnecessary word."},
+    ],
 }
+
+brief = BriefTactic(config)
+session = brief({"topic": "KV caches"}, return_session=True)
+print(session.delivery, session.agent_call_count, session.total_cost)
 ```
 
-The same tactic can be inspected without starting a server:
+Each agent keeps its own dialog. Prompts are reusable specifications of a
+turn; `receive_prompt` renders one into the dialog, and `respond()` runs the
+agent's call loop (retries, parsing, tool calls).
+[Architecture](core/architecture.md) explains the design.
 
-```bash
-lllm inspect examples.echo_service.tactics:build_tactic --json
-```
+## 3. Serve it
 
-The JSON includes the tactic name, schemas, capability flags, and metadata that
-service clients and package cards can use.
-
-## Serve An Entrypoint
-
-`lllm serve` accepts an import path that returns a tactic:
-
-```bash
-lllm serve examples.echo_service.tactics:build_tactic --port 8000
-```
-
-Use this for local smoke tests and demos. For application code, creating the
-FastAPI app explicitly keeps ownership clearer:
+Every tactic is also a typed service boundary. `input_model` is validated on
+the way in and published as a JSON schema:
 
 ```python
 from lllm.services import create_tactic_app
-from examples.echo_service.tactics import build_tactic
 
-app = create_tactic_app(build_tactic())
+app = create_tactic_app(brief)   # POST /run, POST /stream, GET /info
 ```
 
-## Add Context
-
-Callers can attach request and trace metadata through the run envelope:
-
-```json
-{
-  "input": {"text": "hello"},
-  "context": {
-    "request_id": "demo-1",
-    "trace_id": "trace-1",
-    "metadata": {"caller": "docs"}
-  }
-}
+```bash
+lllm serve tactics:brief --port 8000
+curl -X POST http://127.0.0.1:8000/run \
+  -H 'content-type: application/json' \
+  -d '{"input": {"topic": "KV caches"}}'
 ```
 
-The tactic receives this as `CallContext`. Runtime adapters may forward the
-metadata when the underlying runtime supports it, but callers still interact
-with the same LLLM envelope.
+## 4. Make it a package
 
-## Choose A Runtime
+```bash
+lllm create briefs        # lllm.toml, prompts/, configs/, tactics/, main.py, tests
+cd briefs
+lllm hub validate .
+lllm serve .              # serves the package's primary tactic
+```
 
-- Use a plain `Tactic` for deterministic Python logic or small service
-  adapters.
-- Use `PydanticAITactic` when a Pydantic AI agent owns model execution.
-- Use `lllm.runtimes.native` when prompt/dialog lineage is part of the work.
-- Use `RemoteTactic` when the implementation is already running as an HTTP
-  service.
+The generated `lllm.toml` tells the native runtime what to discover (prompts,
+YAML agent configs, tactics) and tells the hub what the package is. Publish it
+with `lllm hub publish . --local`, or browse shared packages at
+[lllm.one/hub](https://lllm.one/hub/).
 
-Continue with [Tactic](protocol/index.md) for the public boundary,
-[Runtime](runtime/index.md) for adapter choices, then
-[First Tactic](tutorials/first-tactic.md) for a step-by-step build.
+## Where next
+
+- [Tutorials](tutorials/index.md): eleven lessons from agents to channels.
+- [Architecture](core/architecture.md): the native design and its ideas.
+- [The Tactic](protocol/tactic.md): the one class every runtime shares.
+- [Inference hints](core/inference-hints.md): infra-aware serving with
+  Dynamo, vLLM, and SGLang.
