@@ -17,10 +17,10 @@ inbox ──subscription──▶ TacticProcessor(tactic) ──append──▶ 
 | `store` | required | `LocalStore` or `RemoteStore` for `process()`; any store, including `AsyncRemoteStore`, for `aprocess()`. |
 | `source` | required | Channel to read. |
 | `sink` | `None` | Channel to append outputs to. Without one, outputs are returned instead. |
-| `consumer` | `"<tactic.name>-processor"` | Subscription id, and the `source` field of output events. |
+| `consumer` | `"<tactic name>-<source>-processor"`, or `"<tactic name>-<source>-<kind>-processor"` with a `kind` | Subscription id, and the `source` field of output events. See [Resuming](#resuming). |
 | `kind` | `None` | Only process source events of this kind. |
 | `output_kind` | `"result"` | `kind` of the output events. |
-| `errors` | `"raise"` | `"raise"` stops on the first failure; `"record"` writes an error event and continues. |
+| `errors` | `"raise"` | `"raise"` stops on the first failure and retries that event on the next call; `"record"` writes an error event and continues. See [Failures](#failures). |
 
 The examples on this page run top to bottom as one session.
 
@@ -82,8 +82,8 @@ for event in processor.process():
 ```
 
 ```text
-triage-processor result T-100 {'priority': 'urgent', 'summary': 'Checkout is down'}
-triage-processor result T-101 {'priority': 'normal', 'summary': 'How do I export my data?'}
+triage-inbox-processor result T-100 {'priority': 'urgent', 'summary': 'Checkout is down'}
+triage-inbox-processor result T-101 {'priority': 'normal', 'summary': 'How do I export my data?'}
 ```
 
 `process()` returns the sink events it wrote. Each one holds:
@@ -145,7 +145,7 @@ submit("Search is broken", "T-102")
 
 restarted = TacticProcessor(TriageTicket(), store, source="inbox", sink="triaged")
 print([event.correlation_id for event in restarted.process()])
-print(store.get_subscription("triage-processor").cursor)
+print(store.get_subscription("triage-inbox-processor").cursor)
 ```
 
 ```text
@@ -153,28 +153,38 @@ print(store.get_subscription("triage-processor").cursor)
 5
 ```
 
-Rules that follow from this:
+The default consumer joins the tactic's name (`tactic.tactic_name`, which is
+the function name for `as_tactic(fn)`), the source channel, and the `kind`
+filter if there is one: `TriageTicket()` reading `inbox` is
+`triage-inbox-processor`, and with `kind="message"` it would be
+`triage-inbox-message-processor`. Rules that follow from this:
 
-- **Name consumers explicitly** once you run more than one processor. The
-  default is built from the tactic class's `name` attribute. Tactics named only
-  when constructed, such as `as_tactic(fn)`, have no class-level name and all
-  default to `None-processor`, so two of them would share one subscription.
+- **Name consumers explicitly** when two processors would share the default.
+  The sink is not part of it, so a dry run without a sink and the real
+  processor need different names (the dry run below uses `consumer="dry-run"`).
+- If the default would contain whitespace, `?`, or `#`, the constructor raises
+  `ValueError`; pass `consumer=`.
 - To process a channel again from the start, use a new consumer name.
-- The `kind` filter is stored with the subscription when it is created.
-  Changing `kind` later for the same consumer has no effect; use a new
-  consumer name.
-- Run one worker per consumer name. Two workers sharing a consumer can receive
-  the same event.
+- A subscription keeps the channel and `kind` filter it was created with.
+  Reusing a consumer name with another channel or kind makes `process()` raise
+  `ValueError`. With the default name, a new `kind` gives a new consumer, which
+  starts at the beginning of the channel.
+- Run one worker per consumer name. Two workers sharing a consumer can process
+  the same event twice, and with `errors="raise"` they can lose one.
 
 ## Failures
 
-`process()` pulls one event at a time, and the subscription cursor moves when
-the event is pulled, before the tactic runs. Delivery is therefore at most
-once: an event whose processing fails is not handed out again. `errors`
-decides what happens next.
+`process()` handles one event at a time. It reads the next event at the
+subscription cursor, runs the tactic, appends the output to the sink, and only
+then acknowledges the event, which moves the cursor past it. Delivery is
+therefore at least once: an event that was not acknowledged, because
+processing raised or the worker stopped, runs again on the next call. A tactic
+can see the same event twice, and the sink can then hold more than one output
+for it, so tactics should tolerate repeats. `errors` decides what a failure
+does.
 
-With `errors="raise"` (the default), the exception propagates and the events
-behind the failing one stay pending. The failing event itself is consumed:
+With `errors="raise"` (the default), the exception propagates and the failing
+event stays pending. The next call runs it again, before any event behind it:
 
 ```python
 from lllm import SchemaError
@@ -184,22 +194,23 @@ store.append_event(
 )
 submit("The API is down", "T-104")
 
-try:
-    processor.process()
-except SchemaError as exc:
-    print("failed:", type(exc).__name__)
-
-print([event.correlation_id for event in processor.process()])
+for attempt in (1, 2):
+    try:
+        processor.process()
+    except SchemaError as exc:
+        print(f"attempt {attempt} failed:", type(exc).__name__)
 ```
 
 ```text
-failed: SchemaError
-['T-104']
+attempt 1 failed: SchemaError
+attempt 2 failed: SchemaError
 ```
 
-T-103 failed input validation and is not retried. With `errors="record"`, the
-failure is written to the sink as a `kind="error"` event with the same lineage
-fields, and processing continues:
+T-103 fails input validation on every call, and T-104 waits behind it. With
+`errors="record"`, a failure is written to the sink as a `kind="error"` event
+with the same lineage fields, the event is acknowledged, and processing
+continues. This processor reads the same `triage-inbox-processor`
+subscription, so it starts at T-103:
 
 ```python
 store.append_event(
@@ -209,23 +220,28 @@ store.append_event(
 recording = TacticProcessor(
     TriageTicket(), store, source="inbox", sink="triaged", errors="record"
 )
-[error] = recording.process()
-print(error.kind, error.correlation_id, error.payload["type"])
+results = recording.process()
+print([(event.kind, event.correlation_id) for event in results])
+print(results[0].payload["type"])
 ```
 
 ```text
-error T-105 SchemaError
+[('error', 'T-103'), ('result', 'T-104'), ('error', 'T-105')]
+SchemaError
 ```
 
 The error payload is `{"error": str(exc), "type": type(exc).__name__}`. Use
-`"record"` in long-running workers so failures stay visible in the store, and
-read them back with `store.query_events("triaged", kind="error")`. `"record"`
-needs a sink; without one, errors are raised.
+`"record"` in long-running workers, so one bad event cannot block the
+subscription and failures stay visible in the store; read them back with
+`store.query_events("triaged", kind="error")`. `"record"` needs a sink;
+without one, it acts like `"raise"`.
 
 Any exception counts as a failure: payloads that do not match the tactic's
-input type raise `SchemaError`, and the tactic's own exceptions pass through.
-A missing sink channel also fails after the event was pulled, which is another
-reason to create channels up front.
+input type raise `SchemaError`, the tactic's own exceptions pass through
+unchanged, and so do errors from writing the output, such as the
+`InvalidPayloadError` for an output the store cannot encode as JSON. If the
+error event cannot be written either, as when the sink channel does not exist,
+`process()` raises and the event stays pending. Create channels up front.
 
 ## Without a sink
 
@@ -266,14 +282,15 @@ print([event.correlation_id for event in worker.process()])
 ['T-106']
 ```
 
-The remote worker continued the `triage-processor` subscription where the
-local processors left it.
+The remote worker continued the `triage-inbox-processor` subscription where
+the local processors left it.
 
 `aprocess()` is the async variant. It calls `tactic.arun()` and awaits store
 calls that return coroutines, so it works with `AsyncRemoteStore` as well as
-the sync stores. `process()` needs a sync store. This example talks to the
-store server in-process through `httpx.ASGITransport`, which is also how to
-test a worker without a running server; in production, pass only the URL.
+the sync stores. `process()` needs a sync store and raises `TypeError` when
+given an async one. This example talks to the store server in-process through
+`httpx.ASGITransport`, which is also how to test a worker without a running
+server; in production, pass only the URL.
 
 ```python
 import asyncio
@@ -366,13 +383,13 @@ def lineage(store, event):
 
 
 for event in lineage(store, store.query_events("replies")[-1]):
-    print(f"{event.channel:8} {event.source:17} {event.payload}")
+    print(f"{event.channel:8} {event.source:23} {event.payload}")
 ```
 
 ```text
-replies  draft-reply       {'body': 'We are on it. Re: Refunds are failing for every customer', 'priority': 'urgent'}
-triaged  triage-processor  {'priority': 'urgent', 'summary': 'Refunds are failing for every customer'}
-inbox    web-form          {'text': 'Refunds are failing for every customer'}
+replies  draft-reply             {'body': 'We are on it. Re: Refunds are failing for every customer', 'priority': 'urgent'}
+triaged  triage-inbox-processor  {'priority': 'urgent', 'summary': 'Refunds are failing for every customer'}
+inbox    web-form                {'text': 'Refunds are failing for every customer'}
 ```
 
 `correlation_id` groups the whole thread across channels without walking
@@ -456,6 +473,7 @@ async def run_async_worker(processor, *, idle_seconds=1.0):
 ```
 
 Give each worker its own consumer name and `errors="record"`, and stop it at
-any point: the next start resumes from the subscription cursor. To serve the
-store these workers share, see [Serving](serving.md); to put workers, tactics,
-and channels behind one API, see [AAAX](../aaax/index.md).
+any point: the next start resumes from the subscription cursor, and an event
+that was running when the worker stopped runs again. To serve the store these
+workers share, see [Serving](serving.md); to put workers, tactics, and
+channels behind one API, see [AAAX](../aaax/index.md).

@@ -144,9 +144,12 @@ knowing before you build on it:
 - One storage backend: `LocalStore` (SQLite plus files). The HTTP server and
   clients put any process in front of it.
 - Consumers poll. There is no push delivery or blocking pull.
-- A subscription's cursor moves when events are pulled, so delivery to a
-  consumer is at most once. [Processing](processing.md#failures) shows how to
-  keep failures visible.
+- `pull_subscription` moves the cursor as it returns events, so a consumer
+  that pulls directly gets each event at most once. `TacticProcessor`
+  acknowledges an event only after writing its output, so its delivery is at
+  least once: an event cut short by a raised error or a crash runs again, and
+  its output can appear twice. [Processing](processing.md#failures) shows how
+  to keep failures visible.
 - The store server has no authentication. Bind it to localhost or put it
   behind your own gateway.
 

@@ -94,7 +94,7 @@ curl -s -w '\n' http://127.0.0.1:7700/channels/missing
 | --- | --- |
 | 400 | `InvalidPayloadError`, other `NetworkError`s, and request bodies that fail validation (reported as `InvalidPayloadError`). |
 | 404 | `ChannelNotFoundError`, `EventNotFoundError`, `SubscriptionNotFoundError`, `ArtifactNotFoundError`, `SnapshotNotFoundError`. |
-| 409 | `ChannelExistsError`, `SubscriptionExistsError`. |
+| 409 | `ChannelExistsError`, `EventExistsError` (an event id that is taken), `SubscriptionExistsError`. |
 | 500 | Anything else, with the exception's class name and message. |
 
 ## Custom endpoints
@@ -110,13 +110,14 @@ from lllm.network import InvalidPayloadError, LocalStore, create_app, endpoint
 
 
 @endpoint.get("/channels/{name}/count", scope="channel", tags=("stats",))
-def count_events(store, name: str):
-    """Count every event in a channel."""
+def count_events(store, name: str, params=None):
+    """Count the events in a channel, or only those of one ?kind=."""
+    kind = (params or {}).get("kind")
     total, cursor = 0, 0
-    while batch := store.query_events(name, after_cursor=cursor, limit=500):
+    while batch := store.query_events(name, after_cursor=cursor, limit=500, kind=kind):
         total += len(batch)
         cursor = batch[-1].cursor
-    return {"channel": name, "events": total}
+    return {"channel": name, "kind": kind, "events": total}
 
 
 @endpoint.post("/channels/{name}/messages", scope="channel")
@@ -137,11 +138,13 @@ app = create_app(store, custom_endpoints=[count_events, post_message])
 client = TestClient(app)
 client.post("/channels/inbox/messages", json={"text": "Checkout is down"})
 print(client.get("/channels/inbox/count").json())
+print(client.get("/channels/inbox/count", params={"kind": "ping"}).json())
 print(client.post("/channels/inbox/messages", json={"txt": "typo"}).json())
 ```
 
 ```text
-{'channel': 'inbox', 'events': 1}
+{'channel': 'inbox', 'kind': None, 'events': 1}
+{'channel': 'inbox', 'kind': 'ping', 'events': 0}
 {'detail': {'error': {'type': 'InvalidPayloadError', 'message': 'body must be {"text": "..."}'}}}
 ```
 
@@ -151,7 +154,10 @@ How arguments are bound:
 - A parameter named `body` receives the parsed JSON body (`None` for `GET`,
   `DELETE`, or a body that is not JSON).
 - Any other parameter is filled from a path parameter of the same name.
-  Query strings are not passed; a parameter with a default keeps it.
+- A parameter named `params` that is not a path parameter receives the query
+  string as a dict of strings; for a repeated key, the last value wins.
+- Anything else keeps its default. A parameter without one fails every
+  request with a 500 `TypeError`.
 
 The function may return any JSON-encodable value, or be `async`. Exceptions map
 to statuses like the built-in routes, so raise `NetworkError` subclasses for
@@ -201,7 +207,6 @@ Where the clients differ from `LocalStore`:
 
 | Method | `LocalStore` | `RemoteStore` / `AsyncRemoteStore` |
 | --- | --- | --- |
-| `put_snapshot` | `put_snapshot(snapshot)` with a `Snapshot` or a dict | `put_snapshot(name, value=None, *, channel=None, timestamp=None, schema=None, source_event_id=None, metadata=None)`; `value` may also be a `Snapshot` |
 | `write_artifact` | `bytes`, `bytearray`, or `memoryview` | `bytes` (sent base64-encoded) or `str` (sent as UTF-8 text) |
 | errors | `NetworkError` subclasses | `RemoteStoreError` for server errors, with `status_code`, `error_type`, `message`, and the raw `detail`. Names and ids are checked before sending and raise `InvalidPayloadError`. |
 
@@ -209,11 +214,12 @@ Where the clients differ from `LocalStore`:
 `error_type` (for example `"SubscriptionNotFoundError"`) or `status_code`.
 Each call opens its own short-lived HTTP connection.
 
-One `put_snapshot` caveat: when called without keyword arguments, a dict
-`value` that contains any of the keys `value`, `channel`, `timestamp`,
-`schema`, `source_event_id`, or `metadata` is sent as the request body itself,
-so `put_snapshot("config", {"value": 3, "unit": "ms"})` stores `3`. Wrap such
-values, or pass a `Snapshot`, to store them whole.
+`put_snapshot` has the same signature on every store:
+`put_snapshot(snapshot=None, value=None, *, name=None, channel=None, timestamp=None, schema=None, source_event_id=None, metadata=None)`.
+Pass a `Snapshot` or a dict of snapshot fields, or a name and a value. The
+value is stored exactly as given, so `put_snapshot("config", {"value": 3, "unit": "ms"})`
+stores the whole dict. The one exception is a `Snapshot` passed as the value:
+its fields are stored under the name.
 
 `AsyncRemoteStore` has the same methods as coroutines. Pass
 `httpx.ASGITransport` to call an app in-process, which is the easiest way to
@@ -277,7 +283,10 @@ url = "http://127.0.0.1:7700"      # a served store
 owner = "support"                  # extra keys are kept as binding metadata
 
 [refs."lllm://demo/support-desk/snapshots/latest-reply"]
-path = "data/support-store"        # same as store
+store = "archive"                  # names the [stores.archive] table below
+
+[stores.archive]
+path = "data/support-store"        # relative to the project root
 ```
 
 `ChannelResolver` reads the `/channels/` and `/snapshots/` bindings and ignores
@@ -295,6 +304,7 @@ print(triaged.name, triaged.url, triaged.metadata)
 
 print(type(channels.local_store("lllm://demo/support-desk/channels/inbox")).__name__)
 print(type(channels.client("lllm://demo/support-desk/channels/triaged")).__name__)
+print(channels.store_path("lllm://demo/support-desk/snapshots/latest-reply").relative_to(channels.root))
 ```
 
 ```text
@@ -302,20 +312,23 @@ print(type(channels.client("lllm://demo/support-desk/channels/triaged")).__name_
 triaged http://127.0.0.1:7700 {'owner': 'support'}
 LocalStore
 RemoteStore
+data/support-store
 ```
 
 | Method | Returns |
 | --- | --- |
 | `ChannelResolver.from_config(path)` | A resolver for `path/.lllm/config.toml`, or for a config file path. Relative store paths resolve against the folder that contains `.lllm/`. The file must exist. |
+| `ChannelResolver.from_text(text, *, root=None)` | A resolver for config text, parsed in memory. Relative store paths resolve against `root` (default: the working directory). Writes no files. |
 | `ChannelResolver(root=".")` and `bind(ref, *, url=None, store=None, path=None, metadata=None)` | Bind refs in code. |
 | `resolve(ref)` | A `ResolvedChannelRef`: `ref`, `resource_kind`, `name`, `url`, `store`, `path`, `metadata`. |
 | `local_store(ref)`, `store_path(ref)` | A `LocalStore` (or its path) for `store`/`path` bindings. |
 | `client(ref)`, `async_client(ref)` | A `RemoteStore` or `AsyncRemoteStore` for `url` bindings; both accept `timeout=` and `transport=`. |
 | `refs()` | The bound refs, sorted. |
 
-Malformed refs and unbound refs raise `ChannelRefError`. `store` and `path` are
-both folder paths; optional `[stores.<name>]` tables are exposed through
-`channels.stores()` but are not looked up by bindings.
+Malformed refs and unbound refs raise `ChannelRefError`. `path` is always a
+folder path. `store` is one too, unless it names a `[stores.<name>]` table:
+then the binding uses that table's `path` (`ChannelRefError` if the table has
+none). `channels.stores()` returns the tables.
 
 A ref resolves to a whole store; the channel inside it is the ref's last
 segment. To get a store for any ref without caring which kind of binding it
@@ -360,6 +373,10 @@ description = "One triage result per message."
 channel = "triaged"
 description = "The newest drafted reply."
 ```
+
+A channel's `form` must be one of the forms listed in
+[Channels and stores](channels.md#channels); `load_manifest` rejects any other
+value.
 
 `open_package_store(manifest, *, store=None)` opens the package's store,
 `<package>/.lllm/network` by default, and creates every declared channel that
@@ -417,7 +434,7 @@ print(snapshot_resource(Snapshot(name="latest-reply", channel="triaged"), descri
       "method": "GET",
       "path": "/channels/{name}/count",
       "scope": "channel",
-      "description": "Count every event in a channel.",
+      "description": "Count the events in a channel, or only those of one ?kind=.",
       "tags": [
         "stats"
       ]

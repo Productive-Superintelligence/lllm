@@ -112,7 +112,7 @@ lllm network append inbox '{"text": "Password reset emails never arrive"}' \
 
 The tactic triages one message. It is plain Python so this tutorial runs
 offline; a native tactic that calls a model plugs in the same way, because the
-processor only calls `run()`. `tactics.py`:
+processor only calls `run()` (or `arun()`). `tactics.py`:
 
 ```python
 import re
@@ -195,16 +195,18 @@ python process.py
 ```
 
 Run it again and it prints nothing. The processor's subscription,
-`triage-processor` (the tactic's name plus `-processor`), lives in the store
-and remembers the last event it handed out:
+`triage-inbox-message-processor` (the tactic's name, the source channel, and
+the kind filter, plus `-processor`), lives in the store and remembers the last
+event it finished. The cursor moves only after a result is written, so a run
+that stops halfway repeats the unfinished message next time:
 
 ```bash
 python process.py
-lllm network get-subscription triage-processor
+lllm network get-subscription triage-inbox-message-processor
 ```
 
 ```text
-{"id":"triage-processor","channel":"inbox","cursor":4,"consumer":"triage-processor","batch_size":100,"filters":{"kind":"message"},"metadata":{}}
+{"id":"triage-inbox-message-processor","channel":"inbox","cursor":4,"consumer":"triage-inbox-message-processor","batch_size":100,"filters":{"kind":"message"},"metadata":{}}
 ```
 
 Each result points back at the message it came from. `trace.py`:
@@ -225,7 +227,7 @@ python trace.py
 ```
 
 ```text
-triage-processor result T-100
+triage-inbox-message-processor result T-100
 inbox The checkout page is down for every customer
 ```
 
@@ -247,7 +249,7 @@ curl -s -w '\n' "http://127.0.0.1:7700/events?channel=triaged&limit=1"
 
 ```text
 {"ok":true}
-[{"id":"ea41698d-0f45-4afa-b745-4604de002705","cursor":5,"channel":"triaged","timestamp":1793846681.0239878,"source":"triage-processor","kind":"result","payload":{"priority":"urgent","summary":"The checkout page is down for"},"schema":null,"metadata":{},"correlation_id":"T-100","parent_ids":["381bb4ae-10dc-4c09-846f-15d7f70b4651"]}]
+[{"id":"ea41698d-0f45-4afa-b745-4604de002705","cursor":5,"channel":"triaged","timestamp":1793846681.0239878,"source":"triage-inbox-message-processor","kind":"result","payload":{"priority":"urgent","summary":"The checkout page is down for"},"schema":null,"metadata":{},"correlation_id":"T-100","parent_ids":["381bb4ae-10dc-4c09-846f-15d7f70b4651"]}]
 ```
 
 The server opens the same folder, so local scripts and HTTP clients can share
@@ -328,11 +330,12 @@ T-104 {'priority': 'urgent', 'summary': 'Login is down on the mobile'}
 T-104 urgent Login is down on the mobile
 ```
 
-The worker processed only T-104. It used the same `triage-processor`
-subscription as step 4, and that subscription lives in the store, not in the
-process, so a worker on another machine picks up exactly where the local one
-stopped. To point the worker back at the local folder, change the binding to
-`store = ".lllm/network"`; the code stays the same.
+The worker processed only T-104. It used the same
+`triage-inbox-message-processor` subscription as step 4, and that subscription
+lives in the store, not in the process, so a worker on another machine picks
+up exactly where the local one stopped. To point the worker back at the local
+folder, change the binding to `store = ".lllm/network"`; the code stays the
+same.
 
 ## Step 7: mount it all in an AAAX strategy
 
@@ -445,12 +448,12 @@ request:
 curl -s -w '\n' -X POST http://127.0.0.1:8400/run \
   -H 'content-type: application/json' \
   -d '{"input": {"text": "Thanks, all good now"}}'
-curl -s -w '\n' http://127.0.0.1:8400/network/subscriptions/triage-processor
+curl -s -w '\n' http://127.0.0.1:8400/network/subscriptions/triage-inbox-message-processor
 ```
 
 ```text
 {"output":[{"priority":"urgent","summary":"Search results are broken"},{"priority":"normal","summary":"Thanks, all good now"}],"strategy":"support-desk","metadata":{}}
-{"id":"triage-processor","channel":"inbox","cursor":14,"consumer":"triage-processor","batch_size":100,"filters":{"kind":"message"},"metadata":{}}
+{"id":"triage-inbox-message-processor","channel":"inbox","cursor":14,"consumer":"triage-inbox-message-processor","batch_size":100,"filters":{"kind":"message"},"metadata":{}}
 ```
 
 One server now offers the strategy's `/run`, the tactic at `/tactics/triage/`,
