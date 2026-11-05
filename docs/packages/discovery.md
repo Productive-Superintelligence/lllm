@@ -88,10 +88,10 @@ that package and its dependency tree into a fresh runtime and makes it the
 default.
 
 If there is no manifest, it scans the working directory for the standard
-folders (`prompts/`, `tools/`, `proxies/`, `configs/`, `tactics/`, `assets/`),
-loads any it finds as a package named after the directory, and emits a
-`RuntimeWarning` recommending an `lllm.toml`. If none exist, the runtime stays
-empty. Pass `discover_cwd=False` to disable the scan.
+folders (`prompts/`, `tools/`, `proxies/`, `configs/`, `tactics/`, `assets/`,
+`services/`), loads any it finds as a package named after the directory, and
+emits a `RuntimeWarning` recommending an `lllm.toml`. If none exist, the
+runtime stays empty. Pass `discover_cwd=False` to disable the scan.
 
 After the main package, `load_runtime()` also loads **shared packages** from the
 standard drop-in folders; see [Sharing packages](#sharing-packages). For
@@ -158,13 +158,17 @@ packages = ["./packages/child_pkg"]
   listed path that does not exist is skipped with a `RuntimeWarning`.
 - **`[dependencies]`**: `packages` lists other package folders. Each loads into
   its own namespace only.
-- **Any other table with `paths`** is a [custom section](#custom-sections).
+- **Any other table** is a [custom section](#custom-sections), with the same
+  `paths` and fallback rules.
 
 The same manifest can also carry hub metadata (`org`, `kind`, named resources
 such as `[tactics.brief]` with an `entry`). Native discovery reads only the keys
-above and ignores the hub-declared sections (`schemas`, `channels`,
-`snapshots`, `runs`, `config`, `docs`, `examples`, `requirements`, `card`), so
-one file serves both:
+above. It skips the hub-declared sections (`schemas`, `channels`, `snapshots`,
+`runs`, `config`, `docs`, `examples`, `requirements`, `card`) unless one sets
+`paths`, which makes it a custom section. The hub cannot load most of those
+sections with `paths`, and `lllm hub validate` does not check `paths` in
+`config` or `card`, the two it does load, so give custom sections their own
+names. One file serves both:
 
 ```toml
 [package]

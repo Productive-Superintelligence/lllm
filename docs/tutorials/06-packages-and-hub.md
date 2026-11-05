@@ -21,6 +21,10 @@ briefs/
   tactics/assistant.py
   main.py
   tests/test_smoke.py
+  README.md
+  pyproject.toml
+  .env.example
+  .gitignore
 ```
 
 `lllm.toml` has two halves. The first tells the native runtime what to
@@ -157,8 +161,8 @@ ok
 
 Validation imports `main:create_tactic`, checks the refs and paths, and
 reports warnings for anything that would make the package hard to use, such
-as a missing card. [The manifest reference](../packages/manifest.md) lists
-every check.
+as a missing card. [The manifest reference](../packages/manifest.md#validation)
+lists the main checks.
 
 ## Step 6: serve it (calls a model)
 
@@ -191,6 +195,13 @@ host (see [The Hub](../packages/hub.md#publish-a-static-hub)):
 ```bash
 lllm hub index ./site/hub
 ```
+
+```text
+indexed 1 package(s) into ./site/hub
+```
+
+It writes `site/hub/data/catalog.json` and the package zip,
+`site/hub/packages/local/briefs/0.1.0.zip`.
 
 ## Summary
 
