@@ -207,7 +207,7 @@ def test_hub_index_builds_a_static_catalog(tmp_path):
     catalog = json.loads((site / "data" / "catalog.json").read_text())
     [summary] = catalog["packages"]
     detail = catalog["details"]["local/briefs"]
-    assert summary["download_url"] == "packages/local-briefs-0.1.0.zip"
+    assert summary["download_url"] == "packages/local/briefs/0.1.0.zip"
     assert summary["resources"] == [
         {"kind": "tactic", "name": "assistant", "ref": "lllm://local/briefs/tactics/assistant"},
         {"kind": "doc", "name": "readme", "ref": "lllm://local/briefs/docs/readme"},
@@ -215,5 +215,5 @@ def test_hub_index_builds_a_static_catalog(tmp_path):
     assert detail["primary"] == "tactics.assistant"
     assert detail["commands"]["get"] == "lllm hub get local/briefs"
     assert detail["readme"].startswith("#")
-    with zipfile.ZipFile(site / "packages" / "local-briefs-0.1.0.zip") as archive:
-        assert "briefs/lllm.toml" in archive.namelist()
+    with zipfile.ZipFile(site / "packages" / "local" / "briefs" / "0.1.0.zip") as archive:
+        assert "lllm.toml" in archive.namelist()

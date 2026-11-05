@@ -212,9 +212,10 @@ x_policy = "safe-policy"
             transport=transport,
             base_url="http://testserver",
         ) as client:
+            # Validation rejects these keys; responses must still filter them when skipped.
             publish = await client.post(
                 "/publish",
-                json={"path": str(package), "validate": True},
+                json={"path": str(package), "validate": False},
             )
             listed = await client.get("/packages")
             metadata = await client.get("/packages/demo/echo")

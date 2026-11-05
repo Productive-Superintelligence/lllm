@@ -4,7 +4,7 @@
 
     output_dir/
       data/catalog.json            # summaries + per-package details
-      packages/<org>-<name>-<version>.zip
+      packages/<org>/<name>/<version>.zip
 
 The catalog is what the hub web app reads when it runs as static files. Each
 package's latest version is included with its card, agent card, local config
@@ -47,7 +47,9 @@ def build_catalog(
     for record in _latest_records(hub):
         filename = download_filename(record)
         download_url = f"packages/{filename}"
-        (package_dir / filename).write_bytes(package_zip(record))
+        target = package_dir / filename
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(package_zip(record))
         summary = {**summary_payload(record), "download_url": download_url}
         summaries.append(summary)
         details[record.identifier] = {
@@ -125,12 +127,17 @@ def detail_payload(record: PackageRecord) -> dict[str, Any]:
 
 
 def download_filename(record: PackageRecord) -> str:
-    parts = (record.org, record.name, record.version)
-    return "-".join(part.replace("/", "-") for part in parts) + ".zip"
+    """``<org>/<name>/<version>.zip``: one folder per segment, so names never collide."""
+
+    return f"{record.org}/{record.name}/{record.version}.zip"
 
 
 def package_zip(record: PackageRecord) -> bytes:
-    """Zip a published package folder, skipping secrets and build leftovers."""
+    """Zip a published package folder, skipping secrets and build leftovers.
+
+    Files sit at the archive root, like the hub API's ``/download``, so
+    ``unzip -d packages/<name>`` leaves ``lllm.toml`` in ``packages/<name>``.
+    """
 
     root = record.root
     buffer = io.BytesIO()
@@ -141,7 +148,7 @@ def package_zip(record: PackageRecord) -> bytes:
                 continue
             if path.is_symlink() or not path.is_file():
                 continue
-            info = zipfile.ZipInfo(f"{record.name}/{relative.as_posix()}")
+            info = zipfile.ZipInfo(relative.as_posix())
             info.date_time = (2020, 1, 1, 0, 0, 0)  # reproducible archives
             info.compress_type = zipfile.ZIP_DEFLATED
             archive.writestr(info, path.read_bytes())
@@ -165,7 +172,7 @@ def package_readme(record: PackageRecord) -> str:
         return ""
     if target.is_symlink() or not target.is_file():
         return ""
-    return target.read_text(encoding="utf-8")
+    return target.read_text(encoding="utf-8", errors="replace")
 
 
 def _latest_records(hub: LocalHub) -> list[PackageRecord]:
