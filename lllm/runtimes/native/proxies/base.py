@@ -264,8 +264,10 @@ class BaseProxy:
         adjusted) params to send. Proxies that declare a ``base_url`` then
         call ``_call_api`` with the full URL, adding the API key as a query
         parameter (``api_key_name``) or a header (``"*header-name"``).
-        Proxies without a ``base_url``, and tactic endpoints, return the
-        method's result directly.
+        Proxies that send requests themselves (an overridden ``_call_api``
+        without ``base_url``, e.g. an SDK client) receive the endpoint path.
+        Proxies with neither, and tactic endpoints, return the method's result
+        directly.
         """
 
         method, info, path_params = self.resolve_endpoint(path)
@@ -274,13 +276,18 @@ class BaseProxy:
             return method(params)
         prepared = method(params)
         base_url = getattr(self, "base_url", None)
-        if not base_url:
+        own_transport = type(self)._call_api is not BaseProxy._call_api
+        if not base_url and not own_transport:
             return prepared
         prepared = dict(prepared if isinstance(prepared, dict) else params)
         endpoint = str(info.get("endpoint") or "").strip("/")
         for name in re.findall(r"\{([^}/]+)\}", endpoint):
             value = prepared.pop(name, path_params.get(name))
             endpoint = endpoint.replace("{" + name + "}", str(value))
+        if not base_url:
+            # SDK-backed proxies (e.g. Exa) send requests and handle auth in
+            # their own _call_api; they get the endpoint path, not a URL.
+            return self._call_api(endpoint, prepared, info, {})
         url = f"{base_url.rstrip('/')}/{endpoint}" if endpoint else base_url
         headers: Dict[str, Any] = {}
         key_name = getattr(self, "api_key_name", None)

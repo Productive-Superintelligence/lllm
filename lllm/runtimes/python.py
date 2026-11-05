@@ -95,7 +95,14 @@ def as_tactic(
     examples: list[dict[str, Any]] | None = None,
     metadata: Mapping[str, Any] | None = None,
 ) -> CallableTactic:
-    """Return a tactic wrapper for a Python callable."""
+    """Return a tactic wrapper for a Python callable.
+
+    A tactic passed without overrides is returned as it is.
+    """
+
+    overrides = (name, description, input_type, output_type, package_ref, service_ref, examples, metadata)
+    if isinstance(fn, Tactic) and all(value is None for value in overrides):
+        return fn
 
     return CallableTactic(
         fn,

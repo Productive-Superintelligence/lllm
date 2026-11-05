@@ -144,3 +144,48 @@ def test_builtin_fmp_proxy_calls_its_documented_endpoint(monkeypatch):
             {"cusip": "037833100", "apikey": "fmp-key"},
         )
     ]
+
+
+class SDKProxy(BaseProxy):
+    """Sends requests itself (like an SDK client) and has no base_url."""
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.api_key_name = "apikey"
+        self.api_key = "secret"
+        self.sent = []
+
+    def _call_api(self, url, params, endpoint_info, headers):
+        self.sent.append((url, dict(params), dict(headers)))
+        return {"ok": True}
+
+    @BaseProxy.endpoint(
+        category="Search",
+        endpoint="search",
+        description="Search.",
+        params={"query": (str, "x")},
+        response=[],
+    )
+    def search(self, params):
+        return params
+
+
+def test_sdk_backed_proxies_receive_the_endpoint_path_without_injected_keys():
+    proxies = manager(sdk=SDKProxy)
+
+    assert proxies("sdk/search", {"query": "lllm"}) == {"ok": True}
+    assert proxies.proxies["sdk"].sent == [("search", {"query": "lllm"}, {})]
+
+
+def test_as_tactic_returns_tactics_unchanged():
+    import lllm
+
+    class Echo(lllm.Tactic):
+        name = "echo"
+
+        def call(self, task):
+            return task
+
+    tactic = Echo()
+    assert lllm.as_tactic(tactic) is tactic
+    assert lllm.as_tactic(tactic, name="renamed") is not tactic

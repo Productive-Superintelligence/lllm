@@ -48,21 +48,19 @@ def css_block(css: str, selector: str) -> str:
     return match.group("body")
 
 
-def test_docs_use_tactic_protocol_framing():
-    sources = {
-        "README": ROOT / "README.md",
-        "docs home": ROOT / "docs" / "index.md",
-        "package docstring": ROOT / "lllm" / "__init__.py",
-        "package metadata": ROOT / "pyproject.toml",
-        "site metadata": ROOT / "mkdocs.yml",
-    }
-    combined = "\n".join(
-        path.read_text(encoding="utf-8") for path in sources.values()
-    )
+def test_docs_lead_with_the_native_design():
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    home = (ROOT / "docs" / "index.md").read_text(encoding="utf-8")
+    package_doc = (ROOT / "lllm" / "__init__.py").read_text(encoding="utf-8")
 
-    assert "protocol and service layer for reusable agentic tactics" in combined
-    assert "Protocol-first tactic services" not in combined
-    assert "protocol-first service infrastructure" not in combined
+    for text in (readme, home):
+        assert "Low-Level Language Models" in text
+        assert "Tactic.quick(" in text
+        for idea in ("Tactic is the program", "Agent is the caller", "Prompt is the function", "Dialog is the mental state"):
+            assert idea in text
+        assert "Analytica" in text and "Apeiron" in text
+    assert "Pydantic" in home
+    assert "Low-Level Language Models" in package_doc
 
 
 def test_docs_render_mermaid_as_diagram_containers(tmp_path):
@@ -652,124 +650,49 @@ def test_docs_keep_light_brand_styles(tmp_path):
     assert (site_dir / "CNAME").read_text(encoding="utf-8").strip() == "lllm.one"
 
 
-def test_docs_nav_keeps_foldable_tutorial_groups():
+def nav_pages(config: str) -> list[str]:
+    return re.findall(r"^\s*-\s+(?:[^:\n]+:\s+)?([\w./-]+\.md)\s*$", config, re.M)
+
+
+def test_docs_nav_sections_and_no_orphan_pages():
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
 
     assert "- navigation.sections" in config
     assert "- navigation.indexes" in config
-    assert "- navigation.expand" not in config
     assert "- navigation.tabs" not in config
-    assert "- navigation.tabs.sticky" not in config
     assert "scheme: slate" not in config
-    assert "material/weather-night" not in config
-    assert "  - Overview:\n      - Overview: index.md\n      - Getting Started:" in config
-    assert "      - Concepts:" in config
-    assert "  - Tactic:\n      - Tactic: protocol/index.md" in config
-    assert "      - Tactic Boundary: protocol/tactic-boundary.md" in config
-    assert "      - Service Boundary: protocol/service-boundary.md" in config
-    assert "      - Package Contract: protocol/package-contract.md" in config
-    assert "      - Refs And Resolution: protocol/refs-resolution.md" in config
-    assert "  - Runtime:\n      - Runtime: runtime/index.md" in config
-    assert "      - Pydantic AI: runtime/pydantic-ai.md" in config
-    assert "      - Native Runtime:\n          - Overview: runtime/native.md" in config
-    assert "          - Core Primitives:" in config
-    assert "              - Prompt And Dialog: runtime/native/prompt-dialog.md" in config
-    assert "              - Parsers And Tools: runtime/native/parsers-tools.md" in config
-    assert "          - Agent Runtime:" in config
-    assert "              - Agent Loop: runtime/native/agent-loop.md" in config
-    assert (
-        "              - Registry And Invokers: runtime/native/registry-invokers.md"
-        in config
-    )
-    assert "          - Tactics:" in config
-    assert "              - Native Tactics: runtime/native/tactics.md" in config
-    assert "              - Protocol Adapter: runtime/native/adapter.md" in config
-    assert "          - Surroundings:" in config
-    assert (
-        "              - Proxies, Skills, And Sandbox: runtime/native/proxies-skills-sandbox.md"
-        in config
-    )
-    assert (
-        "              - Boundary And Verification: runtime/native/boundary-verification.md"
-        in config
-    )
-    assert "  - Tutorials:\n      - Tactic Level:" in config
-    assert "      - Runtime:" in config
-    assert "          - First Tactic: tutorials/first-tactic.md" in config
-    assert "          - Native Core: tutorials/native-core.md" in config
-    assert (
-        "          - Pydantic AI Runtime: tutorials/pydantic-ai-runtime.md"
-        in config
-    )
-    assert (
-        "      - Native Preservation Audit: reference/native-preservation.md"
-        in config
-    )
-
-
-def test_native_preservation_audit_documents_port_cut_defer_status():
-    audit = (ROOT / "docs" / "reference" / "native-preservation.md").read_text(
-        encoding="utf-8"
-    )
-
-    assert "# Native Preservation Audit" in audit
-    assert "## Ported" in audit
-    assert "## Adapted" in audit
-    assert "## Cut" in audit
-    assert "## Deferred" in audit
-    assert "`lllm.runtimes.native`" in audit
-    assert "`NativeTacticAdapter`" in audit
-    assert "`tactic_as_function()`" in audit
-    assert "LLLM hub owns `lllm.toml`" in audit
-    assert "Live native invoker behavior" in audit
-    assert "Jupyter sandbox behavior" in audit
-
-
-def test_native_runtime_doc_preserves_restored_v1_surfaces():
-    native_root = ROOT / "docs" / "runtime" / "native"
-    pages = {
-        "overview": ROOT / "docs" / "runtime" / "native.md",
-        "prompt_dialog": native_root / "prompt-dialog.md",
-        "parsers_tools": native_root / "parsers-tools.md",
-        "agent_loop": native_root / "agent-loop.md",
-        "registry_invokers": native_root / "registry-invokers.md",
-        "tactics": native_root / "tactics.md",
-        "adapter": native_root / "adapter.md",
-        "proxies": native_root / "proxies-skills-sandbox.md",
-        "boundary": native_root / "boundary-verification.md",
+    for section in ("Home", "Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "SSSN", "AAAX", "Reference"):
+        assert f"  - {section}:" in config
+    pages = nav_pages(config)
+    docs = ROOT / "docs"
+    assert [page for page in pages if not (docs / page).is_file()] == []
+    all_pages = {
+        str(path.relative_to(docs))
+        for path in docs.rglob("*.md")
+        if "overrides" not in path.parts
     }
-    texts = {name: path.read_text(encoding="utf-8") for name, path in pages.items()}
+    assert sorted(all_pages - set(pages)) == []
 
-    assert "# Native Runtime" in texts["overview"]
-    assert "[Prompt And Dialog](native/prompt-dialog.md)" in texts["overview"]
-    assert "[Parsers And Tools](native/parsers-tools.md)" in texts["overview"]
-    assert "[Agent Loop](native/agent-loop.md)" in texts["overview"]
-    assert "[Native Tactics](native/tactics.md)" in texts["overview"]
-    assert "# Prompt And Dialog" in texts["prompt_dialog"]
-    assert "# Parsers And Tools" in texts["parsers_tools"]
-    assert "# Agent Loop" in texts["agent_loop"]
-    assert "# Registry And Invokers" in texts["registry_invokers"]
-    assert "# Native Tactics" in texts["tactics"]
-    assert "# Protocol Adapter" in texts["adapter"]
-    assert "# Proxies, Skills, And Sandbox" in texts["proxies"]
-    assert "# Boundary And Verification" in texts["boundary"]
 
-    expected_terms = [
+def test_native_reference_covers_core_surfaces():
+    core = ROOT / "docs" / "core"
+    text = "\n".join(path.read_text(encoding="utf-8") for path in sorted(core.glob("*.md")))
+
+    for page in ("architecture", "agent", "prompts", "dialog", "tactic", "config", "invokers", "inference-hints", "proxy-and-sandbox", "logging", "runtime"):
+        assert (core / f"{page}.md").is_file(), page
+    for term in (
         "`AgentCallSession`",
         "`TacticCallSession`",
-        "`DefaultTagParser`",
-        "`DefaultSimpleHandler`",
-        "`BaseStreamHandler`",
+        "agent_group",
+        "agent_tools",
+        "max_rate_limit_retries",
         "`ProxyManager`",
-        "`AgentInterpreter`",
-        "`NativeTacticAdapter`",
-        "`tactic_as_function()`",
-        "native package discovery still reads `lllm.toml`",
-        "LLLM hub owns `lllm.toml`",
-    ]
-    all_native_text = "\n".join(texts.values())
-    for term in expected_terms:
-        assert term in all_native_text
+        "CALL_API",
+        "InferenceHints",
+        "x-dynamo-session-id",
+        "tactic_as_function",
+    ):
+        assert term in text, term
 
 
 def test_service_api_reference_matches_error_envelope():
@@ -791,55 +714,23 @@ def test_service_api_reference_matches_error_envelope():
     assert '"type": "TacticInputError"' not in reference
 
 
-def test_protocol_reference_documents_identifier_rules():
-    reference = (ROOT / "docs" / "reference" / "protocol.md").read_text(
-        encoding="utf-8"
-    )
-
-    assert "Tactic names may contain display\nspaces" in reference
-    assert "must avoid percent escapes, `.`, `..`, `/`" in reference
-    assert "`\\`, `:`, and" in reference
-    assert "`;`" in reference
-    assert "Token-style fields" in reference
-    assert "`service_ref` values" in reference
-    assert "lllm://.../services/..." in reference
-    assert "empty path segments" in reference
-
-
 def test_hub_metadata_reference_names_json_schemas():
     reference = (ROOT / "docs" / "reference" / "hub-metadata.md").read_text(
         encoding="utf-8"
     )
 
-    assert "input and output JSON schemas" in reference
-    assert "Package refs use `lllm://.../tactics/...`" in reference
-    assert "service refs use either" in reference
-    assert "input and output schema refs" not in reference
+    assert "JSON schemas of the typed input and output" in reference
+    assert "Package refs use `lllm://org/package/tactics/name`" in reference
+    assert "Service refs use either" in reference
 
 
-def test_composition_guide_documents_mixed_local_config():
-    guide = (ROOT / "docs" / "guides" / "composition.md").read_text(
-        encoding="utf-8"
-    )
+def test_refs_page_documents_local_config_and_resolver():
+    refs = (ROOT / "docs" / "protocol" / "refs.md").read_text(encoding="utf-8")
 
-    assert "TacticResolver.from_config()" in guide
-    assert "shared `.lllm/config.toml`" in guide
-    assert "non-tactic refs" in guide
-    assert "lllm://demo/echo/services/api" in guide
-    assert "lllm://demo/echo/channels/events" in guide
-    assert "All binding keys must still be valid" in guide
-    assert "known PSI resource sections" in guide
-    assert "`schemas`, `services`, `channels`" in guide
-    assert "`runs`, `configs`, `docs`" in guide
-    assert "unknown resource sections fail validation" in guide
-    assert "avoid whitespace" in guide
-    assert "do not pad them" in guide
-    assert "must be absolute" in guide
-    assert "HTTP(S) service URLs" in guide
-    assert "must not also declare a `store`" in guide
-    assert "`store`, `path`, or `object` target" in guide
-    assert "percent escapes" in guide
-    assert "dot segments" in guide
+    assert "lllm://" in refs
+    assert ".lllm/config.toml" in refs
+    assert "Resolver" in refs
+    assert "url =" in refs
 
 
 def test_public_text_does_not_use_staging_name():
@@ -857,22 +748,22 @@ def test_public_text_does_not_use_staging_name():
         assert "lllmv2" not in text, path
         assert "SSSN v2" not in text, path
         assert "sssnv2" not in text, path
+        assert "psi://" not in text, path
+        assert "psi.toml" not in text, path
+        assert "PsiHub" not in text, path
+        assert "prosi-psi-cli" not in text, path
 
 
 def test_tutorials_keep_step_by_step_shape():
-    required = [
-        "Goal:",
-        "## Prerequisites",
-        "## Files Used",
-        "## Verify",
-        "Expected output:",
-        "Next,",
-    ]
+    lessons = sorted((ROOT / "docs" / "tutorials").glob("[0-9][0-9]-*.md"))
 
-    for path in sorted((ROOT / "docs" / "tutorials").glob("*.md")):
+    assert [path.name[:2] for path in lessons] == [f"{n:02d}" for n in range(1, 12)]
+    for path in lessons:
         text = path.read_text(encoding="utf-8")
-        for marker in required:
-            assert marker in text, f"{path.relative_to(ROOT)} missing {marker}"
+        name = path.relative_to(ROOT)
+        assert "Goal" in text, f"{name} missing a goal"
+        assert re.search(r"^## (Step )?1[.:]", text, re.M), f"{name} missing numbered steps"
+        assert "Next" in text, f"{name} missing a next link"
 
 
 def test_readme_and_docs_local_links_resolve():
