@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import inspect
 import threading
 from collections.abc import Awaitable, Callable, Mapping
@@ -81,6 +82,20 @@ class StrategyStore:
         if other is not None and other is self._store:
             return True
         return root is not None and self.root is not None and Path(root).resolve() == self.root
+
+    def adopt(self, store: Any) -> bool:
+        """Use ``store``, a store object for this folder, if none is open yet.
+
+        If this store has not opened its folder yet, it uses ``store`` (or the
+        store it wraps) instead of opening a new local store. Returns whether
+        ``store`` is the store in use: ``False`` if another store object is.
+        """
+
+        other = store._store if isinstance(store, StrategyStore) else store
+        with self._lock:
+            if self._store is None:
+                self._store = other
+            return other is None or other is self._store
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("_"):
@@ -222,23 +237,34 @@ class Strategy:
         backed by the store channel of the same name, created in the store the
         first time the store is used. Packages that declare channels share the
         strategy's store (see :func:`lllm.shell.add_package`), so attach your
-        store before mounting them. Attaching the store the strategy already
-        has (the same object or folder), or ``None`` to a strategy without a
-        store, does nothing. Attaching another store, or ``None`` to a strategy
-        that has one, raises ``ValueError``: a store is never replaced or
+        store before mounting them. A store object for the folder of a package
+        store is used as the strategy's store if the strategy has not opened
+        that folder yet (it does when it is served or a channel is used).
+        Attaching the store the strategy already has, or ``None`` to a strategy
+        without a store, does nothing. Attaching another store, another store
+        object for a folder the strategy has opened, or ``None`` to a strategy
+        that has a store raises ``ValueError``: a store is never replaced or
         dropped silently.
         """
 
         if self._store is not None:
-            if self._store.same_as(store):
-                return self
-            change = "drop it" if store is None else f"also use {_store_label(store)}"
-            raise ValueError(
-                f"Strategy {self.name!r} already has a channel store "
-                f"({_store_label(self._store)}) and cannot {change}: a strategy "
-                "has one store, served at /network/. Attach it before mounting "
-                "packages, and mount packages without store= to share it."
-            )
+            if not self._store.same_as(store):
+                change = "drop it" if store is None else f"also use {_store_label(store)}"
+                raise ValueError(
+                    f"Strategy {self.name!r} already has a channel store "
+                    f"({_store_label(self._store)}) and cannot {change}: a strategy "
+                    "has one store, served at /network/. Attach it before mounting "
+                    "packages, and mount packages without store= to share it."
+                )
+            if not self._store.adopt(store):
+                raise ValueError(
+                    f"Strategy {self.name!r} already uses another store object for "
+                    f"its channel store ({_store_label(self._store)}) and cannot "
+                    f"switch to this {type(store).__name__}: a strategy has one "
+                    "store, served at /network/. Attach your store before the "
+                    "strategy is served or its channels are used."
+                )
+            return self
         if store is None:
             return self
         self._store = store if isinstance(store, StrategyStore) else StrategyStore(store)
@@ -250,7 +276,9 @@ class Strategy:
         """Tactic resources as lllm tactics.
 
         Tactic objects are returned as-is, lazy package tactics are loaded, and
-        plain handler functions are wrapped with :func:`lllm.as_tactic`.
+        plain handler functions are wrapped with :func:`lllm.as_tactic`. A
+        handler that takes no input is called without it, as the strategy
+        calls its other handlers.
         """
 
         return {name: self._tactic(name) for name in self._tactics}
@@ -263,7 +291,13 @@ class Strategy:
             return value.load()
         from ..runtimes import as_tactic
 
-        return as_tactic(value, name=name)
+        return as_tactic(_tactic_callable(value), name=name)
+
+    def _lookup(self, name: str) -> StrategyResource:
+        resource = self._resources.get(name)
+        if resource is None:
+            raise ResourceNotFoundError(f"Strategy resource not found: {name}")
+        return resource
 
     def resource(
         self,
@@ -345,7 +379,8 @@ class Strategy:
           :class:`~lllm.protocol.CallContext` (``{"metadata": {...}, "tags":
           {...}, "request_id": ...}``), or is one, and the tactic receives a
           ``CallContext``. A plain-function handler is wrapped with
-          :func:`lllm.as_tactic`, so it gets a ``CallContext`` on both routes.
+          :func:`lllm.as_tactic`, so it gets a ``CallContext`` on both routes
+          if it takes ``context``; one that takes no input is called without.
         - Any other resource with a handler receives ``context`` as a plain
           dict (a ``Tactic`` handler gets that dict as ``CallContext.metadata``).
         - A channel resource without a handler is served by :attr:`store`:
@@ -357,9 +392,7 @@ class Strategy:
         Raises :class:`ResourceNotFoundError`, a ``KeyError``, for unknown names.
         """
 
-        resource = self._resources.get(name)
-        if resource is None:
-            raise ResourceNotFoundError(f"Strategy resource not found: {name}")
+        resource = self._lookup(name)
         if name in self._tactics:
             tactic = self._tactic(name)
             return await tactic.arun(input_value, context=_tactic_context(tactic, context))
@@ -404,6 +437,45 @@ def _tactic_handler(tactic: Tactic[Any, Any]) -> Handler:
         return await tactic.arun(input_value, context=call_context)
 
     return handler
+
+
+def _tactic_callable(handler: Handler) -> Handler:
+    """``handler`` in the shape :func:`lllm.as_tactic` calls: ``handler(input, context=...)``.
+
+    ``as_tactic`` always passes the input and awaits only coroutine functions,
+    while the strategy calls its other handlers without the input if they take
+    none and awaits what they return. So a tactic handler that takes no input
+    (``lambda: ...``, ``lambda *, context=None: ...``) is called without it, and
+    an object with an ``async def __call__`` is awaited. Other handlers are
+    returned as they are.
+    """
+
+    signature = _signature(handler)
+    takes_input = signature is None or _can_accept_input(signature)
+    async_object = not inspect.iscoroutinefunction(handler) and inspect.iscoroutinefunction(
+        getattr(type(handler), "__call__", None)
+    )
+    if takes_input and not async_object:
+        return handler
+
+    def call(input_value: Any, kwargs: dict[str, Any]) -> Any:
+        return handler(input_value, **kwargs) if takes_input else handler(**kwargs)
+
+    # wraps() keeps the handler's name, docs, and signature, which as_tactic
+    # reads to describe the tactic and to decide whether to pass ``context``.
+    if async_object or inspect.iscoroutinefunction(handler):
+
+        @functools.wraps(handler)
+        async def adapted(input_value: Any = None, **kwargs: Any) -> Any:
+            return await call(input_value, kwargs)
+
+    else:
+
+        @functools.wraps(handler)
+        def adapted(input_value: Any = None, **kwargs: Any) -> Any:
+            return call(input_value, kwargs)
+
+    return adapted
 
 
 def _tactic_context(tactic: Tactic[Any, Any], context: Any) -> CallContext:

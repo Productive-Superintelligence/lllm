@@ -7,14 +7,16 @@ network store API at ``/network/``. The shell adds its own surface on top:
 ``/strategy``, ``/resources``, channel shortcuts, and the strategy ``/run``.
 
 The shell routes report errors in the services error envelope,
-``{"detail": {"error": {"type": ..., "message": ...}}}``: an unknown resource
-is a 404, and a malformed request is a 400. A tactic resource fails with the
-status ``POST /tactics/<name>/run`` uses (400 for ``SchemaError`` and
-``TacticUnsupportedError``, 500 otherwise). For other handlers, a
-``ValueError`` or ``SchemaError`` is a 400; channel store errors keep the
-store server's codes (404 not found, 409 conflict, 400 otherwise), and a
-remote store's 4xx errors keep the code its server returned; anything else is
-a 500.
+``{"detail": {"error": {"type": ..., "message": ...}}}``: a resource named in
+the URL that does not exist is a 404, and a malformed request is a 400. A
+tactic resource fails with the status ``POST /tactics/<name>/run`` uses (400
+for ``SchemaError`` and ``TacticUnsupportedError``, 500 for anything else, an
+``HTTPException`` included). Other handlers keep the status of an
+``HTTPException`` they raise; a ``ValueError`` or ``SchemaError`` is a 400;
+channel store errors keep the store server's codes (404 not found, 409
+conflict, 400 otherwise), and a remote store's 4xx errors keep the code its
+server returned; anything else is a 500, including a resource lookup that
+fails inside a handler.
 """
 
 from __future__ import annotations
@@ -169,15 +171,21 @@ async def _invoke(
     endpoint: str,
 ) -> StrategyRunResponse:
     try:
+        strategy._lookup(name)
+    except ResourceNotFoundError as exc:
+        # Only this lookup is a 404: the same error raised inside a handler is
+        # that handler's failure, since the resource in the URL exists.
+        raise _http_error(exc, endpoint=endpoint, resource=name, status_code=404) from exc
+    tactic = name in strategy._tactics
+    try:
         output = await strategy.invoke_resource(
             name,
             request.input,
             context=request.context,
         )
-    except StarletteHTTPException:
-        raise
     except Exception as exc:
-        tactic = name in strategy._tactics
+        if isinstance(exc, StarletteHTTPException) and not tactic:
+            raise  # a tactic's is a 500, as on /tactics/{name}/run
         raise _http_error(exc, endpoint=endpoint, resource=name, tactic=tactic) from exc
     return StrategyRunResponse(
         output=jsonable_encoder(output),
@@ -192,9 +200,10 @@ def _http_error(
     endpoint: str,
     resource: str | None = None,
     tactic: bool = False,
+    status_code: int | None = None,
 ) -> HTTPException:
     return HTTPException(
-        status_code=_status_code(exc, tactic=tactic),
+        status_code=_status_code(exc, tactic=tactic) if status_code is None else status_code,
         detail=_error_payload(
             exc,
             endpoint=endpoint,
@@ -210,8 +219,6 @@ def _error_payload(exc: Exception, **fields: Any) -> dict[str, Any]:
 
 
 def _status_code(exc: Exception, *, tactic: bool = False) -> int:
-    if isinstance(exc, ResourceNotFoundError):
-        return 404
     if tactic:
         # The tactic service's mapping, so both tactic routes agree.
         return _status_code_for_error(exc)

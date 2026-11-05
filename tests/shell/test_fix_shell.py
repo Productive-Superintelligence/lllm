@@ -260,6 +260,52 @@ def test_a_strategy_never_swaps_its_store_silently(tmp_path: Path):
     assert strategy.store.root == alpha_store.resolve()
 
 
+class _AuditingStore(LocalStore):
+    """A store subclass whose own behavior must not be dropped."""
+
+    def __init__(self, root):
+        super().__init__(root)
+        self.appended: list[Any] = []
+
+    def append_event(self, event):
+        appended = super().append_event(event)
+        self.appended.append(appended.payload)
+        return appended
+
+
+def test_a_store_object_for_the_package_store_folder_is_the_store_used(tmp_path: Path):
+    package = _package(tmp_path / "pkg")
+    strategy = Strategy("audit").use_package(package)
+    audit = _AuditingStore(package / ".lllm" / "network")
+
+    strategy.attach_store(audit)
+    client = TestClient(create_strategy_app(strategy))
+    client.post("/channels/events/events", json={"input": {"payload": 1}})
+    client.post("/network/events", json={"channel": "events", "payload": 2})
+
+    assert strategy.store.open() is audit
+    assert audit.appended == [1, 2]
+    assert [channel.name for channel in audit.list_channels()] == ["events"]
+
+
+def test_a_store_object_for_a_folder_the_strategy_opened_is_rejected(tmp_path: Path):
+    package = _package(tmp_path / "pkg")
+    folder = package / ".lllm" / "network"
+    strategy = Strategy("audit").use_package(package)
+    opened = strategy.store.open()  # serving the strategy or using a channel opens it
+
+    with pytest.raises(ValueError, match="cannot switch to this _AuditingStore"):
+        strategy.attach_store(_AuditingStore(folder))
+
+    assert strategy.store.open() is opened
+    # The store in use, or its folder named again, is still the same store.
+    strategy.attach_store(opened)
+    strategy.use_package(_package(tmp_path / "beta", "beta"), prefix="b", store=folder)
+    attached = Strategy("attached").attach_store(LocalStore(tmp_path / "store"))
+    with pytest.raises(ValueError, match="already uses another store object"):
+        attached.attach_store(_AuditingStore(tmp_path / "store"))
+
+
 def test_attaching_none_is_a_no_op_without_a_store_and_never_drops_one(tmp_path: Path):
     bare = Strategy("bare").attach_store(None)
     bare.store = None
@@ -425,6 +471,53 @@ def test_a_tactic_error_has_the_same_status_on_both_tactic_routes(error, status)
         assert via_tactic.status_code == via_resource.status_code == status
         assert _error(via_resource)["type"] == _error(via_tactic)["type"] == type(error).__name__
         assert _error(via_resource)["message"] == str(error)
+
+
+def test_a_lookup_that_fails_inside_a_handler_is_not_a_404():
+    strategy = Strategy("router")
+
+    async def route(value, *, context=None):
+        return await strategy.invoke_resource(value["target"])
+
+    strategy.tactic("router", handler=route)
+    strategy.service("relay", handler=route)
+    strategy.runner(route)
+    client = TestClient(create_strategy_app(strategy))
+    body = {"input": {"target": "missing"}}
+
+    via_tactic = client.post("/tactics/router/run", json=body)
+    via_resource = client.post("/resources/router/invoke", json=body)
+    relay = client.post("/resources/relay/invoke", json=body)
+    run = client.post("/run", json=body)
+    missing = client.post("/resources/missing/invoke", json=body)
+    missing_channel = client.get("/channels/missing/events")
+
+    assert via_tactic.status_code == via_resource.status_code == 500
+    assert relay.status_code == run.status_code == 500
+    for response in (via_tactic, via_resource, relay, run):
+        assert _error(response)["type"] == "ResourceNotFoundError"
+        assert _error(response)["message"] == "Strategy resource not found: missing"
+    assert _error(via_resource)["metadata"] == {"resource": "router"}
+    # Only the resource named in the URL is looked up by the route.
+    assert missing.status_code == missing_channel.status_code == 404
+    assert _error(missing)["metadata"] == {"resource": "missing"}
+    assert _error(missing_channel)["endpoint"] == "channel"
+
+
+def test_an_http_exception_in_a_tactic_has_the_same_status_on_both_tactic_routes():
+    def guarded(input_value, *, context=None):
+        raise HTTPException(status_code=403, detail="no")
+
+    strategy = Strategy("http")
+    strategy.tactic("guarded", handler=guarded)
+    client = TestClient(create_strategy_app(strategy))
+
+    via_tactic = client.post("/tactics/guarded/run", json={"input": 1})
+    via_resource = client.post("/resources/guarded/invoke", json={"input": 1})
+
+    assert via_tactic.status_code == via_resource.status_code == 500
+    assert _error(via_resource)["type"] == _error(via_tactic)["type"] == "HTTPException"
+    assert _error(via_resource)["message"] == _error(via_tactic)["message"] == "403: no"
 
 
 def test_store_errors_get_the_store_servers_own_status_codes(monkeypatch):
@@ -610,6 +703,67 @@ def test_non_tactic_resources_keep_the_dict_context():
 
     assert seen == [{"request": "r1"}]
     assert wrapped == {"request": "r1"}
+
+
+async def _async_tick(*, context=None):
+    return {"metadata": context.metadata}
+
+
+@pytest.mark.parametrize(
+    ("handler", "output"),
+    [
+        (lambda: {"ticked": True}, {"ticked": True}),
+        (lambda *, context=None: {"metadata": context.metadata}, {"metadata": {"k": "v"}}),
+        (lambda **kwargs: sorted(kwargs), ["context"]),
+        (_async_tick, {"metadata": {"k": "v"}}),
+    ],
+    ids=["no-parameters", "context-only", "keywords-only", "async"],
+)
+def test_tactic_handlers_without_an_input_run_on_both_routes(handler, output):
+    strategy = Strategy("tick")
+    strategy.tactic("tick", handler=handler)
+    client = TestClient(create_strategy_app(strategy))
+    body = {"input": 1, "context": {"metadata": {"k": "v"}}}
+
+    via_resource = client.post("/resources/tick/invoke", json=body)
+    via_tactic = client.post("/tactics/tick/run", json=body)
+
+    assert via_resource.status_code == via_tactic.status_code == 200
+    assert via_resource.json()["output"] == via_tactic.json()["output"] == output
+
+
+def test_an_async_callable_object_tactic_is_awaited_on_both_routes():
+    class Probe:
+        async def __call__(self, input_value, *, context=None):
+            return {"input": input_value, "context_type": type(context).__name__}
+
+    strategy = Strategy("probe")
+    strategy.tactic("probe", handler=Probe())
+    client = TestClient(create_strategy_app(strategy))
+
+    via_resource = client.post("/resources/probe/invoke", json={"input": 1})
+    via_tactic = client.post("/tactics/probe/run", json={"input": 1})
+
+    assert via_resource.status_code == via_tactic.status_code == 200
+    assert via_resource.json()["output"] == via_tactic.json()["output"] == {
+        "input": 1,
+        "context_type": "CallContext",
+    }
+
+
+def test_an_input_less_tactic_keeps_its_description_and_runs_synchronously():
+    def refresh():
+        """Refresh the cache."""
+        return {"refreshed": True}
+
+    strategy = Strategy("tick")
+    strategy.tactic("refresh", handler=refresh)
+    tactic = strategy.tactics()["refresh"]
+
+    assert tactic.info().name == "refresh"
+    assert tactic.info().description == "Refresh the cache."
+    assert tactic.run(None) == {"refreshed": True}
+    assert asyncio.run(strategy.invoke_resource("refresh")) == {"refreshed": True}
 
 
 def test_invoke_resource_accepts_a_call_context_from_python():
