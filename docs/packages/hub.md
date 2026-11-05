@@ -103,8 +103,11 @@ site/hub/
 
 The catalog holds each package's latest version: summary, resources, card,
 agent card, config template, README, and download link. Like cards and the hub
-API, it drops secret-shaped metadata keys. A README that is not valid UTF-8 is
-read with U+FFFD replacement characters instead of failing the build.
+API, it drops secret-shaped metadata keys. Like cards, it also drops them
+inside JSON schemas, which the hub API returns unchanged (see
+[Hub Metadata](../reference/hub-metadata.md#rules-for-published-metadata)).
+A README that is not valid UTF-8 is read with U+FFFD replacement characters
+instead of failing the build.
 
 Each zip holds the package files at its root, like
 `GET /packages/{org}/{name}/download`, so `unzip 0.1.0.zip -d briefs` leaves

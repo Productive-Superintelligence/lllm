@@ -103,12 +103,22 @@ paths = ["./prompts", "./shared/prompts under shared"]  # or {path = ..., prefix
 | any other table | a custom section: files and Python resources |
 
 A section without `paths` falls back to a folder with the section's name, if
-one exists. Validation checks that folder like a declared path, so it must
-stay inside the package. The native runtime treats the hub's own tables
-(`[schemas]`, `[docs]`, `[card]`, ...) as custom sections only when they set
-`paths`, and the hub cannot load most of them with `paths`, so give custom
-sections their own names. Resources are keyed `package.section:path`, for
-example `briefs.prompts:writer/system`.
+one exists. The native runtime does this for all seven built-in sections, even
+with no table. Validation checks that the following stay inside the package:
+
+- the `paths` or fallback folder of `[prompts]`, `[tools]`, `[proxies]`,
+  `[configs]`, and custom sections;
+- the `paths` of `[tactics]`, `[services]`, and `[assets]`.
+
+It does not check the fallback folder of `[tactics]`, `[services]`, or
+`[assets]` without `paths`, or of a built-in section with no table. The native
+runtime treats the hub's own tables (`[schemas]`, `[docs]`, `[card]`, ...) as
+custom sections only when they set `paths`. The hub cannot load most of them
+with `paths`. It does load `[config]` and `[card]` with `paths`, but
+validation does not check those paths. Give custom sections their own names.
+
+Resources are keyed `package.section:path`, for example
+`briefs.prompts:writer/system`.
 `[dependencies] packages = ["./pkg as alias"]` loads other packages first,
 under an optional alias.
 
@@ -139,10 +149,14 @@ The named resource tables, `[config]`, and `[card]` also accept
 `metadata = {...}`. The package ships `lllm.toml` as written, so validation
 rejects raw secret-shaped keys (`api_key`, `token`, `clientSecret`, ...) in
 `metadata`, nested maps included, and in extra keys written directly in those
-tables. References such as `api_key_ref` are allowed. `[config] defaults` and tactic `examples` are
-not checked: cards and the catalog drop secret-shaped keys from them, but the
-package zip keeps them. [Hub Metadata](../reference/hub-metadata.md#rules-for-published-metadata)
-lists the key shapes.
+tables. References such as `api_key_ref` are allowed. Validation does not look
+inside maps under JSON-schema keys (`schema`, `input_schema`, `output_schema`,
+or forms such as `inputSchema`), since a schema may name a field `api_key`. It
+does not check `[config] defaults` or tactic `examples` either. Keep secret
+values out of all of these: the package zip keeps them, and the hub API shows
+schema maps unchanged.
+[Hub Metadata](../reference/hub-metadata.md#rules-for-published-metadata)
+lists the key shapes and what cards, the hub API, and the catalog drop.
 
 ### Entrypoints
 
@@ -178,9 +192,10 @@ lllm hub validate .
 ```
 
 Validation imports declared entrypoints without calling them, checks refs and
-schema links, checks that declared files and discovery folders stay inside
-the package, and rejects secret-shaped metadata keys. It reports errors (the
-package cannot be published) and warnings:
+schema links, checks that declared files and the discovery folders listed in
+[Native discovery](#native-discovery) stay inside the package, and rejects
+secret-shaped metadata keys. It reports errors (the package cannot be
+published) and warnings. The main codes:
 
 | Code | Level | Meaning |
 | --- | --- | --- |
@@ -188,12 +203,12 @@ package cannot be published) and warnings:
 | `entrypoint_import_failed` | error | A declared `entry` could not be imported |
 | `primary_missing` | error | `primary` names a resource the manifest does not declare |
 | `schema_ref_missing` | error | A tactic's `input`/`output` names no schema |
-| `metadata_secret_key` | error | `metadata` or an extra table key holds a raw secret-shaped key |
-| `discovery_path_absolute`, `discovery_path_outside_package` | error | A discovery path, or the folder a section without `paths` falls back to, is absolute, escapes the package, or goes through a symlink |
-| `discovery_path_missing` | warning | A discovery path does not exist |
-| `discovery_section_empty` | warning | A section has no `paths` and no folder: often a typo such as `[tactic.x]` |
+| `metadata_secret_key` | error | `metadata` or an extra table key holds a raw secret-shaped key outside a JSON schema |
+| `discovery_path_absolute`, `discovery_path_outside_package` | error | A checked discovery path or fallback folder is absolute, escapes the package, or goes through a symlink |
+| `discovery_path_missing` | warning | A checked discovery path does not exist |
+| `discovery_section_empty` | warning | A checked section has no `paths` and no folder: often a typo such as `[tactic.x]` |
 | `dependency_manifest_missing` | warning | A dependency folder has no `lllm.toml` |
-| `card_metadata_missing`, `readme_doc_missing` | warning | The hub page will be sparse |
+| `card_metadata_missing`, `card_summary_missing`, `readme_missing`, `readme_doc_missing` | warning | The hub page will be sparse |
 
 ## Local configuration
 

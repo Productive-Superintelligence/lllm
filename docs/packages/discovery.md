@@ -166,8 +166,9 @@ such as `[tactics.brief]` with an `entry`). Native discovery reads only the keys
 above. It skips the hub-declared sections (`schemas`, `channels`, `snapshots`,
 `runs`, `config`, `docs`, `examples`, `requirements`, `card`) unless one sets
 `paths`, which makes it a custom section. The hub cannot load most of those
-sections with `paths`, so give custom sections their own names. One file
-serves both:
+sections with `paths`, and `lllm hub validate` does not check `paths` in
+`config` or `card`, the two it does load, so give custom sections their own
+names. One file serves both:
 
 ```toml
 [package]

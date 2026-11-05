@@ -161,8 +161,8 @@ ok
 
 Validation imports `main:create_tactic`, checks the refs and paths, and
 reports warnings for anything that would make the package hard to use, such
-as a missing card. [The manifest reference](../packages/manifest.md) lists
-every check.
+as a missing card. [The manifest reference](../packages/manifest.md#validation)
+lists the main checks.
 
 ## Step 6: serve it (calls a model)
 
