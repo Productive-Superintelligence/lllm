@@ -1010,7 +1010,7 @@ url = "http://127.0.0.1:8000/tactics/echo"
 url = "http://127.0.0.1:8000"
 
 [refs."lllm://demo/echo/channels/events"]
-store = ".sssn"
+store = ".lllm/network"
 """.lstrip(),
         encoding="utf-8",
     )
@@ -1203,7 +1203,7 @@ def test_resolver_validates_ignored_non_tactic_config_refs(tmp_path, ref):
     (config_dir / "config.toml").write_text(
         f"""
 [refs."{ref}"]
-store = ".sssn"
+store = ".lllm/network"
 """.lstrip(),
         encoding="utf-8",
     )
@@ -1217,8 +1217,8 @@ store = ".sssn"
     [
         ("schemas", 'path = "schemas/input.json"'),
         ("services", 'url = "http://127.0.0.1:8000"'),
-        ("channels", 'store = ".sssn"'),
-        ("snapshots", 'store = ".sssn"'),
+        ("channels", 'store = ".lllm/network"'),
+        ("snapshots", 'store = ".lllm/network"'),
         ("runs", 'path = "runs/latest.json"'),
         ("configs", 'path = ".lllm/config.toml"'),
         ("docs", 'path = "docs/guide.md"'),
@@ -1264,7 +1264,7 @@ url = {url_value}
 
 @pytest.mark.parametrize(
     "extra_target",
-    ['store = ".sssn"', 'path = "tactic.py"', 'object = "local"'],
+    ['store = ".lllm/network"', 'path = "tactic.py"', 'object = "local"'],
 )
 def test_resolver_rejects_ambiguous_tactic_url_targets_from_local_config(
     tmp_path,
@@ -1287,7 +1287,7 @@ url = "http://127.0.0.1:8000/tactics/echo"
 
 @pytest.mark.parametrize(
     "target_line",
-    ['store = ".sssn"', 'path = "tactic.py"', 'object = "local"'],
+    ['store = ".lllm/network"', 'path = "tactic.py"', 'object = "local"'],
 )
 def test_resolver_rejects_non_url_tactic_targets_from_local_config(
     tmp_path,

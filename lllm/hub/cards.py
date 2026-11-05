@@ -160,7 +160,7 @@ def render_config_template(record: PackageRecord) -> str:
             lines.extend(
                 [
                     f"[refs.{_toml_key(resource.ref)}]",
-                    'store = ".sssn"',
+                    'store = ".lllm/network"',
                 ]
             )
             lines.extend(_ref_metadata_lines(resource.ref, resource.metadata))
@@ -180,7 +180,7 @@ def _service_settings_lines(service_ports: dict[str, int]) -> list[str]:
 def _store_settings_lines(resources: tuple[Any, ...]) -> list[str]:
     if not any(resource.kind in {"channel", "snapshot"} for resource in resources):
         return []
-    return ["[stores.default]", 'path = ".sssn"']
+    return ["[stores.default]", 'path = ".lllm/network"']
 
 
 def _service_ports(resources: tuple[Any, ...]) -> dict[str, int]:

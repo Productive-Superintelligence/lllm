@@ -3116,13 +3116,13 @@ def test_lifecycle_covers_tactic_channel_and_combined_packages(tmp_path):
     assert resolver.resolve("lllm://demo/combo/services/monitor").url == (
         "http://127.0.0.1:8001"
     )
-    assert resolver.resolve("lllm://demo/combo/channels/events").store == ".sssn"
+    assert resolver.resolve("lllm://demo/combo/channels/events").store == ".lllm/network"
     assert (
-        resolver.resolve("lllm://demo/combo/snapshots/latest_analysis").store == ".sssn"
+        resolver.resolve("lllm://demo/combo/snapshots/latest_analysis").store == ".lllm/network"
     )
     assert resolver.service("analyzer") == {"port": 8000}
     assert resolver.service("monitor") == {"port": 8001}
-    assert resolver.store("default") == {"path": ".sssn"}
+    assert resolver.store("default") == {"path": ".lllm/network"}
 
 
 def test_config_template_maps_multi_tactic_service_refs_to_one_service(tmp_path):
@@ -3273,7 +3273,7 @@ channels = ["events", "analysis"]
     assert resolver.resolve("lllm://demo/downstream/tactics/summarize").url == (
         "http://127.0.0.1:8000/tactics/summarize"
     )
-    assert resolver.resolve("lllm://demo/downstream/channels/analysis").store == ".sssn"
+    assert resolver.resolve("lllm://demo/downstream/channels/analysis").store == ".lllm/network"
 
 
 def test_local_config_resolver_supports_registered_objects():
@@ -3324,7 +3324,7 @@ url = "http://service"
         LocalConfigResolver.from_text(
             """
 [refs."lllm://demo/pkg/widgets/local"]
-store = ".sssn"
+store = ".lllm/network"
 """.lstrip(),
             root=tmp_path / "unknown-resource-workspace",
         )
@@ -3431,7 +3431,7 @@ def test_local_config_resolver_requires_one_concrete_target(tmp_path):
             """
 [refs."lllm://demo/pkg/tactics/local"]
 url = "http://service"
-store = ".sssn"
+store = ".lllm/network"
 """.lstrip(),
             root=tmp_path / "workspace",
         )
@@ -3636,7 +3636,7 @@ def test_local_config_resolver_rejects_non_string_targets(tmp_path):
 
 def test_local_config_resolver_rejects_path_control_text_targets(tmp_path):
     resolver = LocalConfigResolver()
-    resolver.bind("lllm://demo/pkg/channels/data", store=".sssn")
+    resolver.bind("lllm://demo/pkg/channels/data", store=".lllm/network")
     resolver.bind("lllm://demo/pkg/docs/guide", path="docs/guide.md")
 
     unsafe_targets = (
@@ -3653,7 +3653,7 @@ def test_local_config_resolver_rejects_path_control_text_targets(tmp_path):
         "data?store=1",
         "data#latest",
         "data;params",
-        "~/.sssn",
+        "~/.lllm/network",
         "data/~user/store",
     )
     for name in ("store", "path"):
@@ -3741,15 +3741,15 @@ def test_local_config_resolver_reads_service_and_store_tables(tmp_path):
 port = 8000
 
 [stores.default]
-path = ".sssn"
+path = ".lllm/network"
 """.lstrip(),
         root=tmp_path / "workspace",
     )
 
     assert resolver.services() == {"api": {"port": 8000}}
     assert resolver.service("api") == {"port": 8000}
-    assert resolver.stores() == {"default": {"path": ".sssn"}}
-    assert resolver.store("default") == {"path": ".sssn"}
+    assert resolver.stores() == {"default": {"path": ".lllm/network"}}
+    assert resolver.store("default") == {"path": ".lllm/network"}
 
     with pytest.raises(KeyError):
         resolver.service("missing")
@@ -3786,7 +3786,7 @@ port = 8000
 policy_url = "http://policy"
 
 [stores.default]
-path = ".sssn"
+path = ".lllm/network"
 
 [stores.default.metadata]
 owner = "demo"
@@ -3830,7 +3830,7 @@ api_key_ref = "credentials/service"
 headers = { x_policy = "demo" }
 
 [stores.default]
-path = ".sssn"
+path = ".lllm/network"
 
 [stores.default.metadata]
 credential_ref = "credentials/store"
@@ -3858,7 +3858,7 @@ api = "not-a-table"
         LocalConfigResolver.from_text(
             """
 [stores]
-default = ".sssn"
+default = ".lllm/network"
 """.lstrip(),
             root=tmp_path / "workspace",
         )
@@ -3879,7 +3879,7 @@ default = ".sssn"
             LocalConfigResolver.from_text(
                 f"""
 [{section}."{name}"]
-path = ".sssn"
+path = ".lllm/network"
 """.lstrip(),
                 root=tmp_path / f"{section}-{name.replace('/', '-')}",
             )
@@ -3918,7 +3918,7 @@ path = {path}
             '"data?store=1"',
             '"data#latest"',
             '"data;params"',
-            '"~/.sssn"',
+            '"~/.lllm/network"',
         ),
         start=1,
     ):
@@ -3959,7 +3959,7 @@ port = 8000
 apikey = "raw-service-key"
 
 [stores.default]
-path = ".sssn"
+path = ".lllm/network"
 """.lstrip(),
             root=tmp_path / "service-secret",
         )
@@ -3971,7 +3971,7 @@ path = ".sssn"
 port = 8000
 
 [stores.default]
-path = ".sssn"
+path = ".lllm/network"
 
 [stores.default.metadata]
 headers = { xauthtoken = "Bearer raw-store-token" }
