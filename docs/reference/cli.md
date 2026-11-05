@@ -53,9 +53,12 @@ lllm setup ./briefs --credentials env --env-file .env.local --set OPENAI_API_KEY
 lllm setup --show-conventions             # common provider key names
 ```
 
-Reads `[requirements.api_keys]` and stores missing keys in the OS keyring
-(`secure` extra) or a local env file. `--credentials auto` uses the keyring
-when available.
+Reads `[requirements.api_keys]`, plus the `required_api_keys` metadata of the
+resource `lllm serve` would launch (or the one named with `--resource`), and
+stores missing keys in the OS keyring (`secure` extra) or a local env file. A
+package with nothing to launch, such as a library, is set up from its
+`[requirements.api_keys]` alone. `--credentials auto` uses the keyring when
+available.
 
 ## `lllm inspect`
 
@@ -84,6 +87,13 @@ lllm serve ./briefs --resource services.api
 | `--store` | `<package>/.lllm/network` | Store root for channel resources |
 | `--credentials`, `--env-file`, `--no-keyring` | | Key lookup and interactive setup |
 | `--skip-key-check` | off | Start without checking declared keys |
+
+An entrypoint names a tactic class or instance, a factory, an object with a
+`run` method, or a handler function
+([Loading entrypoints](../protocol/runtimes.md#loading-entrypoints)). A
+resource that cannot be launched, or a service entry that fails to import or
+build, stops with an error that names the cause
+([Services](../protocol/services.md#lllm-serve)).
 
 ## `lllm hub`
 

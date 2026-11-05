@@ -165,13 +165,11 @@ print(agent.last_task)
 | `text` | `str(value)`. |
 
 By default the adapter returns `result.output`. `result_mode="result"` returns
-the whole run result instead; declare `output_type=Any` with it, since the
-result is not a `BriefOutput`:
+the whole run result instead. The result is not a `BriefOutput`, so without an
+`output_type` the output type becomes `Any` and the result is not validated:
 
 ```python
-from typing import Any
-
-result_tactic = PydanticAITactic(agent, input_type=BriefInput, output_type=Any, result_mode="result")
+result_tactic = PydanticAITactic(agent, input_type=BriefInput, result_mode="result")
 result = result_tactic.run({"topic": "modes"})
 print(type(result).__name__, result.output.title)
 ```
@@ -179,6 +177,10 @@ print(type(result).__name__, result.output.title)
 ```text
 Result Modes for engineers
 ```
+
+Use this mode in process only. A real agent's run result carries its private
+run state, such as the agent's instructions, which you would not want to serve
+([Runtimes](../protocol/runtimes.md#the-full-result)).
 
 ## Step 5: keep runtime-owned features
 
@@ -223,9 +225,9 @@ print(list(tactic.stream(BriefInput(topic="refs"))))
 ['topic:refs', 'audience:engineers']
 ```
 
-The streaming methods hand the input to the agent as given, without the
-validation `run()` applies. Pass a model instance, as above, so defaults such as
-`audience` are filled in.
+The streaming methods validate the input the way `run()` does, so
+`tactic.stream({"topic": "refs"})` gives the same chunks, with the default
+`audience` filled in.
 
 `stream_mode` picks the view of the stream result: `"output"` (the default)
 reads `stream_output()`, `"text"` reads `stream_text()`, `"response"` reads
@@ -241,12 +243,17 @@ print(list(raw_tactic.stream(BriefInput(topic="refs"))))
 ```
 
 When the agent has `run_stream_events()`, as a real `pydantic_ai.Agent` does,
-`aevents()` yields Pydantic AI's own event objects.
+`aevents()` wraps each of Pydantic AI's events in a `TacticEvent` whose `kind`
+is the event's `event_kind` (`part_start`, ..., `agent_run_result`) and whose
+`data` is JSON, so `/stream` sends plain JSON events.
 
 ## Step 7: serve it
 
-The example module has a zero-argument factory, `build_tactic()`, that wraps a
-fresh stand-in agent. Serve it:
+The example module has a factory, `build_tactic()`, that wraps a fresh
+stand-in agent. Its one parameter has a default and it is annotated to return a
+`PydanticAITactic`, so `lllm serve` calls it once at load instead of treating it
+as a handler ([Loading entrypoints](../protocol/runtimes.md#loading-entrypoints)).
+Serve it:
 
 ```bash
 lllm serve examples.pydantic_ai_tactic.structured_agent:build_tactic --port 8000
@@ -265,9 +272,8 @@ curl -s -X POST http://127.0.0.1:8000/run \
 ```
 
 The `trace_id` traveled from the request's context into the agent's metadata
-and back out in the output. `/stream` sends events the same way; because
-streaming skips validation (Step 6), send the complete input there, including
-`audience`.
+and back out in the output. `/stream` takes the same envelope and validates
+its input too.
 
 To test the app in-process, build it with `create_tactic_app`:
 
@@ -399,14 +405,9 @@ BriefOutput(title='Refs for engineers', bullets=['Define refs', 'Make it useful 
 
 With `parameter_mode="kwargs"` the function takes one keyword per input field;
 the default `"task"` mode takes the whole input as one `task` argument. Native
-tactics have the same helper as a method, `tactic.as_tool()`.
-
-!!! warning "Registering with a Pydantic AI agent"
-    Pydantic AI reads tool parameter types from a function's annotations, which
-    these generated functions do not set, so Pydantic AI 2.66 rejects a
-    `"kwargs"` tool with a `KeyError` and sees a `"task"` tool's argument as
-    untyped. To give a tactic to a Pydantic AI agent, register a small typed
-    function instead, as in Step 10.
+tactics have the same helper as a method, `tactic.as_tool()`. The function's
+annotations match its signature, and Pydantic AI reads them to build the tool
+schema, so the function registers with a Pydantic AI agent as it is (Step 10).
 
 ## Step 10: use a real Pydantic AI agent
 
@@ -433,17 +434,12 @@ For live calls, give the agent a model name such as
 `Agent("openai:gpt-4o-mini", output_type=BriefOutput)` and set
 `OPENAI_API_KEY`.
 
-Going the other way, a Pydantic AI agent can call an LLLM tactic through a typed
-function. Pydantic AI derives the tool schema from the annotations and validates
-the model's arguments into `BriefInput`:
+Going the other way, a Pydantic AI agent can call an LLLM tactic as a tool.
+Register the function from Step 9. Pydantic AI derives the tool schema from its
+annotations and validates the model's arguments against it:
 
 ```python
-def write_brief(request: BriefInput) -> BriefOutput:
-    """Write a short structured brief about a topic."""
-    return tactic.run(request)
-
-
-planner = Agent(TestModel(), tools=[write_brief])
+planner = Agent(TestModel(), tools=[tool])
 print(planner.run_sync("Plan a talk about package refs.").output)
 ```
 
@@ -452,8 +448,27 @@ print(planner.run_sync("Plan a talk about package refs.").output)
 ```
 
 `TestModel` called the tool with `topic="a"`, and the tactic filled in the
-default audience. The same pattern hands any tactic to a Pydantic AI agent: a
+default audience. The same call hands any tactic to a Pydantic AI agent: a
 native multi-agent program, a plain function, or a `RemoteTactic`.
+
+The tool is synchronous and calls `tactic.run()`, and Pydantic AI does not
+allow `Agent.run_sync()` inside a synchronous tool. For a tactic around a real
+`pydantic_ai.Agent`, such as `real_tactic`, write an async tool that awaits
+`arun()`:
+
+```python
+async def write_brief(request: BriefInput) -> BriefOutput:
+    """Write a short structured brief about a topic."""
+    return await real_tactic.arun(request)
+
+
+planner = Agent(TestModel(), tools=[write_brief])
+print(planner.run_sync("Plan a talk about package refs.").output)
+```
+
+```text
+{"write_brief":{"title":"a","bullets":["a"],"trace_id":null}}
+```
 
 ---
 
@@ -477,11 +492,11 @@ python -m pytest tests/test_pydantic_ai_adapter.py tests/test_examples.py
 | Runtime options | `run_kwargs={...}` and keyword arguments to `run()` |
 | Context | `run(..., context=CallContext(...))` reaches the agent as `metadata` |
 | Input shape | `input_mode="auto"`, `"json"`, `"dict"`, `"python"`, or `"text"` |
-| Full run result | `result_mode="result"` with `output_type=Any` |
-| Stream | `tactic.stream(model_instance)`, `stream_mode=...` |
+| Full run result | `result_mode="result"`, in process only |
+| Stream | `tactic.stream(input)`, `stream_mode=...` |
 | Serve | `lllm serve module:factory`, `create_tactic_app(tactic)` |
 | Package | `[tactics.NAME]` with `entry` and `runtime = "pydantic-ai"` |
-| Tactic as a tool | a typed function over `tactic.run()`; `tactic_as_tool(tactic)` |
+| Tactic as a tool | `tactic_as_tool(tactic)`; an async tool over `arun()` for a tactic around a real agent |
 
 See [Runtimes](../protocol/runtimes.md) for the full adapter reference and
 [Services](../protocol/services.md) for the HTTP contract.

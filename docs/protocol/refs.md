@@ -245,12 +245,13 @@ print(list(session.sub_tactic_sessions))
   registering it; `Contrast` stays the same.
 - Passing `context` along carries the `trace_id` across the HTTP hop: the
   remote tactic received `trace-7` and echoed it back.
-- In-process tactics called while a `call()` program runs are recorded in its
-  session (`lower` above). The remote call is an HTTP request, so the service
-  keeps its own record of it.
+- In-process tactics that run in a session, such as the `call()` program
+  `Lower`, are recorded in the caller's session (`lower` above). The remote
+  call is an HTTP request, so the service keeps its own record of it.
 - To serve a tactic that takes constructor arguments, point `lllm serve` at a
-  zero-argument factory, such as
-  `def build(): return Contrast(Resolver.from_config("."))`.
+  factory, such as `def build(): return Contrast(Resolver.from_config("."))`,
+  which it calls once at load
+  ([Loading entrypoints](runtimes.md#loading-entrypoints)).
 
 ### Sub-tactics
 

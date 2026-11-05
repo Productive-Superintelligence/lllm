@@ -98,11 +98,18 @@ return value is checked against `Answer` before the caller sees it.
 | | `call()` program | `_run()` hook |
 | --- | --- | --- |
 | `run()`, `arun()`, `info()`, serving, packaging, use as a tool | yes | yes |
-| `tactic(task)`, `acall`, `bcall`, `ccall` | yes | no, use `run()` / `arun()` |
-| Runs on a fresh copy of the tactic, inside a `TacticCallSession` | yes | no |
-| Native agents built from `agent_group` | yes | no |
-| `info().runtime_kind` | `"native"` | `"python"` |
+| `tactic(task)`, `acall`, `bcall`, `ccall` | yes | yes |
+| Runs on a fresh copy of the tactic, with fresh `agent_group` agents, inside a `TacticCallSession` | every call | calls through `tactic(task)`, `acall`, `bcall`, `ccall` |
+| `info().runtime_kind` | `"native"` | `"python"` (`"native"` with an `agent_group`) |
 | Receives | the validated task, and `context=` when `call` accepts it | the validated input and a `CallContext` |
+
+`tactic(task)` and the other native entry points run `call()` when the class
+writes one, else its `_run()` hook (or `_arun()`). A hook-only tactic has no
+`call()`: `tactic.call(task)` raises `TacticUnsupportedError` and points you to
+the entry points, and a hook that hands its call back with `super()._run()` or
+`self.call()` raises the same error instead of recursing. A tactic that writes
+only `_arun()` still gets `run()`, which runs `arun()` to completion, and an
+`async def call()` is awaited on every entry point.
 
 ## Typed input and output
 
@@ -110,7 +117,7 @@ return value is checked against `Answer` before the caller sees it.
 `BaseModel` subclasses, builtins such as `str` or `int`, `list[str]`,
 `Literal[...]`, dataclasses, and `TypedDict`s. `input_model` and `output_model`
 are aliases, so tactics written with the native names publish their schemas
-too.
+too. A class's own `input_model` wins over an `input_type` it inherits.
 
 ```python
 from typing import Literal
@@ -185,7 +192,7 @@ Every tactic has the protocol methods:
 Extra keyword arguments to `run()` and `arun()` are passed through to `call()`
 or `_run()`.
 
-`call()` programs add the native entry points:
+`lllm.Tactic` adds the native entry points, for both styles:
 
 | Method | Returns |
 | --- | --- |
@@ -286,7 +293,9 @@ A `TacticEvent` has `id`, `timestamp`, `kind`, `data`, and `metadata`.
 `TacticEvent.result(value)` and `TacticEvent.error(message)` build the two
 common kinds. Override `astream()` when the source is natively async, or
 `aevents()` to control the event stream yourself; the tactic then advertises
-`"stream"` or `"events"` in its capabilities.
+`"stream"` or `"events"` in its capabilities. On `lllm.Tactic`, a synchronous
+`events()` generator works too: `aevents()` and `/stream` serve it, passing it
+the validated input and wrapping plain items as `message` events.
 
 Calling `stream()` directly skips that validation and passes the argument
 through as given, so pass it a typed value (or call `self.validate_input(value)`
@@ -323,8 +332,8 @@ rejects anything else.
 
 How the context reaches your code:
 
-- `_run(input_value, *, context)` always gets a `CallContext` under `run()` and
-  `arun()`; one is created when the caller passes none.
+- `_run(input_value, *, context)` always gets a `CallContext`, through every
+  entry point; one is created when the caller passes none.
 - `call()` gets `context=` when its signature declares `context` (or
   `**kwargs`). Under `run()` it is a `CallContext`; under `tactic(task)` it is
   `None` unless the caller passes `context=`.
@@ -426,11 +435,11 @@ print(shout.info().model_dump_json(indent=2))
 
 | Field | Source |
 | --- | --- |
-| `name` | `name=` passed to the constructor, else the class attribute `name`, else the class name. |
+| `name` | `name=` passed to the constructor, else the class attribute `name`, else the class name. An `Enum` member gives its value. It must be one path segment: no `/`, `\`, `:`, `;`, or `%`. |
 | `description` | `description=`, else the class attribute, else your class's docstring. |
 | `input_schema`, `output_schema` | JSON Schema exported from `input_type` and `output_type`. |
 | `capabilities` | `run`, `arun`, plus `call`/`acall` on `lllm.Tactic`, and `stream`/`events` when implemented. |
-| `runtime_kind` | `native`, `python`, `pydantic-ai`, or `http` for the built-in tactics. |
+| `runtime_kind` | `native`, `python`, `pydantic-ai`, or `http` for the built-in tactics. A class that sets `runtime_kind` passes it on to its subclasses. |
 | `package_ref`, `service_ref` | An `lllm://.../tactics/...` ref and a service ref or URL; see [Refs](refs.md). |
 | `examples`, `metadata` | Whatever you pass to the constructor. |
 
@@ -445,7 +454,7 @@ out of metadata.
 | Exception | Raised when |
 | --- | --- |
 | `SchemaError` | Input or output fails validation, or a type cannot be exported as JSON Schema. |
-| `TacticUnsupportedError` | The tactic lacks the requested capability: no `call()` or `_run()`, or `stream()` on a tactic that does not stream. |
+| `TacticUnsupportedError` | The tactic lacks the requested capability: no `call()` or `_run()`, `call()` on a tactic that implements `_run()` instead, or `stream()` on a tactic that does not stream. |
 | `TacticRefError` | An `lllm://` tactic ref is malformed or not bound. |
 | `RemoteTacticError` | A remote service answered with an error; see [Services](services.md#calling-a-service-from-python). |
 | `TypeError` | `context` is not a `CallContext`, or `return_trace` is not a bool. |
@@ -463,9 +472,10 @@ LLLMError (RuntimeError)
 ```
 
 All of these import from `lllm`. Exceptions raised by your own code propagate
-unchanged. When a `call()` program fails, the
-`lllm.runtimes.native.core.tactic` logger records the error and traceback before
-it propagates, and the session's `state` becomes `"failure"`. Over HTTP,
+unchanged. When a tactic running in a session fails, the
+`lllm.runtimes.native.core.tactic` logger writes one INFO line with the error
+(the traceback goes to DEBUG), the session's `state` becomes `"failure"`, and
+its `error_traceback` keeps the traceback. Over HTTP,
 `SchemaError` and `TacticUnsupportedError` become 400 responses and other
 exceptions become 500s, both with a structured body
 ([Services](services.md#errors)).
@@ -511,11 +521,14 @@ A session records `state`, `delivery` (the result), `error` and
 `error_traceback` on failure, every agent call in `agent_sessions`, and every
 sub-tactic session in `sub_tactic_sessions`. `total_cost`, `agent_call_count`,
 and `sub_tactic_call_count` roll everything up, and `summary()` returns a small
-dict for logs. A `call()` program called while another one is running records
-its session in the caller's, including calls made from `bcall` worker threads
-and through a [Resolver](refs.md#composition-patterns). Protocol-only tactics
-(`_run()` hooks, wrapped functions, Pydantic AI and remote tactics) do not
-create sessions.
+dict for logs. When a tactic that runs in a session is called while another
+program is running, its session is recorded in the caller's under the tactic's
+name (the constructor's `name=` when given). That includes calls made from
+`bcall` worker threads and through a [Resolver](refs.md#composition-patterns).
+`call()` programs always run in a session. A `_run()` hook gets one only
+through `tactic(task)`, `acall`, `bcall`, and `ccall`, not under `run()` or
+`arun()`. Tactics that are not `lllm.Tactic` subclasses (wrapped functions,
+Pydantic AI and remote tactics) do not create sessions.
 
 ### Agents
 
@@ -572,7 +585,7 @@ Agents, prompts, configs, and the call loop are covered in the
 ## Which style to use
 
 - **`call()`** for agentic programs: the tactic orchestrates native agents or
-  other tactics, and you want sessions, cost roll-up, and the batch helpers.
+  other tactics, and you want a session with cost roll-up on every call.
 - **`_run()`** for deterministic steps, adapters, and glue code that only needs
   the typed boundary. For a single function, `as_tactic(fn)` is shorter still
   ([Runtimes](runtimes.md#plain-python)).

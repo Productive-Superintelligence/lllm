@@ -3,8 +3,9 @@
 **Goal:** put tactics behind HTTP, call them from anywhere as if they were
 local, and wire a system together by refs instead of hard-coded objects.
 
-Everything here runs offline; examples use FastAPI's test client so you can
-run them without starting a server.
+Everything here runs offline. Most examples use FastAPI's test client, so they
+run without a server; Step 4 calls the server that Step 2 starts with
+`lllm serve`.
 
 ## Step 1: a tactic worth serving
 
@@ -113,7 +114,9 @@ shout.run({"text": "remote"})          # 'REMOTE'
 shout.fetch_info().capabilities        # what the service advertises
 ```
 
-`arun`, `astream`, and `aevents` work the same way.
+`arun`, `astream`, and `aevents` work the same way. Without `name=`, the
+tactic is named after the URL: `127.0.0.1-8000` here, or `shout` for
+`http://127.0.0.1:8000/tactics/shout`.
 
 ## Step 5: name things by ref
 
@@ -157,6 +160,13 @@ lllm setup ./briefs
 lllm serve ./briefs --port 8000
 lllm inspect ./briefs        # what would be served, and which keys are missing
 ```
+
+Tactic entries load like `module:attribute` targets: a factory is called once
+at load and a handler once per input
+([Loading entrypoints](../protocol/runtimes.md#loading-entrypoints)). A service
+entry that fails to build stops `lllm serve` with an error instead of serving
+its tactic without the service's auth
+([Services](../protocol/services.md#lllm-serve)).
 
 To serve everything a package declares (tactics and channels) as one API, mount
 it in an [AAAX strategy](../aaax/index.md): `lllm shell serve ./briefs`.

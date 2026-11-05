@@ -71,10 +71,11 @@ curl -s -X POST http://127.0.0.1:8000/run \
 {"output":{"text":"HELLO","trace_id":"trace-1"},"request_id":"fba55530-a1a1-4f28-abfa-535817256e08","tactic":"shout"}
 ```
 
-The `module:attribute` can name a tactic class or instance, a zero-argument
-factory that returns one, an object with a `run` method, or a plain function
-(see [coerce_tactic](runtimes.md#loading-entrypoints)). `--host` defaults to
-`127.0.0.1`, `--port` to 8000, and `--log-level` to `info`.
+The `module:attribute` can name a tactic class or instance, a factory that
+returns one, an object with a `run` method, or a handler function. A factory is
+called once at load and a handler once per input; the rule that tells them
+apart is in [Loading entrypoints](runtimes.md#loading-entrypoints). `--host`
+defaults to `127.0.0.1`, `--port` to 8000, and `--log-level` to `info`.
 
 To build the app in code, use `create_tactic_app` and any ASGI server:
 
@@ -107,8 +108,10 @@ app titled with the tactic's name and description unless you pass your own.
 | `POST /tactics/{name}/stream` | Stream one tactic. |
 
 `create_tactic_app` mounts all of them. FastAPI's own `/docs` and
-`/openapi.json` are there as usual; the tactic's input and output schemas are
-published by `/info`.
+`/openapi.json` are there as usual. `/info` publishes the tactic's input and
+output schemas, and `/openapi.json` shows the same schemas as the `input` of
+the `/run` and `/stream` request envelopes and the `output` of the `/run`
+response. The `/tactics/{name}/...` routes are listed without them.
 
 ### Several tactics in one app
 
@@ -334,6 +337,10 @@ How custom endpoints behave:
 - The method receives the request's input, read from the same envelope as `/run`
   and validated against the tactic's `input_type`, plus `context=` when it
   accepts one. Sync and async methods both work.
+- `endpoint.get` and `endpoint.delete` routes may be called without a body.
+  The method then receives the query parameters as a dict of strings (a
+  repeated key gives a list), or `None` when there are none, without
+  validation. A request that sends a body is read and validated as above.
 - With `mode="run"` the return value is the JSON response, with no envelope
   around it. With `mode="stream"` or `mode="events"`, each yielded item becomes
   one `data:` line: events as `TacticEvent` JSON, anything else as plain JSON.
@@ -382,8 +389,10 @@ Things to know:
 - The URL is the service base (`http://host:8000`), or a tactic inside a
   multi-tactic app (`http://host:8000/tactics/shout`). A URL that already ends
   in `/run`, `/stream`, or `/info` is normalized.
-- Pass `name=`. The default comes from the last URL segment, which only works
-  when that segment is a plain name such as `shout` in `.../tactics/shout`.
+- Without `name=`, the name comes from the URL: its last path segment
+  (ignoring a trailing `/run`, `/stream`, or `/info`), such as `shout` in
+  `.../tactics/shout`, or else the host and port, so `http://127.0.0.1:8000`
+  is named `127.0.0.1-8000`.
 - With `input_type` set, input is validated locally before anything is sent.
   With `output_type` set, the response is validated into that type; without it
   you get the JSON as-is.
@@ -462,9 +471,38 @@ lllm: error: missing required API key(s):
 Run `lllm setup .` or set the missing names in your environment.
 ```
 
-`lllm setup .` stores keys in the OS keyring or `.env.local`.
-`--skip-key-check` starts without checking. The manifest format is covered in
-[The lllm.toml manifest](../packages/manifest.md).
+`lllm setup .` stores keys in the OS keyring or `.env.local`. It also works for
+a package with nothing to launch, such as a library, from its
+`[requirements.api_keys]`. `--skip-key-check` starts without checking. The
+manifest format is covered in [The lllm.toml manifest](../packages/manifest.md).
+
+A tactic entry loads by the same rule as a `module:attribute` target. A service
+entry has no handler form: it is called when it can be called without
+arguments, and it builds a FastAPI or Starlette app or a tactic. An entry that
+fails to import, raises while building, or returns something unrecognized (an
+app wrapped in raw ASGI middleware, `None`, a coroutine) stops `lllm serve`
+with an error that names the cause, instead of serving the service's tactic
+without its auth or middleware:
+
+```text
+usage: lllm [-h] [--version] COMMAND ...
+lllm: error: service api entry service:create_app failed: NameError: name 'add_auth' is not defined
+```
+
+Only `services`, `tactics`, `channels`, and `runs` resources can be launched.
+Naming another kind, such as `config.default`, as the primary or with
+`--resource` is an error that lists what can be launched:
+
+```text
+usage: lllm [-h] [--version] COMMAND ...
+lllm: error: resource config.default cannot be launched; launchable resources: tactics.shout
+```
+
+A served package keeps its modules loaded and its folder on `sys.path` for the
+life of the process, so its code can import the package's own modules when it
+is called. Packages served in one process, such as the packages of an
+[AAAX](../aaax/index.md) strategy, share `sys.modules`, so give their top-level
+modules distinct names.
 
 ### lllm inspect
 

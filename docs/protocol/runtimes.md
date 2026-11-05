@@ -11,7 +11,7 @@ and listed in packages the same way.
 | Native | an `lllm.Tactic` subclass with a `call()` program | `native` |
 | Plain Python | an `lllm.Tactic` subclass with `_run()`, or `as_tactic(fn)` | `python` |
 | Pydantic AI | `PydanticAITactic(agent)` | `pydantic-ai` |
-| Remote | `RemoteTactic(url, name=...)` | `http` |
+| Remote | `RemoteTactic(url)` | `http` |
 
 ## Native
 
@@ -157,12 +157,24 @@ endpoints, subclass `lllm.Tactic` and implement `_run()` instead
 `module:attribute` into a tactic with `coerce_tactic(value, name=None)`. It
 accepts, in order:
 
-1. a `Tactic` subclass (instantiated with no arguments) or instance;
-2. a zero-argument factory that returns any of these shapes;
+1. a `Tactic` subclass (instantiated, with `name=` if its constructor takes it)
+   or instance;
+2. a factory that returns any of these shapes, called once when the value is
+   loaded;
 3. an object with a `run` method;
-4. a plain callable, wrapped with `as_tactic`.
+4. any other callable: a handler, wrapped with `as_tactic` and called once per
+   input.
+
+A class is a factory when it can be constructed without arguments. Any other
+callable is a factory when it takes no parameters, or when it can be called
+without arguments and is annotated to return a `Tactic` or an ASGI app
+(FastAPI or Starlette). A return annotation that cannot be evaluated at
+runtime, such as a class imported only under `TYPE_CHECKING`, counts when the
+class name ends in `Tactic` or is `FastAPI` or `Starlette`. Everything else is
+a handler.
 
 ```python
+from lllm import CallableTactic
 from lllm.runtimes import coerce_tactic
 
 
@@ -171,20 +183,31 @@ class Reverser:
         return value[::-1]
 
 
-def make_quote_tactic():
-    return as_tactic(quote, name="bulk-quote")
+def make_quote_tactic(name: str = "bulk-quote") -> CallableTactic:
+    return as_tactic(quote, name=name)
+
+
+def greet(name: str = "world") -> str:
+    return f"Hello {name}"
 
 
 print(type(coerce_tactic(quote)).__name__)
 print(coerce_tactic(make_quote_tactic).info().name)
 print(coerce_tactic(Reverser(), name="reverse").run("abc"))
+print(coerce_tactic(greet).run("Ada"))
 ```
 
 ```text
 CallableTactic
 bulk-quote
 cba
+Hello Ada
 ```
+
+`make_quote_tactic` can be called without arguments and is annotated to return
+a tactic, so it is a factory. `greet` can be called without arguments too, but
+it takes a parameter and is not annotated to return a tactic, so it is a
+handler: it answers each input instead of being called once at load.
 
 ## Pydantic AI
 
@@ -236,10 +259,12 @@ Brief ['title', 'bullets']
 
 The tactic takes its name from `agent.name`, its output type from
 `agent.output_type`, and its published output schema from the agent. The
-description comes from `description=` or the agent's own `description`; set one
-of them, because without either it falls back to the docstring of Pydantic AI's
-`Agent` class. `run()` calls `agent.run_sync()`, `arun()` calls `agent.run()`,
-and both return `result.output`.
+description comes from `description=`, else the agent's own `description`, else
+a `description` or docstring on your subclass of `PydanticAITactic`, else your
+own agent class's docstring. Pydantic AI's class docstrings are never used, so
+without any of these the description is empty. `run()` calls
+`agent.run_sync()`, `arun()` calls `agent.run()`, and both return
+`result.output`.
 
 #### Typed input
 
@@ -320,13 +345,11 @@ with `include_context_metadata=False`.
 #### The full result
 
 `result_mode="result"` returns Pydantic AI's run result instead of
-`result.output`. The output type would otherwise default to the agent's, so
-declare `output_type=Any`, and keep this mode for in-process callers:
+`result.output`. Without an `output_type`, the output type is then `Any`, so
+the result comes back unvalidated:
 
 ```python
-from typing import Any
-
-full = PydanticAITactic(agent, output_type=Any, result_mode="result")
+full = PydanticAITactic(agent, result_mode="result")
 result = full.run("typed tactic boundaries")
 print(type(result).__name__, repr(result.output))
 ```
@@ -335,6 +358,10 @@ print(type(result).__name__, repr(result.output))
 AgentRunResult Brief(title='a', bullets=['a'])
 ```
 
+Keep this mode for in-process callers. `info()` still publishes the agent's
+output schema, and a served result would carry the run's private state,
+including the agent's instructions and message history.
+
 #### Streaming
 
 `stream()` and `astream()` use `run_stream_sync()` and `run_stream()` and yield
@@ -342,7 +369,7 @@ the agent's output as it builds up:
 
 ```python
 print(list(tactic.stream("typed tactic boundaries")))
-print(list(typed.stream(BriefRequest(topic="refs"))))
+print(list(typed.stream({"topic": "refs"})))
 ```
 
 ```text
@@ -353,11 +380,35 @@ print(list(typed.stream(BriefRequest(topic="refs"))))
 - `stream_mode="text"` yields from Pydantic AI's `stream_text()`,
   `"response"` yields `ModelResponse` objects from `stream_response()`, and
   `"raw"` yields Pydantic AI's stream object itself.
-- The streaming methods hand the input to the agent as given, without the
-  validation `run()` applies, so pass a model instance (as above) or text.
-- `aevents()` yields Pydantic AI's own event objects from
-  `run_stream_events()` (`PartStartEvent` through `AgentRunResultEvent`), not
-  `TacticEvent`s.
+- The streaming methods validate the input the way `run()` does, so the dict
+  above becomes a `BriefRequest` first, and bad input raises `SchemaError`
+  before the agent runs.
+- `aevents()` reads `run_stream_events()` and wraps each Pydantic AI event in
+  a `TacticEvent`, which is what `/stream` sends.
+
+Each event's `kind` is Pydantic AI's `event_kind`, its `metadata` names the
+event class, and its `data` is the event as JSON-safe data:
+
+```python
+import asyncio
+
+
+async def show_events():
+    async for event in typed.aevents({"topic": "refs"}):
+        print(event.kind, event.metadata)
+
+
+asyncio.run(show_events())
+```
+
+```text
+part_start {'event_type': 'PartStartEvent'}
+final_result {'event_type': 'FinalResultEvent'}
+part_end {'event_type': 'PartEndEvent'}
+output_tool_call {'event_type': 'OutputToolCallEvent'}
+output_tool_result {'event_type': 'OutputToolResultEvent'}
+agent_run_result {'event_type': 'AgentRunResultEvent'}
+```
 
 ### Tactics as Pydantic AI tools
 
@@ -412,7 +463,8 @@ print(result.output)
 
 `TestModel` calls every tool once with placeholder arguments (`word="a"`) and
 reports what came back; a real model chooses the arguments. Any tactic works
-here, including a native program with its own agents or a `RemoteTactic`.
+here, including a native program with its own agents or a `RemoteTactic`. A
+tactic that runs a Pydantic AI agent itself needs an async tool, covered below.
 
 `tactic_as_tool(tactic)` and the method `tactic.as_tool()` build such a function
 for you: named after the tactic, documented with its description, and signed
@@ -439,14 +491,36 @@ define (*, word: str) -> __main__.Definition
 word='tactic' meaning='a typed unit of work'
 ```
 
-!!! warning "Registering these with Pydantic AI"
-    Pydantic AI reads a tool's parameter types from the function's
-    annotations. The functions from `tactic_as_tool()` and `as_tool()` carry
-    the typed signature shown above but untyped annotations, so with Pydantic
-    AI 2.66 a `"task"` tool is advertised with an untyped `task` argument, and
-    a `"kwargs"` tool fails to register with a `KeyError`. When a Pydantic AI
-    agent needs the tool's schema, register a typed function like `lookup`
-    above.
+The functions' annotations match these signatures, and Pydantic AI reads a
+tool's parameter types from its annotations, so both register as they are:
+
+```python
+agent = Agent(TestModel(), tools=[tool, define])
+print(agent.run_sync("What does 'tactic' mean here?").output)
+```
+
+```text
+{"glossary":{"word":"a","meaning":"not in the glossary"},"define":{"word":"a","meaning":"not in the glossary"}}
+```
+
+These tools are synchronous and call `tactic.run()`. Pydantic AI does not allow
+`Agent.run_sync()` inside a synchronous tool, so a `PydanticAITactic` around a
+real agent, such as `typed` above, needs an `async def` tool that awaits
+`arun()`:
+
+```python
+async def write_brief(request: BriefRequest) -> Brief:
+    """Write a short brief about a topic."""
+    return await typed.arun(request)
+
+
+planner = Agent(TestModel(), tools=[write_brief])
+print(planner.run_sync("Plan a talk about refs.").output)
+```
+
+```text
+{"write_brief":{"title":"a","bullets":["a"]}}
+```
 
 ## Remote tactics
 
