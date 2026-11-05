@@ -384,9 +384,11 @@ print(response.json())
 
 A tactic resource runs the same way on `/resources/{name}/invoke` as on
 `/tactics/{name}/run`: `context` has the shape of a `CallContext`
-(`{"metadata": {...}, "tags": {...}}`; other keys are dropped), the tactic
-receives a `CallContext`, and failures get the same status codes. Only the
-response differs: the `/tactics/{name}/` routes return the services envelope,
+(`request_id`, `trace_id`, `caller`, `tags`, `metadata`, and the
+[other fields](../protocol/services.md#requests-and-responses); keys that are
+not `CallContext` fields are dropped), the tactic receives a `CallContext`, and
+failures get the same status codes. Only the response differs: the
+`/tactics/{name}/` routes return the services envelope,
 `{"output": ..., "request_id": ..., "tactic": ...}`. The runner and the
 handlers of other resources get `context` as a plain dict; a `Tactic` used as
 such a handler receives it as `CallContext.metadata`.
@@ -408,16 +410,15 @@ print(response.status_code, response.json())
 
 | Status | When |
 | --- | --- |
-| 400 | A malformed request, an appended event whose `input` is not an object, or a `ValueError` or `SchemaError` from the runner or a handler. |
+| 400 | A malformed request, an appended event whose `input` is not an object, or a `ValueError`, `SchemaError`, or `TacticUnsupportedError` from the runner or a handler. |
 | 404 | The resource named in the URL does not exist, or a `/channels/` route names a resource that is not a channel. |
+| Its own | An `HTTPException` from the runner or a handler keeps its status and its plain `detail`, without the envelope; a store error keeps the [store API's code](../sssn/serving.md#errors). |
 | 500 | Anything else the runner or a handler raises, including a resource lookup that fails inside it. |
 
-A tactic resource fails with the codes of `POST /tactics/{name}/run` on both
-routes: 400 for `SchemaError` and `TacticUnsupportedError`, 500 for anything
-else, a `ValueError` or `HTTPException` included. Store errors keep the
-[store API's codes](../sssn/serving.md#errors), and any other handler that
-raises `HTTPException` gets its status and detail. The store API at
-`/network/` uses the same envelope with only `type` and `message`.
+A tactic resource fails with the codes of `POST /tactics/{name}/run` instead,
+on both routes: 400 for `SchemaError` and `TacticUnsupportedError`, 500 for
+anything else, a `ValueError`, `HTTPException`, or store error included. The
+store API at `/network/` uses the same envelope with only `type` and `message`.
 
 ## Loading strategies
 
