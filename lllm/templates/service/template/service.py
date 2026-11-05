@@ -10,11 +10,11 @@ sys.path.insert(0, str(PROJECT_ROOT))
 
 from lllm.services import create_tactic_app  # noqa: E402
 
-from main import build_app_tactic  # noqa: E402
+from main import create_tactic  # noqa: E402
 
 
 def create_app():
-    return create_tactic_app(build_app_tactic(), title="{{project_title}}")
+    return create_tactic_app(create_tactic(), title="{{project_title}}")
 
 
 app = create_app()

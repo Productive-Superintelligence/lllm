@@ -1,7 +1,9 @@
 [package]
+org = "local"
 name = "{{package_name}}"
 version = "0.1.0"
 description = "{{project_title}}"
+primary = "tactics.pipeline"
 
 [prompts]
 paths = ["prompts"]
@@ -11,3 +13,15 @@ paths = ["configs"]
 
 [tactics]
 paths = ["tactics"]
+
+[tactics.pipeline]
+entry = "main:create_tactic"
+description = "A planner/writer/reviewer multi-agent pipeline."
+
+[card]
+summary = "A planner/writer/reviewer multi-agent pipeline."
+tags = ["lllm", "pipeline"]
+
+[docs.readme]
+path = "README.md"
+title = "README"

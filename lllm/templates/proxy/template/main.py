@@ -14,6 +14,16 @@ def print_catalog() -> None:
     print(manager.retrieve_api_docs())
 
 
+def create_tactic():
+    """Build the project's tactic from configs/default.yaml.
+
+    `lllm serve .` and the hub use this as the package's primary tactic.
+    """
+
+    load_runtime(str(PROJECT_ROOT / "lllm.toml"))
+    return build_tactic(resolve_config("default"))
+
+
 def main() -> None:
     if "--catalog" in sys.argv:
         print_catalog()
@@ -21,9 +31,7 @@ def main() -> None:
 
     task = " ".join(arg for arg in sys.argv[1:] if arg != "--catalog").strip()
     task = task or "Summarize what data is available from the sample proxy."
-    load_runtime(str(PROJECT_ROOT / "lllm.toml"))
-    config = resolve_config("default")
-    tactic = build_tactic(config)
+    tactic = create_tactic()
     print(tactic(task))
 
 

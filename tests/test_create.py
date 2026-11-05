@@ -537,6 +537,13 @@ def test_native_project_templates_render_and_pass_their_smoke_test(tmp_path, tem
     assert (result.path / "lllm.toml").is_file()
     assert (result.path / "configs" / "default.yaml").is_file()
     assert "{{" not in (result.path / "lllm.toml").read_text(encoding="utf-8")
+    from lllm.hub import validate_package
+    from lllm.launch import load_launch_app
+
+    report = validate_package(result.path)
+    assert report.ok and report.issues == ()
+    launched = load_launch_app(result.path)
+    assert launched.kind == "tactic"
     smoke = runpy.run_path(str(result.path / "tests" / "test_smoke.py"))
     with warnings.catch_warnings():
         warnings.simplefilter("error", RuntimeWarning)

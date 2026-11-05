@@ -1,7 +1,9 @@
 [package]
+org = "local"
 name = "{{package_name}}"
 version = "0.1.0"
 description = "{{project_title}}"
+primary = "tactics.research"
 
 [prompts]
 paths = ["prompts"]
@@ -14,3 +16,15 @@ paths = ["tactics"]
 
 [data]
 paths = ["data"]
+
+[tactics.research]
+entry = "main:create_tactic"
+description = "A research workspace with batch experiments."
+
+[card]
+summary = "A research workspace with batch experiments."
+tags = ["lllm", "research"]
+
+[docs.readme]
+path = "README.md"
+title = "README"
