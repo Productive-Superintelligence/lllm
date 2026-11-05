@@ -219,14 +219,18 @@ def _is_factory(value: Any) -> bool:
 def _returns_tactic_or_app(value: Any, annotation: Any) -> bool:
     # Only the return annotation is evaluated, so a parameter annotation that
     # only a type checker can resolve does not hide it.
-    if isinstance(annotation, str):
+    namespace = getattr(inspect.unwrap(value), "__globals__", {})
+    # Under ``from __future__ import annotations`` the annotation is a string,
+    # and a quoted forward reference (``-> "Brief"``) is a string in a string.
+    for _ in range(3):
+        if not isinstance(annotation, str):
+            break
         try:
-            namespace = getattr(inspect.unwrap(value), "__globals__", {})
             annotation = eval(annotation, namespace)
         except Exception:
             # A class imported only for type checking is not there to
             # evaluate, so the annotation is judged by the class name it gives.
-            name = _annotation_name(annotation)
+            name = _annotation_name(annotation.strip().strip("'\""))
             return name.endswith("Tactic") or name in {"FastAPI", "Starlette"}
     annotation = get_origin(annotation) or annotation
     if not isinstance(annotation, type):

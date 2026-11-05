@@ -723,3 +723,39 @@ description = "Serving fixture."
 def _write(path: Path, text: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text.lstrip(), encoding="utf-8")
+
+
+def test_quoted_return_annotations_mark_factories_under_future_annotations(tmp_path, monkeypatch):
+    module = tmp_path / "quoted_factories.py"
+    module.write_text(
+        "from __future__ import annotations\n"
+        "from typing import Any\n"
+        "from lllm import Tactic\n"
+        "\n"
+        "def build(prefix: str = '>') -> 'Brief':\n"
+        "    return Brief(prefix)\n"
+        "\n"
+        "def build_generic(prefix: str = '>') -> 'Tactic[Any, Any]':\n"
+        "    return Brief(prefix)\n"
+        "\n"
+        "def greet(name: str = 'world') -> 'str':\n"
+        "    return f'Hello {name}'\n"
+        "\n"
+        "class Brief(Tactic):\n"
+        "    name = 'brief'\n"
+        "    def __init__(self, prefix: str = '>'):\n"
+        "        super().__init__()\n"
+        "        self.prefix = prefix\n"
+        "    def call(self, task):\n"
+        "        return self.prefix + task\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    import importlib
+
+    from lllm.runtimes import coerce_tactic
+
+    quoted = importlib.import_module("quoted_factories")
+    assert coerce_tactic(quoted.build).run("x") == ">x"
+    assert coerce_tactic(quoted.build_generic).run("y") == ">y"
+    assert coerce_tactic(quoted.greet).run("Ada") == "Hello Ada"
