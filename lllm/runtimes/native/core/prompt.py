@@ -8,6 +8,7 @@ import string
 import sys
 import types
 from abc import ABC, abstractmethod
+from collections import deque
 from collections.abc import Mapping
 from typing import (
     Any,
@@ -234,40 +235,88 @@ def _annotation_schema(annotation: Any) -> Dict[str, Any]:
     return schema or {"type": _json_type_for_annotation(annotation)}
 
 
-def _inline_refs(
-    schema: Any,
-    defs: Optional[Dict[str, Any]] = None,
-    expanding: frozenset = frozenset(),
-) -> Any:
+def _inline_refs(schema: Any) -> Any:
     """Replace ``{"$ref": "#/$defs/X"}`` with the definition; drop ``$defs``.
 
-    Tool parameters have no place for ``$defs``, so a recursive model is
-    expanded once: a reference back to a definition that is already being
-    expanded becomes that definition's bare type (``{"type": "object"}`` for
-    a model, ``{}`` when the definition declares no ``type``).
+    Tool parameters have no place for ``$defs``, so every model is inlined
+    where it is used. Within a recursive cycle of models, though, each model
+    is spelled out only at its first (shallowest) use; a later reference
+    back into the cycle becomes the model's bare type and title
+    (``{"type": "object", "title": "X"}``, or ``{}`` for a definition with
+    neither). The result grows with the definitions, not with the number
+    of paths through a cycle.
     """
 
-    if isinstance(schema, dict):
-        if "$defs" in schema:
-            defs = {**(defs or {}), **schema["$defs"]}
-        ref = schema.get("$ref")
-        if isinstance(ref, str) and ref.startswith("#/$defs/") and defs:
-            name = ref.split("/")[-1]
-            target = defs.get(name)
-            if target is not None:
-                extra = {k: v for k, v in schema.items() if k != "$ref"}
-                if name in expanding:
-                    bare = {"type": target["type"]} if "type" in target else {}
-                    return _inline_refs({**bare, **extra}, defs, expanding)
-                return _inline_refs({**target, **extra}, defs, expanding | {name})
-        return {
-            key: _inline_refs(value, defs, expanding)
-            for key, value in schema.items()
-            if key != "$defs"
-        }
-    if isinstance(schema, list):
-        return [_inline_refs(item, defs, expanding) for item in schema]
-    return schema
+    if not isinstance(schema, dict):
+        return schema
+    defs = schema.get("$defs", {})
+    reach = _reachable_defs(defs)
+    spelled_out: set[str] = set()
+    result: Dict[str, Any] = {}
+    # Breadth first, so a model is spelled out at its shallowest use.
+    # ``model`` is the innermost definition being inlined.
+    queue = deque([(result, "schema", schema, None)])
+    while queue:
+        parent, key, node, model = queue.popleft()
+        while isinstance(node, dict) and (name := _def_name(node, defs)):
+            target = defs[name]
+            extra = {k: v for k, v in node.items() if k != "$ref"}
+            # Back into the cycle being inlined (``name`` leads to ``model``),
+            # to a model that is already spelled out.
+            if model is not None and model in reach[name] and name in spelled_out:
+                bare = {k: target[k] for k in ("type", "title") if k in target}
+                node = {**bare, **extra}
+                break
+            spelled_out.add(name)
+            node, model = {**target, **extra}, name
+        if isinstance(node, dict):
+            parent[key] = {}
+            queue.extend(
+                (parent[key], k, v, model) for k, v in node.items() if k != "$defs"
+            )
+        elif isinstance(node, list):
+            parent[key] = [None] * len(node)
+            queue.extend((parent[key], i, v, model) for i, v in enumerate(node))
+        else:
+            parent[key] = node
+    return result["schema"]
+
+
+def _def_name(schema: Dict[str, Any], defs: Dict[str, Any]) -> Optional[str]:
+    """Name of the definition that *schema* refers to with a ``$ref``."""
+
+    ref = schema.get("$ref")
+    if isinstance(ref, str) and ref.startswith("#/$defs/"):
+        name = ref.removeprefix("#/$defs/")
+        if name in defs:
+            return name
+    return None
+
+
+def _reachable_defs(defs: Dict[str, Any]) -> Dict[str, set[str]]:
+    """Map each definition to the definitions its references lead to."""
+
+    def refs(schema: Any) -> set[str]:
+        if isinstance(schema, list):
+            return set().union(*map(refs, schema))
+        if not isinstance(schema, dict):
+            return set()
+        found = set().union(*map(refs, schema.values()))
+        name = _def_name(schema, defs)
+        return found | {name} if name else found
+
+    direct = {name: refs(body) for name, body in defs.items()}
+    reach: Dict[str, set[str]] = {}
+    for name in defs:
+        seen: set[str] = set()
+        pending = list(direct[name])
+        while pending:
+            other = pending.pop()
+            if other not in seen:
+                seen.add(other)
+                pending.extend(direct[other])
+        reach[name] = seen
+    return reach
 
 
 def _resolve_strict(
@@ -392,8 +441,9 @@ class Function(BaseModel):
         """
         Build a :class:`Function` by inspecting *fn*'s signature and
         docstring.  Type hints are converted to JSON Schema types; nested
-        models are inlined, and a recursive model is expanded once, with its
-        recursive reference described as ``{"type": "object"}``.
+        models are inlined, and the models of a recursive cycle are spelled
+        out once each, with other references back into the cycle described
+        by type and title (``{"type": "object", "title": "Node"}``).
 
         Parameters without a type annotation default to ``"string"``.
         Parameters whose names end with ``*`` in the docstring (or that

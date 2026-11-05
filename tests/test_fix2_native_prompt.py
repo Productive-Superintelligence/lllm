@@ -3,6 +3,7 @@
 import json
 import sys
 import textwrap
+from collections import Counter
 from typing import List, Optional, Union
 
 import pytest
@@ -65,9 +66,60 @@ class Tree(BaseModel):
 Nested = TypeAliasType("Nested", Union[List["Nested"], int])
 
 
+class Num(BaseModel):
+    value: float
+
+
+class Var(BaseModel):
+    name: str
+
+
+class BinOp(BaseModel):
+    op: str
+    left: "Expr"
+    right: "Expr"
+
+
+class Neg(BaseModel):
+    operand: "Expr"
+
+
+class Call(BaseModel):
+    func: str
+    args: List["Expr"]
+
+
+class IfExpr(BaseModel):
+    cond: "Expr"
+    then: "Expr"
+    otherwise: "Expr"
+
+
+class Let(BaseModel):
+    name: str
+    value: "Expr"
+    body: "Expr"
+
+
+Expr = Union[Num, Var, BinOp, Neg, Call, IfExpr, Let]
+EXPR_NODES = ["BinOp", "Neg", "Call", "IfExpr", "Let"]
+for _node in (BinOp, Neg, Call, IfExpr, Let):
+    _node.model_rebuild()
+
+
 def assert_no_refs(properties):
     text = json.dumps(properties)
     assert '"$ref"' not in text and '"$defs"' not in text
+
+
+def spelled_out(schema):
+    """Titles of the models written out in full in *schema*, with repeats."""
+    if isinstance(schema, list):
+        return [title for item in schema for title in spelled_out(item)]
+    if not isinstance(schema, dict):
+        return []
+    own = [schema["title"]] if "properties" in schema and "title" in schema else []
+    return own + [title for value in schema.values() for title in spelled_out(value)]
 
 
 def test_recursive_models_are_expanded_once_without_dangling_refs():
@@ -79,7 +131,7 @@ def test_recursive_models_are_expanded_once_without_dangling_refs():
 
     assert_no_refs(walk.properties)
     assert tree["properties"]["value"]["type"] == "integer"
-    assert tree["properties"]["children"]["items"] == {"type": "object"}
+    assert tree["properties"]["children"]["items"] == {"type": "object", "title": "Node"}
 
 
 def test_branching_recursive_models_build_small_schemas():
@@ -91,7 +143,7 @@ def test_branching_recursive_models_build_small_schemas():
     assert len(json.dumps(walk_bin.properties)) < 1000
     assert_no_refs(walk_bin.properties)
     assert walk_bin.properties["tree"]["properties"]["left"]["anyOf"] == [
-        {"type": "object"},
+        {"type": "object", "title": "Bin"},
         {"type": "null"},
     ]
 
@@ -104,9 +156,62 @@ def test_mutually_recursive_models_and_aliases_are_cut_on_the_repeat():
     pong = volley.properties["ping"]["properties"]["pong"]["anyOf"][0]
 
     assert_no_refs(volley.properties)
-    assert pong["properties"]["ping"]["anyOf"][0] == {"type": "object"}
+    assert pong["properties"]["ping"]["anyOf"][0] == {"type": "object", "title": "Ping"}
     # A recursive definition that declares no type is cut to "any value".
     assert volley.properties["nested"]["anyOf"][0] == {"type": "array", "items": {}}
+
+
+def test_cycles_of_many_models_spell_out_each_model_once():
+    # Each node type nests every other one. Inlining every path through them
+    # took 37 s and 2.5 GB for seven node types.
+    @tool(description="Evaluate an expression")
+    def evaluate(expr: Expr) -> str:
+        return "ok"
+
+    class Evaluate(Tactic):
+        name = "evaluate"
+        input_model = BinOp
+
+        def call(self, task):
+            return task.op
+
+    as_kwargs = tactic_as_function(Evaluate(), parameter_mode="kwargs")
+    in_tool = Counter(spelled_out(evaluate.properties))
+    in_tactic = Counter(spelled_out(as_kwargs.properties))
+    binop = evaluate.properties["expr"]["anyOf"][2]
+
+    assert_no_refs(evaluate.properties)
+    assert_no_refs(as_kwargs.properties)
+    assert len(json.dumps(evaluate.properties)) < 10_000
+    assert [in_tool[name] for name in EXPR_NODES] == [1, 1, 1, 1, 1]
+    # The input model itself becomes the parameters.
+    assert [in_tactic[name] for name in EXPR_NODES] == [0, 1, 1, 1, 1]
+    # Other references into the cycle name the model they stand for.
+    assert binop["properties"]["left"]["anyOf"][2:] == [
+        {"type": "object", "title": name} for name in EXPR_NODES
+    ]
+    call = as_kwargs(
+        FunctionCall(
+            name="evaluate",
+            arguments={"op": "+", "left": {"value": 1}, "right": {"name": "x"}},
+        )
+    )
+    assert call.success and call.result == "+"
+
+
+def test_recursive_models_are_spelled_out_at_each_use_outside_their_cycle():
+    class Diff(BaseModel):
+        before: Tree
+        after: Tree
+
+    @tool(description="Compare two trees")
+    def compare(diff: Diff) -> str:
+        return "ok"
+
+    after = compare.properties["diff"]["properties"]["after"]
+
+    assert spelled_out(compare.properties) == ["Tree", "Tree"]
+    assert after["properties"]["children"]["items"] == {"type": "object", "title": "Tree"}
 
 
 def test_models_used_twice_without_recursion_are_still_inlined_in_full():
@@ -141,7 +246,7 @@ def test_tactic_tools_with_recursive_inputs_publish_valid_non_strict_schemas():
 
     assert_no_refs(as_task.properties)
     assert_no_refs(as_kwargs.properties)
-    assert as_kwargs.properties["children"]["items"] == {"type": "object"}
+    assert as_kwargs.properties["children"]["items"] == {"type": "object", "title": "Tree"}
     # Every field is required, but the cut-off object is not strict-safe.
     assert as_kwargs.required == ["value", "children"]
     assert as_task.strict is False and as_kwargs.strict is False
