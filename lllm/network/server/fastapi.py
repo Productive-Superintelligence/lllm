@@ -340,10 +340,10 @@ def _custom_kwargs(
             kwargs[name] = store
         elif name == "body":
             kwargs[name] = body
-        elif name == "params":
-            kwargs[name] = params
         elif name in path:
             kwargs[name] = path[name]
+        elif name == "params":
+            kwargs[name] = params
         elif parameter.default is inspect.Parameter.empty:
             raise TypeError(f"Cannot bind custom endpoint parameter: {name}")
     return kwargs

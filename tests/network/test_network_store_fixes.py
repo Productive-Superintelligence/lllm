@@ -5,6 +5,7 @@ import importlib.util
 import inspect
 import json
 import math
+import time
 from pathlib import Path
 from typing import get_args
 
@@ -30,6 +31,7 @@ from lllm.network import (
     RemoteStore,
     RemoteStoreError,
     Snapshot,
+    SnapshotNotFoundError,
     create_app,
     endpoint,
 )
@@ -301,6 +303,98 @@ def test_put_snapshot_validates_fields_on_every_store(any_store):
         any_store.put_snapshot(Snapshot(name="latest"), channel="bad/name")
 
 
+def test_put_snapshot_has_the_same_signature_on_every_store():
+    signature = inspect.signature(LocalStore.put_snapshot)
+
+    assert inspect.signature(RemoteStore.put_snapshot) == signature
+    assert inspect.signature(AsyncRemoteStore.put_snapshot) == signature
+    assert {"snapshot", "value", "name"} <= set(signature.parameters)
+
+
+def test_put_snapshot_accepts_name_and_snapshot_keywords_on_every_store(any_store):
+    written = [
+        any_store.put_snapshot(name="by-name", value={"n": 1}),
+        any_store.put_snapshot(snapshot=Snapshot(name="by-model", value={"n": 2})),
+        any_store.put_snapshot(snapshot={"name": "by-dict", "value": {"n": 3}}),
+        any_store.put_snapshot(
+            snapshot=Snapshot(name="ignored", value={"n": 4}),
+            name="renamed-model",
+        ),
+        any_store.put_snapshot(
+            {"name": "ignored", "value": {"n": 5}},
+            name="renamed-dict",
+        ),
+        any_store.put_snapshot(
+            name="named-model",
+            value=Snapshot(name="ignored", value={"n": 6}, metadata={"m": 6}),
+        ),
+    ]
+
+    assert [(snapshot.name, snapshot.value) for snapshot in written] == [
+        ("by-name", {"n": 1}),
+        ("by-model", {"n": 2}),
+        ("by-dict", {"n": 3}),
+        ("renamed-model", {"n": 4}),
+        ("renamed-dict", {"n": 5}),
+        ("named-model", {"n": 6}),
+    ]
+    assert written[-1].metadata == {"m": 6}
+    for snapshot in written:
+        assert any_store.get_snapshot(snapshot.name) == snapshot
+    with pytest.raises((SnapshotNotFoundError, RemoteStoreError)):
+        any_store.get_snapshot("ignored")
+
+
+@pytest.mark.parametrize(
+    ("args", "kwargs"),
+    [
+        (("latest", 1), {"name": "other"}),
+        ((), {"snapshot": "latest", "name": "other"}),
+    ],
+)
+def test_put_snapshot_rejects_a_name_given_twice_on_every_store(any_store, args, kwargs):
+    with pytest.raises(TypeError, match="multiple values for argument 'name'"):
+        any_store.put_snapshot(*args, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {},
+        {"value": 1},
+        {"name": "bad/name", "value": 1},
+        {"snapshot": {"value": 1}},
+        {"value": Snapshot(name="unnamed", value=1)},
+    ],
+)
+def test_put_snapshot_rejects_missing_or_invalid_keyword_names_on_every_store(
+    any_store, kwargs
+):
+    with pytest.raises(InvalidPayloadError):
+        any_store.put_snapshot(**kwargs)
+
+
+def test_put_snapshot_treats_none_fields_as_unset_on_every_store(any_store):
+    snapshot = any_store.put_snapshot(
+        {
+            "name": "unset",
+            "value": 1,
+            "channel": None,
+            "timestamp": None,
+            "schema": None,
+            "source_event_id": None,
+            "metadata": None,
+        }
+    )
+    renamed = any_store.put_snapshot({"name": None, "value": 2}, name="renamed")
+
+    assert snapshot.timestamp == pytest.approx(time.time(), abs=60)
+    assert [snapshot.channel, snapshot.schema, snapshot.source_event_id] == [None] * 3
+    assert snapshot.metadata == {}
+    assert any_store.get_snapshot("unset") == snapshot
+    assert (renamed.name, renamed.value) == ("renamed", 2)
+
+
 # S-N4: from_text parses config in memory
 
 
@@ -438,6 +532,18 @@ def test_custom_endpoints_receive_query_parameters(tmp_path):
     assert posted.json() == {"body": {"x": 1}, "params": {"dry_run": "1"}}
 
 
+def test_custom_endpoint_path_parameter_named_params_binds_the_path_value(tmp_path):
+    @endpoint.get("/things/{params}", scope="store")
+    def thing(params: str):
+        return {"params": params}
+
+    app = create_app(LocalStore(tmp_path / "store"), custom_endpoints=[thing])
+    response = request(app, "GET", "/things/hello?x=1")
+
+    assert response.status_code == 200
+    assert response.json() == {"params": "hello"}
+
+
 def test_hub_manifest_tail_endpoint_returns_the_most_recent_events(tmp_path):
     module = load_example("hub_manifest", "package_manifest.py")
     store = LocalStore(tmp_path / "store")
@@ -463,6 +569,26 @@ def test_hub_manifest_tail_endpoint_returns_the_most_recent_events(tmp_path):
         assert response.status_code == 400
         assert response.json()["detail"]["error"]["type"] == "InvalidPayloadError"
     assert "most recent" in module.channel_tail.__lllm_network_endpoint__.description
+
+
+def test_hub_manifest_tail_endpoint_rejects_out_of_range_limits(tmp_path):
+    module = load_example("hub_manifest", "package_manifest.py")
+    store = LocalStore(tmp_path / "store")
+    store.create_channel({"name": "raw"})
+    store.append_event({"channel": "raw", "payload": {"n": 1}})
+    app = create_app(store, custom_endpoints=[module.channel_tail])
+
+    def tail(limit: str):
+        return request(app, "GET", "/channels/raw/tail", params={"limit": limit})
+
+    assert [event["payload"] for event in tail("1000").json()] == [{"n": 1}]
+    for limit in ("1001", "99999999999999999999", "9" * 5000, "", "2.5"):
+        response = tail(limit)
+        assert response.status_code == 400, limit[:30]
+        assert response.json()["detail"]["error"] == {
+            "type": "InvalidPayloadError",
+            "message": "limit must be an integer from 1 to 1000.",
+        }
 
 
 # S-N7: hub channel forms match the network's

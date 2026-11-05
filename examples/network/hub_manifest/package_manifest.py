@@ -10,6 +10,8 @@ from lllm.network import (
     snapshot_resource,
 )
 
+MAX_TAIL_LIMIT = 1000
+
 
 @endpoint.get(
     "/channels/{name}/tail",
@@ -18,11 +20,16 @@ from lllm.network import (
     tags=("channels",),
 )
 def channel_tail(store, name: str, params=None):
-    """Return the newest `?limit=N` events (default 20), oldest first."""
-    limit = str((params or {}).get("limit", 20))
-    if not limit.isdecimal() or int(limit) < 1:
-        raise InvalidPayloadError("limit must be a positive integer.")
-    tail = deque(maxlen=int(limit))
+    """Return the newest `?limit=N` events (default 20, at most 1000), oldest first."""
+    try:
+        limit = int((params or {}).get("limit", 20))
+    except (TypeError, ValueError):
+        limit = 0
+    if not 1 <= limit <= MAX_TAIL_LIMIT:
+        raise InvalidPayloadError(
+            f"limit must be an integer from 1 to {MAX_TAIL_LIMIT}."
+        )
+    tail = deque(maxlen=limit)
     cursor = 0
     while batch := store.query_events(name, after_cursor=cursor, limit=500):
         tail.extend(batch)

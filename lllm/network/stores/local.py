@@ -350,9 +350,10 @@ class LocalStore:
 
     def put_snapshot(
         self,
-        snapshot: Snapshot | dict[str, Any] | str,
+        snapshot: Snapshot | Mapping[str, Any] | str | None = None,
         value: Any = None,
         *,
+        name: str | None = None,
         channel: str | None = None,
         timestamp: float | None = None,
         schema: str | None = None,
@@ -364,11 +365,14 @@ class LocalStore:
         ``put_snapshot(snapshot)`` takes a ``Snapshot`` or a dict of snapshot
         fields; ``put_snapshot(name, value, ...)`` stores ``value`` exactly as
         given, unless it is a ``Snapshot`` whose fields are used under that
-        name. Field arguments that are not ``None`` override.
+        name. ``snapshot=`` and ``name=`` also work as keywords. Field
+        arguments that are not ``None`` override, and ``None`` fields are unset.
+        The remote clients take the same arguments.
         """
         snapshot = _snapshot_fields(
             snapshot,
             value,
+            name=name,
             channel=channel,
             timestamp=timestamp,
             schema=schema,
@@ -564,15 +568,21 @@ def _snapshot_fields(
     snapshot: Any,
     value: Any,
     *,
+    name: str | None,
     channel: str | None,
     timestamp: float | None,
     schema: str | None,
     source_event_id: str | None,
     metadata: Any,
-) -> Any:
+) -> Snapshot | dict[str, Any]:
+    if snapshot is not None and not isinstance(snapshot, (Snapshot, Mapping)):
+        if name is not None:
+            raise TypeError("put_snapshot() got multiple values for argument 'name'")
+        snapshot, name = None, snapshot
     overrides = {
         key: item
         for key, item in (
+            ("name", name),
             ("channel", channel),
             ("timestamp", timestamp),
             ("schema", schema),
@@ -581,21 +591,25 @@ def _snapshot_fields(
         )
         if item is not None
     }
-    if isinstance(snapshot, str):
+    if snapshot is None:
         if isinstance(value, Snapshot):
-            fields = value.model_dump(by_alias=True)
+            fields = value.model_dump(by_alias=True, exclude={"name"})
         else:
             fields = {"value": value}
-        return {**fields, **overrides, "name": snapshot}
-    if value is not None:
-        overrides["value"] = value
-    if not overrides:
-        return snapshot
-    if isinstance(snapshot, Snapshot):
-        return {**snapshot.model_dump(by_alias=True), **overrides}
-    if isinstance(snapshot, Mapping):
-        return {**snapshot, **overrides}
-    return snapshot
+    else:
+        if value is not None:
+            overrides["value"] = value
+        if isinstance(snapshot, Snapshot):
+            if not overrides:
+                return snapshot
+            fields = snapshot.model_dump(by_alias=True)
+        else:
+            fields = snapshot
+    return {
+        key: item
+        for key, item in {**fields, **overrides}.items()
+        if item is not None
+    }
 
 
 def _path_value(value: Any, label: str) -> str:
