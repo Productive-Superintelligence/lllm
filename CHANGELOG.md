@@ -18,9 +18,15 @@ modules, with a single `lllm` command.
 - `tactic(x)`, `acall`, `bcall` and `ccall` run `call()` when a subclass
   writes it, else its `_run()` (or `_arun()`) hook. An `_arun()`-only tactic
   gets `run()` too, an `async def call()` is awaited on every entry point,
-  and an overridden `events()` streams through `aevents()` and `/stream`. A
-  hook that hands its call back (`super()._run()`, `self.call()`) raises
-  `TacticUnsupportedError` at once instead of recursing.
+  and an overridden `events()` (or `stream()`) streams through `aevents()`
+  and `/stream`. A hook that hands its call back (`super()._run()`,
+  `self.call()`) raises `TacticUnsupportedError` at once instead of
+  recursing.
+- `call()` and every stream run on a per-call copy with fresh agents and
+  their own session, so repeated `/stream` requests start with clean
+  dialogs; protocol hooks run on the instance, like any protocol tactic
+  (declaring `agent_group` on a hook-only class warns). Sync streams run in
+  a worker thread, so a slow `stream()` never blocks the event loop.
 - Sub-tactic calls roll up into the caller's session and cost. Sessions and
   sub-tactic records use the instance name, so `Tactic(name=...)` wins over
   the class `name`.
@@ -142,8 +148,11 @@ modules, with a single `lllm` command.
   Anything else is a handler, called per input, so `def greet(name="world")`
   now answers each input instead of running at load.
 - `lllm hub validate` rejects raw secret-shaped metadata keys (`api_key`,
-  `token`, `password`, ...) with `metadata_secret_key`, so `lllm hub publish`
-  refuses such packages; use a reference such as `api_key_ref`.
+  `token`, `password`, `privateKey`, `proxyAuthorization`, ...) with
+  `metadata_secret_key`, so `lllm hub publish` refuses such packages; use a
+  reference such as `api_key_ref`.
+- A hook-only tactic (`_run()`/`_arun()`) runs on the instance under
+  `tactic(x)`, `acall`, `bcall` and `ccall` too, not on a per-call copy.
 - Static hub catalogs write zips to `packages/<org>/<name>/<version>.zip`
   (was `packages/<org>-<name>-<version>.zip`), with the package files at
   the archive root instead of under a folder; `install_package()` reads

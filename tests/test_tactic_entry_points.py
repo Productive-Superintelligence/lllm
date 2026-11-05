@@ -9,6 +9,7 @@ from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
 from lllm import CallContext, Tactic, TacticEvent, TacticUnsupportedError
+from lllm.protocol import Tactic as ProtocolTactic
 from lllm.services import create_tactic_app
 
 
@@ -140,11 +141,13 @@ def test_runtime_kind_follows_the_overridden_hooks():
         async def _arun(self, input_value, *, context=None):
             return input_value
 
-    class AgentsWithAsyncHook(Tactic):
-        agent_group = ["writer"]
+    with pytest.warns(UserWarning, match="agent_group"):
 
-        async def _arun(self, input_value, *, context=None):
-            return input_value
+        class AgentsWithAsyncHook(Tactic):
+            agent_group = ["writer"]
+
+            async def _arun(self, input_value, *, context=None):
+                return input_value
 
     assert RunHook.runtime_kind == "python"
     assert Program.runtime_kind == "native"
@@ -473,7 +476,7 @@ def test_hooks_may_recurse_and_chain_like_any_program():
     assert head.run([]) == list(range(40))
 
 
-def test_a_hook_runs_on_the_instance_for_run_and_on_a_call_copy_otherwise():
+def test_hooks_run_on_the_instance_under_every_entry_point():
     class Counter(Tactic):
         name = "counter"
 
@@ -483,10 +486,12 @@ def test_a_hook_runs_on_the_instance_for_run_and_on_a_call_copy_otherwise():
 
     tactic = Counter()
     assert tactic.run("x") == 1
-    assert tactic.run("x") == 2
-    # Native entry points run each call on a copy (fresh agents per call).
+    assert asyncio.run(tactic.arun("x")) == 2
+    # Like any protocol tactic: the hook runs on the instance (only call()
+    # programs get a per-call copy with fresh agents).
     assert tactic("x") == 3
-    assert tactic.hits == 2
+    assert tactic.bcall(["x"]) == [4]
+    assert tactic.hits == 4
 
 
 # -- Subclass declarations, session names, and tactic names -------------------
@@ -600,3 +605,200 @@ def test_sessions_use_the_constructor_name():
         "summarizer": 1,
         "critic": 1,
     }
+
+
+# -- Streams run like call(): a per-call copy, fresh agents, off the loop ------
+
+from lllm.runtimes.native import Message, Role  # noqa: E402
+from lllm.runtimes.native.core.const import InvokeResult  # noqa: E402
+from lllm.runtimes.native.invokers import register_invoker  # noqa: E402
+
+
+class _EchoInvoker:
+    def __init__(self, config):
+        self.config = config
+
+    def call(self, dialog, model, model_args=None, **kwargs):
+        return InvokeResult(
+            message=Message(
+                role=Role.ASSISTANT,
+                content=f"echo: {dialog.tail.content}",
+                name=kwargs.get("responder", "assistant"),
+            )
+        )
+
+
+register_invoker("echo-stream-test", lambda config: _EchoInvoker(config))
+_WRITER = {
+    "invoker": "echo-stream-test",
+    "agent_configs": [{"name": "writer", "model_name": "m", "system_prompt": "You write."}],
+}
+
+
+class StreamingWriter(Tactic):
+    name = "streaming-writer"
+    agent_group = ["writer"]
+
+    def call(self, task):
+        return "".join(str(item) for item in self.events(task))
+
+    def events(self, task, **kwargs):
+        writer = self.agents["writer"]
+        writer.open("work")  # a fixed dialog name: fails if agents were shared
+        writer.receive(task)
+        yield writer.respond().content
+
+
+class StreamingWriterViaStream(StreamingWriter):
+    name = "streaming-writer-stream"
+
+    def stream(self, input_value, *, context=None, **kwargs):
+        yield from StreamingWriter.events(self, input_value)
+
+
+def _collect(aiterable):
+    async def run():
+        return [item async for item in aiterable]
+
+    return asyncio.run(run())
+
+
+def test_streams_with_agents_get_fresh_agents_every_time():
+    tactic = StreamingWriter(_WRITER)
+
+    for text in ("one", "two"):
+        events = _collect(tactic.aevents(text))
+        assert [event.data for event in events] == [f"echo: {text}"]
+    assert tactic(" three") == "echo:  three"
+
+    streamer = StreamingWriterViaStream(_WRITER)
+    assert _collect(streamer.astream("a")) == ["echo: a"]
+    assert _collect(streamer.astream("b")) == ["echo: b"]
+    assert {"stream", "events"} <= streamer.capabilities()
+
+
+def test_streams_with_agents_serve_repeated_requests():
+    client = TestClient(create_tactic_app(StreamingWriter(_WRITER)))
+
+    for text in ("one", "two"):
+        response = client.post("/stream", json={"input": text})
+        assert response.status_code == 200
+        assert f"echo: {text}" in response.text
+        assert "already exists" not in response.text
+
+
+def test_a_stream_roll_up_records_its_session():
+    seen = {}
+
+    class Leaf(Tactic):
+        name = "leaf"
+
+        def call(self, task):
+            return task
+
+    class Parent(Tactic):
+        name = "parent"
+
+        def __init__(self):
+            super().__init__()
+            self.leaf = Leaf()
+
+        def events(self, task, **kwargs):
+            from lllm.runtimes.native.core.tactic import _ACTIVE_SESSION
+
+            seen["session"] = _ACTIVE_SESSION.get()
+            yield self.leaf(task)
+
+    assert [event.data for event in _collect(Parent().aevents("x"))] == ["x"]
+    session = seen["session"]
+    assert session is not None and session.tactic_name == "parent"
+    assert list(session.sub_tactic_sessions) == ["leaf"]
+
+
+def test_sync_streams_do_not_block_the_event_loop():
+    import time
+
+    class Slow(Tactic):
+        name = "slow"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            for index in range(3):
+                time.sleep(0.05)
+                yield index
+
+    class SlowProtocol(ProtocolTactic):
+        name = "slow-protocol"
+
+        def _run(self, input_value, *, context=None):
+            return input_value
+
+        def stream(self, input_value, *, context=None):
+            for index in range(3):
+                time.sleep(0.05)
+                yield index
+
+    async def run(stream):
+        ticks = 0
+        done = asyncio.Event()
+
+        async def ticker():
+            nonlocal ticks
+            while not done.is_set():
+                ticks += 1
+                await asyncio.sleep(0.005)
+
+        task = asyncio.create_task(ticker())
+        items = [item async for item in stream]
+        done.set()
+        await task
+        return items, ticks
+
+    items, ticks = asyncio.run(run(Slow().aevents("x")))
+    assert [event.data for event in items] == [0, 1, 2]
+    assert ticks >= 10  # the loop kept running while events() slept
+    items, ticks = asyncio.run(run(SlowProtocol().astream("x")))
+    assert items == [0, 1, 2] and ticks >= 10
+
+
+def test_stream_errors_reach_the_consumer_and_closing_stops_the_producer():
+    import threading
+
+    closed = threading.Event()
+
+    class Failing(Tactic):
+        name = "failing"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            yield "first"
+            raise RuntimeError("boom")
+
+    class Endless(Tactic):
+        name = "endless"
+
+        def call(self, task):
+            return task
+
+        def events(self, task, **kwargs):
+            try:
+                index = 0
+                while True:
+                    yield index
+                    index += 1
+            finally:
+                closed.set()
+
+    async def take_first(stream):
+        async for item in stream:
+            await stream.aclose()
+            return item
+
+    with pytest.raises(RuntimeError, match="boom"):
+        _collect(Failing().aevents("x"))
+    assert asyncio.run(take_first(Endless().aevents("x"))).data == 0
+    assert closed.wait(2)

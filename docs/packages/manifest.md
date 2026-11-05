@@ -97,7 +97,7 @@ paths = ["./prompts", "./shared/prompts under shared"]  # or {path = ..., prefix
 | `[tools]` | `@tool` functions (plus metadata files) |
 | `[proxies]` | `BaseProxy` subclasses |
 | `[tactics]` (`paths`) | `Tactic` subclasses with a `name` |
-| `[configs]` | YAML/JSON/TOML configs (agent configs, with `base` inheritance) |
+| `[configs]` | YAML configs (`.yaml`/`.yml`: agent configs, with `base` inheritance) |
 | `[services]` (`paths`) | ASGI apps in Python modules; spec files as data |
 | `[assets]` (`paths`) | any files, loaded lazily |
 | any other table | a custom section: files and Python resources |

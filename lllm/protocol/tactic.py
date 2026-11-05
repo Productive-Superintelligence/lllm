@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-from enum import Enum
+import contextvars
 import inspect
+import threading
 import time
 import traceback
-from collections.abc import AsyncIterator, Iterator, Mapping
+from collections.abc import AsyncIterator, Callable, Iterator, Mapping
+from enum import Enum
 from typing import Any, ClassVar, Generic, TypeVar
 
 from pydantic import BaseModel, Field, StrictStr, field_validator, model_validator
@@ -307,7 +309,9 @@ class Tactic(Generic[InputT, OutputT]):
         context = _call_context(context)
         # Validate like run() does, so stream() receives the typed input.
         validated = self.validate_input(input_value)
-        for item in self.stream(validated, context=context, **kwargs):
+        async for item in iterate_in_thread(
+            lambda: self.stream(validated, context=context, **kwargs)
+        ):
             yield item
 
     async def aevents(
@@ -342,6 +346,62 @@ class Tactic(Generic[InputT, OutputT]):
             input_type=type_name(self.input_type),
             metadata=copy_boundary_value(context.metadata),
         )
+
+
+_DONE = object()
+
+
+async def iterate_in_thread(make_iterator: Callable[[], Iterator[Any]]) -> AsyncIterator[Any]:
+    """Yield the items of a blocking iterator without blocking the event loop.
+
+    The iterator is created and advanced in one worker thread that carries the
+    caller's context variables, so a sync ``stream()`` that waits on a model
+    or an API between items never stalls other requests. Errors are raised to
+    the consumer; closing the async iterator stops the producer before its
+    next item.
+    """
+
+    loop = asyncio.get_running_loop()
+    queue: asyncio.Queue[tuple[bool, Any]] = asyncio.Queue()
+    stop = threading.Event()
+
+    def post(entry: tuple[bool, Any]) -> None:
+        try:
+            loop.call_soon_threadsafe(queue.put_nowait, entry)
+        except RuntimeError:  # the loop is gone; nobody is listening
+            stop.set()
+
+    def produce() -> None:
+        try:
+            iterator = iter(make_iterator())
+            try:
+                for item in iterator:
+                    if stop.is_set():
+                        break
+                    post((True, item))
+            finally:
+                close = getattr(iterator, "close", None)
+                if close is not None:
+                    close()
+        except BaseException as exc:  # forwarded to the consumer
+            post((False, exc))
+        else:
+            post((True, _DONE))
+
+    worker = threading.Thread(
+        target=contextvars.copy_context().run, args=(produce,), daemon=True
+    )
+    worker.start()
+    try:
+        while True:
+            ok, item = await queue.get()
+            if not ok:
+                raise item
+            if item is _DONE:
+                return
+            yield item
+    finally:
+        stop.set()
 
 
 def _call_context(value: Any) -> CallContext:

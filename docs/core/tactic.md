@@ -63,9 +63,9 @@ result = tactic("Analyze this paper")
 ```
 
 With `agent_group` set, the tactic builds a fresh, configured `Agent` for each
-name every time it runs `call()`, and puts them in `self.agents`. Without it,
-`call()` is plain Python: deterministic steps, or orchestration over other
-tactics, tools, and runtimes.
+name every time it runs `call()` (or streams), and puts them in `self.agents`.
+Without it, `call()` is plain Python: deterministic steps, or orchestration
+over other tactics, tools, and runtimes.
 
 ### `call()` or a protocol hook
 
@@ -90,11 +90,13 @@ upper("hi")       # 'HI', recorded in a TacticCallSession
 upper.run("hi")   # 'HI'
 ```
 
-- `run()` and `arun()` run that program too. For a hook-only tactic they call
-  the hook on the tactic itself, with no session, no per-call copy, and no
-  fresh agents. `self.agents` then holds the agents built at construction, so
-  every `run()` and `arun()` call, including each service request, shares them
-  and their dialogs. A tactic with `agent_group` should write `call()`.
+- `run()` and `arun()` run that program too.
+- `call()` runs on a per-call copy of the tactic with fresh agents (the v1
+  design), whichever entry point starts it. A hook runs on the tactic itself,
+  like any protocol tactic, so it should not keep per-call state on `self`.
+  Agents are built fresh only for `call()` programs and streams, so a class
+  that declares `agent_group` but writes only a hook gets a warning: write
+  `call()` instead.
 - A hook always receives a `CallContext` as `context=` (a fresh one when the
   caller passes none).
 - A hook-only tactic has no `call()`: `upper.call("hi")` raises
@@ -741,7 +743,7 @@ the one you serve:
 | `tactic.run(value, context=None, return_trace=False)` | Protocol call: validates input and output; `return_trace=True` returns a `CallResult` with a `CallTrace`. |
 | `await tactic.arun(value, context=None)` | Async protocol call. |
 | `tactic.info()` | `TacticInfo`: name, description (the class docstring unless overridden), input/output JSON schemas, capabilities, `runtime_kind`. |
-| `tactic.events(task)` | Override it to stream: `aevents()` and a service's `/stream` route serve what it yields, as `TacticEvent`s. |
+| `tactic.events(task)` | Override it to stream: `aevents()` and a service's `/stream` route serve what it yields, as `TacticEvent`s. Each stream runs like `call()`: on a per-call copy with fresh agents and its own session, in a worker thread so a slow stream never blocks the event loop. Overriding the protocol's `stream()` works the same way. |
 
 `runtime_kind` is `"native"` for tactics that write `call()` (or declare
 `agent_group`) and `"python"` for ones that only implement `_run()` or
@@ -867,10 +869,10 @@ and with `include_context_metadata=True` passes safe call metadata
 
 - **Tactics are stateless.** Per-call data lives on `TacticCallSession`, not on
   the tactic, so tactics are safe to call concurrently.
-- **Agents are per call.** Each call builds fresh agents from specs. The
-  expensive objects (invoker, registry, prompts) are shared; only the `Agent`
-  shells and their dialogs are new. `run()` and `arun()` on a hook-only tactic
-  are the exception: no session and no fresh agents (see
+- **Agents are per call.** Each `call()` and each stream builds fresh agents
+  from specs. The expensive objects (invoker, registry, prompts) are shared;
+  only the `Agent` shells and their dialogs are new. Protocol hooks run on the
+  tactic itself and do not get agents of their own (see
   [`call()` or a protocol hook](#call-or-a-protocol-hook)).
 - **Tracking is transparent.** `_TrackedAgent` intercepts `respond()` without
   changing the agent API, and nested tactic calls record themselves into the

@@ -9,7 +9,7 @@ adds a resource table and a top-level `/run`. In code, AAAX is `lllm.shell`.
 AAAX is an experimental module of LLLM.
 
 ```bash
-pip install "lllm-core[server]"
+pip install "lllm-core[server,client]"   # client adds httpx, which TestClient needs
 ```
 
 ## A first strategy

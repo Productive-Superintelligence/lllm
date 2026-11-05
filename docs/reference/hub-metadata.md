@@ -34,10 +34,11 @@ embedded credentials, params, queries, fragments, percent escapes,
 backslashes, colons, empty segments, or dot segments.
 
 `tactic_resource` drops secret-shaped keys from examples and metadata: API
-keys, tokens, passwords, secrets, cookies, `authorization`, and credentials,
-in snake_case, kebab-case, camelCase, and collapsed forms (`api_key`,
-`x-api-key`, `apiKey`, `apikey`, `accessToken`, `clientSecret`, `set-cookie`,
-`sessionCookie`, ...). A token key is `token` or ends in `token`
+keys, tokens, passwords, secrets, cookies, `authorization`, credentials, and
+private keys, in snake_case, kebab-case, camelCase, and collapsed forms
+(`api_key`, `x-api-key`, `apiKey`, `apikey`, `accessToken`, `clientSecret`,
+`set-cookie`, `sessionCookie`, `proxyAuthorization`, `awsCredentials`,
+`privateKey`, ...). A token key is `token` or ends in `token`
 (`accessToken`, `eos_token`), so `token_limit` is kept. References to secrets
 are kept: `api_key_ref`, `apiKeyRef`, `apikeyref`. `channel_resource` and
 `snapshot_resource` copy metadata unchanged. Metadata maps must use string

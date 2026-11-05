@@ -22,6 +22,7 @@ import inspect
 import logging
 import sys
 import traceback as tb
+import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from contextlib import contextmanager
@@ -43,7 +44,7 @@ from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from ....protocol.errors import TacticUnsupportedError
 from ....protocol.events import TacticEvent
-from ....protocol.tactic import InputT, OutputT, _call_context
+from ....protocol.tactic import InputT, OutputT, _call_context, iterate_in_thread
 from ....protocol.tactic import Tactic as _ProtocolTactic
 
 if TYPE_CHECKING:
@@ -373,6 +374,14 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
             cls._native_program = "call"
         else:
             cls._native_program = "_run" if writes_run else "_arun"
+        if cls._native_program != "call" and cls.__dict__.get("agent_group"):
+            warnings.warn(
+                f"{cls.__name__} declares agent_group but implements "
+                f"{cls._native_program}() instead of call(): fresh agents are built "
+                "only for call() programs and streams, so its hook would share the "
+                "agents built at construction. Write call() instead.",
+                stacklevel=2,
+            )
         if "runtime_kind" in cls.__dict__:
             cls._runtime_kind_declared = True
         elif not cls._runtime_kind_declared:
@@ -454,11 +463,13 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
 
         cls = type(self)
         supported = super().capabilities() | {"call", "acall"}
-        # This class overrides aevents() to serve events(), so the protocol's
-        # check always sees an override; judge "events" against this class.
-        supported.discard("events")
+        # This class overrides aevents()/astream() to serve events()/stream(),
+        # so the protocol's checks always see an override; judge against it.
+        supported -= {"events", "stream"}
         if cls.events is not Tactic.events or cls.aevents is not Tactic.aevents:
             supported.add("events")
+        if cls.stream is not _ProtocolTactic.stream or cls.astream is not Tactic.astream:
+            supported.add("stream")
         return supported
 
     def input_schema(self) -> Any:
@@ -549,8 +560,44 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         validated = self.validate_input(input_value)
         if _accepts_context(type(self).events):
             kwargs.setdefault("context", context)
-        for item in self.events(validated, **kwargs):
+        async for item in iterate_in_thread(
+            lambda: self._scoped_stream("events", validated, context, kwargs)
+        ):
             yield item if isinstance(item, TacticEvent) else TacticEvent(data=item)
+
+    async def astream(
+        self, input_value: Any, *, context: Any = None, **kwargs: Any
+    ) -> Any:
+        """Yield the items of an overridden ``stream()``, run like :meth:`call`."""
+
+        if type(self).stream is _ProtocolTactic.stream:
+            async for item in super().astream(input_value, context=context, **kwargs):
+                yield item
+            return
+        context = _call_context(context)
+        validated = self.validate_input(input_value)
+        kwargs["context"] = context
+        async for item in iterate_in_thread(
+            lambda: self._scoped_stream("stream", validated, context, kwargs)
+        ):
+            yield item
+
+    def _scoped_stream(
+        self, method: str, task: Any, context: Any, kwargs: Dict[str, Any]
+    ) -> Any:
+        """Iterate ``events()``/``stream()`` on a per-call copy, like ``call()``.
+
+        The copy gets fresh agents and its own session, so every stream (and
+        every ``/stream`` request) starts with clean dialogs.
+        """
+
+        with self._call_scope(task, context) as (ctx, session, _session_name):
+            try:
+                yield from getattr(ctx, method)(task, **kwargs)
+            except Exception as exc:
+                session.failure(exc)
+                raise
+            session.success(None)
 
     def run(
         self,
@@ -682,31 +729,12 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         program: Optional[str] = None,
         **kwargs,
     ) -> Any:
-        tactic_name = self.tactic_name
-        if session_name is None:
-            task_str = _task_to_string(task)
-            task_hash = hashlib.md5(task_str.encode()).hexdigest()[:8]
-            timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
-            session_name = f"{tactic_name}_{task_hash}_{timestamp}"
-
-        ctx = self._copy_for_call()
-        ctx.call_context = context
-        tactic_path = self._resolve_tactic_path(tactic_name)
-
-        session = TacticCallSession(
-            tactic_name=tactic_name, tactic_path=tactic_path
-        )
-        session.state = "running"
-        ctx._session = session
-        ctx._prepare_session(session)
-        observer = ctx.context.observer
-        parent_session = _ACTIVE_SESSION.get()
-        session_token = _ACTIVE_SESSION.set(session)
-
-        logger.info(
-            "Tactic '%s' started — session_name=%s", tactic_name, session_name
-        )
-        try:
+        program = program or type(self)._native_program
+        # call() programs run on a per-call copy with fresh agents; protocol
+        # hooks run on the instance, as they do under run() and arun().
+        with self._call_scope(
+            task, context, session_name=session_name, per_call_copy=program == "call"
+        ) as (ctx, session, session_name):
             result = ctx._run_observed(
                 task,
                 session=session,
@@ -715,16 +743,54 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                 metadata=metadata,
                 context=context,
                 validate=validate,
-                observer=observer,
-                tactic_name=tactic_name,
-                program=program or type(self)._native_program,
+                observer=ctx.context.observer,
+                tactic_name=session.tactic_name,
+                program=program,
                 **kwargs,
             )
+        return session if return_session else result
+
+    @contextmanager
+    def _call_scope(
+        self,
+        task: Any,
+        context: Any,
+        *,
+        session_name: Optional[str] = None,
+        per_call_copy: bool = True,
+    ):
+        """Open a native call: a session that sub-tactic calls roll up into.
+
+        With ``per_call_copy`` the program runs on a copy of the tactic that
+        has fresh agents reporting into the session (the v1 design); without
+        it, on the instance itself. Yields ``(tactic, session, session_name)``.
+        """
+
+        tactic_name = self.tactic_name
+        if session_name is None:
+            task_hash = hashlib.md5(_task_to_string(task).encode()).hexdigest()[:8]
+            timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+            session_name = f"{tactic_name}_{task_hash}_{timestamp}"
+        session = TacticCallSession(
+            tactic_name=tactic_name,
+            tactic_path=self._resolve_tactic_path(tactic_name),
+        )
+        session.state = "running"
+        ctx = self
+        if per_call_copy:
+            ctx = self._copy_for_call()
+            ctx.call_context = context
+            ctx._session = session
+            ctx._prepare_session(session)
+        parent_session = _ACTIVE_SESSION.get()
+        session_token = _ACTIVE_SESSION.set(session)
+        logger.info("Tactic '%s' started — session_name=%s", tactic_name, session_name)
+        try:
+            yield ctx, session, session_name
         finally:
             _ACTIVE_SESSION.reset(session_token)
             if parent_session is not None and parent_session is not session:
                 parent_session.record_sub_tactic_call(tactic_name, session)
-        return session if return_session else result
 
     def _run_observed(
         self,

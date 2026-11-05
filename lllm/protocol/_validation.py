@@ -77,6 +77,8 @@ def _is_sensitive_metadata_key(key: object, *, match_token_part: bool) -> bool:
         return True
     if "authorization" in parts or "credential" in parts or "credentials" in parts:
         return True
+    if compact.endswith(("authorization", "credential", "credentials", "privatekey")):
+        return True
     if "password" in parts or "secret" in parts:
         return True
     if compact.endswith(("password", "secret")):

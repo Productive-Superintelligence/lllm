@@ -440,7 +440,8 @@ lllm serve PATH [--resource SECTION.NAME] [--port N] [--skip-key-check]
 Given a package folder (or its `lllm.toml`), `lllm serve` launches the
 package's primary resource (`[package] primary`), or the one named with
 `--resource`, such as `tactics.shout` or `services.api`. The port comes from
-`--port`, else the resource's `metadata.port`, else 8000. Here is a package
+`--port`, else the resource's `metadata.port` (for a tactic without one, the
+port of a service that declares it as its `tactic`), else 8000. Here is a package
 folder holding the `tactics.py` above and this manifest:
 
 ```toml

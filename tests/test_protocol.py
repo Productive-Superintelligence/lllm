@@ -975,3 +975,20 @@ def test_coerce_tactic_accepts_every_entrypoint_shape():
     assert coerce_tactic(Runner, name="runner").run(6) == 6
     with pytest.raises(TypeError):
         coerce_tactic(42)
+
+
+def test_secret_key_detection_covers_collapsed_and_private_key_names():
+    from lllm.protocol._validation import is_sensitive_metadata_key
+
+    for key in (
+        "proxyAuthorization",
+        "proxy_authorization",
+        "awsCredentials",
+        "aws-credential",
+        "private_key",
+        "privateKey",
+        "sshPrivateKey",
+    ):
+        assert is_sensitive_metadata_key(key), key
+    for key in ("credentials_ref", "privateKeyRef", "key_id", "public_key", "author"):
+        assert not is_sensitive_metadata_key(key), key

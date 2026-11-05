@@ -266,7 +266,9 @@ print(list(countdown.stream(3))[:3])
 ```
 
 `astream()` validates the input the same way `run()` does and then iterates
-`stream()`, so `stream()` receives the typed value. `aevents()` wraps every
+`stream()` in a worker thread, so `stream()` receives the typed value and a
+slow stream never blocks the event loop (closing the async iterator stops
+`stream()` before its next item). `aevents()` wraps every
 chunk from `astream()` that is not already an event as
 `TacticEvent(kind="message", data=chunk)`. `aevents()` is what the service's
 `/stream` route sends:
@@ -295,7 +297,9 @@ common kinds. Override `astream()` when the source is natively async, or
 `aevents()` to control the event stream yourself; the tactic then advertises
 `"stream"` or `"events"` in its capabilities. On `lllm.Tactic`, a synchronous
 `events()` generator works too: `aevents()` and `/stream` serve it, passing it
-the validated input and wrapping plain items as `message` events.
+the validated input and wrapping plain items as `message` events. There, each
+stream runs like `call()`, on a per-call copy with fresh agents and its own
+session.
 
 Calling `stream()` directly skips that validation and passes the argument
 through as given, so pass it a typed value (or call `self.validate_input(value)`
@@ -442,14 +446,15 @@ print(shout.info().model_dump_json(indent=2))
 | `description` | `description=`, else the class attribute, else your class's docstring. |
 | `input_schema`, `output_schema` | JSON Schema exported from `input_type` and `output_type`. |
 | `capabilities` | `run`, `arun`, plus `call`/`acall` on `lllm.Tactic`, and `stream`/`events` when implemented. |
-| `runtime_kind` | `native`, `python`, `pydantic-ai`, or `http` for the built-in tactics. A class that sets `runtime_kind` passes it on to its subclasses. |
+| `runtime_kind` | `native`, `python`, `pydantic-ai`, `http`, `proxy`, or `sandbox` for the built-in tactics. A class that sets `runtime_kind` passes it on to its subclasses. |
 | `package_ref`, `service_ref` | An `lllm://.../tactics/...` ref and a service ref or URL; see [Refs](refs.md). |
 | `examples`, `metadata` | Whatever you pass to the constructor. |
 
 The constructor keywords `name`, `description`, `package_ref`, `service_ref`,
-`examples`, and `metadata` work on every tactic except `RemoteTactic`, which
-takes only `name` and `metadata` and fills in `service_ref` and
-`metadata["url"]` from its URL. `/info` and `lllm inspect` drop secret-shaped
+`examples`, and `metadata` work on your own tactics. The built-in wrappers take
+fewer: `RemoteTactic` takes `name` and `metadata` and fills in `service_ref`
+and `metadata["url"]` from its URL, `ProxyTactic` takes `name`, `description`,
+and `metadata`, and `SandboxedTactic` takes `name` and `description`. `/info` and `lllm inspect` drop secret-shaped
 metadata keys such as `api_key`, `token`, `password`, and `cookie` while
 keeping references such as `api_key_ref`. Even so, keep secrets out of
 metadata.
