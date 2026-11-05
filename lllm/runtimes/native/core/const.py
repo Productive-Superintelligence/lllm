@@ -11,6 +11,8 @@ from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 
 from ....protocol._validation import copy_boundary_value, mapping_field_value
 
+from ....parsers import ParseError as _BaseParseError
+
 if TYPE_CHECKING:
     from .dialog import Message
 
@@ -93,7 +95,9 @@ class FunctionCall(BaseModel):
         return any(self.equals(fc) for fc in function_calls)
 
 
-class ParseError(Exception):
+class ParseError(_BaseParseError):
+    """A native parser failure; also caught by ``except lllm.ParseError``."""
+
     def __init__(self, message: str, detail: str = ""):
         self.message = message
         self.detail = detail

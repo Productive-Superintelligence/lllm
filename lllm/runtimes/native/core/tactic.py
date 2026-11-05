@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import concurrent.futures
+import contextvars
 import copy
 import datetime as dt
 import hashlib
@@ -49,6 +50,13 @@ if TYPE_CHECKING:
     from .prompt import Prompt
 
 logger = logging.getLogger(__name__)
+
+#: The call session of the tactic currently running in this context. A tactic
+#: called while another is running records its session into the caller's, so
+#: sub-tactic calls and their cost roll up into the parent session.
+_ACTIVE_SESSION: contextvars.ContextVar[Optional["TacticCallSession"]] = (
+    contextvars.ContextVar("lllm_active_tactic_session", default=None)
+)
 
 
 @dataclass(frozen=True, init=False)
@@ -587,10 +595,46 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         ctx._session = session
         ctx._prepare_session(session)
         observer = ctx.context.observer
+        parent_session = _ACTIVE_SESSION.get()
+        session_token = _ACTIVE_SESSION.set(session)
 
         logger.info(
             "Tactic '%s' started — session_name=%s", tactic_name, session_name
         )
+        try:
+            result = ctx._run_observed(
+                task,
+                session=session,
+                session_name=session_name,
+                tags=tags,
+                metadata=metadata,
+                context=context,
+                validate=validate,
+                observer=observer,
+                tactic_name=tactic_name,
+                **kwargs,
+            )
+        finally:
+            _ACTIVE_SESSION.reset(session_token)
+            if parent_session is not None and parent_session is not session:
+                parent_session.record_sub_tactic_call(tactic_name, session)
+        return session if return_session else result
+
+    def _run_observed(
+        self,
+        task: Any,
+        *,
+        session: "TacticCallSession",
+        session_name: str,
+        tags: Optional[Dict[str, str]],
+        metadata: Optional[Dict[str, Any]],
+        context: Any,
+        validate: bool,
+        observer: Any,
+        tactic_name: str,
+        **kwargs: Any,
+    ) -> Any:
+        ctx = self
         with _observe_tactic_call(
             observer,
             tactic=ctx,
@@ -644,7 +688,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                     exc_info=True,
                 )
                 raise
-        return session if return_session else result
+        return result
 
     def __call__(
         self,
@@ -668,8 +712,10 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         self, task, tags=None, metadata=None, return_session=False, **kwargs
     ):
         loop = asyncio.get_running_loop()
+        run_in_context = contextvars.copy_context().run
         return await loop.run_in_executor(
             None,
+            run_in_context,
             lambda: self._execute(
                 task,
                 tags=tags,
@@ -693,6 +739,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         with concurrent.futures.ThreadPoolExecutor(max_workers=workers) as pool:
             futures = [
                 pool.submit(
+                    contextvars.copy_context().run,
                     self._execute,
                     t,
                     None,
@@ -736,7 +783,8 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                 )
 
             futures = [
-                loop.run_in_executor(pool, _run, i, t) for i, t in enumerate(tasks)
+                loop.run_in_executor(pool, contextvars.copy_context().run, _run, i, t)
+                for i, t in enumerate(tasks)
             ]
             for coro in asyncio.as_completed(futures):
                 idx, result = await coro

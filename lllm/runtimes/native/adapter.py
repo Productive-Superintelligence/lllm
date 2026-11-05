@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ...protocol import CallContext, Tactic
+from ...protocol.tactic import _user_docstring
 from ...protocol._validation import copy_boundary_value
 
 
@@ -55,7 +56,7 @@ class NativeTacticAdapter(Tactic[Any, Any]):
             description=(
                 description
                 if description is not None
-                else inspect.getdoc(native) or inspect.getdoc(type(native)) or ""
+                else _user_docstring(type(native))
             ),
             package_ref=package_ref,
             service_ref=service_ref,

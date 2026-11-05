@@ -165,3 +165,54 @@ def test_native_tactic_still_requires_an_agent_group():
     with pytest.raises(AssertionError, match="agent_group"):
         NoAgents()
     assert issubclass(NativeTactic, Tactic)
+
+
+class Leaf(Tactic):
+    name = "leaf"
+
+    def call(self, task):
+        if task == "fail":
+            raise ValueError("leaf failed")
+        return task.upper()
+
+
+class Parent(Tactic):
+    name = "parent"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.leaf = Leaf()
+
+    def call(self, task):
+        if task == "batch":
+            return "+".join(self.leaf.bcall(["a", "b"]))
+        if task == "fail":
+            try:
+                self.leaf("fail")
+            except ValueError:
+                return "handled"
+        return self.leaf(task) + self.leaf(task)
+
+
+def test_sub_tactic_calls_roll_up_into_the_parent_session():
+    session = Parent()("x", return_session=True)
+
+    assert session.delivery == "XX"
+    assert session.sub_tactic_call_count == 2
+    assert [s.state for s in session.sub_tactic_sessions["leaf"]] == ["success", "success"]
+
+
+def test_sub_tactic_sessions_link_across_batch_threads_and_failures():
+    batch = Parent()("batch", return_session=True)
+    failed = Parent()("fail", return_session=True)
+
+    assert batch.delivery == "A+B"
+    assert batch.sub_tactic_call_count == 2
+    assert [s.state for s in failed.sub_tactic_sessions["leaf"]] == ["failure"]
+
+
+def test_top_level_calls_do_not_link_to_each_other():
+    leaf = Leaf()
+    leaf("a")
+
+    assert leaf("b", return_session=True).sub_tactic_call_count == 0

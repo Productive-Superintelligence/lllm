@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import importlib
 import hashlib
 import inspect
 import logging as _logging
@@ -573,8 +574,8 @@ class StringFormatterRenderer(BaseRenderer):
     """
 
     def render(self, prompt: str, **kwargs: Any) -> str:
-        if not kwargs:
-            return prompt
+        # Always format, so escaped braces ({{ }}) become literal braces even
+        # in templates without variables.
         return prompt.format(**kwargs)
 
 
@@ -783,9 +784,13 @@ class Prompt(BaseModel):
     # -- Rendering --------------------------------------------------------
 
     def __call__(self, **kwargs: Any) -> str:
-        """Render the template with the given variables."""
-        if not self.template_vars:  # empty set is falsy
-            return self.prompt
+        """Render the template with the given variables.
+
+        Templates use ``str.format`` syntax, so literal braces are written
+        ``{{`` / ``}}``; they are unescaped even when there are no variables.
+        """
+        if not self.template_vars:
+            return self.renderer.render(self.prompt)
         missing_args = self.validate_args(kwargs)
         if missing_args:
             raise ValueError(
@@ -970,13 +975,30 @@ class Prompt(BaseModel):
         }
 
     def to_dict(self) -> Dict[str, Any]:
-        return self.model_dump(
+        """A JSON-safe snapshot (tool callables and parsers are not included).
+
+        Tools are stored as their schemas (implementations are re-bound by
+        name when the prompt is resolved against a runtime); a Pydantic
+        ``format`` model is stored as its import path and JSON schema.
+        """
+
+        data = self.model_dump(
             mode="python",
-            exclude={"parser", "handler", "renderer"},
+            exclude={"parser", "handler", "renderer", "function_list", "format"},
         )
+        data["function_list"] = [
+            item
+            if isinstance(item, str)
+            else item.model_dump(mode="json", exclude={"function", "processor"})
+            for item in self.function_list
+        ]
+        data["format"] = _format_to_dict(self.format)
+        return data
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Prompt":
+        data = dict(data)
+        data["format"] = _format_from_dict(data.get("format"))
         return cls.model_validate(data)
 
 
@@ -1054,3 +1076,25 @@ def tactic_as_function(
 def register_prompt(prompt: Prompt, overwrite: bool = True) -> None:
     """Register a prompt into the default runtime."""
     get_default_runtime().register_prompt(prompt, overwrite)
+
+
+def _format_to_dict(value: Any) -> Any:
+    if isinstance(value, type) and hasattr(value, "model_json_schema"):
+        return {
+            "model": f"{value.__module__}:{value.__qualname__}",
+            "schema": value.model_json_schema(),
+        }
+    return value
+
+
+def _format_from_dict(value: Any) -> Any:
+    if not (isinstance(value, dict) and set(value) == {"model", "schema"}):
+        return value
+    module_name, _, qualname = str(value["model"]).partition(":")
+    try:
+        target: Any = importlib.import_module(module_name)
+        for part in qualname.split("."):
+            target = getattr(target, part)
+        return target
+    except Exception:
+        return value["schema"]

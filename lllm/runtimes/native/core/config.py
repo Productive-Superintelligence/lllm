@@ -19,7 +19,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 
 from .resource import PackageInfo, ResourceNode
 from .runtime import Registry, Runtime, _select_runtime
@@ -431,7 +434,8 @@ def _discover_section(
                 path, runtime, namespace, section_name, resource_type, prefix
             )
         elif section_name == SERVICE_SECTION:
-            _discover_services(path, runtime, namespace, resource_type, prefix)
+            # Service specs are structured data; Python modules contribute apps.
+            _discover_files(path, runtime, namespace, resource_type, prefix)
             _discover_python_modules(
                 path, runtime, namespace, section_name, resource_type, prefix
             )
@@ -481,7 +485,10 @@ def _load_yaml(p: Path):
 
 
 def _load_toml(p: Path):
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib
 
     with p.open("rb") as f:
         return tomllib.load(f)
@@ -675,48 +682,6 @@ def _discover_configs(
                 logger.warning("Failed to register config '%s': %s", key, exc)
 
 
-def _discover_services(
-    root: Path,
-    runtime: Runtime,
-    namespace: str,
-    resource_type: str,
-    prefix: str,
-) -> None:
-    """Discover service manifests as lazy platform resources."""
-
-    for f in sorted(root.rglob("*")):
-        if not f.is_file():
-            continue
-        if f.suffix.lower() not in {".json", ".toml", ".yaml", ".yml"}:
-            continue
-        if f.name.startswith("_") or f.name.startswith("."):
-            continue
-        if "__pycache__" in f.parts:
-            continue
-
-        rel = str(f.relative_to(root).with_suffix("")).replace(os.sep, "/")
-        key = f"{prefix}/{rel}".strip("/")
-        file_path = f
-        abs_path = str(f.resolve())
-
-        def _loader(p=file_path):
-            from ..server.spec import load_service
-
-            return load_service(p)
-
-        node = ResourceNode.lazy(
-            key,
-            _loader,
-            namespace=namespace,
-            resource_type=resource_type,
-            file_path=abs_path,
-        )
-        try:
-            runtime.register(node, overwrite=True)
-        except Exception as exc:
-            logger.warning("Failed to register service '%s': %s", key, exc)
-
-
 def _load_module(file_path: Path, namespace: str) -> types.ModuleType:
     spec = importlib.util.spec_from_file_location(namespace, file_path)
     if spec is None or spec.loader is None:
@@ -824,12 +789,12 @@ def _register_tactics(module, relative, runtime, namespace, resource_type, prefi
 
 
 def _register_services(module, relative, runtime, namespace, resource_type, prefix):
-    from ..server.spec import Service
+    """Register module-level ASGI apps (FastAPI or Starlette instances)."""
 
     for attr_name, attr in vars(module).items():
-        if not isinstance(attr, Service):
+        if attr_name.startswith("_") or not _is_asgi_app(attr):
             continue
-        key = _make_key(prefix, relative, attr.name)
+        key = _make_key(prefix, relative, attr_name)
         node = ResourceNode.eager(
             key, attr, namespace=namespace, resource_type=resource_type
         )
@@ -837,6 +802,15 @@ def _register_services(module, relative, runtime, namespace, resource_type, pref
             runtime.register(node, overwrite=True)
         except Exception as exc:
             logger.warning("Failed to register service '%s': %s", key, exc)
+
+
+def _is_asgi_app(value: Any) -> bool:
+    return (
+        not isinstance(value, type)
+        and callable(value)
+        and hasattr(value, "routes")
+        and hasattr(value, "router")
+    )
 
 
 # ---------------------------------------------------------------------------

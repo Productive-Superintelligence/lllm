@@ -11,6 +11,7 @@ import argparse
 import importlib
 import ipaddress
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Any
@@ -35,6 +36,7 @@ MODULE_COMMANDS = {
 
 def main(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
+    _import_from_working_directory()
     if raw_args and raw_args[0] in MODULE_COMMANDS:
         module = importlib.import_module(MODULE_COMMANDS[raw_args[0]][0])
         return module.main(raw_args[1:])
@@ -206,6 +208,17 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.error(f"Unknown command: {args.command}")
     return 2
+
+
+def _import_from_working_directory() -> None:
+    """Let ``module:attr`` entrypoints import modules from the current directory.
+
+    ``python -m`` and Uvicorn do this; a console script does not.
+    """
+
+    cwd = os.getcwd()
+    if "" not in sys.path and cwd not in sys.path:
+        sys.path.insert(0, cwd)
 
 
 def _add_package_options(command: argparse.ArgumentParser) -> None:

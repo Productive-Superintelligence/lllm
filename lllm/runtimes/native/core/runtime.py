@@ -23,7 +23,6 @@ from .resource import PackageInfo, ResourceNode
 if TYPE_CHECKING:
     from ..proxies.base import BaseProxy
     from .prompt import Function, Prompt
-    from ..server.spec import Service
 
 logger = logging.getLogger(__name__)
 
@@ -100,7 +99,7 @@ class Registry:
         # 2. Default namespace fallback (bare key, no ":")
         if self._default_namespace and ":" not in key:
             if resource_type:
-                ns_key = f"{self._default_namespace}.{resource_type}s:{key}"
+                ns_key = f"{self._default_namespace}.{_section_for(resource_type)}:{key}"
                 if ns_key in self._resources:
                     return self._resources[ns_key]
             for section in (
@@ -120,7 +119,7 @@ class Registry:
         if ":" in key and resource_type:
             pkg_part, resource_part = key.split(":", 1)
             if "." not in pkg_part:
-                full_key = f"{pkg_part}.{resource_type}s:{resource_part}"
+                full_key = f"{pkg_part}.{_section_for(resource_type)}:{resource_part}"
                 if full_key in self._resources:
                     return self._resources[full_key]
 
@@ -278,7 +277,7 @@ class Registry:
     def register_service(
         self,
         name: str,
-        service: "Service",
+        service: Any,
         overwrite: bool = True,
         namespace: str = "",
         loader: Any = None,
@@ -293,7 +292,7 @@ class Registry:
             )
         self.register(node, overwrite=overwrite)
 
-    def get_service(self, path: str) -> "Service":
+    def get_service(self, path: str) -> Any:
         return self.get(path, resource_type="service")
 
     # ==================================================================
@@ -633,7 +632,10 @@ def install_package(
     import tempfile
     import zipfile as _zipfile
 
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib
 
     zip_path = Path(zip_path)
     if not zip_path.is_file():
@@ -799,7 +801,8 @@ def export_package(
 
     output_path = Path(output_path).expanduser()
     if output_path.suffix.lower() != ".zip":
-        output_path = output_path.with_suffix(".zip")
+        # Append rather than replace: "pkg-0.1.0" must not become "pkg-0.1.zip".
+        output_path = output_path.with_name(output_path.name + ".zip")
 
     rt = _select_runtime(runtime=runtime, registry=registry)
     pkg_info = rt.packages.get(package_name)
@@ -865,7 +868,10 @@ def _collect_package_deps(
     Returns a mapping of ``{dep_name: dep_dir_path}`` for every dependency
     of *package_name* (direct and transitive), excluding the package itself.
     """
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib
 
     if _seen is None:
         _seen = set()
@@ -963,7 +969,10 @@ def list_packages(
         for pkg in list_packages():
             print(pkg["name"], pkg["version"], pkg["scope"])
     """
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib
 
     from .config import find_config_file
 
@@ -1068,7 +1077,10 @@ def remove_package(
     """
     import shutil
 
-    import tomllib
+    try:
+        import tomllib
+    except ModuleNotFoundError:  # Python 3.10
+        import tomli as tomllib
 
     from .config import find_config_file
 
@@ -1137,3 +1149,12 @@ def remove_package(
                 rtype_set.discard(k)
 
     return pkg_dir
+
+
+_SECTION_NAMES = {"proxy": "proxies"}
+
+
+def _section_for(resource_type: str) -> str:
+    """Section that holds a resource type: ``prompt`` -> ``prompts``, ``proxy`` -> ``proxies``."""
+
+    return _SECTION_NAMES.get(resource_type, f"{resource_type}s")
