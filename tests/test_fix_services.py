@@ -417,6 +417,9 @@ def test_openapi_schemas_survive_regeneration_without_duplicates():
     async def extra():
         return {}
 
+    # Force regeneration: FastAPI 0.137+ also does it when routes change,
+    # older versions keep serving the cached document.
+    app.openapi_schema = None
     second = app.openapi()
 
     assert app.openapi() is second
