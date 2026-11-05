@@ -3,8 +3,8 @@
 AAAX, the **Advanced Autonomous Agent Executor**, is the shell around an
 agentic system. It mounts tactics, packages, and channels into one `Strategy`
 and serves them as a single HTTP API: every tactic gets its full service
-surface, every channel store gets the network API, and the strategy adds a
-resource table and a top-level `/run`. In code, AAAX is `lllm.shell`.
+surface, the strategy's channel store gets the network API, and the strategy
+adds a resource table and a top-level `/run`. In code, AAAX is `lllm.shell`.
 
 AAAX is an experimental module of LLLM.
 
@@ -68,12 +68,13 @@ Saved as `desk.py`, the same strategy runs from the shell with
 ## Resources
 
 `Strategy(name, *, description="", resources=(), runner=None, metadata=None)`
-is a table of resources plus an optional runner. Each resource is a
-`StrategyResource`:
+is a table of resources plus an optional runner. The strategy `name` follows
+the same rule as resource names, so `Strategy("My Strategy")` raises
+`ValueError`. Each resource is a `StrategyResource`:
 
 | Field | Meaning |
 | --- | --- |
-| `name` | Local name, unique across the whole strategy, used in URLs. A path segment. |
+| `name` | Local name, unique across the whole strategy, used in URLs. A path segment: no whitespace, `/`, `:`, `\`, or `%`, and not `.` or `..`. |
 | `kind` | `tactic`, `channel`, `service`, `schema`, `package`, `run`, `config`, `doc`, `example`, `snapshot`, `asset`, or `custom`. |
 | `ref` | Stable external identity, usually an `lllm://` ref. |
 | `entrypoint` | Python import target (`module:attr`) for package resources. |
@@ -102,8 +103,10 @@ doc readme lllm://demo/loud-desk/docs/readme
 ```
 
 A resource without a handler is metadata: it shows up in `/strategy` and
-`/resources`, and invoking it echoes the resource record and the input back. A
-handler makes it callable.
+`/resources`, and invoking it echoes the resource record, the input, and the
+context back. A handler makes it callable. Channels are the exception: on a
+strategy with a store, a channel without a handler is backed by the store
+([below](#channels-and-stores)).
 
 ## Tactics
 
@@ -127,25 +130,23 @@ print(sorted(strategy.tactics()))
 ['count', 'shout']
 ```
 
-`strategy.tactics()` returns every tactic resource as an lllm `Tactic`. Each one
-is mounted with `create_tactic_app` at `/tactics/<name>/`, so it gets the full
-[service surface](../protocol/services.md): `run`, `stream`, `info`, and any
-custom tactic endpoints, with the services request and error envelopes.
+`strategy.tactics()` returns every tactic resource that has a handler as an lllm
+`Tactic`. Each one is mounted with `create_tactic_app` at `/tactics/<name>/`,
+so it gets the full [service surface](../protocol/services.md): `run`,
+`stream`, `info`, and any custom tactic endpoints, with the services request
+and error envelopes.
 
 ## Channels and stores
 
-`attach_store(store)` backs the strategy with a channel store and mounts the
-[store API](../sssn/serving.md#http-api) at `/network/`:
+`attach_store(store)` backs the strategy's channels with a store and mounts the
+[store API](../sssn/serving.md#http-api) at `/network/`. Every channel resource
+without a handler, like `log` above, is backed by the store channel of the
+same name:
 
 ```python
-from lllm.network import ChannelExistsError, LocalStore
+from lllm.network import LocalStore
 
-store = LocalStore(".lllm/network")
-try:
-    store.create_channel({"name": "log", "description": "Everything shouted."})
-except ChannelExistsError:
-    pass
-strategy.attach_store(store)
+strategy.attach_store(LocalStore(".lllm/network"))
 
 
 @strategy.runner
@@ -158,20 +159,27 @@ async def run(input_value, *, context=None):
 client = TestClient(create_strategy_app(strategy))
 client.post("/run", json={"input": {"text": "hello"}})
 print([event["payload"] for event in client.get("/network/events", params={"channel": "log"}).json()])
+print([event["payload"] for event in client.get("/channels/log/events").json()["output"]])
 ```
 
 ```text
 [{'text': 'HELLO'}]
+[{'text': 'HELLO'}]
 ```
 
-`attach_store` does not create channels or bind handlers. The channel
-shortcuts `/channels/{name}/events` call a channel resource's handler, so they
-work for package channels (below), which get one automatically. For channels
-you declare with `strategy.channel()`, use `/network/` instead; the shortcuts
-only return the resource description. A
-[`TacticProcessor`](../sssn/processing.md) over `strategy.store` is the usual
-way to connect a mounted tactic to a channel; [Tutorial
-11](../tutorials/11-channels.md) does that inside a runner.
+The store creates each declared channel on first use: when the app is built or
+a store method is called. Channels that already exist are left as they are.
+`strategy.store` wraps the store you attached and forwards store methods to it,
+as the runner's `append_event` shows. Without a store, a channel resource is
+metadata like any other. Use a synchronous store, a `LocalStore` or a
+`RemoteStore`: the channel routes and `/network/` do not work with an
+`AsyncRemoteStore`.
+
+A strategy has one store. Attaching a different one raises `ValueError`
+instead of replacing it, so attach yours before mounting packages, which share
+it ([below](#packages)). A [`TacticProcessor`](../sssn/processing.md) over
+`strategy.store` is the usual way to connect a mounted tactic to a channel;
+[Tutorial 11](../tutorials/11-channels.md) does that inside a runner.
 
 ## Packages
 
@@ -228,8 +236,9 @@ channel inbox lllm://demo/support-desk/channels/inbox
 .lllm/network
 ```
 
-The package's channels live in `<package>/.lllm/network`, created with every
-declared channel, and their resources get handlers, so the shortcuts work:
+`desk` had no store, so mounting the package gave it one at
+`<package>/.lllm/network`. The folder and the `inbox` channel are created on
+first use, here when the app is built, and the shortcuts work:
 
 ```python
 client = TestClient(create_strategy_app(desk))
@@ -247,9 +256,12 @@ print(client.post("/tactics/triage/run", json={"input": events[0]["payload"]}).j
 {'priority': 'urgent'}
 ```
 
-Package tactics load lazily: building or inspecting the strategy never imports
-package code; building the app, calling `strategy.tactics()`, or invoking the
-resource does.
+Packages load lazily: building or inspecting the strategy never imports
+package code or creates the store folder. Building the app, calling
+`strategy.tactics()`, or invoking the resource imports the code. A package
+tactic that declares no `package_ref` reports its manifest ref,
+`lllm://demo/support-desk/tactics/triage` here, in `/tactics/triage/info` and
+as the `tactic_ref` of the `CallContext` it receives.
 
 To combine packages and your own resources, mount packages into a strategy
 with `use_package` (or `add_package(strategy, path, ...)`). A `prefix` keeps
@@ -267,16 +279,17 @@ print([resource.name for resource in ops.resources])
 ```
 
 The prefixed tactic is served at `/tactics/support.triage/run` and the channel
-at `/channels/support.inbox/events`.
+at `/channels/support.inbox/events`, backed by the store channel
+`support.inbox`.
 
 | Function | What it does |
 | --- | --- |
 | `strategy_from_package(path, *, name=None, prefix=None, store=None, bind=True)` | A new strategy named after the package, with the package card and version in its metadata. |
 | `strategy.use_package(path, *, prefix=None, store=None, bind=True)` | Mount a package into an existing strategy. Same as `add_package(strategy, path, ...)`. |
 
-`path` is a package folder or an `lllm.toml` file. `store` picks the channel
-store folder. `bind=False` mounts metadata only: no handlers, no store, and no
-tactic routes.
+`path` is a package folder or an `lllm.toml` file. `store` picks the store
+folder for a strategy that has no store yet (see below). `bind=False` mounts
+metadata only: no handlers, no store, and no tactic routes.
 
 Every manifest section becomes resources:
 
@@ -286,26 +299,43 @@ Every manifest section becomes resources:
 | `[config]` | `config` named `default` | |
 | `[schemas.<name>]` | `schema` | |
 | `[tactics.<name>]` | `tactic` | the imported entrypoint, as a tactic |
-| `[channels.<name>]` | `channel` | append, query, info on the package store |
+| `[channels.<name>]` | `channel` | append, query, info on the strategy's store |
 | `[snapshots.<name>]` | `snapshot` | |
 | `[services.<name>]` | `service` | its `tactic`'s handler, when it names one |
 | `[runs.<name>]`, `[docs.<name>]`, `[examples.<name>]`, `[assets.<name>]` | `run`, `doc`, `example`, `asset` | |
 
+A tactic entry loads through
+[`coerce_tactic`](../protocol/runtimes.md#loading-entrypoints). A `Tactic`
+instance is mounted, and a class that can be built without arguments is
+instantiated. A callable that takes no parameters, or that can be called
+without arguments and is annotated to return a `Tactic`, is a factory: it is
+called once, when the tactic loads. Any other callable, like `triage`, is a
+handler called once per input.
+
 Things to know when mounting several packages:
 
-- Each package with channels opens its own store unless you pass `store=`.
-  The `/network/` mount serves the store of the last package mounted; the
-  channel shortcuts always reach the right store.
-- Prefixes rename resources, not the channels inside a store. Packages that
-  share one `store=` folder must not declare the same channel name.
+- A strategy has one store. The first package with channels gives the
+  strategy its store, at `store=` or `<package>/.lllm/network`, unless it
+  already has one. Later packages share it, and `/network/` serves it; a later
+  `store=` naming another folder raises `ValueError`.
+- Package channels are created in the store under their resource names
+  (`support.inbox`), so a prefix keeps two packages' channels apart.
+- A package whose names clash with resources already in the strategy is
+  rejected before anything is added; the `ValueError` suggests a prefix.
+- Package code is imported into the server process and stays loaded, so give
+  packages you mount together distinct top-level module names: two packages
+  that both ship a `helpers.py` share one copy of it.
 
 ## The runner
 
 `/run` calls the strategy's runner, set with the `@strategy.runner` decorator or
 `Strategy(..., runner=fn)`. The runner may be sync or async and is called as
-`runner(input_value, context=...)`; it receives `context` only if it declares
-that parameter (or `**kwargs`). Without a runner, `/run` returns the strategy
-itself, which makes a fresh mount easy to check. `desk` has no runner:
+`runner(input_value, context=...)`. It receives `context` only if it declares
+that parameter (or `**kwargs`), and the input only if it has a positional
+parameter besides `context` (or `*args`): `def run(*, context=None)` is called
+without the input. Handlers follow the same rules. Without a runner, `/run`
+returns the strategy name, the input, and the resources, which makes a fresh
+mount easy to check. `desk` has no runner:
 
 ```python
 output = client.post("/run", json={"input": {"q": 1}}).json()["output"]
@@ -329,15 +359,16 @@ from Python.
 | `GET /resources` | Every resource. |
 | `GET /packages`, `GET /tactics`, `GET /channels` | Resources of one kind. |
 | `POST /run` | Call the runner. |
-| `POST /resources/{name}/invoke` | Call any resource's handler. |
+| `POST /resources/{name}/invoke` | Call any resource: run its tactic or handler, or use its store channel. |
 | `GET /channels/{name}/events` | Query a channel resource: `?after_cursor=0&limit=100&kind=...`. |
-| `POST /channels/{name}/events` | Append to a channel resource. The `input` holds the event fields: `payload`, `kind` (default `event`), `source` (default `lllm.shell`), `schema`, `metadata`, `correlation_id`, `parent_ids`. |
+| `POST /channels/{name}/events` | Append to a channel resource. The `input` is an object of event fields: `payload`, `kind` (default `event`), `source` (default `lllm.shell`), `schema`, `metadata`, `correlation_id`, `parent_ids`. |
 | `/tactics/{name}/...` | The mounted tactic service: `POST run`, `POST stream`, `GET info`, custom endpoints. |
 | `/network/...` | The store API, when the strategy has a store. |
 
 The shell routes (`/run`, `/resources/...`, `/channels/...`) take a
-`StrategyRunRequest`, `{"input": ..., "context": {...}}`, and return a
-`StrategyRunResponse`, `{"output": ..., "strategy": ..., "metadata": {...}}`:
+`StrategyRunRequest`, `{"input": ..., "context": {...}}` (the `GET` channel
+route takes query parameters), and return a `StrategyRunResponse`,
+`{"output": ..., "strategy": ..., "metadata": {...}}`:
 
 ```python
 response = client.post(
@@ -351,21 +382,42 @@ print(response.json())
 {'output': {'name': 'inbox', 'schema': None, 'form': 'log', 'description': 'Support messages as they arrive.', 'metadata': {}}, 'strategy': 'support-desk', 'metadata': {'resource': 'inbox', 'endpoint': 'resource'}}
 ```
 
-Their `context` is a plain object handed to the runner or handler as a dict;
-a mounted `Tactic` invoked this way receives it as `CallContext.metadata`. The
-`/tactics/{name}/` routes use the services envelope instead, where `context`
-has the shape of a `CallContext` (`{"metadata": {...}, "tags": {...}}`) and
-the response is `{"output": ..., "request_id": ..., "tactic": ...}`.
-A plain-function handler therefore receives a dict through
-`/resources/{name}/invoke` and a `CallContext` through `/tactics/{name}/run`;
-write it so it does not depend on which one it gets, or make it a `Tactic`.
-`/resources/{name}/invoke` with a channel resource takes an `op`: `append`,
-`query` (the default), or `info`.
+A tactic resource runs the same way on `/resources/{name}/invoke` as on
+`/tactics/{name}/run`: `context` has the shape of a `CallContext`
+(`{"metadata": {...}, "tags": {...}}`; other keys are dropped), the tactic
+receives a `CallContext`, and failures get the same status codes. Only the
+response differs: the `/tactics/{name}/` routes return the services envelope,
+`{"output": ..., "request_id": ..., "tactic": ...}`. The runner and the
+handlers of other resources get `context` as a plain dict; a `Tactic` used as
+such a handler receives it as `CallContext.metadata`.
+`/resources/{name}/invoke` with a store-backed channel takes an `op`:
+`append`, `query` (the default), or `info`, plus that op's fields.
 
-Unknown resource names return 404 and handler `ValueError`s return 400, both as
-`{"detail": "<message>"}`; any other handler exception is a 500. Tactic routes
-and the store API use their own error envelope,
-`{"detail": {"error": {"type": ..., "message": ...}}}`.
+The shell routes report errors in the
+[services error envelope](../protocol/services.md#errors), as the tactic
+routes do:
+
+```python
+response = client.get("/channels/triage/events")
+print(response.status_code, response.json())
+```
+
+```text
+404 {'detail': {'error': {'type': 'ResourceNotFoundError', 'message': 'Strategy channel not found: triage', 'tactic': None, 'endpoint': 'channel', 'request_id': None, 'metadata': {'resource': 'triage'}}}}
+```
+
+| Status | When |
+| --- | --- |
+| 400 | A malformed request, an appended event whose `input` is not an object, or a `ValueError` or `SchemaError` from the runner or a handler. |
+| 404 | The resource named in the URL does not exist, or a `/channels/` route names a resource that is not a channel. |
+| 500 | Anything else the runner or a handler raises, including a resource lookup that fails inside it. |
+
+A tactic resource fails with the codes of `POST /tactics/{name}/run` on both
+routes: 400 for `SchemaError` and `TacticUnsupportedError`, 500 for anything
+else, a `ValueError` or `HTTPException` included. Store errors keep the
+[store API's codes](../sssn/serving.md#errors), and any other handler that
+raises `HTTPException` gets its status and detail. The store API at
+`/network/` uses the same envelope with only `type` and `message`.
 
 ## Loading strategies
 
@@ -417,8 +469,8 @@ curl -s -w '\n' -X POST http://127.0.0.1:8400/tactics/shout/run \
 {"output":{"text":"HELLO"},"request_id":"af421ae3-e594-4fc9-90af-2694b1b5d25b","tactic":"shout"}
 ```
 
-Inspecting a package with channels creates its store folder, since mounting
-opens the store.
+Inspecting a package neither imports its code nor creates its store folder;
+serving does both.
 
 ## Status
 
