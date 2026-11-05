@@ -174,11 +174,16 @@ def render_template(
     source: TemplateSource,
     destination: str | Path,
     variables: Mapping[str, Any],
+    *,
+    overwrite: bool = False,
 ) -> Path:
-    """Render *source* into *destination* using declared manifest variables."""
+    """Render *source* into *destination* using declared manifest variables.
+
+    An existing empty folder is fine; a non-empty one needs ``overwrite``.
+    """
 
     destination = Path(destination)
-    if destination.exists():
+    if destination.exists() and any(destination.iterdir()) and not overwrite:
         raise FileExistsError(f"Path '{destination}' already exists.")
 
     template_root = source.template_root
@@ -189,7 +194,7 @@ def render_template(
         )
 
     resolved_variables = _resolve_variables(source.spec, variables)
-    destination.mkdir(parents=True, exist_ok=False)
+    destination.mkdir(parents=True, exist_ok=True)
 
     for relative_parts, item in _walk_files(template_root):
         rendered_parts = [

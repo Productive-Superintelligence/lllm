@@ -1,0 +1,20 @@
+tactic_type: pipeline
+
+global:
+  model_name: "{{model_name}}"
+  model_args:
+    temperature: 0.2
+
+agent_configs:
+  - name: planner
+    system_prompt_path: pipeline/planner/system
+    model_args:
+      temperature: 0.1
+  - name: writer
+    system_prompt_path: pipeline/writer/system
+    model_args:
+      temperature: 0.3
+  - name: reviewer
+    system_prompt_path: pipeline/reviewer/system
+    model_args:
+      temperature: 0.1

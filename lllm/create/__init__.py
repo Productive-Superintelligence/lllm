@@ -1,5 +1,12 @@
-"""Project scaffolding for tactic/service-first LLLM projects."""
+"""Project scaffolding: native project templates and service scaffolds."""
 
-from .scaffold import ScaffoldResult, create_project
+from .scaffold import DEFAULT_TEMPLATE, SERVICE_SCAFFOLDS, ScaffoldResult, create_project
+from .templates import list_builtin_template_names
 
-__all__ = ["ScaffoldResult", "create_project"]
+__all__ = [
+    "DEFAULT_TEMPLATE",
+    "SERVICE_SCAFFOLDS",
+    "ScaffoldResult",
+    "create_project",
+    "list_builtin_template_names",
+]

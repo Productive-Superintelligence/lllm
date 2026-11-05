@@ -1,0 +1,10 @@
+tactic_type: assistant
+
+global:
+  model_name: "{{model_name}}"
+  model_args:
+    temperature: 0.2
+
+agent_configs:
+  - name: assistant
+    system_prompt_path: assistant/system

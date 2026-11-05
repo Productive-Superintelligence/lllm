@@ -50,13 +50,23 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--version", action="version", version=f"lllm {__version__}")
     subcommands = parser.add_subparsers(dest="command", required=True, metavar="COMMAND")
 
-    create_cmd = subcommands.add_parser("create", help="Create a tactic service project")
-    create_cmd.add_argument(
-        "template",
-        choices=["plain", "pydantic-ai", "native"],
-        help="Project template",
+    create_cmd = subcommands.add_parser(
+        "create",
+        help="Create a project (native templates or a typed service scaffold)",
+        description=(
+            "lllm create NAME [--template minimal|pipeline|proxy|research|service|"
+            "plain|pydantic-ai|native|PATH]. The older form `lllm create TEMPLATE "
+            "NAME` also works."
+        ),
     )
-    create_cmd.add_argument("name", help="Project name")
+    create_cmd.add_argument("first", metavar="NAME", help="Project name")
+    create_cmd.add_argument("second", nargs="?", help=argparse.SUPPRESS)
+    create_cmd.add_argument(
+        "--template",
+        default=None,
+        help="Built-in template or a folder with lllm-template.toml (default: minimal)",
+    )
+    create_cmd.add_argument("--model", default="gpt-4o-mini", help="Default model in configs")
     create_cmd.add_argument("--directory", default=".", help="Parent directory")
     create_cmd.add_argument("--force", action="store_true", help="Overwrite existing files")
 
@@ -140,12 +150,17 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(raw_args)
 
     if args.command == "create":
+        if args.second is not None:  # legacy: lllm create TEMPLATE NAME
+            template, name = args.first, args.second
+        else:
+            template, name = args.template or "minimal", args.first
         try:
             result = create_project(
-                args.template,
-                args.name,
+                template,
+                name,
                 directory=args.directory,
                 force=args.force,
+                model=args.model,
             )
         except (FileExistsError, ValueError) as exc:
             parser.error(str(exc))

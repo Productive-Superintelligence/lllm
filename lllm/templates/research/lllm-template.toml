@@ -1,0 +1,12 @@
+[template]
+name = "research"
+version = "0.1.0"
+description = "Experiment-oriented LLLM research scaffold"
+entry = "template"
+
+[variables]
+project_name = { required = true }
+package_name = { required = true }
+pyproject_name = { required = true }
+project_title = { required = true }
+model_name = { default = "gpt-4o-mini" }

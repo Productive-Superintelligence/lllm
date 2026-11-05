@@ -20,6 +20,7 @@ server = ["fastapi>=0.115", "uvicorn>=0.30"]
 pydantic-ai = ["pydantic-ai"]
 native = [
     "litellm>=1.82.3",
+    "PyYAML>=6.0",
     "requests>=2.31.0",
     "filelock>=3.13.0",
     "Pillow>=10.0.0",
@@ -73,7 +74,7 @@ where = ["."]
 include = ["lllm*"]
 
 [tool.setuptools.package-data]
-lllm = ["py.typed"]
+lllm = ["py.typed", "templates/**/*", "templates/**/.*"]
 "lllm.runtimes.native.proxies.builtin" = ["*.json", "*.md"]
 
 [tool.pytest.ini_options]

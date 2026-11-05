@@ -1,0 +1,16 @@
+tactic_type: research
+
+global:
+  model_name: "{{model_name}}"
+  model_args:
+    temperature: 0.2
+
+agent_configs:
+  - name: researcher
+    system_prompt_path: research/researcher/system
+    model_args:
+      temperature: 0.3
+  - name: synthesizer
+    system_prompt_path: research/synthesizer/system
+    model_args:
+      temperature: 0.1

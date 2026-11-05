@@ -1,0 +1,16 @@
+[package]
+name = "{{package_name}}"
+version = "0.1.0"
+description = "{{project_title}}"
+
+[prompts]
+paths = ["prompts"]
+
+[configs]
+paths = ["configs"]
+
+[tactics]
+paths = ["tactics"]
+
+[proxies]
+paths = ["proxies"]

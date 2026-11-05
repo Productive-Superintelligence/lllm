@@ -1,0 +1,12 @@
+[template]
+name = "pipeline"
+version = "0.1.0"
+description = "Multi-agent planner/writer/reviewer pipeline"
+entry = "template"
+
+[variables]
+project_name = { required = true }
+package_name = { required = true }
+pyproject_name = { required = true }
+project_title = { required = true }
+model_name = { default = "gpt-4o-mini" }

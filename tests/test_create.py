@@ -1,3 +1,4 @@
+import warnings
 import asyncio
 import importlib
 import json
@@ -525,3 +526,31 @@ def _run_generated_service_app(project_path, package_name):
                 or name.startswith(f"{package_name}.")
             ):
                 del sys.modules[name]
+
+
+@pytest.mark.parametrize("template", ["minimal", "pipeline", "proxy", "research", "service"])
+def test_native_project_templates_render_and_pass_their_smoke_test(tmp_path, template):
+    import runpy
+
+    result = create_project(template, f"{template}-app", directory=tmp_path)
+
+    assert (result.path / "lllm.toml").is_file()
+    assert (result.path / "configs" / "default.yaml").is_file()
+    assert "{{" not in (result.path / "lllm.toml").read_text(encoding="utf-8")
+    smoke = runpy.run_path(str(result.path / "tests" / "test_smoke.py"))
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", RuntimeWarning)
+        smoke["test_project_loads_without_calling_a_model"]()
+
+
+def test_create_defaults_to_the_minimal_native_template(tmp_path, capsys):
+    assert main(["create", "my-app", "--directory", str(tmp_path)]) == 0
+    assert (tmp_path / "my-app" / "tactics" / "assistant.py").is_file()
+    assert main(["create", "plain", "svc", "--directory", str(tmp_path)]) == 0
+    assert (tmp_path / "svc" / "pyproject.toml").is_file()
+    assert "minimal project" in capsys.readouterr().out
+
+
+def test_unknown_templates_list_the_choices(tmp_path):
+    with pytest.raises(ValueError, match="minimal.*plain"):
+        create_project("nope", "x", directory=tmp_path)

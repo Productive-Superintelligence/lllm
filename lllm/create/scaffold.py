@@ -1,4 +1,14 @@
-"""Scaffold tactic/service-first projects."""
+"""Scaffold new LLLM projects.
+
+Two kinds of templates:
+
+- Project templates (``minimal``, ``pipeline``, ``proxy``, ``research``,
+  ``service``, or a local folder with ``lllm-template.toml``): a native LLLM
+  project with ``lllm.toml``, prompts, YAML agent configs, a tactic, a
+  ``main.py``, and an offline smoke test.
+- Service scaffolds (``plain``, ``pydantic-ai``, ``native``): a single typed
+  tactic served over HTTP.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +20,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
 
-TemplateName = Literal["plain", "pydantic-ai", "native"]
+TemplateName = str
+SERVICE_SCAFFOLDS = ("plain", "pydantic-ai", "native")
+DEFAULT_TEMPLATE = "minimal"
+DEFAULT_MODEL = "gpt-4o-mini"
 
 
 @dataclass(frozen=True)
@@ -29,6 +42,7 @@ def create_project(
     *,
     directory: str | Path = ".",
     force: bool = False,
+    model: str = DEFAULT_MODEL,
 ) -> ScaffoldResult:
     """Create a new tactic/service project.
 
@@ -37,8 +51,10 @@ def create_project(
     """
 
     force_value = _bool_value("force", force)
-    if template not in {"plain", "pydantic-ai", "native"}:
-        raise ValueError("template must be one of: plain, pydantic-ai, native")
+    if template not in SERVICE_SCAFFOLDS:
+        return _create_from_template(
+            template, name, directory=directory, force=force_value, model=model
+        )
     project_slug = _slug(name)
     package_name = _package_name(project_slug)
     root = Path(_path_value(directory, "directory")) / project_slug
@@ -59,6 +75,56 @@ def create_project(
         package_name=package_name,
         template=template,
         files=tuple(created),
+    )
+
+
+def _create_from_template(
+    template: str,
+    name: str,
+    *,
+    directory: str | Path,
+    force: bool,
+    model: str,
+) -> ScaffoldResult:
+    from .templates import (
+        list_builtin_template_names,
+        normalize_pyproject_name,
+        render_template,
+        resolve_template,
+        title_from_name,
+    )
+
+    try:
+        source = resolve_template(template)
+    except (FileNotFoundError, ValueError) as exc:
+        choices = ", ".join([*list_builtin_template_names(), *SERVICE_SCAFFOLDS])
+        raise ValueError(
+            f"Unknown template {template!r}. Choose one of: {choices}, "
+            "or a folder containing lllm-template.toml."
+        ) from exc
+    project_slug = _slug(name)
+    package_name = _package_name(project_slug)
+    root = Path(_path_value(directory, "directory")) / project_slug
+    if root.exists() and any(root.iterdir()) and not force:
+        raise FileExistsError(f"Project directory is not empty: {root}")
+    render_template(
+        source,
+        root,
+        {
+            "project_name": project_slug,
+            "package_name": package_name,
+            "pyproject_name": normalize_pyproject_name(project_slug),
+            "project_title": title_from_name(project_slug),
+            "model_name": model,
+        },
+        overwrite=force,
+    )
+    files = tuple(sorted(path for path in root.rglob("*") if path.is_file()))
+    return ScaffoldResult(
+        path=root,
+        package_name=package_name,
+        template=source.spec.name,
+        files=files,
     )
 
 
