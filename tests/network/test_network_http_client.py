@@ -364,7 +364,9 @@ def test_sync_client_rejects_path_control_body_ids_without_request(bad_name):
         lambda: client.write_artifact("hello", event_ids=(bad_name,)),
         lambda: client.put_snapshot("latest", {}, channel=bad_name),
         lambda: client.put_snapshot("latest", {}, source_event_id=bad_name),
-        lambda: client.put_snapshot("latest", {"channel": bad_name, "value": {}}),
+        lambda: client.put_snapshot(
+            {"name": "latest", "channel": bad_name, "value": {}}
+        ),
     )
 
     for call in calls:
@@ -405,7 +407,9 @@ def test_sync_client_rejects_malformed_payload_shapes_without_request():
         (lambda: client.write_artifact("hello", event_ids="event-1"), "event_ids"),
         (lambda: client.put_snapshot("latest", {}, metadata=[]), "metadata"),
         (
-            lambda: client.put_snapshot("latest", {"value": {}, "metadata": []}),
+            lambda: client.put_snapshot(
+                {"name": "latest", "value": {}, "metadata": []}
+            ),
             "metadata",
         ),
     )
@@ -611,7 +615,9 @@ def test_async_client_rejects_path_control_body_ids_without_request(bad_name):
             lambda: client.write_artifact("hello", event_ids=(bad_name,)),
             lambda: client.put_snapshot("latest", {}, channel=bad_name),
             lambda: client.put_snapshot("latest", {}, source_event_id=bad_name),
-            lambda: client.put_snapshot("latest", {"channel": bad_name, "value": {}}),
+            lambda: client.put_snapshot(
+                {"name": "latest", "channel": bad_name, "value": {}}
+            ),
         )
 
         for call in calls:
@@ -677,8 +683,7 @@ def test_async_client_rejects_malformed_payload_shapes_without_request():
             (lambda: client.put_snapshot("latest", {}, metadata=[]), "metadata"),
             (
                 lambda: client.put_snapshot(
-                    "latest",
-                    {"value": {}, "metadata": []},
+                    {"name": "latest", "value": {}, "metadata": []},
                 ),
                 "metadata",
             ),

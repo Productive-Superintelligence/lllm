@@ -89,11 +89,27 @@ class ChannelResolver:
     def from_config(cls, path: str | Path) -> "ChannelResolver":
         root, target = _config_target(path)
         resolver = cls(root=root)
-        config = _load_toml(target)
+        resolver._load_config(_load_toml(target))
+        return resolver
+
+    @classmethod
+    def from_text(
+        cls,
+        text: str,
+        *,
+        root: str | Path | None = None,
+    ) -> "ChannelResolver":
+        """Parse config text in memory; relative paths resolve against ``root``."""
+        text_value = _config_text_value(text)
+        resolver = cls(root="." if root is None else root)
+        resolver._load_config(_parse_toml(text_value))
+        return resolver
+
+    def _load_config(self, config: dict[str, Any]) -> None:
         refs = config.get("refs", {})
         if not isinstance(refs, dict):
             raise ChannelRefError("[refs] must be a TOML table.")
-        resolver._stores = _table_of_tables(config.get("stores", {}), "stores")
+        self._stores = _table_of_tables(config.get("stores", {}), "stores")
         for raw_ref, data in refs.items():
             if not _is_channel_config_ref(raw_ref):
                 continue
@@ -103,7 +119,7 @@ class ChannelResolver:
                 raise ChannelRefError(
                     f'[refs."{raw_ref}".metadata] must be a TOML table.'
                 )
-            resolver.bind(
+            self.bind(
                 raw_ref,
                 url=data.get("url"),
                 store=data.get("store"),
@@ -114,22 +130,6 @@ class ChannelResolver:
                     if key not in {"url", "store", "path"}
                 },
             )
-        return resolver
-
-    @classmethod
-    def from_text(
-        cls,
-        text: str,
-        *,
-        root: str | Path | None = None,
-    ) -> "ChannelResolver":
-        text_value = _config_text_value(text)
-        root_value = "." if root is None else root
-        root_path = Path(_path_value(root_value, "config root"))
-        target = root_path / ".lllm" / "config.toml"
-        target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(text_value, encoding="utf-8")
-        return cls.from_config(root_path)
 
     def bind(
         self,
@@ -197,6 +197,13 @@ class ChannelResolver:
         target = binding.store if binding.store is not None else binding.path
         if target is None:
             raise ChannelRefError(f"Channel ref is not bound to a local store: {binding.ref}")
+        if binding.store in self._stores:
+            target = self._stores[binding.store].get("path")
+            if target is None:
+                raise ChannelRefError(
+                    f"[stores.{binding.store}] has no path for channel ref: "
+                    f"{binding.ref}"
+                )
         return _resolve_under_root(self.root, target)
 
     def local_store(self, ref: str | ChannelRef) -> LocalStore:
@@ -226,12 +233,15 @@ def _copy_binding(binding: ResolvedChannelRef) -> ResolvedChannelRef:
 
 
 def _load_toml(path: Path) -> dict[str, Any]:
+    return _parse_toml(path.read_text(encoding="utf-8"))
+
+
+def _parse_toml(text: str) -> dict[str, Any]:
     try:
         import tomllib
     except ImportError:  # pragma: no cover - Python 3.10 fallback
         import tomli as tomllib  # type: ignore[no-redef]
-    with path.open("rb") as handle:
-        return tomllib.load(handle)
+    return tomllib.loads(text)
 
 
 def _config_text_value(value: Any) -> str:

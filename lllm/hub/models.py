@@ -40,6 +40,25 @@ ResourceKind = Literal[
     "asset",
 ]
 RESOURCE_KIND_VALUES = frozenset(get_args(ResourceKind))
+#: Channel forms ``lllm.network`` can create; mirrors ``lllm.network.ChannelForm``
+#: (a test keeps them equal) so the hub does not import the network layer.
+CHANNEL_FORM_VALUES = frozenset(
+    {
+        "log",
+        "queue",
+        "topic",
+        "blackboard",
+        "latest-state",
+        "artifact-index",
+        "pipeline-edge",
+        "database-view",
+        "feed",
+        "time-series",
+        "tree",
+        "forum",
+        "hub",
+    }
+)
 PRIMARY_SECTION_VALUES = frozenset(
     {
         "schemas",
@@ -171,6 +190,9 @@ class ChannelResource(_MetadataModel):
     @model_validator(mode="after")
     def _validate_metadata_tokens(self) -> "ChannelResource":
         _validate_token(self.form, "channel.form")
+        if self.form not in CHANNEL_FORM_VALUES:
+            expected = ", ".join(sorted(CHANNEL_FORM_VALUES))
+            raise ValueError(f"channel.form must be one of: {expected}.")
         return self
 
 

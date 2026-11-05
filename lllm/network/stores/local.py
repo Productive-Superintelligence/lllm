@@ -18,6 +18,7 @@ from ..core import (
     Channel,
     ChannelExistsError,
     ChannelNotFoundError,
+    EventExistsError,
     EventNotFoundError,
     Event,
     InvalidPayloadError,
@@ -96,28 +97,33 @@ class LocalStore:
         value = _model(Event, event, "event")
         self.get_channel(value.channel)
         self._require_events(value.parent_ids)
-        with self._connect() as db:
-            db.execute(
-                """
-                insert into events(
-                  id, channel, timestamp, source, kind, payload, schema_ref,
-                  metadata, correlation_id, parent_ids
+        try:
+            with self._connect() as db:
+                db.execute(
+                    """
+                    insert into events(
+                      id, channel, timestamp, source, kind, payload, schema_ref,
+                      metadata, correlation_id, parent_ids
+                    )
+                    values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        value.id,
+                        value.channel,
+                        value.timestamp,
+                        value.source,
+                        value.kind,
+                        _json(value.payload),
+                        value.schema,
+                        _json(value.metadata),
+                        value.correlation_id,
+                        _json(list(value.parent_ids)),
+                    ),
                 )
-                values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    value.id,
-                    value.channel,
-                    value.timestamp,
-                    value.source,
-                    value.kind,
-                    _json(value.payload),
-                    value.schema,
-                    _json(value.metadata),
-                    value.correlation_id,
-                    _json(list(value.parent_ids)),
-                ),
-            )
+        except sqlite3.IntegrityError as exc:
+            if self._event_cursor(value.id):
+                raise EventExistsError(f"Event already exists: {value.id}") from exc
+            raise
         return value.model_copy(
             update={"cursor": self._event_cursor(value.id)},
             deep=True,
@@ -342,7 +348,33 @@ class LocalStore:
             raise ArtifactNotFoundError(f"Artifact not found: {artifact_id}")
         return _artifact(row)
 
-    def put_snapshot(self, snapshot: Snapshot | dict[str, Any]) -> Snapshot:
+    def put_snapshot(
+        self,
+        snapshot: Snapshot | dict[str, Any] | str,
+        value: Any = None,
+        *,
+        channel: str | None = None,
+        timestamp: float | None = None,
+        schema: str | None = None,
+        source_event_id: str | None = None,
+        metadata: dict[str, Any] | None = None,
+    ) -> Snapshot:
+        """Write a snapshot given as a model, a dict, or a name and value.
+
+        ``put_snapshot(snapshot)`` takes a ``Snapshot`` or a dict of snapshot
+        fields; ``put_snapshot(name, value, ...)`` stores ``value`` exactly as
+        given, unless it is a ``Snapshot`` whose fields are used under that
+        name. Field arguments that are not ``None`` override.
+        """
+        snapshot = _snapshot_fields(
+            snapshot,
+            value,
+            channel=channel,
+            timestamp=timestamp,
+            schema=schema,
+            source_event_id=source_event_id,
+            metadata=metadata,
+        )
         if isinstance(snapshot, Mapping) and "metadata" in snapshot:
             snapshot = {
                 **snapshot,
@@ -351,11 +383,11 @@ class LocalStore:
                     snapshot["metadata"],
                 ),
             }
-        value = _model(Snapshot, snapshot, "snapshot")
-        if value.channel is not None:
-            self.get_channel(value.channel)
-        if value.source_event_id is not None:
-            self._require_events((value.source_event_id,))
+        record = _model(Snapshot, snapshot, "snapshot")
+        if record.channel is not None:
+            self.get_channel(record.channel)
+        if record.source_event_id is not None:
+            self._require_events((record.source_event_id,))
         with self._connect() as db:
             db.execute(
                 """
@@ -370,16 +402,16 @@ class LocalStore:
                   metadata = excluded.metadata
                 """,
                 (
-                    value.name,
-                    value.channel,
-                    value.timestamp,
-                    _json(value.value),
-                    value.schema,
-                    value.source_event_id,
-                    _json(value.metadata),
+                    record.name,
+                    record.channel,
+                    record.timestamp,
+                    _json(record.value),
+                    record.schema,
+                    record.source_event_id,
+                    _json(record.metadata),
                 ),
             )
-        return value.model_copy(deep=True)
+        return record.model_copy(deep=True)
 
     def get_snapshot(self, name: str) -> Snapshot:
         _require_segment("snapshot.name", name)
@@ -526,6 +558,44 @@ def _model(model_type: type[ModelT], value: ModelT | dict[str, Any], label: str)
         return model_type.model_validate(copy_boundary_value(value))
     except ValidationError as exc:
         raise InvalidPayloadError(f"Invalid {label}: {exc}") from exc
+
+
+def _snapshot_fields(
+    snapshot: Any,
+    value: Any,
+    *,
+    channel: str | None,
+    timestamp: float | None,
+    schema: str | None,
+    source_event_id: str | None,
+    metadata: Any,
+) -> Any:
+    overrides = {
+        key: item
+        for key, item in (
+            ("channel", channel),
+            ("timestamp", timestamp),
+            ("schema", schema),
+            ("source_event_id", source_event_id),
+            ("metadata", metadata),
+        )
+        if item is not None
+    }
+    if isinstance(snapshot, str):
+        if isinstance(value, Snapshot):
+            fields = value.model_dump(by_alias=True)
+        else:
+            fields = {"value": value}
+        return {**fields, **overrides, "name": snapshot}
+    if value is not None:
+        overrides["value"] = value
+    if not overrides:
+        return snapshot
+    if isinstance(snapshot, Snapshot):
+        return {**snapshot.model_dump(by_alias=True), **overrides}
+    if isinstance(snapshot, Mapping):
+        return {**snapshot, **overrides}
+    return snapshot
 
 
 def _path_value(value: Any, label: str) -> str:
