@@ -32,8 +32,8 @@ def create_project(
 ) -> ScaffoldResult:
     """Create a new tactic/service project.
 
-    This intentionally does not create `lllm.toml`; package initialization
-    belongs to LLLM hub.
+    This does not create `lllm.toml`; run ``lllm init`` when the project
+    becomes a package.
     """
 
     force_value = _bool_value("force", force)
@@ -163,8 +163,8 @@ def _readme(project_slug: str, package_name: str, template: str) -> str:
         python client.py
         ```
 
-        The package module is `{package_name}`. Add LLLM hub package metadata later
-        with `lllm hub init`.
+        The package module is `{package_name}`. Run `lllm init` to add an
+        `lllm.toml` package manifest when you want to publish it.
         """
     )
 
