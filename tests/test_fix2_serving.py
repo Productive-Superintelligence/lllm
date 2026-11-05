@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -76,6 +77,48 @@ tactic = "echo"
         main(["inspect", str(package), "--no-keyring"])
     assert exited.value.code == 2
     assert f"lllm: error: {message}" in capsys.readouterr().err
+
+
+# A service entry must build an app, a tactic, or a data payload; only a data
+# payload lets a declared tactic be served instead.
+
+
+@pytest.mark.filterwarnings("ignore:coroutine .* was never awaited:RuntimeWarning")
+@pytest.mark.parametrize(
+    ("factory", "returned"),
+    [
+        ("def create_app():\n    return TokenAuth(_build())\n", "TokenAuth"),
+        ("def create_app():\n    app = _build()\n", "NoneType"),
+        ("async def create_app():\n    return _build()\n", "coroutine"),
+    ],
+    ids=["app-wrapped-in-middleware", "returns-none", "async-factory"],
+)
+@pytest.mark.parametrize("tactic", ["echo", None], ids=["tactic", "no-tactic"])
+def test_a_service_entry_that_builds_no_app_or_payload_is_an_error(
+    tmp_path: Path, factory: str, returned: str, tactic: str | None
+):
+    package = _token_auth_package(tmp_path, factory, tactic=tactic)
+    message = (
+        f"services.api returned {returned}, not a FastAPI or Starlette app, "
+        "a tactic, or a data payload"
+    )
+
+    with pytest.raises(LaunchError, match=f"^{re.escape(message)}$"):
+        load_launch_app(package)
+
+
+def test_inspect_reports_a_service_wrapped_in_middleware_as_an_error(
+    tmp_path: Path, capsys
+):
+    package = _token_auth_package(
+        tmp_path, "def create_app():\n    return TokenAuth(_build())\n", tactic="echo"
+    )
+
+    with pytest.raises(SystemExit) as exited:
+        main(["inspect", str(package), "--no-keyring"])
+
+    assert exited.value.code == 2
+    assert "lllm: error: services.api returned TokenAuth" in capsys.readouterr().err
 
 
 def test_a_service_without_an_entry_still_serves_its_tactic(tmp_path: Path):
@@ -293,6 +336,41 @@ class Prefixer:
     assert TestClient(app).get("/health").json() == {"debug": False}
 
 
+def test_a_factory_return_annotation_counts_when_a_parameter_annotation_cannot_resolve(
+    tmp_path: Path,
+):
+    _write(
+        tmp_path / "fix2_typed.py",
+        """
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
+from lllm.protocol import Tactic
+from lllm.runtimes import as_tactic
+
+if TYPE_CHECKING:
+    from decimal import Context as Settings
+
+CALLS = []
+
+def build_tactic(settings: Settings | None = None) -> Tactic[Any, Any]:
+    CALLS.append("build")
+    return as_tactic(lambda value: f"built:{value}", name="built")
+""",
+    )
+    sys.path.insert(0, str(tmp_path))
+    import fix2_typed
+
+    tactic = coerce_tactic(fix2_typed.build_tactic)
+    app = load_launch_app("fix2_typed:build_tactic").app
+
+    assert fix2_typed.CALLS == ["build", "build"]
+    assert tactic.run("x") == "built:x"
+    response = TestClient(app).post("/run", json={"input": "x"})
+    assert response.json()["output"] == "built:x"
+
+
 # 22: a Tactic subclass gets name= only when its constructor takes it.
 
 
@@ -493,6 +571,33 @@ class Echo:
         return {"echo": input_value}
 """
 
+_TOKEN_AUTH_APP = """
+from fastapi import FastAPI
+
+
+class TokenAuth:
+    def __init__(self, app):
+        self.app = app
+
+    async def __call__(self, scope, receive, send):
+        if dict(scope.get("headers") or []).get(b"x-token") != b"secret":
+            await send({"type": "http.response.start", "status": 401, "headers": []})
+            await send({"type": "http.response.body", "body": b""})
+            return
+        await self.app(scope, receive, send)
+
+
+def _build():
+    app = FastAPI()
+
+    @app.post("/run")
+    def run(body: dict):
+        return {"output": body}
+
+    return app
+
+"""
+
 _HELPERS = "def shout(value):\n    return str(value).upper()\n"
 
 
@@ -504,6 +609,25 @@ class Shout:
 
         return shout(input_value)
 """
+
+
+def _token_auth_package(tmp_path: Path, factory: str, *, tactic: str | None) -> Path:
+    tactic_line = f'tactic = "{tactic}"' if tactic else ""
+    package = _package(
+        tmp_path,
+        primary="services.api",
+        body=f"""
+[tactics.echo]
+entry = "fix2_svc.tactics:Echo"
+
+[services.api]
+entry = "fix2_svc.app:create_app"
+{tactic_line}
+""",
+    )
+    _write(package / "fix2_svc" / "tactics.py", _ECHO)
+    _write(package / "fix2_svc" / "app.py", _TOKEN_AUTH_APP + factory)
+    return package
 
 
 def _package(

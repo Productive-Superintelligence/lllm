@@ -208,15 +208,19 @@ def _is_factory(value: Any) -> bool:
     return (
         isinstance(value, type)
         or not signature.parameters
-        or _returns_tactic_or_app(value)
+        or _returns_tactic_or_app(value, signature.return_annotation)
     )
 
 
-def _returns_tactic_or_app(value: Any) -> bool:
-    try:
-        annotation = inspect.signature(value, eval_str=True).return_annotation
-    except Exception:  # an annotation that cannot be evaluated says nothing
-        return False
+def _returns_tactic_or_app(value: Any, annotation: Any) -> bool:
+    # Only the return annotation is evaluated, so a parameter annotation that
+    # only a type checker can resolve does not hide it.
+    if isinstance(annotation, str):
+        try:
+            namespace = getattr(inspect.unwrap(value), "__globals__", {})
+            annotation = eval(annotation, namespace)
+        except Exception:  # an annotation that cannot be evaluated says nothing
+            return False
     annotation = get_origin(annotation) or annotation
     if not isinstance(annotation, type):
         return False

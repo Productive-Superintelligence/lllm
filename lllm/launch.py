@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import inspect
+from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -218,7 +219,11 @@ def _coerce_service_app(value: Any, *, label: str, allow_payload: bool) -> Any:
     """Build a service app, or return None for a payload that is not allowed.
 
     A service entry has no handler form, so any callable it names that can
-    be called without arguments builds the service.
+    be called without arguments builds the service. It must build a FastAPI
+    or Starlette app, a tactic, or a data payload (a mapping, list, string,
+    or number). Anything else, such as an app wrapped in middleware, None, or
+    a coroutine, is an error, so a declared tactic is never served in place
+    of a service that built something unrecognized.
     """
 
     if _is_asgi_app(value):
@@ -229,7 +234,12 @@ def _coerce_service_app(value: Any, *, label: str, allow_payload: bool) -> Any:
             return produced
         if _looks_like_tactic(produced):
             return _tactic_to_app(produced, name=label.rsplit(".", 1)[-1])
-        return _constant_app(produced, label=label) if allow_payload else None
+        if isinstance(produced, (Mapping, list, tuple, str, int, float)):
+            return _constant_app(produced, label=label) if allow_payload else None
+        raise LaunchError(
+            f"{label} returned {type(produced).__name__}, not a FastAPI or Starlette "
+            "app, a tactic, or a data payload"
+        )
     raise LaunchError(f"{label} did not return an ASGI app or service payload")
 
 
