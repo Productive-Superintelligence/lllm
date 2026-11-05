@@ -1,6 +1,16 @@
+from collections import deque
 from typing import Any
 
-from lllm.network import Channel, Snapshot, channel_resource, endpoint, snapshot_resource
+from lllm.network import (
+    Channel,
+    InvalidPayloadError,
+    Snapshot,
+    channel_resource,
+    endpoint,
+    snapshot_resource,
+)
+
+MAX_TAIL_LIMIT = 1000
 
 
 @endpoint.get(
@@ -9,8 +19,22 @@ from lllm.network import Channel, Snapshot, channel_resource, endpoint, snapshot
     description="Return the most recent events for a channel.",
     tags=("channels",),
 )
-def channel_tail(store, name: str, limit: int = 20):
-    return store.query_events(name, limit=limit)
+def channel_tail(store, name: str, params=None):
+    """Return the newest `?limit=N` events (default 20, at most 1000), oldest first."""
+    try:
+        limit = int((params or {}).get("limit", 20))
+    except (TypeError, ValueError):
+        limit = 0
+    if not 1 <= limit <= MAX_TAIL_LIMIT:
+        raise InvalidPayloadError(
+            f"limit must be an integer from 1 to {MAX_TAIL_LIMIT}."
+        )
+    tail = deque(maxlen=limit)
+    cursor = 0
+    while batch := store.query_events(name, after_cursor=cursor, limit=500):
+        tail.extend(batch)
+        cursor = batch[-1].cursor
+    return list(tail)
 
 
 @endpoint.get(

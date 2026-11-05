@@ -220,18 +220,30 @@ class RemoteStore:
 
     def put_snapshot(
         self,
-        name: str,
+        snapshot: Snapshot | Mapping[str, Any] | str | None = None,
         value: Any = None,
         *,
+        name: str | None = None,
         channel: str | None = None,
         timestamp: float | None = None,
         schema: str | None = None,
         source_event_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Snapshot:
-        _require_segment("snapshot.name", name)
-        payload = _snapshot_payload(
+        """Write a snapshot given as a model, a dict, or a name and value.
+
+        Takes the same arguments as ``LocalStore.put_snapshot``:
+        ``put_snapshot(snapshot)`` with a ``Snapshot`` or a dict of snapshot
+        fields, or ``put_snapshot(name, value, ...)``, which stores ``value``
+        exactly as given unless it is a ``Snapshot`` whose fields are used
+        under that name. ``snapshot=`` and ``name=`` also work as keywords.
+        Field arguments that are not ``None`` override, and ``None`` fields are
+        unset.
+        """
+        name, payload = _snapshot_payload(
+            snapshot,
             value,
+            name=name,
             channel=channel,
             timestamp=timestamp,
             schema=schema,
@@ -469,18 +481,30 @@ class AsyncRemoteStore:
 
     async def put_snapshot(
         self,
-        name: str,
+        snapshot: Snapshot | Mapping[str, Any] | str | None = None,
         value: Any = None,
         *,
+        name: str | None = None,
         channel: str | None = None,
         timestamp: float | None = None,
         schema: str | None = None,
         source_event_id: str | None = None,
         metadata: dict[str, Any] | None = None,
     ) -> Snapshot:
-        _require_segment("snapshot.name", name)
-        payload = _snapshot_payload(
+        """Write a snapshot given as a model, a dict, or a name and value.
+
+        Takes the same arguments as ``LocalStore.put_snapshot``:
+        ``put_snapshot(snapshot)`` with a ``Snapshot`` or a dict of snapshot
+        fields, or ``put_snapshot(name, value, ...)``, which stores ``value``
+        exactly as given unless it is a ``Snapshot`` whose fields are used
+        under that name. ``snapshot=`` and ``name=`` also work as keywords.
+        Field arguments that are not ``None`` override, and ``None`` fields are
+        unset.
+        """
+        name, payload = _snapshot_payload(
+            snapshot,
             value,
+            name=name,
             channel=channel,
             timestamp=timestamp,
             schema=schema,
@@ -618,43 +642,47 @@ def _require_segments(field_name: str, values: Any) -> None:
     _segment_list(field_name, values)
 
 
+def _dump_snapshot(snapshot: Snapshot | Mapping[str, Any]) -> dict[str, Any]:
+    if isinstance(snapshot, Snapshot):
+        return copy_boundary_value(
+            snapshot.model_dump(mode="json", by_alias=True, exclude_none=True)
+        )
+    return {
+        key: item
+        for key, item in _mapping_payload("snapshot", snapshot).items()
+        if item is not None
+    }
+
+
 def _snapshot_payload(
+    snapshot: Any,
     value: Any,
     *,
+    name: str | None,
     channel: str | None,
     timestamp: float | None,
     schema: str | None,
     source_event_id: str | None,
     metadata: dict[str, Any] | None,
-) -> dict[str, Any]:
-    if isinstance(value, Snapshot):
-        payload = copy_boundary_value(
-            value.model_dump(mode="json", by_alias=True, exclude_none=True)
-        )
-        payload.pop("name", None)
-        if channel is not None:
-            payload["channel"] = channel
-        if timestamp is not None:
-            payload["timestamp"] = timestamp
-        if schema is not None:
-            payload["schema"] = schema
-        if source_event_id is not None:
-            payload["source_event_id"] = source_event_id
-        if metadata is not None:
-            payload["metadata"] = _mapping_payload("snapshot.metadata", metadata)
-        return payload
-    raw_keys = {"channel", "timestamp", "value", "schema", "source_event_id", "metadata"}
-    if (
-        isinstance(value, Mapping)
-        and raw_keys.intersection(value)
-        and channel is None
-        and timestamp is None
-        and schema is None
-        and source_event_id is None
-        and metadata is None
-    ):
-        return copy_boundary_value(value)
-    payload: dict[str, Any] = {"value": copy_boundary_value(value)}
+) -> tuple[str, dict[str, Any]]:
+    if snapshot is not None and not isinstance(snapshot, (Snapshot, Mapping)):
+        if name is not None:
+            raise TypeError("put_snapshot() got multiple values for argument 'name'")
+        snapshot, name = None, snapshot
+    if snapshot is None:
+        if isinstance(value, Snapshot):
+            payload = _dump_snapshot(value)
+            payload.pop("name", None)
+        else:
+            payload = {"value": copy_boundary_value(value)}
+    else:
+        payload = _dump_snapshot(snapshot)
+        if value is not None:
+            payload["value"] = copy_boundary_value(value)
+    stored_name = payload.pop("name", None)
+    if name is None:
+        name = stored_name
+    _require_segment("snapshot.name", name)
     if channel is not None:
         payload["channel"] = channel
     if timestamp is not None:
@@ -665,7 +693,7 @@ def _snapshot_payload(
         payload["source_event_id"] = source_event_id
     if metadata is not None:
         payload["metadata"] = _mapping_payload("snapshot.metadata", metadata)
-    return payload
+    return name, payload
 
 
 def _mapping_payload(field_name: str, value: Any) -> dict[str, Any]:

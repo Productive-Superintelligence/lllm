@@ -17,6 +17,7 @@ from ..core import (
     ChannelExistsError,
     ChannelNotFoundError,
     Event,
+    EventExistsError,
     EventNotFoundError,
     InvalidPayloadError,
     NetworkError,
@@ -296,7 +297,15 @@ def _mount_custom_endpoint(
                     body = await request.json()
                 except Exception:
                     body = None
-            result = fn(**_custom_kwargs(fn, store=store, body=body, path=request.path_params))
+            result = fn(
+                **_custom_kwargs(
+                    fn,
+                    store=store,
+                    body=body,
+                    params=dict(request.query_params),
+                    path=request.path_params,
+                )
+            )
             if inspect.isawaitable(result):
                 result = await result
             return jsonable_encoder(result)
@@ -321,6 +330,7 @@ def _custom_kwargs(
     *,
     store: LocalStore,
     body: Any,
+    params: dict[str, str],
     path: dict[str, Any],
 ) -> dict[str, Any]:
     signature = inspect.signature(fn)
@@ -332,6 +342,8 @@ def _custom_kwargs(
             kwargs[name] = body
         elif name in path:
             kwargs[name] = path[name]
+        elif name == "params":
+            kwargs[name] = params
         elif parameter.default is inspect.Parameter.empty:
             raise TypeError(f"Cannot bind custom endpoint parameter: {name}")
     return kwargs
@@ -398,7 +410,10 @@ def _http_error(exc: Exception):
         ),
     ):
         status_code = 404
-    elif isinstance(exc, (ChannelExistsError, SubscriptionExistsError)):
+    elif isinstance(
+        exc,
+        (ChannelExistsError, EventExistsError, SubscriptionExistsError),
+    ):
         status_code = 409
     elif isinstance(exc, NetworkError):
         status_code = 400

@@ -15,6 +15,10 @@ class ChannelNotFoundError(NetworkError):
     """Raised when a channel does not exist."""
 
 
+class EventExistsError(NetworkError):
+    """Raised when appending an event whose id already exists."""
+
+
 class EventNotFoundError(NetworkError):
     """Raised when an event does not exist."""
 

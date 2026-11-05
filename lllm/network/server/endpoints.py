@@ -35,7 +35,15 @@ class StoreEndpointSpec:
 
 
 class endpoint:
-    """Decorator namespace for custom network store/channel endpoints."""
+    """Decorator namespace for custom network store/channel endpoints.
+
+    ``create_app`` binds handler parameters by name: ``store`` receives the
+    store, ``body`` the parsed JSON body (``None`` for GET, DELETE, or a body
+    that is not JSON), and any other parameter the path parameter of the same
+    name. A ``params`` parameter that is not a path parameter receives the
+    query parameters as a ``dict`` of strings (the last value wins for
+    repeated keys).
+    """
 
     @staticmethod
     def get(
