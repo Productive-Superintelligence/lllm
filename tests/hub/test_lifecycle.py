@@ -1993,7 +1993,7 @@ def test_local_publish_download_card_and_config(tmp_path):
     )
     assert example_line in card
     assert "Agent Card: demo/echo" in agent_card
-    assert "LLLM hub describes packages, refs, config, and metadata" in agent_card
+    assert "The hub describes packages, refs, config, and metadata" in agent_card
     assert "tactic `echo`: `lllm://demo/echo/tactics/echo`" in agent_card
     assert example_line in agent_card
     assert 'policy_url="http://policy"' in card

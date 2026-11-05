@@ -242,3 +242,23 @@ def test_missing_resources_point_to_load_runtime():
 
     with pytest.raises(KeyError, match="load_runtime"):
         Runtime().get("writer/system", resource_type="prompt")
+
+
+def test_streamed_input_is_validated_like_run():
+    class Words(Tactic):
+        name = "words"
+        input_model = Question
+
+        def call(self, task):
+            return task.text
+
+        def stream(self, task, **kwargs):
+            for word in task.text.split():
+                yield word.upper()
+
+    client = TestClient(create_tactic_app(Words()))
+    response = client.post("/stream", json={"input": {"text": "one two"}})
+
+    assert response.status_code == 200
+    assert '"data": "ONE"' in response.text and '"data": "TWO"' in response.text
+    assert "error" not in response.text

@@ -302,7 +302,9 @@ class Tactic(Generic[InputT, OutputT]):
         **kwargs: Any,
     ) -> AsyncIterator[Any]:
         context = _call_context(context)
-        for item in self.stream(input_value, context=context, **kwargs):
+        # Validate like run() does, so stream() receives the typed input.
+        validated = self.validate_input(input_value)
+        for item in self.stream(validated, context=context, **kwargs):
             yield item
 
     async def aevents(

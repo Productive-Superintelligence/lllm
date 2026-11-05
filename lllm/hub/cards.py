@@ -36,7 +36,7 @@ def render_agent_card(record: PackageRecord) -> str:
         "",
         "## Operating Notes",
         "",
-        "- LLLM hub describes packages, refs, config, and metadata; it does not launch services.",
+        "- The hub describes packages, refs, config, and metadata. To run one, download it and use `lllm setup <folder>` then `lllm serve <folder>`.",
         "- Resolve required services/channels through local `.lllm/config.toml` bindings.",
         "- Prefer declared refs and resource metadata over guessing paths or URLs.",
         "",
