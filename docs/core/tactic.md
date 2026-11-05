@@ -63,9 +63,9 @@ result = tactic("Analyze this paper")
 ```
 
 With `agent_group` set, the tactic builds a fresh, configured `Agent` for each
-name on every call and puts them in `self.agents`. Without it, `call()` is plain
-Python: deterministic steps, or orchestration over other tactics, tools, and
-runtimes.
+name every time it runs `call()`, and puts them in `self.agents`. Without it,
+`call()` is plain Python: deterministic steps, or orchestration over other
+tactics, tools, and runtimes.
 
 ### `call()` or a protocol hook
 
@@ -91,7 +91,10 @@ upper.run("hi")   # 'HI'
 ```
 
 - `run()` and `arun()` run that program too. For a hook-only tactic they call
-  the hook directly, without a session.
+  the hook on the tactic itself, with no session, no per-call copy, and no
+  fresh agents. `self.agents` then holds the agents built at construction, so
+  every `run()` and `arun()` call, including each service request, shares them
+  and their dialogs. A tactic with `agent_group` should write `call()`.
 - A hook always receives a `CallContext` as `context=` (a fresh one when the
   caller passes none).
 - A hook-only tactic has no `call()`: `upper.call("hi")` raises
@@ -866,7 +869,9 @@ and with `include_context_metadata=True` passes safe call metadata
   the tactic, so tactics are safe to call concurrently.
 - **Agents are per call.** Each call builds fresh agents from specs. The
   expensive objects (invoker, registry, prompts) are shared; only the `Agent`
-  shells and their dialogs are new.
+  shells and their dialogs are new. `run()` and `arun()` on a hook-only tactic
+  are the exception: no session and no fresh agents (see
+  [`call()` or a protocol hook](#call-or-a-protocol-hook)).
 - **Tracking is transparent.** `_TrackedAgent` intercepts `respond()` without
   changing the agent API, and nested tactic calls record themselves into the
   running session.

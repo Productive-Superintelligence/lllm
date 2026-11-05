@@ -73,7 +73,11 @@ What each level shows:
 | `DEBUG` | Every tool call with its arguments, successful agent calls, and the traceback of a failed tactic call |
 | `INFO` | Tactic start and completion with cost and agent-call count, and one line per failed call (`Tactic 'summarizer' failed: ValueError: ...`) |
 | `WARNING` | Parse repairs (`[writer] Handling exception (retry 0/3): ...`) and provider retries |
-| `ERROR` | Agent calls that fail after their retries |
+| `ERROR` | An agent call that uses up its tool rounds without a final reply (`[writer] Agent call failed`) |
+
+An agent call that runs out of parse repairs, provider retries, or rate-limit
+retries logs nothing at `ERROR`: it raises the last error, and the tactic's
+INFO failure line reports it.
 
 To see tool calls without turning on debug output for every library:
 

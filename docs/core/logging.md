@@ -296,7 +296,7 @@ live under `lllm.runtimes.native`:
 | --- | --- |
 | `lllm.runtimes.native` | Everything below |
 | `lllm.runtimes.native.core.tactic` | Tactic start, completion with cost, and failure, one line each (INFO), the failure traceback (DEBUG), observer errors (WARNING) |
-| `lllm.runtimes.native.core.prompt` | Repair retries and LLM recalls (WARNING), tool calls and their arguments (DEBUG), agent-call failure (ERROR) |
+| `lllm.runtimes.native.core.prompt` | Repair retries and LLM recalls (WARNING), tool calls and their arguments (DEBUG), an agent call that uses up its tool rounds without a final reply (ERROR) |
 | `lllm.runtimes.native.core.agent` | Loop configuration warnings |
 | `lllm.runtimes.native.core.native_config` | Unknown agent config keys, missing or unreachable skills |
 | `lllm.runtimes.native.core.config` | Discovery registration problems |
@@ -331,7 +331,10 @@ logging.getLogger("lllm.runtimes.native").setLevel(logging.INFO)
 | `DEBUG` | Plus every tool call with arguments, successful agent calls, tactic failure tracebacks, context truncation, resource overwrites |
 
 A failed tactic call raises, and its session records the error and traceback,
-so the log keeps the failure to one INFO line and the traceback at DEBUG.
+so the log keeps the failure to one INFO line and the traceback at DEBUG. An
+agent call that runs out of repair retries, LLM recalls, or rate-limit retries
+raises its last error without an ERROR line, so inside a tactic it shows up as
+that INFO line.
 
 ### Fine-grained control
 
