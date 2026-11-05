@@ -26,7 +26,8 @@ acme/briefs@0.1.0
 acme/briefs@0.1.0
 ```
 
-Publishing validates first and refuses packages with errors. Secrets and
+Publishing validates first and refuses packages with errors, such as a raw
+`api_key` in metadata (see [Validation](manifest.md#validation)). Secrets and
 build leftovers (`.env`, `.git`, `__pycache__`, `*.egg-info`, ...) are never
 copied. Use `--hub DIR` (before the command) to work with another hub folder:
 
@@ -97,13 +98,22 @@ lllm hub --hub .lllm/hub index ./site/hub
 ```text
 site/hub/
   data/catalog.json
-  packages/acme-briefs-0.1.0.zip
+  packages/acme/briefs/0.1.0.zip
 ```
 
 The catalog holds each package's latest version: summary, resources, card,
-agent card, config template, README, and download link. To make it browsable,
-add the hub web app with `lllm-hub --export-web ./site/hub` (from the
-lllm-hub repository); any static host can then serve the folder.
+agent card, config template, README, and download link. Like cards and the hub
+API, it drops secret-shaped metadata keys. A README that is not valid UTF-8 is
+read with U+FFFD replacement characters instead of failing the build.
+
+Each zip holds the package files at its root, like
+`GET /packages/{org}/{name}/download`, so `unzip 0.1.0.zip -d briefs` leaves
+`lllm.toml` in `briefs/`, ready for `lllm setup briefs` and
+`lllm serve briefs`.
+
+To make the folder browsable, add the hub web app with
+`lllm-hub --export-web ./site/hub` (from the lllm-hub repository); any static
+host can then serve the folder.
 
 ## From Python
 

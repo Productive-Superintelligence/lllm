@@ -72,7 +72,7 @@ hub. The same split works in `[services]` and `[assets]`.
 
 | Field | Default | Meaning |
 | --- | --- | --- |
-| `name` | folder name | Package name; the namespace prefix for discovered resources |
+| `name` | folder name (the hub requires it) | Package name; the namespace prefix for discovered resources |
 | `org` | `"local"` | Owner; the identifier is `org/name` |
 | `version` | `"0.1.0"` | Package version |
 | `description` | `""` | One line about the package |
@@ -103,9 +103,14 @@ paths = ["./prompts", "./shared/prompts under shared"]  # or {path = ..., prefix
 | any other table | a custom section: files and Python resources |
 
 A section without `paths` falls back to a folder with the section's name, if
-one exists. Resources are keyed `package.section:path`, for example
-`briefs.prompts:writer/system`. `[dependencies] packages = ["./pkg as alias"]`
-loads other packages first, under an optional alias.
+one exists. Validation checks that folder like a declared path, so it must
+stay inside the package. The native runtime treats the hub's own tables
+(`[schemas]`, `[docs]`, `[card]`, ...) as custom sections only when they set
+`paths`, and the hub cannot load most of them with `paths`, so give custom
+sections their own names. Resources are keyed `package.section:path`, for
+example `briefs.prompts:writer/system`.
+`[dependencies] packages = ["./pkg as alias"]` loads other packages first,
+under an optional alias.
 
 [Discovery](discovery.md) covers keys, aliases, shared packages, and
 installing package archives.
@@ -122,7 +127,7 @@ Declared resources are named tables the hub indexes. Each gets a ref,
 | `[services.<name>]` | `tactic` or `tactics`, `entry`, `transport`, `subscribes`, `publishes` |
 | `[channels.<name>]` | `schema`, `form` (`log`, ...), `description` |
 | `[snapshots.<name>]` | `schema`, `channel` |
-| `[runs.<name>]` | `services`, `tactics`, `channels`, `snapshots` to start together |
+| `[runs.<name>]` | `services`, `tactics`, `channels`, `snapshots` that make up one run; `lllm serve` launches a run that lists exactly one service |
 | `[config]` | `schema` and `defaults` for package settings |
 | `[docs.<name>]` | `path`, `title` |
 | `[examples.<name>]` | `path` or `command` |
@@ -130,12 +135,41 @@ Declared resources are named tables the hub indexes. Each gets a ref,
 | `[requirements.api_keys]` | `NAME = "why it is needed"`, checked by `lllm setup` and `lllm serve` |
 | `[card]` | `summary`, `tags`, `safety`, `latency`, `suggested_commands` |
 
-Every table also accepts `metadata = {...}`; keys that look like secrets are
-rejected.
+The named resource tables, `[config]`, and `[card]` also accept
+`metadata = {...}`. The package ships `lllm.toml` as written, so validation
+rejects raw secret-shaped keys (`api_key`, `token`, `clientSecret`, ...) in
+`metadata`, nested maps included, and in extra keys written directly in those
+tables. References such as `api_key_ref` are allowed. `[config] defaults` and tactic `examples` are
+not checked: cards and the catalog drop secret-shaped keys from them, but the
+package zip keeps them. [Hub Metadata](../reference/hub-metadata.md#rules-for-published-metadata)
+lists the key shapes.
+
+### Entrypoints
 
 Entrypoints are `module:attribute`, imported relative to the package folder.
-A tactic entry may name a `Tactic` class, an instance, a zero-argument factory
-(as `main:create_tactic` in generated projects), or a plain callable.
+A tactic entry may name a `Tactic` class or instance, a factory, or a
+handler. A factory is called once, with no arguments, when the package loads;
+a handler is wrapped with `as_tactic` and called once per input. `lllm serve`
+and AAAX package tactics tell them apart by one rule:
+
+- Any other class is a factory when it can be constructed without arguments.
+- Any other callable is a factory when it takes no parameters, like
+  `main:create_tactic` in generated projects, or when it can be called
+  without arguments and is annotated to return a `Tactic` or a FastAPI or
+  Starlette app.
+- Everything else is a handler: `def greet(name="world")` answers each input
+  instead of being called once at load.
+
+A return annotation that cannot be evaluated at runtime, such as a class
+imported only under `TYPE_CHECKING`, counts when its class name ends in
+`Tactic` or is `FastAPI` or `Starlette`. A `[services.<name>]` entry has no
+handler form: it names an app, or a callable that can be called without
+arguments and builds a FastAPI or Starlette app, a tactic, or a data payload.
+Anything else is a launch error.
+
+Serving keeps a package's modules imported, and packages served in one
+process share `sys.modules`. A module that a tactic imports when it is called
+needs a top-level name no other served package uses.
 
 ## Validation
 
@@ -143,16 +177,19 @@ A tactic entry may name a `Tactic` class, an instance, a zero-argument factory
 lllm hub validate .
 ```
 
-Validation imports declared entrypoints, checks refs and schema links, checks
-that declared files stay inside the package, and checks discovery paths. It
-reports errors (the package cannot be published) and warnings:
+Validation imports declared entrypoints without calling them, checks refs and
+schema links, checks that declared files and discovery folders stay inside
+the package, and rejects secret-shaped metadata keys. It reports errors (the
+package cannot be published) and warnings:
 
 | Code | Level | Meaning |
 | --- | --- | --- |
+| `manifest_load_failed` | error | `lllm.toml` does not parse or fit the manifest, for example a `primary` that is not `section.name`, or `paths` in `[schemas]` |
 | `entrypoint_import_failed` | error | A declared `entry` could not be imported |
-| `primary_missing`, `primary_invalid` | error | `primary` points at nothing |
+| `primary_missing` | error | `primary` names a resource the manifest does not declare |
 | `schema_ref_missing` | error | A tactic's `input`/`output` names no schema |
-| `discovery_path_outside_package` | error | A discovery path escapes the package |
+| `metadata_secret_key` | error | `metadata` or an extra table key holds a raw secret-shaped key |
+| `discovery_path_absolute`, `discovery_path_outside_package` | error | A discovery path, or the folder a section without `paths` falls back to, is absolute, escapes the package, or goes through a symlink |
 | `discovery_path_missing` | warning | A discovery path does not exist |
 | `discovery_section_empty` | warning | A section has no `paths` and no folder: often a typo such as `[tactic.x]` |
 | `dependency_manifest_missing` | warning | A dependency folder has no `lllm.toml` |
