@@ -149,12 +149,17 @@ modules, with a single `lllm` command.
   the archive root instead of under a folder; `install_package()` reads
   both layouts.
 - `TacticProcessor` is at-least-once: an event is acknowledged only after
-  its output is written, so after a failure or an interrupted run the
-  tactic sees the event again and the sink can hold a repeat. Default
-  consumers are `<tactic name>-<source>-processor`, or
-  `<tactic name>-<source>-<kind>-processor` with a kind filter; pass
-  `consumer=` to keep a subscription made under another id, or when the
-  default would contain whitespace, `?` or `#`.
+  its output is written. With the default `errors="raise"`, a failing event
+  stays unacknowledged and the next `process()` call runs it again; with
+  `errors="record"`, it is acknowledged once its error event is written,
+  and is not retried. After an interrupted run the tactic can see an event
+  again, and the sink can hold a repeat.
+- Default `TacticProcessor` consumers are `<tactic name>-<source>-processor`,
+  or `<tactic name>-<source>-<kind>-processor` with a kind filter. A new
+  consumer starts from the channel's first event, so a processor that ran
+  under another id processes the channel's history again unless you pass
+  that id as `consumer=`. Pass `consumer=` also when the default would
+  contain whitespace, `?` or `#`.
 - The shell's `POST /channels/{name}/events` returns 400 and appends
   nothing when `input` is missing or not a JSON object; `{"input": {}}`
   still appends an empty event.
