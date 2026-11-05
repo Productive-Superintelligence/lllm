@@ -4,7 +4,7 @@ import httpx
 import pytest
 from pydantic import BaseModel
 
-from lllm import Resolver, Tactic
+from lllm import Resolver, Tactic, as_tactic
 from fastapi.testclient import TestClient
 
 from lllm.network import AsyncRemoteStore, Event, LocalStore, RemoteStore, TacticProcessor
@@ -100,7 +100,12 @@ def test_processor_errors_raise_without_skipping_later_events(tmp_path):
     with pytest.raises(RuntimeError, match="boom"):
         processor.process()
 
-    assert [event.payload["summary"] for event in processor.process()] == ["AFTER"]
+    # The failing event stays unacknowledged, so the next call retries it
+    # rather than skipping ahead to "after".
+    with pytest.raises(RuntimeError, match="boom"):
+        processor.process()
+    assert store.query_events("summaries") == ()
+    assert store.get_subscription("summarize-processor").cursor == 0
 
 
 def test_processor_can_record_errors_as_events(tmp_path):
@@ -200,3 +205,194 @@ def test_resolver_registers_local_tactics():
     result = resolver.run("lllm://demo/briefs/tactics/summarize", {"text": "hi"})
 
     assert result == Summary(summary="HI", length=2)
+
+
+class Flaky(Tactic[Raw, Summary]):
+    """Fail the first ``failures`` runs, then summarize like ``Summarize``."""
+
+    name = "flaky"
+    input_type = Raw
+    output_type = Summary
+
+    def __init__(self, failures):
+        super().__init__()
+        self.failures = failures
+
+    def _run(self, input_value, *, context=None):
+        if self.failures:
+            self.failures -= 1
+            raise RuntimeError(f"transient failure on {input_value.text}")
+        return Summary(summary=input_value.text.upper(), length=len(input_value.text))
+
+
+def make_remote(local):
+    app_client = TestClient(create_app(local))
+
+    def forward(request):
+        response = app_client.request(
+            request.method,
+            request.url.path,
+            params=request.url.params,
+            content=request.content,
+            headers={"content-type": request.headers.get("content-type", "")},
+        )
+        return httpx.Response(response.status_code, content=response.content)
+
+    return RemoteStore("http://testserver", transport=httpx.MockTransport(forward))
+
+
+def summaries(events):
+    return [event.payload["summary"] for event in events]
+
+
+def test_processor_default_consumer_uses_the_tactic_instance_name(tmp_path):
+    store = make_store(tmp_path)
+    append(store, "Hi")
+
+    def shout(payload: dict) -> dict:
+        return {"text": payload["text"].upper()}
+
+    def whisper(payload: dict) -> dict:
+        return {"text": payload["text"].lower()}
+
+    loud = TacticProcessor(as_tactic(shout), store, source="raw")
+    quiet = TacticProcessor(as_tactic(whisper), store, source="raw")
+    renamed = TacticProcessor(Summarize(name="digest"), store, source="raw")
+
+    assert loud.consumer == "shout-processor"
+    assert quiet.consumer == "whisper-processor"
+    assert renamed.consumer == "digest-processor"
+    # Distinct subscriptions, so every processor sees the event.
+    assert loud.process() == [{"text": "HI"}]
+    assert quiet.process() == [{"text": "hi"}]
+    assert renamed.process() == [Summary(summary="HI", length=2)]
+
+
+def test_processor_rejects_a_consumer_subscribed_to_another_channel(tmp_path):
+    store = make_store(tmp_path)
+    store.create_channel({"name": "other", "form": "log"})
+    TacticProcessor(Summarize(), store, source="raw").process()
+
+    with pytest.raises(ValueError, match="'raw'.*'other'.*consumer="):
+        TacticProcessor(Summarize(), store, source="other").process()
+    with pytest.raises(ValueError, match="consumer="):
+        asyncio.run(TacticProcessor(Summarize(), store, source="other").aprocess())
+
+
+def test_processor_rejects_a_consumer_with_another_kind_filter(tmp_path):
+    store = make_store(tmp_path)
+    TacticProcessor(Summarize(), store, source="raw", kind="message").process()
+
+    for kind in ("note", None):
+        with pytest.raises(ValueError, match="kind filter 'message'.*consumer="):
+            TacticProcessor(Summarize(), store, source="raw", kind=kind).process()
+
+    append(store, "again")
+    resumed = TacticProcessor(Summarize(), store, source="raw", kind="message")
+    assert resumed.process() == [Summary(summary="AGAIN", length=5)]
+
+
+def test_processor_retries_a_failed_event_on_the_next_call(tmp_path):
+    store = make_store(tmp_path)
+    store.append_event(Event(channel="raw", source="t", kind="noise", payload={"text": "x"}))
+    failing = append(store, "boom")
+    append(store, "after")
+    processor = TacticProcessor(
+        Flaky(failures=2), store, source="raw", sink="summaries", kind="message"
+    )
+
+    for _ in range(2):
+        with pytest.raises(RuntimeError, match="transient failure on boom"):
+            processor.process()
+    assert store.get_subscription("flaky-processor").cursor == 0
+    assert store.query_events("summaries") == ()
+
+    outputs = processor.process()
+
+    assert summaries(outputs) == ["BOOM", "AFTER"]
+    assert outputs[0].parent_ids == (failing.id,)
+    assert summaries(store.query_events("summaries")) == ["BOOM", "AFTER"]
+    assert processor.process() == []
+
+
+def test_processor_retries_failed_events_through_remote_stores(tmp_path):
+    local = make_store(tmp_path / "sync")
+    append(local, "boom")
+    append(local, "after")
+    processor = TacticProcessor(
+        Flaky(failures=1), make_remote(local), source="raw", sink="summaries"
+    )
+
+    with pytest.raises(RuntimeError, match="boom"):
+        processor.process()
+    assert summaries(processor.process()) == ["BOOM", "AFTER"]
+
+    async_local = make_store(tmp_path / "async")
+    append(async_local, "boom")
+    append(async_local, "after")
+
+    async def run():
+        transport = httpx.ASGITransport(app=create_app(async_local))
+        remote = AsyncRemoteStore("http://testserver", transport=transport)
+        processor = TacticProcessor(
+            Flaky(failures=1), remote, source="raw", sink="summaries"
+        )
+        with pytest.raises(RuntimeError, match="boom"):
+            await processor.aprocess()
+        return await processor.aprocess()
+
+    assert summaries(asyncio.run(run())) == ["BOOM", "AFTER"]
+    assert summaries(async_local.query_events("summaries")) == ["BOOM", "AFTER"]
+
+
+def test_processor_record_mode_acknowledges_the_failed_event(tmp_path):
+    store = make_store(tmp_path)
+    failing = append(store, "boom")
+    append(store, "fine")
+    processor = TacticProcessor(
+        Flaky(failures=1), store, source="raw", sink="summaries", errors="record"
+    )
+
+    events = processor.process()
+
+    assert [event.kind for event in events] == ["error", "result"]
+    assert events[0].parent_ids == (failing.id,)
+    # Recorded, so acknowledged: the event is not handed to the tactic again.
+    assert processor.process() == []
+
+
+@pytest.mark.parametrize("mode", ["sync", "async"])
+def test_processor_does_not_emit_events_another_worker_acknowledged(tmp_path, mode):
+    store = make_store(tmp_path)
+    append(store, "first")
+    append(store, "second")
+
+    class Raced(Summarize):
+        def _run(self, input_value, *, context=None):
+            if input_value.text == "first":
+                # Another worker on this subscription acknowledges "first" meanwhile.
+                store.pull_subscription("summarize-processor", limit=1)
+            return super()._run(input_value, context=context)
+
+    processor = TacticProcessor(Raced(), store, source="raw", sink="summaries")
+    outputs = processor.process() if mode == "sync" else asyncio.run(processor.aprocess())
+
+    # "first" belongs to the other worker; "second", which this processor's
+    # acknowledgment pulled, is still processed exactly once.
+    assert summaries(outputs) == ["SECOND"]
+    assert summaries(store.query_events("summaries")) == ["SECOND"]
+
+
+def test_processor_process_rejects_async_stores_with_a_clear_error(tmp_path):
+    local = make_store(tmp_path)
+    append(local, "async")
+    remote = AsyncRemoteStore(
+        "http://testserver", transport=httpx.ASGITransport(app=create_app(local))
+    )
+    processor = TacticProcessor(Summarize(), remote, source="raw", sink="summaries")
+
+    with pytest.raises(TypeError, match=r"AsyncRemoteStore.*aprocess\(\)"):
+        processor.process()
+
+    # The rejected call left no half-made state behind.
+    assert summaries(asyncio.run(processor.aprocess())) == ["ASYNC"]
