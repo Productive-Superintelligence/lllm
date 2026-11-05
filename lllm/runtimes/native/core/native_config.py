@@ -660,11 +660,14 @@ class AgentSpec:
         # -- context manager config ----------------------------------------
         cm_raw = raw.pop("context_manager", None)
         if isinstance(cm_raw, dict):
-            # type: null in YAML arrives as None value inside the dict
-            cm_type = cm_raw.get("type")
-            context_manager_cfg = (
-                None if cm_type is None else ContextManagerConfig.from_dict(cm_raw)
-            )
+            # An explicit `type: null` disables context management; a block
+            # that only tunes settings (no `type`) means the default manager.
+            if "type" in cm_raw and cm_raw["type"] is None:
+                context_manager_cfg = None
+            else:
+                context_manager_cfg = ContextManagerConfig.from_dict(
+                    {"type": "default", **cm_raw}
+                )
         else:
             context_manager_cfg = None
 

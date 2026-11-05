@@ -136,3 +136,64 @@ def test_rate_limits_recover_when_the_provider_does(monkeypatch):
     agent.receive("hello")
 
     assert agent.respond().content == "recovered"
+
+
+def test_tool_schemas_follow_type_annotations():
+    from typing import Literal
+
+    from pydantic import BaseModel
+
+    class Point(BaseModel):
+        x: int
+        y: int
+
+    @tool(description="Plot points")
+    def plot(points: list[Point], style: Literal["dot", "line"], title: str | None = None) -> str:
+        return "ok"
+
+    schema = plot.properties
+    assert schema["points"]["type"] == "array"
+    assert schema["points"]["items"]["properties"]["x"] == {"title": "X", "type": "integer"}
+    assert schema["style"]["enum"] == ["dot", "line"]
+    assert plot.required == ["points", "style"]
+    assert plot.strict is False  # optional parameter: strict schemas would be rejected
+
+
+def test_simple_all_required_tools_stay_strict_and_explicit_strict_wins():
+    @tool(description="Add")
+    def add_numbers(a: int, b: int) -> int:
+        return a + b
+
+    @tool(description="Greet", strict=True)
+    def greet(name: str = "you") -> str:
+        return name
+
+    assert add_numbers.strict is True
+    assert add_numbers.properties == {"a": {"type": "integer"}, "b": {"type": "integer"}}
+    assert greet.strict is True
+
+
+def test_tactic_tools_publish_the_tactic_input_schema():
+    from pydantic import BaseModel
+
+    from lllm import Tactic
+    from lllm.runtimes.native import tactic_as_function
+
+    class Query(BaseModel):
+        topic: str
+        depth: int = 1
+
+    class Research(Tactic):
+        name = "research"
+        input_model = Query
+
+        def call(self, task):
+            return f"{task.topic}:{task.depth}"
+
+    as_task = tactic_as_function(Research())
+    as_kwargs = tactic_as_function(Research(), parameter_mode="kwargs")
+
+    assert as_task.properties["task"]["properties"]["depth"]["type"] == "integer"
+    assert as_task.required == ["task"]
+    assert set(as_kwargs.properties) == {"topic", "depth"}
+    assert as_kwargs.required == ["topic"] and as_kwargs.strict is False

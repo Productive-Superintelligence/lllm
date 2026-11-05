@@ -54,6 +54,81 @@ from .services import (
 
 __version__ = "0.2.1"
 
+# The native vocabulary, as in the original ``lllm`` API. Resolved lazily so
+# ``import lllm`` stays light; ``lllm.runtimes.native`` holds the same objects.
+_NATIVE_EXPORTS = {
+    **{
+        name: "lllm.runtimes.native"
+        for name in (
+            "Agent",
+            "AgentSpec",
+            "Dialog",
+            "Function",
+            "FunctionCall",
+            "InferenceHints",
+            "MCP",
+            "Message",
+            "NativeTactic",
+            "Prompt",
+            "Role",
+            "Roles",
+            "Runtime",
+            "parse_agent_configs",
+            "register_prompt",
+            "tactictool",
+            "tool",
+        )
+    },
+    **{
+        name: "lllm.runtimes.native.core.runtime"
+        for name in (
+            "export_package",
+            "get_default_runtime",
+            "get_runtime",
+            "install_package",
+            "list_packages",
+            "load_runtime",
+            "remove_package",
+            "set_default_runtime",
+        )
+    },
+    **{
+        name: "lllm.runtimes.native.core.resource"
+        for name in (
+            "load_config",
+            "load_prompt",
+            "load_proxy",
+            "load_resource",
+            "load_tactic",
+            "load_tool",
+        )
+    },
+    "load_package": "lllm.runtimes.native.core.config",
+    "resolve_config": "lllm.runtimes.native.core.config",
+    "build_tactic": "lllm.runtimes.native.core.tactic",
+    "register_tactic_class": "lllm.runtimes.native.core.tactic",
+    "BaseProxy": "lllm.runtimes.native.proxies",
+    "ProxyManager": "lllm.runtimes.native.proxies",
+    "ProxyRegistrator": "lllm.runtimes.native.proxies",
+    "register_proxy": "lllm.runtimes.native.proxies",
+    "register_invoker": "lllm.runtimes.native.invokers",
+}
+
+
+def __getattr__(name: str):
+    module_name = _NATIVE_EXPORTS.get(name)
+    if module_name is None:
+        raise AttributeError(f"module 'lllm' has no attribute {name!r}")
+    import importlib
+
+    value = getattr(importlib.import_module(module_name), name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    return sorted(set(globals()) | set(_NATIVE_EXPORTS))
+
 __all__ = [
     "CallContext",
     "CallResult",

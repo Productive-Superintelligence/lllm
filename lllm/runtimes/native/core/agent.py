@@ -32,8 +32,10 @@ class Agent:
         agent.switch('execution')
         ...
 
-    For power-user / cross-agent scenarios, ``call(dialog)`` still accepts
-    a raw Dialog directly — but the recommended path is alias-based.
+    ``respond()`` runs the call loop on the active dialog. Every turn is
+    driven by the most recent prompt (its parser, format, and handlers); the
+    agent's own tools stay available on every turn unless that prompt sets
+    ``agent_tools=False``.
 
     Attributes:
         name: The name or role of the agent (e.g., 'assistant', 'coder').
@@ -169,8 +171,10 @@ class Agent:
         Args:
             alias: the source dialog to fork from.
             child_alias: the alias for the new child dialog.
-            last_n: if >0, drop the last n messages from the copy.
-            first_k: if >0, keep the first k messages from the copy. Only used when last_n is >0.
+            last_n: if >0, the child keeps only the last n messages (plus the
+                first k); 0 copies the whole dialog.
+            first_k: when last_n > 0, also keep the first k messages (usually
+                the system prompt).
             switch: if True, switch to the new child dialog after forking.
 
         Raises:

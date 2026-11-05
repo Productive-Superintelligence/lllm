@@ -221,6 +221,65 @@ def _json_type_for_annotation(annotation: Any) -> str:
     return _PY_TYPE_TO_JSON.get(annotation, "string")
 
 
+def _annotation_schema(annotation: Any) -> Dict[str, Any]:
+    """JSON schema for a parameter annotation (lists, enums, models, unions)."""
+
+    try:
+        from pydantic import TypeAdapter
+
+        schema = _inline_refs(TypeAdapter(annotation).json_schema())
+    except Exception:
+        return {"type": _json_type_for_annotation(annotation)}
+    schema.pop("title", None)
+    return schema or {"type": _json_type_for_annotation(annotation)}
+
+
+def _inline_refs(schema: Any, defs: Optional[Dict[str, Any]] = None, depth: int = 0) -> Any:
+    """Replace ``{"$ref": "#/$defs/X"}`` with the definition; drop ``$defs``."""
+
+    if isinstance(schema, dict):
+        defs = {**(defs or {}), **schema.get("$defs", {})}
+        ref = schema.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/$defs/") and depth < 20:
+            target = defs.get(ref.split("/")[-1])
+            if target is not None:
+                extra = {k: v for k, v in schema.items() if k != "$ref"}
+                return _inline_refs({**target, **extra}, defs, depth + 1)
+        return {
+            key: _inline_refs(value, defs, depth)
+            for key, value in schema.items()
+            if key != "$defs"
+        }
+    if isinstance(schema, list):
+        return [_inline_refs(item, defs, depth) for item in schema]
+    return schema
+
+
+def _resolve_strict(
+    strict: Optional[bool], properties: Dict[str, Any], required: List[str]
+) -> bool:
+    """Use strict tool schemas only when the provider can accept them.
+
+    OpenAI-style strict mode needs every parameter required and flat schemas;
+    an explicit ``strict`` always wins.
+    """
+
+    if strict is not None:
+        return _bool_value("strict", strict)
+    if set(required) != set(properties):
+        return False
+    return all(_is_flat_schema(schema) for schema in properties.values())
+
+
+def _is_flat_schema(schema: Any) -> bool:
+    if not isinstance(schema, dict):
+        return False
+    if any(key in schema for key in ("properties", "anyOf", "oneOf", "allOf", "$ref", "default")):
+        return False
+    items = schema.get("items")
+    return items is None or _is_flat_schema(items)
+
+
 def _default_function_call_processor(result: Any, function_call: FunctionCall) -> str:
     return (
         f"Return of calling function {function_call.name} "
@@ -308,7 +367,7 @@ class Function(BaseModel):
         name: Optional[str] = None,
         description: Optional[str] = None,
         prop_desc: Optional[Mapping[str, str]] = None,
-        strict: bool = True,
+        strict: Optional[bool] = None,
         processor: Callable = _default_function_call_processor,
     ) -> Function:
         """
@@ -338,7 +397,6 @@ class Function(BaseModel):
         hints = get_type_hints(fn) if hasattr(fn, "__annotations__") else {}
 
         property_descriptions = _optional_string_mapping("prop_desc", prop_desc)
-        strict_value = _bool_value("strict", strict)
         properties: Dict[str, Any] = {}
         required: List[str] = []
 
@@ -346,7 +404,7 @@ class Function(BaseModel):
             if param_name in ("self", "cls"):
                 continue
             py_type = hints.get(param_name, str)
-            prop: Dict[str, Any] = {"type": _json_type_for_annotation(py_type)}
+            prop: Dict[str, Any] = _annotation_schema(py_type)
 
             # Use default as example in description
             if param_name in property_descriptions:
@@ -366,7 +424,7 @@ class Function(BaseModel):
             description=func_desc,
             properties=properties,
             required=required,
-            strict=strict_value,
+            strict=_resolve_strict(strict, properties, required),
             function=fn,
             processor=processor,
         )
@@ -377,7 +435,7 @@ def tool(
     prop_desc: Optional[Mapping[str, str]] = None,
     *,
     name: Optional[str] = None,
-    strict: bool = True,
+    strict: Optional[bool] = None,
     processor: Callable = _default_function_call_processor,
 ) -> Callable[[Callable], Function]:
     """
@@ -393,7 +451,7 @@ def tool(
         prompt = Prompt(path="bot", prompt="...", function_list=[get_weather])
     """
 
-    strict_value = _bool_value("strict", strict)
+    strict_value = None if strict is None else _bool_value("strict", strict)
 
     def decorator(fn: Callable) -> Function:
         return Function.from_callable(
@@ -1051,10 +1109,15 @@ def tactic_as_function(
     name: str | None = None,
     description: str | None = None,
     parameter_mode: Literal["task", "kwargs"] = "task",
-    strict: bool = True,
+    strict: Optional[bool] = None,
     processor: Callable = _default_function_call_processor,
 ) -> Function:
-    """Expose an LLLM protocol tactic as a native prompt ``Function``."""
+    """Expose an LLLM tactic as a native prompt ``Function``.
+
+    The tool's parameters come from the tactic's published input schema:
+    one ``task`` parameter holding the whole input (``parameter_mode="task"``)
+    or the input model's fields as separate parameters (``"kwargs"``).
+    """
 
     from ...pydantic_ai import tactic_as_tool
 
@@ -1064,11 +1127,20 @@ def tactic_as_function(
         description=description,
         parameter_mode=parameter_mode,
     )
-    return Function.from_callable(
-        callable_tool,
+    input_schema = _inline_refs(tactic.info().input_schema or {})
+    if parameter_mode == "kwargs" and input_schema.get("properties"):
+        properties = copy.deepcopy(input_schema["properties"])
+        required = list(input_schema.get("required", []))
+    else:
+        properties = {"task": input_schema or {"type": "string"}}
+        required = ["task"]
+    return Function(
         name=callable_tool.__name__,
-        description=inspect.getdoc(callable_tool) or description,
-        strict=strict,
+        description=inspect.getdoc(callable_tool) or description or "",
+        properties=properties,
+        required=required,
+        strict=_resolve_strict(strict, properties, required),
+        function=callable_tool,
         processor=processor,
     )
 

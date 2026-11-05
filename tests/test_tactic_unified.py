@@ -216,3 +216,29 @@ def test_top_level_calls_do_not_link_to_each_other():
     leaf("a")
 
     assert leaf("b", return_session=True).sub_tactic_call_count == 0
+
+
+def test_the_native_vocabulary_is_importable_from_lllm():
+    from lllm import (
+        Agent,
+        BaseProxy,
+        Dialog,
+        Prompt,
+        build_tactic,
+        install_package,
+        load_runtime,
+        resolve_config,
+        tool,
+    )
+    from lllm.runtimes import native
+
+    assert Prompt is native.Prompt and Agent is native.Agent and Dialog is native.Dialog
+    assert all(callable(fn) for fn in (build_tactic, install_package, load_runtime, resolve_config, tool))
+    assert BaseProxy.__name__ == "BaseProxy"
+
+
+def test_missing_resources_point_to_load_runtime():
+    from lllm import Runtime
+
+    with pytest.raises(KeyError, match="load_runtime"):
+        Runtime().get("writer/system", resource_type="prompt")

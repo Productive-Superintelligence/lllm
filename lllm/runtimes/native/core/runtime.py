@@ -130,6 +130,12 @@ class Registry:
             if close
             else f" Registered ({len(all_keys)}): {all_keys[:20]}"
         )
+        if not all_keys and not self._discovery_done:
+            hint = (
+                " Nothing has been loaded into this runtime yet: call"
+                " lllm.load_runtime() to discover your lllm.toml package (or"
+                " lllm.load_package(path) for a specific one)."
+            )
         raise KeyError(f"Resource '{key}' not found.{hint}")
 
     def has(self, key: str) -> bool:
