@@ -49,8 +49,8 @@ Call any registered API endpoint. Authentication is handled automatically \
 — never construct raw HTTP requests or hardcode credentials.
 
 ```python
-# Example
-response = CALL_API("fmp/stock/quote", {{"symbol": "AAPL"}})
+# Use an endpoint path exactly as listed in the API directory below
+response = CALL_API("<proxy>/<endpoint path>", {{"param": "value"}})
 print(response)
 ```
 
@@ -101,7 +101,7 @@ You have access to a set of external APIs callable via ``CALL_API``. \
 Authentication is handled automatically — never hardcode credentials.
 
 ```python
-response = CALL_API("fmp/stock/quote", {{"symbol": "AAPL"}})
+response = CALL_API("<proxy>/<endpoint path>", {{"param": "value"}})
 ```
 
 Use `query_api_doc` to retrieve full endpoint documentation before using \

@@ -1,5 +1,6 @@
 import datetime as dt
 import inspect
+import re
 import logging
 from typing import Any, Dict, List, Optional
 
@@ -212,6 +213,108 @@ class BaseProxy:
                 info = self._materialize_endpoint_info(name, method, dict(info))
                 yield name, method, info
 
+    def _routes(self) -> List[tuple]:
+        """``(endpoint_path, compiled_pattern, method, info)`` for every endpoint."""
+
+        routes = []
+        for _attr, method, info in self._endpoint_methods():
+            path = str(info.get("endpoint") or "").strip("/")
+            pattern = re.compile(
+                "".join(
+                    f"(?P<{part[1:-1]}>[^/]+)"
+                    if part.startswith("{") and part.endswith("}")
+                    else re.escape(part)
+                    for part in re.split(r"(\{[^}/]+\})", path)
+                )
+            )
+            routes.append((path, pattern, method, info))
+        return routes
+
+    def resolve_endpoint(self, path: str) -> tuple:
+        """Find the endpoint for a documented path (or an endpoint method name).
+
+        Returns ``(method, endpoint_info, path_params)``. Paths are matched as
+        listed in the API directory, including ``{name}`` placeholders whose
+        values are returned as ``path_params``. Only decorated endpoints can
+        be reached; other attributes of the proxy are never callable.
+        """
+
+        path = path.strip("/")
+        routes = self._routes()
+        for endpoint, _pattern, method, info in routes:
+            if endpoint == path:
+                return method, info, {}
+        for _endpoint, pattern, method, info in routes:
+            match = pattern.fullmatch(path)
+            if match:
+                return method, info, match.groupdict()
+        attr = path.replace("-", "_").replace("/", "_")
+        for name, method, info in self._endpoint_methods():
+            if name == attr:
+                return method, info, {}
+        raise AttributeError(
+            f"No endpoint '{path}'. Use a path from the API directory: "
+            + ", ".join(sorted(endpoint for endpoint, *_ in routes))
+        )
+
+    def call(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+        """Call an endpoint: shape the params, then make the HTTP request.
+
+        The endpoint method receives the params and returns the (possibly
+        adjusted) params to send. Proxies that declare a ``base_url`` then
+        call ``_call_api`` with the full URL, adding the API key as a query
+        parameter (``api_key_name``) or a header (``"*header-name"``).
+        Proxies without a ``base_url``, and tactic endpoints, return the
+        method's result directly.
+        """
+
+        method, info, path_params = self.resolve_endpoint(path)
+        params = {**path_params, **dict(params or {})}
+        if self._callable_attr(method, "_lllm_tactic_endpoint"):
+            return method(params)
+        prepared = method(params)
+        base_url = getattr(self, "base_url", None)
+        if not base_url:
+            return prepared
+        prepared = dict(prepared if isinstance(prepared, dict) else params)
+        endpoint = str(info.get("endpoint") or "").strip("/")
+        for name in re.findall(r"\{([^}/]+)\}", endpoint):
+            value = prepared.pop(name, path_params.get(name))
+            endpoint = endpoint.replace("{" + name + "}", str(value))
+        url = f"{base_url.rstrip('/')}/{endpoint}" if endpoint else base_url
+        headers: Dict[str, Any] = {}
+        key_name = getattr(self, "api_key_name", None)
+        key = getattr(self, "api_key", None)
+        if key_name and key:
+            if key_name.startswith("*"):
+                headers[key_name[1:]] = key
+            else:
+                prepared[key_name] = key
+        return self._call_api(url, prepared, info, headers)
+
+    def _call_api(
+        self, url: str, params: dict, endpoint_info: dict, headers: dict
+    ) -> Any:
+        """Default HTTP call: GET or POST by the endpoint's declared method."""
+
+        from ..utils import call_api, call_api_post
+
+        if (endpoint_info.get("method") or "GET").upper() == "POST":
+            response = call_api_post(url, params, headers, self.use_cache)
+        else:
+            response = call_api(url, params, headers, self.use_cache)
+        remove_keys = endpoint_info.get("remove_keys") or []
+        if remove_keys and isinstance(response, list):
+            response = [
+                {k: v for k, v in item.items() if k not in remove_keys}
+                if isinstance(item, dict)
+                else item
+                for item in response
+            ]
+        elif remove_keys and isinstance(response, dict):
+            response = {k: v for k, v in response.items() if k not in remove_keys}
+        return response
+
     def endpoint_directory(self) -> List[Dict[str, Any]]:
         """
         Return a structured list describing every endpoint exposed by this proxy.
@@ -398,28 +501,38 @@ class ProxyManager:
         return "\n\n".join(sections).strip()
 
     def _resolve(self, endpoint: str) -> tuple[str, str]:
-        if "." in endpoint:
-            parts = endpoint.split(".", 1)
-            return parts[0], parts[1]
+        """Split ``"<proxy>/<endpoint path>"`` (or ``"<proxy>.<method>"``)."""
+
+        if not isinstance(endpoint, str) or not endpoint.strip():
+            raise ValueError("Endpoint must be a non-empty string.")
+        endpoint = endpoint.strip().strip("/")
+        for name in sorted(self.proxies, key=len, reverse=True):
+            if endpoint.startswith(name + "/"):
+                return name, endpoint[len(name) + 1 :]
+            if endpoint.startswith(name + "."):
+                return name, endpoint[len(name) + 1 :]
+        if "." in endpoint and "/" not in endpoint:
+            return tuple(endpoint.split(".", 1))  # type: ignore[return-value]
         path_parts = endpoint.split("/")
         if len(path_parts) < 2:
             raise ValueError(
-                f"Invalid endpoint '{endpoint}'. Use '<proxy>.<method>' or '<proxy>/<method>'."
+                f"Invalid endpoint '{endpoint}'. Use '<proxy>/<endpoint path>' "
+                "as listed in the API directory."
             )
-        return "/".join(path_parts[:-1]), path_parts[-1]
+        return path_parts[0], "/".join(path_parts[1:])
 
     def __call__(self, endpoint: str, *args, **kwargs):
-        """Dispatch ``proxy_path.endpoint_name`` or ``proxy_path/endpoint`` to the proxy."""
-        proxy_name, func_name = self._resolve(endpoint)
+        """Call ``"<proxy>/<endpoint path>"`` with a params dict, e.g. ``CALL_API``."""
+
+        proxy_name, path = self._resolve(endpoint)
         if proxy_name not in self.proxies:
             raise KeyError(
                 f"Proxy '{proxy_name}' not registered. Available: {list(self.proxies.keys())}"
             )
-        proxy = self.proxies[proxy_name]
-        if not hasattr(proxy, func_name):
-            raise AttributeError(f"Proxy '{proxy_name}' has no endpoint '{func_name}'")
-        handler = getattr(proxy, func_name)
-        return handler(*args, **kwargs)
+        params = args[0] if args else kwargs.pop("params", None)
+        if params is None and kwargs:
+            params, kwargs = kwargs, {}
+        return self.proxies[proxy_name].call(path, params)
 
 
 def ProxyRegistrator(

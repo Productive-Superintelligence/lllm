@@ -80,7 +80,7 @@ class JupyterSession:
         _init_code = f"""# INIT CODE (DO NOT REMOVE THIS CELL)
 import sys
 sys.path.append('{_project_root}')
-from ..proxies import ProxyManager
+from lllm.runtimes.native.proxies import ProxyManager
 proxy = ProxyManager(activate_proxies={self.metadata["proxy"]["activate_proxies"]}, cutoff_date={_cutoff_date_str}, deploy_mode={self.metadata["proxy"]["deploy_mode"]})
 CALL_API = proxy.__call__"""
         cell_0_content = self.cells[0].source if self.cells else ""
