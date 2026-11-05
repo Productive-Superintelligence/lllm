@@ -8,8 +8,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from ._copy import copy_boundary_value, metadata_mapping_value
-from ._metadata import is_sensitive_metadata_key as _is_sensitive_metadata_key
+from ..protocol._validation import copy_boundary_value, metadata_mapping_value
+from ..protocol._validation import is_sensitive_metadata_key as _is_sensitive_metadata_key
 from .manifest import require_path_value
 from .refs import validate_resource_ref
 

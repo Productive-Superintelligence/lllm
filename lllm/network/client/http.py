@@ -8,7 +8,7 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from ..core import Artifact, Channel, Event, InvalidPayloadError, Snapshot, Subscription
-from ..core._copy import copy_boundary_value
+from ...protocol._validation import copy_boundary_value
 
 
 class RemoteStoreError(RuntimeError):

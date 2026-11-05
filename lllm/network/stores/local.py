@@ -27,7 +27,7 @@ from ..core import (
     SubscriptionExistsError,
     SubscriptionNotFoundError,
 )
-from ..core._copy import copy_boundary_value
+from ...protocol._validation import copy_boundary_value
 
 ModelT = TypeVar("ModelT", bound=BaseModel)
 

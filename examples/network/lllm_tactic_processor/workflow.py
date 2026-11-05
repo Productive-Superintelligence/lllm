@@ -1,4 +1,4 @@
-"""Compose an LLLM network channel consumer with a local LLLM tactic."""
+"""Run a tactic over channel events with TacticProcessor."""
 
 from __future__ import annotations
 
@@ -8,12 +8,8 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-try:
-    from lllm import Tactic
-except ImportError as exc:  # pragma: no cover - exercised in standalone installs
-    raise RuntimeError("Install lllm to run this composition example.") from exc
-
-from lllm.network import Event, LocalStore
+from lllm import Tactic
+from lllm.network import Event, LocalStore, TacticProcessor
 
 
 class RawMessage(BaseModel):
@@ -38,7 +34,7 @@ class AnalyzeMessage(Tactic[RawMessage, AnalysisMessage]):
 
 
 def run_workflow(store: LocalStore):
-    """Read one raw event through an LLLM tactic and write one analysis event."""
+    """Feed raw events through a tactic and write analysis events."""
 
     store.create_channel(
         {"name": "raw", "schema": "demo.schemas:RawMessage", "form": "log"}
@@ -50,10 +46,14 @@ def run_workflow(store: LocalStore):
             "form": "log",
         }
     )
-    subscription = store.create_subscription(
-        "raw",
+    processor = TacticProcessor(
+        AnalyzeMessage(),
+        store,
+        source="raw",
+        sink="analysis",
         consumer="lllm_tactic_processor",
-        filters={"kind": "message"},
+        kind="message",
+        output_kind="analysis",
     )
     raw = store.append_event(
         Event(
@@ -64,26 +64,12 @@ def run_workflow(store: LocalStore):
             correlation_id="episode-1",
         )
     )
-    tactic = AnalyzeMessage()
-    outputs = []
-    for event in store.pull_subscription(subscription.id):
-        result = tactic.run(event.payload)
-        output = store.append_event(
-            Event(
-                channel="analysis",
-                source="lllm_tactic_processor",
-                kind="analysis",
-                payload=result.model_dump(),
-                correlation_id=event.correlation_id or event.id,
-                parent_ids=(event.id,),
-            )
-        )
-        outputs.append(output)
+    outputs = processor.process()
 
     return {
         "raw": raw,
         "analysis": tuple(outputs),
-        "tactic_info": tactic.info(),
+        "tactic_info": processor.tactic.info(),
     }
 
 

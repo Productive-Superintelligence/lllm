@@ -18,7 +18,7 @@ from pydantic import (
     model_validator,
 )
 
-from ._copy import (
+from ..protocol._validation import (
     copy_boundary_value,
     mapping_field_value,
     mapping_sequence_field_value,
@@ -124,7 +124,7 @@ class TacticResource(_MetadataModel):
     @field_validator("examples", mode="before")
     @classmethod
     def _validate_examples(cls, value: Any) -> Any:
-        return mapping_sequence_field_value("examples", value)
+        return mapping_sequence_field_value("examples", value, allow_tuple=True)
 
     @model_validator(mode="after")
     def _validate_metadata_tokens(self) -> "TacticResource":

@@ -40,10 +40,29 @@ def public_boundary_value(value: Any) -> Any:
     return copy_boundary_value(value)
 
 
+_SCHEMA_METADATA_KEYS = frozenset({"schema", "input_schema", "output_schema"})
+
+
 def is_sensitive_metadata_key(key: object) -> bool:
+    """Whether a metadata key names a secret (api keys, passwords, tokens, ...)."""
+
+    return _is_sensitive_metadata_key(key, match_token_part=False)
+
+
+def is_public_sensitive_metadata_key(key: object) -> bool:
+    """Stricter check for public payloads: any ``token`` word part counts."""
+
+    return _is_sensitive_metadata_key(key, match_token_part=True)
+
+
+def is_schema_metadata_key(key: object) -> bool:
+    return isinstance(key, str) and normalize_metadata_key(key) in _SCHEMA_METADATA_KEYS
+
+
+def _is_sensitive_metadata_key(key: object, *, match_token_part: bool) -> bool:
     if not isinstance(key, str):
         return False
-    normalized = _normalize_metadata_key(key)
+    normalized = normalize_metadata_key(key)
     if not normalized:
         return False
     compact = normalized.replace("_", "")
@@ -66,6 +85,8 @@ def is_sensitive_metadata_key(key: object) -> bool:
         return True
     if compact == "cookie" or compact.endswith("cookie"):
         return True
+    if match_token_part and "token" in parts:
+        return True
     if normalized == "token" or normalized.endswith("_token"):
         return True
     if compact == "token" or compact.endswith("token"):
@@ -73,7 +94,7 @@ def is_sensitive_metadata_key(key: object) -> bool:
     return False
 
 
-def _normalize_metadata_key(key: str) -> str:
+def normalize_metadata_key(key: str) -> str:
     with_word_breaks = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", key)
     with_word_breaks = re.sub(r"([a-z0-9])([A-Z])", r"\1_\2", with_word_breaks)
     return re.sub(r"[^a-z0-9]+", "_", with_word_breaks.lower()).strip("_")
@@ -98,15 +119,26 @@ def mapping_field_value(label: str, value: Any) -> dict[str, Any]:
         raise ValueError(str(exc)) from exc
 
 
-def mapping_sequence_value(label: str, value: Any) -> list[dict[str, Any]]:
-    if not isinstance(value, list):
+def mapping_sequence_value(
+    label: str,
+    value: Any,
+    *,
+    allow_tuple: bool = False,
+) -> list[dict[str, Any]]:
+    accepted = (list, tuple) if allow_tuple else list
+    if not isinstance(value, accepted):
         raise TypeError(f"{label} must be a list.")
-    return _copy_string_keyed_mapping_sequence(label, value)
+    return _copy_string_keyed_mapping_sequence(label, list(value))
 
 
-def mapping_sequence_field_value(label: str, value: Any) -> list[dict[str, Any]]:
+def mapping_sequence_field_value(
+    label: str,
+    value: Any,
+    *,
+    allow_tuple: bool = False,
+) -> list[dict[str, Any]]:
     try:
-        return mapping_sequence_value(label, value)
+        return mapping_sequence_value(label, value, allow_tuple=allow_tuple)
     except TypeError as exc:
         raise ValueError(str(exc)) from exc
 

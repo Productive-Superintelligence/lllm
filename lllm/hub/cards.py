@@ -7,7 +7,7 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from ._metadata import (
+from ..protocol._validation import (
     is_public_sensitive_metadata_key as _is_sensitive_metadata_key,
 )
 from .endpoints import (

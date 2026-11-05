@@ -5,7 +5,7 @@ import sys
 import textwrap
 from pathlib import Path
 
-from lllm.hub._metadata import (
+from lllm.protocol._validation import (
     is_public_sensitive_metadata_key,
     is_schema_metadata_key,
     is_sensitive_metadata_key,

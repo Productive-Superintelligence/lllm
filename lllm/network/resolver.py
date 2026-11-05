@@ -11,7 +11,8 @@ from urllib.parse import unquote, urlparse
 
 from .client import AsyncRemoteStore, RemoteStore
 from .core import NetworkError
-from .core._copy import copy_boundary_value
+from ..protocol._validation import copy_boundary_value
+from ..protocol.refs import parse_resource_ref
 from .stores import LocalStore
 
 _CHANNEL_CONFIG_REF_SECTIONS = {"channels", "snapshots"}
@@ -42,57 +43,16 @@ class ChannelRef:
     name: str = field(init=False)
 
     def __post_init__(self) -> None:
-        if not isinstance(self.value, str) or not self.value.strip():
-            raise ChannelRefError("Channel ref must be a non-empty string.")
-        parsed = urlparse(self.value)
-        if parsed.scheme != "lllm":
-            raise ChannelRefError(f"Channel ref must use lllm:// scheme: {self.value}")
-        if parsed.params or parsed.query or parsed.fragment:
-            raise ChannelRefError(
-                "Channel ref must not include params, query, or fragment: "
-                f"{self.value}"
-            )
-        org = parsed.netloc
-        raw_parts = parsed.path.split("/")
-        if (
-            len(raw_parts) != 4
-            or raw_parts[0] != ""
-            or any(not part for part in raw_parts[1:])
-        ):
-            raise ChannelRefError(
-                "Channel ref must have shape "
-                "lllm://org/package/channels/name or "
-                f"lllm://org/package/snapshots/name: {self.value}"
-            )
-        package, resource_kind, name = raw_parts[1:]
-        if not org or not package.strip() or not name.strip():
-            raise ChannelRefError(f"Channel ref contains an empty segment: {self.value}")
-        for segment in (org, package, resource_kind, name):
-            decoded_segment = unquote(segment)
-            if any(ch.isspace() for ch in decoded_segment):
-                raise ChannelRefError(
-                    "Channel ref contains a whitespace-bearing segment: "
-                    f"{self.value}"
-                )
-        for segment in (org, package, name):
-            decoded_segment = unquote(segment)
-            if (
-                decoded_segment in {".", ".."}
-                or any(ch in decoded_segment for ch in "/:\\")
-                or "%" in segment
-            ):
-                raise ChannelRefError(
-                    f"Channel ref contains an invalid segment: {self.value}"
-                )
-        if resource_kind not in _CHANNEL_CONFIG_REF_SECTIONS:
-            raise ChannelRefError(
-                "Channel ref must point at /channels/ or /snapshots/, "
-                f"got /{resource_kind}/: {self.value}"
-            )
-        object.__setattr__(self, "org", org)
-        object.__setattr__(self, "package", package)
-        object.__setattr__(self, "resource_kind", resource_kind)
-        object.__setattr__(self, "name", name)
+        ref = parse_resource_ref(
+            self.value,
+            noun="Channel ref",
+            sections=("channels", "snapshots"),
+            error=ChannelRefError,
+        )
+        object.__setattr__(self, "org", ref.org)
+        object.__setattr__(self, "package", ref.package)
+        object.__setattr__(self, "resource_kind", ref.resource_kind)
+        object.__setattr__(self, "name", ref.name)
 
     @classmethod
     def parse(cls, value: str | "ChannelRef") -> "ChannelRef":

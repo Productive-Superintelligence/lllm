@@ -12,7 +12,6 @@ FORBIDDEN_CORE_IMPORT_PREFIXES = (
     "fastapi",
     "httpx",
     "lllm.hub",
-    "lllm.protocol",
     "lllm.runtimes",
     "lllm.services",
     "lllm.shell",
@@ -26,8 +25,8 @@ ALLOWED_CORE_IMPORTS = {
     "__future__",
     "collections.abc",
     "copy",
+    "lllm.protocol._validation",
     "pydantic",
-    "lllm.network.core._copy",
     "lllm.network.core.errors",
     "lllm.network.core.models",
     "time",
@@ -90,6 +89,8 @@ def _resolve_import_from(node: ast.ImportFrom) -> str:
         return f"lllm.network.core.{node.module}" if node.module else "lllm.network.core"
     if node.level == 2:
         return f"lllm.network.{node.module}" if node.module else "lllm.network"
+    if node.level == 3:
+        return f"lllm.{node.module}" if node.module else "lllm"
     return f"<outside-network>.{node.module}" if node.module else "<outside-network>"
 
 

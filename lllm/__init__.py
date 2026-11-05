@@ -35,6 +35,7 @@ from .sandbox import (
     SandboxedTactic,
     sandbox_tactic,
 )
+from .resolver import Resolver
 from .services import (
     EndpointSpec,
     RemoteTactic,
@@ -78,6 +79,7 @@ __all__ = [
     "TacticLoadError",
     "TacticRef",
     "TacticRefError",
+    "Resolver",
     "TacticResolver",
     "TacticServiceError",
     "TacticUnsupportedError",

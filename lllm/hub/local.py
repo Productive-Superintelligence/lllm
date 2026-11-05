@@ -7,7 +7,7 @@ import shutil
 from pathlib import Path, PureWindowsPath
 from typing import Any
 
-from ._metadata import (
+from ..protocol._validation import (
     is_public_sensitive_metadata_key as _is_sensitive_metadata_key,
     is_schema_metadata_key as _is_schema_metadata_key,
 )

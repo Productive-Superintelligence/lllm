@@ -6,7 +6,7 @@ from collections.abc import Callable, Sequence
 from typing import Any
 
 from .core import Channel, Snapshot
-from .core._copy import copy_boundary_value
+from ..protocol._validation import copy_boundary_value
 from .server.endpoints import StoreEndpointSpec, endpoint_specs
 
 

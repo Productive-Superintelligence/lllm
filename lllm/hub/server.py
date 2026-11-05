@@ -10,7 +10,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field, StrictBool, StrictStr, field_validator
 
-from ._metadata import (
+from ..protocol._validation import (
     is_public_sensitive_metadata_key as _is_sensitive_metadata_key,
     is_schema_metadata_key as _is_schema_metadata_key,
 )

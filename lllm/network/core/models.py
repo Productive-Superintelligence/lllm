@@ -8,7 +8,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, model_validator
 
-from ._copy import copy_boundary_value
+from ...protocol._validation import copy_boundary_value
 
 ChannelForm = Literal[
     "log",
