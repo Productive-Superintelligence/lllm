@@ -107,7 +107,7 @@ def test_package_directory_loads_manifest_resources_and_tactic(tmp_path: Path):
         "/tactics/echo/run",
         json={
             "input": {"text": "hello"},
-            "context": {"request": "pkg-test"},
+            "context": {"metadata": {"request": "pkg-test"}},
         },
     )
 
@@ -188,7 +188,7 @@ def test_tactic_only_package_does_not_import_the_network_module(
         "/tactics/echo/run",
         json={
             "input": {"text": "hello"},
-            "context": {"request": "standalone"},
+            "context": {"metadata": {"request": "standalone"}},
         },
     )
 
@@ -382,3 +382,54 @@ description = "Local run."
         encoding="utf-8",
     )
     return root
+
+
+def test_mounted_tactics_get_the_full_service_surface():
+    from pydantic import BaseModel
+
+    from lllm import Tactic
+
+    class Text(BaseModel):
+        text: str
+
+    class Shout(Tactic[Text, Text]):
+        name = "shout"
+        input_type = Text
+        output_type = Text
+
+        def _run(self, input_value, *, context=None):
+            return Text(text=input_value.text.upper())
+
+    strategy = Strategy("served").add_tactic(Shout())
+    strategy.tactic("plain", handler=lambda input_value: {"seen": input_value})
+    client = TestClient(create_strategy_app(strategy))
+
+    assert [r["name"] for r in client.get("/tactics").json()] == ["shout", "plain"]
+    assert client.get("/tactics/shout/info").json()["name"] == "shout"
+    assert client.post("/tactics/shout/run", json={"input": {"text": "hi"}}).json()[
+        "output"
+    ] == {"text": "HI"}
+    # Streaming errors come back in the services error envelope.
+    stream = client.post("/tactics/shout/stream", json={"input": {"text": "go"}})
+    assert stream.status_code == 400
+    assert stream.json()["detail"]["error"]["type"] == "TacticUnsupportedError"
+    assert client.get("/tactics/shout/info").json()["description"] == ""
+    assert client.post("/tactics/plain/run", json={"input": 3}).json()["output"] == {
+        "seen": 3
+    }
+
+
+def test_package_channels_are_served_by_the_network_store_api(tmp_path: Path):
+    package = _write_demo_package(tmp_path / "analysis-pack")
+    strategy = load_strategy(package)
+    client = TestClient(create_strategy_app(strategy))
+
+    client.post(
+        "/channels/events/events",
+        json={"input": {"payload": {"text": "via shell"}, "kind": "record"}},
+    )
+
+    assert strategy.store is not None
+    assert [c["name"] for c in client.get("/network/channels").json()] == ["events"]
+    events = client.get("/network/events", params={"channel": "events"}).json()
+    assert [event["payload"] for event in events] == [{"text": "via shell"}]

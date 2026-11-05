@@ -7,6 +7,7 @@ from collections.abc import Mapping
 from pathlib import Path
 from typing import Any
 
+from ..network.resources import open_package_store
 from .models import StrategyResource
 from .strategy import Handler, Strategy
 
@@ -81,7 +82,6 @@ def add_package(
             )
         )
 
-    tactic_handlers: dict[str, Handler] = {}
     for name, resource in manifest.schemas.items():
         strategy.add_resource(
             _strategy_resource(
@@ -95,9 +95,10 @@ def add_package(
             )
         )
 
+    tactic_handlers: dict[str, PackageTactic] = {}
     for name, resource in manifest.tactics.items():
         handler = (
-            _tactic_handler(resource.entry, base_dir=base_dir, name=name)
+            PackageTactic(resource.entry, base_dir=base_dir, name=name)
             if bind
             else None
         )
@@ -123,10 +124,12 @@ def add_package(
         )
 
     channel_store = (
-        _channel_store(manifest, store=store)
+        open_package_store(manifest, store=store)
         if bind and manifest.channels
         else None
     )
+    if channel_store is not None:
+        strategy.attach_store(channel_store)
     for name, resource in manifest.channels.items():
         handler = (
             _channel_handler(channel_store, name)
@@ -288,25 +291,39 @@ def _strategy_resource(
     )
 
 
-def _tactic_handler(entrypoint: str, *, base_dir: Path, name: str) -> Handler:
-    async def handler(
+class PackageTactic:
+    """A package tactic entrypoint, imported on first use.
+
+    Building or inspecting a strategy never imports package code; serving it
+    (or invoking the resource) does.
+    """
+
+    def __init__(self, entrypoint: str, *, base_dir: Path, name: str) -> None:
+        self.entrypoint = entrypoint
+        self.base_dir = base_dir
+        self.name = name
+        self._tactic: Any = None
+
+    def load(self) -> Any:
+        if self._tactic is None:
+            from ..runtimes import as_tactic
+            from ..protocol import Tactic
+
+            value = _load_tactic(self.entrypoint, base_dir=self.base_dir, name=self.name)
+            if not isinstance(value, Tactic):
+                if not callable(value):
+                    raise TypeError(f"Tactic entrypoint is not callable: {self.entrypoint}")
+                value = as_tactic(value, name=self.name)
+            self._tactic = value
+        return self._tactic
+
+    async def __call__(
+        self,
         input_value: Any = None,
         *,
         context: Mapping[str, Any] | None = None,
     ) -> Any:
-        tactic = _load_tactic(entrypoint, base_dir=base_dir, name=name)
-        if hasattr(tactic, "arun") and callable(tactic.arun):
-            return await tactic.arun(input_value, context=_call_context(context))
-        if hasattr(tactic, "run") and callable(tactic.run):
-            return tactic.run(input_value, context=_call_context(context))
-        if callable(tactic):
-            result = _call_plain_tactic(tactic, input_value, context=context)
-            if inspect.isawaitable(result):
-                return await result
-            return result
-        raise TypeError(f"Tactic entrypoint is not callable: {entrypoint}")
-
-    return handler
+        return await self.load().arun(input_value, context=_call_context(context))
 
 
 def _load_tactic(entrypoint: str, *, base_dir: Path, name: str) -> Any:
@@ -334,30 +351,6 @@ def _load_tactic(entrypoint: str, *, base_dir: Path, name: str) -> Any:
     if callable(value):
         return as_tactic(value, name=name)
     return value
-
-
-def _channel_store(manifest: Any, *, store: str | Path | None) -> Any:
-    from ..network import ChannelExistsError, LocalStore
-
-    base_dir = manifest.base_dir or Path.cwd()
-    store_root = (
-        Path(store).expanduser() if store is not None else base_dir / ".lllm" / "network"
-    )
-    local_store = LocalStore(store_root)
-    for name, channel in manifest.channels.items():
-        try:
-            local_store.create_channel(
-                {
-                    "name": name,
-                    "schema": channel.schema,
-                    "form": channel.form,
-                    "description": channel.description,
-                    "metadata": channel.metadata,
-                }
-            )
-        except ChannelExistsError:
-            pass
-    return local_store
 
 
 def _channel_handler(store: Any, name: str) -> Handler:

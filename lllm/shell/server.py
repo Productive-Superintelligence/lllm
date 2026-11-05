@@ -1,4 +1,11 @@
-"""FastAPI server for shell strategies."""
+"""FastAPI server for shell strategies.
+
+A strategy app is assembled from lllm's own services: every tactic resource is
+mounted as a full tactic service at ``/tactics/<name>/`` (``run``, ``stream``,
+``info``, and custom endpoints), and a strategy with a channel store mounts the
+network store API at ``/network/``. The shell adds its own surface on top:
+``/strategy``, ``/resources``, channel shortcuts, and the strategy ``/run``.
+"""
 
 from __future__ import annotations
 
@@ -7,6 +14,7 @@ from typing import Any
 from fastapi import FastAPI, HTTPException
 from fastapi.encoders import jsonable_encoder
 
+from ..services import create_tactic_app
 from .models import StrategyRunRequest, StrategyRunResponse
 from .strategy import Strategy
 
@@ -14,10 +22,12 @@ from .strategy import Strategy
 def create_strategy_app(strategy: Strategy) -> FastAPI:
     """Expose a strategy as a FastAPI application."""
 
+    from .. import __version__
+
     app = FastAPI(
         title=strategy.name,
         description=strategy.description,
-        version="0.2.2",
+        version=__version__,
     )
     app.state.shell_strategy = strategy
 
@@ -48,10 +58,6 @@ def create_strategy_app(strategy: Strategy) -> FastAPI:
             for resource in strategy.resources
             if resource.kind == "tactic"
         ]
-
-    @app.post("/tactics/{name}/run", response_model=StrategyRunResponse)
-    async def run_tactic(name: str, request: StrategyRunRequest) -> StrategyRunResponse:
-        return await _invoke(strategy, name, request, endpoint="tactic")
 
     @app.get("/channels")
     async def channels() -> list[dict[str, Any]]:
@@ -106,6 +112,12 @@ def create_strategy_app(strategy: Strategy) -> FastAPI:
     ) -> StrategyRunResponse:
         return await _invoke(strategy, name, request, endpoint="resource")
 
+    for name, tactic in strategy.tactics().items():
+        app.mount(f"/tactics/{name}", create_tactic_app(tactic))
+    if strategy.store is not None:
+        from ..network.server import create_app as create_store_app
+
+        app.mount("/network", create_store_app(strategy.store))
     return app
 
 

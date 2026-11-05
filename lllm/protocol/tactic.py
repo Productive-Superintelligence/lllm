@@ -195,8 +195,7 @@ class Tactic(Generic[InputT, OutputT]):
             description=self._description
             if self._description is not None
             else self.description
-            or inspect.getdoc(type(self))
-            or "",
+            or _user_docstring(type(self)),
             input_schema=export_json_schema(self.input_type),
             output_schema=export_json_schema(self.output_type),
             capabilities=tuple(sorted(self.capabilities())),
@@ -362,3 +361,16 @@ def _examples_list(value: Any) -> list[dict[str, Any]]:
     if value is None:
         return []
     return mapping_sequence_value("examples", value)
+
+
+def _user_docstring(cls: type) -> str:
+    """The nearest docstring from a user-defined class, never lllm's own."""
+
+    for klass in cls.__mro__:
+        module = getattr(klass, "__module__", "") or ""
+        if module == "lllm" or module.startswith("lllm."):
+            break
+        doc = klass.__dict__.get("__doc__")
+        if doc:
+            return inspect.cleandoc(doc)
+    return ""

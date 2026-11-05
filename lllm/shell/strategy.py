@@ -7,6 +7,7 @@ from collections.abc import Awaitable, Callable, Mapping
 from pathlib import Path
 from typing import Any
 
+from ..protocol import Tactic
 from .models import ResourceKind, StrategyInfo, StrategyResource
 
 Handler = Callable[..., Any | Awaitable[Any]]
@@ -28,8 +29,11 @@ class Strategy:
         self.description = description
         self._resources: dict[str, StrategyResource] = {}
         self._handlers: dict[str, Handler] = {}
+        self._tactics: dict[str, Any] = {}
         self._runner = runner
         self.metadata = dict(metadata or {})
+        #: Channel store backing this strategy's channel resources, if any.
+        self.store: Any = None
         for resource in resources:
             self.add_resource(resource)
 
@@ -60,9 +64,62 @@ class Strategy:
         if resource.name in self._resources:
             raise ValueError(f"Strategy resource already exists: {resource.name}")
         self._resources[resource.name] = resource
-        if handler is not None:
-            self._handlers[resource.name] = handler
+        if handler is None:
+            return self
+        if resource.kind == "tactic":
+            self._tactics[resource.name] = handler
+        if isinstance(handler, Tactic):
+            handler = _tactic_handler(handler)
+        self._handlers[resource.name] = handler
         return self
+
+    def add_tactic(
+        self,
+        tactic: Tactic[Any, Any],
+        *,
+        name: str | None = None,
+        ref: str | None = None,
+        description: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> "Strategy":
+        """Mount an lllm tactic; it is served at ``/tactics/<name>/``."""
+
+        info = tactic.info()
+        return self.add_resource(
+            StrategyResource(
+                kind="tactic",
+                name=name or info.name,
+                ref=ref or info.package_ref,
+                description=info.description if description is None else description,
+                metadata={"runtime": info.runtime_kind, **dict(metadata or {})},
+            ),
+            handler=tactic,
+        )
+
+    def attach_store(self, store: Any) -> "Strategy":
+        """Back channel resources with a store; it is served at ``/network/``."""
+
+        self.store = store
+        return self
+
+    def tactics(self) -> dict[str, Tactic[Any, Any]]:
+        """Tactic resources as lllm tactics.
+
+        Tactic objects are returned as-is, lazy package tactics are loaded, and
+        plain handler functions are wrapped with :func:`lllm.as_tactic`.
+        """
+
+        from ..runtimes import as_tactic
+
+        loaded: dict[str, Tactic[Any, Any]] = {}
+        for name, value in self._tactics.items():
+            if isinstance(value, Tactic):
+                loaded[name] = value
+            elif callable(getattr(value, "load", None)):
+                loaded[name] = value.load()
+            else:
+                loaded[name] = as_tactic(value, name=name)
+        return loaded
 
     def resource(
         self,
@@ -167,6 +224,20 @@ async def _call(
     if inspect.isawaitable(result):
         return await result
     return result
+
+
+def _tactic_handler(tactic: Tactic[Any, Any]) -> Handler:
+    async def handler(
+        input_value: Any = None,
+        *,
+        context: Mapping[str, Any] | None = None,
+    ) -> Any:
+        from ..protocol import CallContext
+
+        call_context = None if context is None else CallContext(metadata=dict(context))
+        return await tactic.arun(input_value, context=call_context)
+
+    return handler
 
 
 def _signature(handler: Handler) -> inspect.Signature | None:

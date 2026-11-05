@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from pathlib import Path
 from typing import Any
 
-from .core import Channel, Snapshot
+from .core import Channel, ChannelExistsError, Snapshot
 from ..protocol._validation import copy_boundary_value
 from .server.endpoints import StoreEndpointSpec, endpoint_specs
 
@@ -58,3 +59,31 @@ def _endpoint_metadata(spec: StoreEndpointSpec) -> dict[str, Any]:
         "description": spec.description,
         "tags": list(spec.tags),
     }
+
+
+def open_package_store(manifest: Any, *, store: str | Path | None = None) -> Any:
+    """Open the local store for a package and create its declared channels.
+
+    ``store`` defaults to ``.lllm/network`` inside the package folder. Channels
+    declared in ``[channels.<name>]`` that already exist are left as they are.
+    """
+
+    from .stores import LocalStore
+
+    base_dir = manifest.base_dir or Path.cwd()
+    root = Path(store).expanduser() if store is not None else base_dir / ".lllm" / "network"
+    local_store = LocalStore(root)
+    for name, channel in manifest.channels.items():
+        try:
+            local_store.create_channel(
+                {
+                    "name": name,
+                    "schema": channel.schema,
+                    "form": channel.form,
+                    "description": channel.description,
+                    "metadata": channel.metadata,
+                }
+            )
+        except ChannelExistsError:
+            pass
+    return local_store

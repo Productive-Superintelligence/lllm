@@ -170,28 +170,10 @@ def _tactic_app(entry: str, *, base_dir: Path, name: str) -> Any:
 
 
 def _channel_app(manifest: Any, *, store: str | Path | None) -> Any:
-    from .network import ChannelExistsError, LocalStore
+    from .network.resources import open_package_store
     from .network.server import create_app
 
-    base_dir = manifest.base_dir or Path.cwd()
-    store_root = (
-        Path(store).expanduser() if store is not None else base_dir / ".lllm" / "network"
-    )
-    local_store = LocalStore(store_root)
-    for name, channel in manifest.channels.items():
-        try:
-            local_store.create_channel(
-                {
-                    "name": name,
-                    "schema": channel.schema,
-                    "form": channel.form,
-                    "description": channel.description,
-                    "metadata": channel.metadata,
-                }
-            )
-        except ChannelExistsError:
-            pass
-    return create_app(local_store)
+    return create_app(open_package_store(manifest, store=store))
 
 
 def _coerce_entrypoint_app(value: Any, *, label: str) -> Any:

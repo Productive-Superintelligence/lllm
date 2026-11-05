@@ -931,3 +931,23 @@ def _assert_import_while_blocking(
     )
 
     assert result.returncode == 0, result.stderr
+
+
+def test_tactic_description_uses_user_docstrings_only():
+    class Undocumented(Tactic[EchoInput, EchoOutput]):
+        name = "undocumented"
+        input_type = EchoInput
+        output_type = EchoOutput
+
+        def _run(self, input_value, *, context=None):
+            return input_value
+
+    class Documented(Undocumented):
+        """Echo the text back."""
+
+    class Inherits(Documented):
+        pass
+
+    assert Undocumented().info().description == ""
+    assert Documented().info().description == "Echo the text back."
+    assert Inherits().info().description == "Echo the text back."
