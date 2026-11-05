@@ -5,7 +5,10 @@ import json
 import os
 import subprocess
 import sys
-import tomllib
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10
+    import tomli as tomllib
 from pathlib import Path
 
 import httpx
@@ -531,6 +534,8 @@ def _run_generated_service_app(project_path, package_name):
 @pytest.mark.parametrize("template", ["minimal", "pipeline", "proxy", "research", "service"])
 def test_native_project_templates_render_and_pass_their_smoke_test(tmp_path, template):
     import runpy
+
+    pytest.importorskip("litellm", reason="native templates need lllm-core[native]")
 
     result = create_project(template, f"{template}-app", directory=tmp_path)
 
