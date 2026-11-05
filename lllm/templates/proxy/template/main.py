@@ -10,6 +10,7 @@ from lllm import ProxyManager, build_tactic, load_runtime, resolve_config  # noq
 
 
 def print_catalog() -> None:
+    load_runtime(str(PROJECT_ROOT / "lllm.toml"))
     manager = ProxyManager(activate_proxies=["sample"])
     print(manager.retrieve_api_docs())
 

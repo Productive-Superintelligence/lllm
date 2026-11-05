@@ -3,10 +3,14 @@ import inspect
 import re
 import logging
 from typing import Any, Dict, List, Optional
+from urllib.parse import quote
 
 from ..core.runtime import Registry, Runtime, _select_runtime
 
 logger = logging.getLogger(__name__)
+
+# A ``{name}`` placeholder in an endpoint path, e.g. ``companies/{ticker}``.
+_PLACEHOLDER = re.compile(r"\{([^}/]+)\}")
 
 
 class BaseProxy:
@@ -219,14 +223,10 @@ class BaseProxy:
         routes = []
         for _attr, method, info in self._endpoint_methods():
             path = str(info.get("endpoint") or "").strip("/")
-            pattern = re.compile(
-                "".join(
-                    f"(?P<{part[1:-1]}>[^/]+)"
-                    if part.startswith("{") and part.endswith("}")
-                    else re.escape(part)
-                    for part in re.split(r"(\{[^}/]+\})", path)
-                )
-            )
+            # Placeholders become unnamed groups, so any placeholder name works
+            # (``{series-id}`` is not a valid regex group name).
+            literals = _PLACEHOLDER.split(path)[::2]
+            pattern = re.compile("([^/]+)".join(map(re.escape, literals)))
             routes.append((path, pattern, method, info))
         return routes
 
@@ -244,10 +244,11 @@ class BaseProxy:
         for endpoint, _pattern, method, info in routes:
             if endpoint == path:
                 return method, info, {}
-        for _endpoint, pattern, method, info in routes:
+        for endpoint, pattern, method, info in routes:
             match = pattern.fullmatch(path)
             if match:
-                return method, info, match.groupdict()
+                names = _PLACEHOLDER.findall(endpoint)
+                return method, info, dict(zip(names, match.groups()))
         attr = path.replace("-", "_").replace("/", "_")
         for name, method, info in self._endpoint_methods():
             if name == attr:
@@ -268,6 +269,10 @@ class BaseProxy:
         without ``base_url``, e.g. an SDK client) receive the endpoint path.
         Proxies with neither, and tactic endpoints, return the method's result
         directly.
+
+        ``{name}`` placeholders in the endpoint path are filled from the
+        params, each value URL-encoded as a single path segment. A missing
+        value, ``.`` or ``..`` raises ``ValueError``.
         """
 
         method, info, path_params = self.resolve_endpoint(path)
@@ -280,10 +285,18 @@ class BaseProxy:
         if not base_url and not own_transport:
             return prepared
         prepared = dict(prepared if isinstance(prepared, dict) else params)
-        endpoint = str(info.get("endpoint") or "").strip("/")
-        for name in re.findall(r"\{([^}/]+)\}", endpoint):
+        template = str(info.get("endpoint") or "").strip("/")
+        endpoint = template
+        for name in set(_PLACEHOLDER.findall(template)):
             value = prepared.pop(name, path_params.get(name))
-            endpoint = endpoint.replace("{" + name + "}", str(value))
+            # Each value fills exactly one path segment, so the request (and
+            # the API key it carries) cannot leave the documented endpoint.
+            if value is None or str(value) in ("", ".", ".."):
+                raise ValueError(
+                    f"Endpoint '{template}' needs a value for '{name}' "
+                    f"(got {value!r})."
+                )
+            endpoint = endpoint.replace("{" + name + "}", quote(str(value), safe=""))
         if not base_url:
             # SDK-backed proxies (e.g. Exa) send requests and handle auth in
             # their own _call_api; they get the endpoint path, not a URL.
