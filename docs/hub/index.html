@@ -4,8 +4,9 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LLLM Hub</title>
-    <!-- Hub configuration (see src/main.js). Empty API = static catalog only. -->
-    <meta name="lllm-hub-api" content="" />
+    <!-- Hub configuration (see src/main.js). The live API is the LLLM Hub service on Cloud Run;
+         when it is unreachable the app falls back to data/catalog.json. -->
+    <meta name="lllm-hub-api" content="https://psiweb-ipvtodvkeq-uc.a.run.app/api" />
     <meta name="lllm-hub-site" content="/" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
