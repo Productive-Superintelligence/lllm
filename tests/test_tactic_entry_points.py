@@ -1,0 +1,602 @@
+"""Native Tactic entry points honor every way to write a tactic."""
+
+import asyncio
+import logging
+import threading
+
+import pytest
+from fastapi.testclient import TestClient
+from pydantic import BaseModel
+
+from lllm import CallContext, Tactic, TacticEvent, TacticUnsupportedError
+from lllm.services import create_tactic_app
+
+
+class Question(BaseModel):
+    text: str
+
+
+async def _ccall(tactic, tasks, **kwargs):
+    return sorted([item async for item in tactic.ccall(tasks, **kwargs)])
+
+
+# -- T1: a _run() hook works through the native entry points -----------------
+
+
+def _run_hook_tactic(seen):
+    class Upper(Tactic):
+        name = "upper"
+
+        def _run(self, input_value, *, context=None):
+            seen.append(context)
+            return input_value.upper()
+
+    return Upper()
+
+
+def test_run_hook_tactics_work_through_every_native_entry_point():
+    tactic = _run_hook_tactic([])
+
+    session = tactic("a", return_session=True)
+
+    assert {"call", "acall"} <= tactic.capabilities()
+    assert tactic("a") == "A"
+    assert (session.state, session.delivery) == ("success", "A")
+    assert asyncio.run(tactic.acall("b")) == "B"
+    assert tactic.bcall(["c", "d"]) == ["C", "D"]
+    assert asyncio.run(_ccall(tactic, ["e", "f"])) == [(0, "E"), (1, "F")]
+    assert tactic.run("g") == "G"
+
+
+def test_run_hook_receives_the_call_context():
+    seen = []
+    tactic = _run_hook_tactic(seen)
+    context = CallContext(trace_id="t-1")
+
+    tactic("a", context=context)
+    asyncio.run(tactic.acall("b", context=context))
+    tactic.bcall(["c"], context=context)
+    tactic("d")
+
+    assert seen[:3] == [context, context, context]
+    assert all(item is context for item in seen[:3])
+    # Like run(), a call without a context still hands the hook a CallContext.
+    assert isinstance(seen[3], CallContext)
+
+
+def test_tactics_without_a_program_still_raise_instead_of_recursing():
+    class Empty(Tactic):
+        name = "empty"
+
+    for call in (
+        lambda: Empty()("x"),
+        lambda: Empty().run("x"),
+        lambda: asyncio.run(Empty().acall("x")),
+    ):
+        with pytest.raises(TacticUnsupportedError, match=r"call\(\) or _run\(\)"):
+            call()
+
+
+# -- T2: an _arun() hook is a python tactic that also runs synchronously -----
+
+
+class AsyncUpper(Tactic):
+    name = "async-upper"
+
+    async def _arun(self, input_value, *, context=None):
+        await asyncio.sleep(0)
+        return f"{input_value.upper()}|{getattr(context, 'trace_id', None)}"
+
+
+def test_arun_hook_tactics_report_python_and_run_synchronously():
+    tactic = AsyncUpper()
+
+    assert AsyncUpper.runtime_kind == "python"
+    assert tactic.info().runtime_kind == "python"
+    assert tactic.run("a", context=CallContext(trace_id="t-1")) == "A|t-1"
+    assert tactic("b") == "B|None"
+    assert tactic.bcall(["c"]) == ["C|None"]
+    assert asyncio.run(tactic.acall("d")) == "D|None"
+
+
+def test_arun_hook_runs_from_sync_code_inside_a_running_loop():
+    async def main():
+        return AsyncUpper().run("a")
+
+    assert asyncio.run(main()) == "A|None"
+
+
+def test_arun_awaits_the_arun_hook_directly():
+    seen = {}
+
+    class WhereAmI(Tactic):
+        name = "where-am-i"
+
+        async def _arun(self, input_value, *, context=None):
+            seen["hook"] = (threading.get_ident(), asyncio.get_running_loop())
+            return input_value
+
+    async def main():
+        seen["caller"] = (threading.get_ident(), asyncio.get_running_loop())
+        return await WhereAmI().arun("x", context=CallContext(trace_id="t-2"))
+
+    assert asyncio.run(main()) == "x"
+    assert seen["hook"] == seen["caller"]
+
+
+def test_runtime_kind_follows_the_overridden_hooks():
+    class RunHook(Tactic):
+        def _run(self, input_value, *, context=None):
+            return input_value
+
+    class Program(Tactic):
+        def call(self, task):
+            return task
+
+    class ProgramWithAsyncHook(Tactic):
+        def call(self, task):
+            return task
+
+        async def _arun(self, input_value, *, context=None):
+            return input_value
+
+    class AgentsWithAsyncHook(Tactic):
+        agent_group = ["writer"]
+
+        async def _arun(self, input_value, *, context=None):
+            return input_value
+
+    assert RunHook.runtime_kind == "python"
+    assert Program.runtime_kind == "native"
+    assert ProgramWithAsyncHook.runtime_kind == "native"
+    assert AgentsWithAsyncHook.runtime_kind == "native"
+
+
+# -- T3: an async call() program is awaited -----------------------------------
+
+
+class AsyncCall(Tactic):
+    name = "async-call"
+
+    async def call(self, task):
+        await asyncio.sleep(0)
+        return task.upper()
+
+
+def test_async_call_programs_are_awaited_on_every_entry_point():
+    tactic = AsyncCall()
+
+    assert tactic("a") == "A"
+    assert tactic.run("b") == "B"
+    assert tactic("c", return_session=True).delivery == "C"
+    assert asyncio.run(tactic.arun("d")) == "D"
+    assert asyncio.run(tactic.acall("e")) == "E"
+    assert tactic.bcall(["f", "g"]) == ["F", "G"]
+    assert asyncio.run(_ccall(tactic, ["h", "i"])) == [(0, "H"), (1, "I")]
+
+
+def test_async_call_runs_from_sync_code_inside_a_running_loop():
+    async def main():
+        return AsyncCall().run("a"), AsyncCall()("b")
+
+    assert asyncio.run(main()) == ("A", "B")
+
+
+def test_async_call_failures_propagate_and_are_recorded():
+    failures = []
+
+    class Recorder:
+        def on_tactic_failure(self, *, session, exception, **_):
+            failures.append((session.state, exception))
+
+    class AsyncFailing(Tactic):
+        name = "async-failing"
+
+        async def call(self, task):
+            await asyncio.sleep(0)
+            raise ValueError("async failure")
+
+    with pytest.raises(ValueError, match="async failure"):
+        AsyncFailing(observer=Recorder())("x")
+
+    assert [(state, type(exc)) for state, exc in failures] == [("failure", ValueError)]
+
+
+class Leaf(Tactic):
+    name = "leaf"
+
+    def call(self, task):
+        return task.upper()
+
+
+class AsyncParent(Tactic):
+    name = "async-parent"
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.leaf = Leaf()
+
+    async def call(self, task):
+        await asyncio.sleep(0)
+        return self.leaf(task) + self.leaf(task)
+
+
+def test_sub_tactic_calls_inside_an_async_call_roll_up():
+    async def inside_a_loop():
+        return AsyncParent()("y", return_session=True)
+
+    sessions = [AsyncParent()("x", return_session=True), asyncio.run(inside_a_loop())]
+
+    assert [s.delivery for s in sessions] == ["XX", "YY"]
+    assert [s.sub_tactic_call_count for s in sessions] == [2, 2]
+
+
+@pytest.mark.parametrize("entry_point", ["acall", "arun", "ccall"])
+def test_async_entry_points_do_not_block_the_event_loop(entry_point):
+    gate = threading.Event()
+
+    class Waits(Tactic):
+        name = "waits"
+
+        async def call(self, task):
+            # Only a task on the caller's event loop can open the gate.
+            return task if gate.wait(timeout=5) else "loop was blocked"
+
+    async def main():
+        async def open_gate():
+            await asyncio.sleep(0)
+            gate.set()
+
+        opener = asyncio.create_task(open_gate())
+        tactic = Waits()
+        if entry_point == "ccall":
+            result = (await _ccall(tactic, ["ok"]))[0][1]
+        else:
+            result = await getattr(tactic, entry_point)("ok")
+        await opener
+        return result
+
+    assert asyncio.run(main()) == "ok"
+
+
+# -- T4: an overridden events() is what aevents() and /stream serve -----------
+
+
+class Countdown(Tactic):
+    name = "countdown"
+    input_model = Question
+
+    def call(self, task):
+        return task.text
+
+    def events(self, task, *, context=None):
+        yield TacticEvent(kind="progress", data=task.text)
+        yield task.text.upper()
+        yield {"trace_id": context.trace_id}
+
+
+def test_overridden_events_are_served_by_aevents():
+    async def collect():
+        context = CallContext(trace_id="t-3")
+        return [event async for event in Countdown().aevents({"text": "go"}, context=context)]
+
+    events = asyncio.run(collect())
+
+    assert all(isinstance(event, TacticEvent) for event in events)
+    assert [(event.kind, event.data) for event in events] == [
+        ("progress", "go"),
+        ("message", "GO"),
+        ("message", {"trace_id": "t-3"}),
+    ]
+
+
+def test_overridden_events_are_served_by_the_stream_route():
+    client = TestClient(create_tactic_app(Countdown()))
+
+    response = client.post(
+        "/stream", json={"input": {"text": "served"}, "context": {"trace_id": "t-4"}}
+    )
+
+    assert response.status_code == 200
+    assert '"data": "SERVED"' in response.text
+    assert '"trace_id": "t-4"' in response.text
+    assert '"kind": "error"' not in response.text
+
+
+def test_events_without_a_context_parameter_are_served():
+    class Plain(Tactic):
+        name = "plain-events"
+
+        def call(self, task):
+            return task
+
+        def events(self, task):
+            yield task
+
+    async def collect():
+        return [event.data async for event in Plain().aevents("x")]
+
+    assert asyncio.run(collect()) == ["x"]
+
+
+def test_events_capability_tracks_overrides():
+    class CallOnly(Tactic):
+        def call(self, task):
+            return task
+
+    class StreamOnly(CallOnly):
+        def stream(self, task, *, context=None):
+            yield task
+
+    class EventsOnly(CallOnly):
+        def events(self, task):
+            yield task
+
+    class AeventsOnly(CallOnly):
+        async def aevents(self, input_value, *, context=None):
+            yield TacticEvent(data=input_value)
+
+    assert "events" not in CallOnly().capabilities()
+    assert "events" not in StreamOnly().capabilities()
+    assert "stream" in StreamOnly().capabilities()
+    assert "events" in EventsOnly().capabilities()
+    assert "events" in AeventsOnly().capabilities()
+
+
+# -- T5: a failing call() is logged without a traceback ------------------------
+
+
+def test_failures_log_without_a_traceback_and_keep_it_at_debug(caplog):
+    failures = []
+
+    class Recorder:
+        def on_tactic_failure(self, *, session, exception, **_):
+            failures.append(session)
+
+    class Failing(Tactic):
+        name = "failing"
+
+        def call(self, task):
+            raise ValueError("bad input")
+
+    caplog.set_level(logging.DEBUG, logger="lllm.runtimes.native.core.tactic")
+    with pytest.raises(ValueError, match="bad input"):
+        Failing(observer=Recorder())("x")
+
+    records = [r for r in caplog.records if r.name == "lllm.runtimes.native.core.tactic"]
+    failed = [r for r in records if "failed" in r.getMessage()]
+    tracebacks = [r for r in records if r.exc_info]
+
+    assert not [r for r in records if r.levelno >= logging.WARNING]
+    assert [(r.levelno, r.getMessage()) for r in failed] == [
+        (logging.INFO, "Tactic 'failing' failed: ValueError: bad input")
+    ]
+    assert [(r.levelno, r.exc_info[0]) for r in tracebacks] == [(logging.DEBUG, ValueError)]
+    assert failures[0].state == "failure"
+    assert "ValueError: bad input" in failures[0].error_traceback
+
+
+# -- Programs are dispatched, so hand-backs fail fast instead of recursing ----
+
+
+def test_call_on_a_hook_tactic_points_at_the_entry_points():
+    tactic = _run_hook_tactic([])
+
+    with pytest.raises(TacticUnsupportedError, match=r"implements _run\(\) instead of call\(\)"):
+        tactic.call("a")
+
+
+class SuperRun(Tactic):
+    name = "super-run"
+
+    def _run(self, input_value, *, context=None):
+        return super()._run(input_value, context=context)
+
+
+class SelfCall(Tactic):
+    name = "self-call"
+
+    def _run(self, input_value, *, context=None):
+        return self.call(input_value)
+
+
+class SuperArun(Tactic):
+    name = "super-arun"
+
+    async def _arun(self, input_value, *, context=None):
+        return await super()._arun(input_value, context=context)
+
+
+class ExecutorHandBack(Tactic):
+    name = "executor-hand-back"
+
+    async def _arun(self, input_value, *, context=None):
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(None, lambda: Tactic._run(self, input_value))
+
+
+@pytest.mark.parametrize("cls", [SuperRun, SelfCall, SuperArun, ExecutorHandBack])
+@pytest.mark.parametrize(
+    "entry",
+    ["call", "run", "arun", "acall", "bcall", "ccall"],
+)
+def test_hooks_handing_their_call_back_raise_at_once(cls, entry):
+    tactic = cls()
+    calls = {
+        "call": lambda: tactic("x"),
+        "run": lambda: tactic.run("x"),
+        "arun": lambda: asyncio.run(tactic.arun("x")),
+        "acall": lambda: asyncio.run(tactic.acall("x")),
+        "bcall": lambda: tactic.bcall(["x"]),
+        "ccall": lambda: asyncio.run(_ccall(tactic, ["x"])),
+    }
+    with pytest.raises(TacticUnsupportedError):
+        calls[entry]()
+
+
+def test_a_served_hand_back_is_a_client_error():
+    client = TestClient(create_tactic_app(SuperRun()))
+
+    response = client.post("/run", json={"input": "x"})
+
+    assert response.status_code == 400
+
+
+class Fact(Tactic):
+    name = "fact"
+
+    def _run(self, n, *, context=None):
+        return 1 if n <= 1 else n * self(n - 1)
+
+
+class Stage(Tactic):
+    name = "stage"
+
+    def __init__(self, k, nxt=None):
+        super().__init__()
+        self.k = k
+        object.__setattr__(self, "nxt", nxt)
+
+    def _run(self, items, *, context=None):
+        items = items + [self.k]
+        return self.nxt(items) if self.nxt is not None else items
+
+
+def test_hooks_may_recurse_and_chain_like_any_program():
+    assert Fact()(20) == 2432902008176640000
+    assert Fact().run(20) == 2432902008176640000
+
+    head = None
+    for k in reversed(range(40)):
+        head = Stage(k, head)
+    assert head([]) == list(range(40))
+    assert head.run([]) == list(range(40))
+
+
+def test_a_hook_runs_on_the_instance_for_run_and_on_a_call_copy_otherwise():
+    class Counter(Tactic):
+        name = "counter"
+
+        def _run(self, input_value, *, context=None):
+            self.hits = getattr(self, "hits", 0) + 1
+            return self.hits
+
+    tactic = Counter()
+    assert tactic.run("x") == 1
+    assert tactic.run("x") == 2
+    # Native entry points run each call on a copy (fresh agents per call).
+    assert tactic("x") == 3
+    assert tactic.hits == 2
+
+
+# -- Subclass declarations, session names, and tactic names -------------------
+
+
+class QA(BaseModel):
+    a: int
+
+
+class QB(BaseModel):
+    b: int
+
+
+def test_a_subclass_input_model_overrides_the_inherited_one():
+    class Base(Tactic):
+        name = "base"
+        input_model = QA
+
+        def call(self, task):
+            return task
+
+    class Child(Base):
+        name = "child"
+        input_model = QB
+
+    assert Child.input_type is QB and Base.input_type is QA
+    assert Child()({"b": 1}) == QB(b=1)
+    assert Child().run({"b": 2}) == QB(b=2)
+
+
+def test_an_explicit_runtime_kind_is_inherited():
+    class Graph(Tactic):
+        runtime_kind = "graph"
+
+        def call(self, task):
+            return task
+
+    class SubGraph(Graph):
+        pass
+
+    class Hooked(Tactic):
+        def _run(self, input_value, *, context=None):
+            return input_value
+
+    class HookedProgram(Hooked):
+        def call(self, task):
+            return task
+
+    assert SubGraph.runtime_kind == "graph"
+    assert (Hooked.runtime_kind, HookedProgram.runtime_kind) == ("python", "native")
+
+
+def test_inputs_that_cannot_be_dumped_still_get_a_session_name():
+    class Image(BaseModel):
+        data: bytes
+
+    class Size(Tactic):
+        name = "size"
+        input_model = Image
+
+        def call(self, task):
+            return len(task.data)
+
+    png = b"\x89PNG\r\n\x1a\n\xff\xfe"
+    assert Size().run({"data": png}) == len(png)
+    assert Size()({"data": png}) == len(png)
+
+
+def test_enum_names_are_normalized():
+    import enum
+
+    class Names(str, enum.Enum):
+        SUMMARIZER = "summarizer"
+
+    class Plain(enum.Enum):
+        WRITER = "writer"
+
+    class Summarizer(Tactic):
+        name = Names.SUMMARIZER
+
+        def call(self, task):
+            return task
+
+    assert Summarizer().tactic_name == "summarizer"
+    assert Summarizer(name=Plain.WRITER).tactic_name == "writer"
+    assert Summarizer().info().name == "summarizer"
+
+
+def test_sessions_use_the_constructor_name():
+    class Leaf(Tactic):
+        name = "leaf"
+
+        def call(self, task):
+            return task
+
+    class Parent(Tactic):
+        name = "parent"
+
+        def __init__(self):
+            super().__init__()
+            self.first = Leaf(name="summarizer")
+            self.second = Leaf(name="critic")
+
+        def call(self, task):
+            return [self.first(task), self.second(task)]
+
+    session = Parent()("x", return_session=True)
+
+    assert Leaf(name="summarizer")("x", return_session=True).tactic_name == "summarizer"
+    assert {name: len(runs) for name, runs in session.sub_tactic_sessions.items()} == {
+        "summarizer": 1,
+        "critic": 1,
+    }

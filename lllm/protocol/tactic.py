@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from enum import Enum
 import inspect
 import time
 import traceback
@@ -170,6 +171,8 @@ class Tactic(Generic[InputT, OutputT]):
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
         name_value = name if name is not None else self.name or type(self).__name__
+        if isinstance(name_value, Enum):  # registries accept Enum names
+            name_value = name_value.value
         self._name = path_segment_value(name_value, "name")
         self._description = optional_text_value(description, "description")
         self.package_ref = optional_tactic_ref_value(

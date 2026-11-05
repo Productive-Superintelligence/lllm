@@ -28,6 +28,7 @@ from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import (
     Any,
+    ClassVar,
     Dict,
     List,
     Literal,
@@ -41,7 +42,8 @@ from typing import (
 from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from ....protocol.errors import TacticUnsupportedError
-from ....protocol.tactic import InputT, OutputT
+from ....protocol.events import TacticEvent
+from ....protocol.tactic import InputT, OutputT, _call_context
 from ....protocol.tactic import Tactic as _ProtocolTactic
 
 if TYPE_CHECKING:
@@ -142,7 +144,10 @@ def _task_to_string(task: Any) -> str:
     if isinstance(task, str):
         return task
     if isinstance(task, BaseModel):
-        return task.model_dump_json()
+        try:
+            return task.model_dump_json()
+        except Exception:  # e.g. bytes that are not UTF-8
+            return repr(task)
     return repr(task)
 
 
@@ -334,7 +339,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
     (``input_type``/``output_type``, or the ``input_model``/``output_model``
     aliases), and exposes ``run``/``arun``/``info`` so it can be served,
     streamed, packaged, and used as a tool by any runtime. Subclasses may
-    implement the protocol hook ``_run`` instead of ``call``.
+    implement the protocol hook ``_run`` (or ``_arun``) instead of ``call``.
     """
 
     name: Optional[str] = None
@@ -345,6 +350,11 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
     runtime_kind = "native"
     #: Names of agents built from ``agent_configs`` for every call.
     agent_group: Optional[List[str]] = None
+    #: The method the native entry points (``tactic(x)``, ``acall``,
+    #: ``bcall``, ``ccall``) run: ``call`` when a subclass writes one, else
+    #: its protocol hook (``_run``, then ``_arun``). Set per subclass.
+    _native_program: ClassVar[str] = "call"
+    _runtime_kind_declared: ClassVar[bool] = False
 
     # -- Optional registration --------------------------------------------
 
@@ -356,16 +366,34 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         **kwargs,
     ):
         super().__init_subclass__(**kwargs)
-        if "runtime_kind" not in cls.__dict__:
-            # A tactic that only implements the protocol hook is plain Python;
-            # one that writes a call() program runs on the native runtime.
-            writes_program = cls.call is not Tactic.call or bool(cls.agent_group)
-            protocol_only = cls._run is not Tactic._run and not writes_program
+        writes_call = cls.call is not Tactic.call
+        writes_run = cls._run is not Tactic._run
+        writes_arun = cls._arun is not Tactic._arun
+        if writes_call or not (writes_run or writes_arun):
+            cls._native_program = "call"
+        else:
+            cls._native_program = "_run" if writes_run else "_arun"
+        if "runtime_kind" in cls.__dict__:
+            cls._runtime_kind_declared = True
+        elif not cls._runtime_kind_declared:
+            # A tactic that only implements the protocol hooks (_run/_arun) is
+            # plain Python; one that writes a call() program runs on the
+            # native runtime. An explicit runtime_kind is inherited as is.
+            protocol_only = cls._native_program != "call" and not cls.agent_group
             cls.runtime_kind = "python" if protocol_only else "native"
-        if getattr(cls, "input_type", None) is None and cls.input_model is not None:
-            cls.input_type = cls.input_model
-        if getattr(cls, "output_type", None) is None and cls.output_model is not None:
-            cls.output_type = cls.output_model
+        # input_model/output_model alias input_type/output_type; a class's own
+        # declaration wins over the types it inherits.
+        for model_attr, type_attr in (
+            ("input_model", "input_type"),
+            ("output_model", "output_type"),
+        ):
+            model = getattr(cls, model_attr, None)
+            if model is None:
+                continue
+            if model_attr in cls.__dict__ and type_attr not in cls.__dict__:
+                setattr(cls, type_attr, model)
+            elif getattr(cls, type_attr, None) is None:
+                setattr(cls, type_attr, model)
         if (
             register
             and (runtime is not None or registry is not None)
@@ -424,8 +452,12 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
     def capabilities(self) -> set[str]:
         """Protocol surfaces plus the native ``call``/``acall`` entry points."""
 
+        cls = type(self)
         supported = super().capabilities() | {"call", "acall"}
-        if type(self).events is not Tactic.events:
+        # This class overrides aevents() to serve events(), so the protocol's
+        # check always sees an override; judge "events" against this class.
+        supported.discard("events")
+        if cls.events is not Tactic.events or cls.aevents is not Tactic.aevents:
             supported.add("events")
         return supported
 
@@ -481,8 +513,19 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
     # -- Core execution ---------------------------------------------------
 
     def call(self, task: Any, **kwargs) -> Any:
-        """The tactic's program. Override this (or the protocol hook ``_run``)."""
+        """The tactic's program. Override this, or the protocol hook ``_run``.
 
+        ``tactic(task)``, ``acall``, ``bcall`` and ``ccall`` run ``call()``
+        when a subclass writes it and its ``_run()`` (or ``_arun()``) hook
+        otherwise, so both styles work through every entry point.
+        """
+
+        program = type(self)._native_program
+        if program != "call":
+            raise TacticUnsupportedError(
+                f"{type(self).__name__} implements {program}() instead of call(), "
+                "so call() is not available; run it with tactic(task), run() or arun()."
+            )
         raise TacticUnsupportedError(
             f"{type(self).__name__} must implement call() or _run()."
         )
@@ -492,11 +535,72 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
 
         raise TacticUnsupportedError(f"{type(self).__name__} does not support events().")
 
+    async def aevents(
+        self, input_value: Any, *, context: Any = None, **kwargs: Any
+    ) -> Any:
+        """Yield the events of an overridden :meth:`events`, else of ``astream()``."""
+
+        if type(self).events is Tactic.events:
+            async for event in super().aevents(input_value, context=context, **kwargs):
+                yield event
+            return
+        context = _call_context(context)
+        # Validate like run() does, so events() receives the typed input.
+        validated = self.validate_input(input_value)
+        if _accepts_context(type(self).events):
+            kwargs.setdefault("context", context)
+        for item in self.events(validated, **kwargs):
+            yield item if isinstance(item, TacticEvent) else TacticEvent(data=item)
+
+    def run(
+        self,
+        input_value: Any,
+        *,
+        context: Any = None,
+        return_trace: bool = False,
+        **kwargs: Any,
+    ) -> Any:
+        """Run the tactic synchronously through the validated boundary.
+
+        A tactic that only implements ``_arun()`` runs ``arun()`` to
+        completion, so it has a sync entry point too.
+        """
+
+        if type(self)._native_program == "_arun":
+            return _resolve_awaitable(
+                self.arun(
+                    input_value, context=context, return_trace=return_trace, **kwargs
+                )
+            )
+        return super().run(
+            input_value, context=context, return_trace=return_trace, **kwargs
+        )
+
     def _run(self, input_value: Any, *, context: Any = None, **kwargs: Any) -> Any:
-        """Protocol hook: run :meth:`call` inside a native call session."""
+        """Protocol hook: run :meth:`call` inside a native call session.
+
+        The native hooks never call each other's overrides: a subclass hook
+        that hands its call back (``super()._run()``) reaches ``call()``,
+        which raises, so any recursion goes through a public entry point.
+        """
 
         kwargs.pop("return_session", None)
-        return self._execute(input_value, context=context, validate=False, **kwargs)
+        return self._execute(
+            input_value, context=context, validate=False, program="call", **kwargs
+        )
+
+    async def _arun(
+        self, input_value: Any, *, context: Any = None, **kwargs: Any
+    ) -> Any:
+        """Protocol hook: run the sync program off the event loop."""
+
+        if type(self)._native_program == "_arun":
+            # Reached only through super()._arun() from an _arun() hook: there
+            # is no sync program to fall back to.
+            raise TacticUnsupportedError(
+                f"{type(self).__name__} must implement call() or _run()."
+            )
+        return await asyncio.to_thread(self._run, input_value, context=context, **kwargs)
 
     def _copy_for_call(self) -> "Tactic":
         ctx = copy.copy(self)
@@ -575,9 +679,10 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         return_session: bool = False,
         context: Any = None,
         validate: bool = True,
+        program: Optional[str] = None,
         **kwargs,
     ) -> Any:
-        tactic_name = self.name or type(self).__name__
+        tactic_name = self.tactic_name
         if session_name is None:
             task_str = _task_to_string(task)
             task_hash = hashlib.md5(task_str.encode()).hexdigest()[:8]
@@ -612,6 +717,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                 validate=validate,
                 observer=observer,
                 tactic_name=tactic_name,
+                program=program or type(self)._native_program,
                 **kwargs,
             )
         finally:
@@ -632,6 +738,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         validate: bool,
         observer: Any,
         tactic_name: str,
+        program: str = "call",
         **kwargs: Any,
     ) -> Any:
         ctx = self
@@ -646,9 +753,15 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         ) as observer_span:
             try:
                 validated_task = ctx.validate_input(task) if validate else task
-                if context is not None and _accepts_context(type(ctx).call):
-                    kwargs.setdefault("context", context)
-                result = ctx.call(validated_task, **kwargs)
+                if program == "call":
+                    if context is not None and _accepts_context(type(ctx).call):
+                        kwargs.setdefault("context", context)
+                    result = ctx.call(validated_task, **kwargs)
+                else:
+                    hook = getattr(ctx, program)
+                    result = hook(validated_task, context=_call_context(context), **kwargs)
+                # An async call() (or an _arun() hook) returns an awaitable.
+                result = _resolve_awaitable(result)
                 result = ctx.validate_output(result) if validate else result
                 session.success(result)
                 _notify_tactic_observer(
@@ -681,11 +794,13 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
                     tags=tags,
                     metadata=metadata,
                 )
-                logger.error(
-                    "Tactic '%s' failed: %s",
-                    tactic_name,
-                    e,
-                    exc_info=True,
+                # The exception reaches the caller and the session and observer
+                # record it, so keep the traceback out of the default logs.
+                logger.info(
+                    "Tactic '%s' failed: %s: %s", tactic_name, type(e).__name__, e
+                )
+                logger.debug(
+                    "Tactic '%s' failure traceback:", tactic_name, exc_info=True
                 )
                 raise
         return result
@@ -904,3 +1019,27 @@ def _accepts_context(fn: Any) -> bool:
         parameter.kind is inspect.Parameter.VAR_KEYWORD
         for parameter in parameters.values()
     )
+
+
+def _resolve_awaitable(value: Any) -> Any:
+    """Return ``value``, first running it to completion if it is awaitable.
+
+    Uses ``asyncio.run`` when no event loop is running in this thread;
+    otherwise runs it on its own loop in a worker thread, so the running loop
+    is never re-entered. The worker carries the current context, so the
+    active session still records sub-tactic calls.
+    """
+
+    if not inspect.isawaitable(value):
+        return value
+
+    async def wait() -> Any:
+        return await value
+
+    try:
+        asyncio.get_running_loop()
+    except RuntimeError:
+        return asyncio.run(wait())
+    run_in_context = contextvars.copy_context().run
+    with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+        return pool.submit(run_in_context, asyncio.run, wait()).result()
