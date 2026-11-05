@@ -337,7 +337,10 @@ How the context reaches your code:
 - `call()` gets `context=` when its signature declares `context` (or
   `**kwargs`). Under `run()` it is a `CallContext`; under `tactic(task)` it is
   `None` unless the caller passes `context=`.
-- `context` must be a `CallContext` instance. A dict raises `TypeError`.
+- Pass a `CallContext`. Anything else, such as a dict, raises `TypeError` from
+  `run()` and `arun()`, and from `tactic(task)`, `acall`, `bcall`, and `ccall`
+  when the program is a `_run()` or `_arun()` hook. Those four pass a `call()`
+  program the value unchecked: a dict arrives as a dict.
 
 ```python
 class WhoAsked(Tactic):
@@ -444,10 +447,12 @@ print(shout.info().model_dump_json(indent=2))
 | `examples`, `metadata` | Whatever you pass to the constructor. |
 
 The constructor keywords `name`, `description`, `package_ref`, `service_ref`,
-`examples`, and `metadata` work on every tactic. `/info` and `lllm inspect`
-drop secret-shaped metadata keys such as `api_key`, `token`, `password`, and
-`cookie` while keeping references such as `api_key_ref`. Even so, keep secrets
-out of metadata.
+`examples`, and `metadata` work on every tactic except `RemoteTactic`, which
+takes only `name` and `metadata` and fills in `service_ref` and
+`metadata["url"]` from its URL. `/info` and `lllm inspect` drop secret-shaped
+metadata keys such as `api_key`, `token`, `password`, and `cookie` while
+keeping references such as `api_key_ref`. Even so, keep secrets out of
+metadata.
 
 ## Errors
 
@@ -457,7 +462,7 @@ out of metadata.
 | `TacticUnsupportedError` | The tactic lacks the requested capability: no `call()` or `_run()`, `call()` on a tactic that implements `_run()` instead, or `stream()` on a tactic that does not stream. |
 | `TacticRefError` | An `lllm://` tactic ref is malformed or not bound. |
 | `RemoteTacticError` | A remote service answered with an error; see [Services](services.md#calling-a-service-from-python). |
-| `TypeError` | `context` is not a `CallContext`, or `return_trace` is not a bool. |
+| `TypeError` | `context` is not a `CallContext` where one is required (see [CallContext](#callcontext)), or `return_trace` is not a bool. |
 
 ```text
 LLLMError (RuntimeError)

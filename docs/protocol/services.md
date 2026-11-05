@@ -393,9 +393,13 @@ Things to know:
   (ignoring a trailing `/run`, `/stream`, or `/info`), such as `shout` in
   `.../tactics/shout`, or else the host and port, so `http://127.0.0.1:8000`
   is named `127.0.0.1-8000`.
-- With `input_type` set, input is validated locally before anything is sent.
-  With `output_type` set, the response is validated into that type; without it
-  you get the JSON as-is.
+- `run()` and `arun()` validate the input against `input_type` before anything
+  is sent, and validate the response into `output_type`; without `output_type`
+  you get the JSON as-is. `stream()`, `astream()`, and `aevents()` send the
+  input as given and do not validate what comes back. Bad input fails on the
+  service and arrives as its `error` event ([Streaming](#streaming)):
+  `stream()` and `astream()` yield that event's data like any other item, and
+  `aevents()` yields the event with `kind="error"`.
 - The context travels in the envelope, so ids, tags, and metadata reach the
   remote tactic.
 - `info()` is local (`runtime_kind` is `"http"`); `fetch_info()` asks the
@@ -404,8 +408,8 @@ Things to know:
   httpx transports, which is how tests call an app in-process; see
   [Refs and Composition](refs.md#test-against-an-in-process-service).
 
-Service errors raise `RemoteTacticError`, with the structured fields as
-attributes:
+An error response (status 400 or above) raises `RemoteTacticError`, with the
+structured fields as attributes:
 
 ```python
 from lllm import RemoteTacticError
@@ -477,12 +481,17 @@ a package with nothing to launch, such as a library, from its
 manifest format is covered in [The lllm.toml manifest](../packages/manifest.md).
 
 A tactic entry loads by the same rule as a `module:attribute` target. A service
-entry has no handler form: it is called when it can be called without
-arguments, and it builds a FastAPI or Starlette app or a tactic. An entry that
-fails to import, raises while building, or returns something unrecognized (an
-app wrapped in raw ASGI middleware, `None`, a coroutine) stops `lllm serve`
-with an error that names the cause, instead of serving the service's tactic
-without its auth or middleware:
+entry has no handler form: it names a FastAPI or Starlette app, or something
+that can be called without arguments, which is called once to build an app, a
+tactic, or an object with a `run` method. If that call returns plain data
+instead (a mapping, list, tuple, string, int, float, or bool), a service that
+declares `tactic` serves that tactic, and a service without one serves the data
+from a fixed JSON app: `GET /health`, plus `POST /run`, which returns the data
+as `output`. Any other entry stops `lllm serve` with an error that names the
+cause, instead of serving the service's tactic without its auth or middleware.
+That includes an entry that fails to import, raises while building, names a
+tactic instance, or returns an app wrapped in raw ASGI middleware, `None`, or a
+coroutine:
 
 ```text
 usage: lllm [-h] [--version] COMMAND ...

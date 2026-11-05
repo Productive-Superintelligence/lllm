@@ -539,8 +539,9 @@ print(remote.run({"text": "hello"}))
 {'text': 'HELLO', 'trace_id': None}
 ```
 
-Give it `input_type` and `output_type` to validate locally and get models back.
-Its URL, error handling, and test transports are covered in
+With `input_type` and `output_type`, its `run()` and `arun()` validate locally
+and return models; its stream methods do not validate. Its URL, error
+handling, and test transports are covered in
 [Services](services.md#calling-a-service-from-python). Usually you don't
 construct one directly: an `lllm://` ref bound to a URL in `.lllm/config.toml`
 resolves to a `RemoteTactic` ([Refs and Composition](refs.md)).
