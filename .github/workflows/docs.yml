@@ -28,15 +28,21 @@ jobs:
       # (firebase.json). Until the FIREBASE_PROJECT variable is set, the docs
       # deploy to GitHub Pages instead.
       - if: vars.FIREBASE_PROJECT != ''
+        id: gcp
         uses: google-github-actions/auth@v3
         with:
           workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          token_format: access_token
+      # firebase-tools cannot use keyless credentials, so deploy through the
+      # Firebase Hosting REST API with the short-lived token.
       - if: vars.FIREBASE_PROJECT != ''
         run: |
           mkdir -p build/redirect
           echo '<!doctype html><title>Moved to lllm.one</title>' > build/redirect/index.html
-          npx --yes firebase-tools@15 deploy --only hosting --project "${{ vars.FIREBASE_PROJECT }}" --non-interactive
+          python scripts/deploy_firebase_hosting.py --project "${{ vars.FIREBASE_PROJECT }}"
+        env:
+          FIREBASE_ACCESS_TOKEN: ${{ steps.gcp.outputs.access_token }}
       - if: vars.FIREBASE_PROJECT == ''
         run: |
           git config user.name "github-actions[bot]"
