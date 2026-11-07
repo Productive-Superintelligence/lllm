@@ -35,9 +35,10 @@ tools = [
     "playwright>=1.45.0",
 ]
 secure = ["keyring>=25.0"]
-docs = ["mkdocs-material>=9.5"]
+docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.26"]
 dev = [
     "pytest>=8.0",
+    "pytest-examples>=0.0.15",
     "build>=1.2",
     "twine>=5.1",
     "httpx>=0.27",

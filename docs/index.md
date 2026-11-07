@@ -1,4 +1,4 @@
-# Low-Level Language Models (LLLM)
+# Low-Level Language Models
 
 <p class="psi-brand">
   <img src="assets/lllm-logo-text-dark.png#only-light" alt="LLLM" />
@@ -7,210 +7,181 @@
 
 [lllm.one](https://lllm.one){ .psi-domain }
 
-LLLM is a lightweight framework for building advanced agentic systems: the
-kind that decompose hard questions, call many tools, write and run code, and
-need to be inspected turn by turn. It is *low-level* on purpose. Instead of
-hiding the agent loop, LLLM gives you small, plain abstractions for every part
-of it (prompts, parsers, tool calls, exception and interrupt handling, dialog
-state) so research and production systems can be customised without fighting
-the framework.
+**LLLM** is a Python framework for agentic systems that do real work: they
+break hard questions down, call tools, write and run code, and need to be
+inspected turn by turn when something goes wrong. Instead of hiding the agent
+loop behind a single `run()`, LLLM gives you one small, plain object for each
+part of it and lets you write the program that connects them.
 
-```bash
-pip install "lllm-core[native]"
-```
+## Why LLLM
 
-```python
+- **You write the program.** A [tactic](tactics.md) is ordinary Python that
+  calls agents. Loops, branches, fan-out, and retries are your code, not a
+  graph language.
+- **Every turn is a function you can read.** A [prompt](prompts.md) carries
+  its template, output format, parser, tools, and error handlers. The agent
+  loop retries malformed answers and runs tool calls for you.
+- **Agents have memory you can inspect.** Each agent keeps its
+  [dialogs](dialogs.md) as trees you can fork, replay, save, and load.
+- **Typed end to end.** Inputs, outputs, and tool arguments are
+  [Pydantic](typed-io.md) models, and every tactic publishes JSON schemas.
+- **Ready for production.** One command [serves](serving.md) a tactic as a
+  FastAPI app, [packages](packages.md) are shared on the
+  [hub](https://lllm.one/hub/), and agents send
+  [inference hints](inference-hints.md) to KV-cache-aware servers such as
+  NVIDIA Dynamo, vLLM, and SGLang.
+- **Works with what you have.** Any model [LiteLLM](models.md) supports,
+  local model servers, plain Python functions, and
+  [Pydantic AI](pydantic-ai.md) agents.
+
+## Hello world
+
+```python title="hello_world.py"
 from lllm import Tactic
 
-print(Tactic.quick("What is the capital of France?").content)
+print(Tactic.quick("Where does 'hello world' come from?").content)
+#> It comes from Brian Kernighan's 1972 tutorial for the B language.
 ```
 
-## Design Ideas
+`Tactic.quick()` builds a one-off agent, sends it the question, and returns
+the reply. It uses `gpt-4o` by default; [install](install.md) LLLM, set
+`OPENAI_API_KEY`, or pass `model=` to use any other provider.
 
-LLLM treats an agentic system as a **program**. Four abstractions carry the
-whole design:
+## A real program: two agents, a tool, and typed output
 
-<div class="psi-tiles">
-  <div class="psi-tile">
-    <strong>Tactic is the program</strong>
-    A typed unit of work that owns a task interface and wires agents together.
-    Tactics compose, and a tactic can be handed to another agent as a tool.
-  </div>
-  <div class="psi-tile">
-    <strong>Agent is the caller</strong>
-    A model plus a call loop that handles retries, parse failures, and tool
-    interrupts, so the program does not have to.
-  </div>
-  <div class="psi-tile">
-    <strong>Prompt is the function</strong>
-    A template with a parser, tools, and exception/interrupt handlers: the
-    full specification of one agent turn.
-  </div>
-  <div class="psi-tile">
-    <strong>Dialog is the mental state</strong>
-    Each agent's own message history, kept as a tree you can fork, replay,
-    and inspect.
-  </div>
-</div>
+Here is the shape of most LLLM programs. A tactic owns two agents: a
+researcher that searches a knowledge base with a tool, and a writer that
+turns the notes into a typed brief.
 
-Around them run a few principles:
-
-- **Configuration as declaration.** Prompts, tools, proxies, and tactics are
-  discovered from `lllm.toml` and referenced by key, so a system's shape is
-  declared rather than wired by hand.
-- **Recursive by construction.** A whole tactic can be exposed as a
-  prompt-callable tool, so a single agent turn can call a high-level
-  subsystem.
-- **Programs, not just tool calls.** Proxies give agents an API surface they
-  can read and program against (`query_api_doc`, `run_python`, `CALL_API`),
-  backed by a Jupyter sandbox for program synthesis.
-- **Typed end to end with Pydantic.** Task inputs, structured outputs, and
-  service contracts are Pydantic models.
-
-The [architecture overview](core/architecture.md) walks through each idea with
-code.
-
-## The Native Runtime
-
-The native runtime is LLLM's engine. A prompt, a tool, and a dialog:
-
-```python
-from lllm.runtimes.native import Dialog, FunctionCall, Prompt, Role, tool
-
-
-@tool(description="Create a display label for a project area")
-def label(topic: str) -> str:
-    return topic.strip().title()
-
-
-task = Prompt(
-    path="planner/task",
-    prompt="Plan the next checkpoint for {project}.",
-    function_list=[label],
-)
-
-dialog = Dialog(owner="planner")
-dialog.put_prompt(task, prompt_args={"project": "LLLM"}, name="operator")
-
-call = task.get_function("label")(
-    FunctionCall(name="label", arguments={"topic": "native core"})
-)
-dialog.put_text(call.result_str or "", role=Role.TOOL, name="label")
-
-retry = dialog.fork(last_n=1)  # branch the agent's state and try again
-print(dialog.overview())
-```
-
-Agents run prompts through this state with a call loop that retries, repairs
-parse failures, and services tool calls. Start with the
-[tutorials](tutorials/index.md) or the [agent reference](core/agent.md).
-
-## Compatible With Pydantic
-
-Pydantic is part of LLLM's contract, not an add-on:
-
-- **Typed tasks and outputs.** A tactic declares its input and output as
-  Pydantic models (`input_model`/`output_model`, or `input_type`/
-  `output_type`). Inputs are validated on the way in and outputs on the way
-  out, prompts can demand structured output with `format=Model`, and the JSON
-  schemas are published with every service and tool.
-- **Pydantic AI agents are tactics.** Wrap a `pydantic_ai.Agent` with
-  `PydanticAITactic` and it can be served, packaged, and composed like any
-  other tactic, while Pydantic AI keeps owning its tools, models, and output
-  validation.
-- **Tactics are Pydantic AI tools.** `tactic_as_tool` hands a tactic, such as a
-  native multi-agent tactic, to a Pydantic AI agent as a typed tool.
-
-See [Runtimes](protocol/runtimes.md) and the
-[Pydantic AI tutorial](tutorials/10-pydantic-ai.md).
-
-## One Boundary For Every Runtime
-
-`Tactic` is both the program and the boundary. A tactic written with
-`call()` and agents, a `_run()` hook, a Pydantic AI agent, or a plain Python
-function is called, streamed, served, and packaged the same way.
-
-```python
+```python title="brief.py"
 from pydantic import BaseModel
-from lllm import Tactic
+
+from lllm import Prompt, Tactic, tool
+
+KNOWLEDGE = {
+    "kv caches": "Transformers cache attention keys and values so each new "
+    "token reuses earlier work instead of recomputing it.",
+}
 
 
-class Question(BaseModel):
-    text: str
+@tool(description="Search the knowledge base for a topic")
+def search(query: str) -> str:  # (1)!
+    return KNOWLEDGE.get(query.lower(), "No results.")
 
 
-class Answer(BaseModel):
-    text: str
+class Brief(BaseModel):  # (2)!
+    title: str
+    bullets: list[str]
 
 
-class Shout(Tactic[Question, Answer]):
-    name = "shout"
-    input_type = Question
-    output_type = Answer
+RESEARCH = Prompt(  # (3)!
+    path="brief/research",
+    prompt="Collect facts about {topic}.",
+    function_list=[search],
+)
+WRITE = Prompt(
+    path="brief/write",
+    prompt="Write a three-bullet brief about {topic} from these notes:\n{notes}",
+    format=Brief,
+)
 
-    def _run(self, input_value, *, context=None):
-        return Answer(text=input_value.text.upper())
+
+class BriefTactic(Tactic):  # (4)!
+    name = "brief"
+    agent_group = ["researcher", "writer"]
+    output_model = Brief
+
+    def call(self, topic: str) -> Brief:  # (5)!
+        researcher = self.agents["researcher"]
+        researcher.open("research")
+        researcher.receive_prompt(RESEARCH, {"topic": topic})
+        notes = researcher.respond().content  # (6)!
+
+        writer = self.agents["writer"]
+        writer.open("draft")
+        writer.receive_prompt(WRITE, {"topic": topic, "notes": notes})
+        return writer.respond().parsed  # (7)!
 
 
-assert Shout().run({"text": "hello"}).text == "HELLO"
+brief = BriefTactic(
+    {
+        "global": {"model_name": "gpt-4o-mini"},  # (8)!
+        "agent_configs": [
+            {"name": "researcher", "system_prompt": "You research topics."},
+            {"name": "writer", "system_prompt": "You write crisp briefs."},
+        ],
+    }
+)
+
+result = brief("KV caches")
+print(result.title)
+#> KV caches in one minute
+print("\n".join(f"- {bullet}" for bullet in result.bullets))
+"""
+- A KV cache stores attention keys and values from earlier tokens.
+- Reusing it makes each new token cost one step, not a full pass.
+- Shared prompt prefixes can reuse cached entries across requests.
+"""
 ```
+
+1. A [tool](tools.md) is a typed Python function. LLLM builds its JSON schema
+   from the annotations, and the agent loop runs it when the model asks.
+2. Outputs are Pydantic models, so the rest of your program gets real objects.
+3. A [prompt](prompts.md) is a function: a template plus everything one turn
+   needs. `RESEARCH` brings its own tool; `WRITE` demands a `Brief`, and the
+   agent re-asks the model if the reply does not parse.
+4. A [tactic](tactics.md) declares the agents it uses. Every call gets fresh
+   agents built from the config, so calls never share state.
+5. `call()` is the program: plain Python, with control flow you can step
+   through in a debugger.
+6. `respond()` runs the agent loop: the model calls `search`, LLLM runs it,
+   sends the result back, and returns the final message.
+7. `parsed` holds the structured reply. Because the tactic declares
+   `output_model = Brief`, its result is validated into a `Brief`.
+8. Models are configured, not hard-coded. Any LiteLLM model name works, per
+   tactic or per agent.
+
+The result is an object you can use, and the whole run stays inspectable:
+call `brief(topic, return_session=True)` to get every agent call, its cost,
+and each agent's dialog.
+
+## Serve it
+
+Every tactic is also a typed web service. Point `lllm serve` at it:
 
 ```bash
-lllm serve tactics:Shout --port 8000      # FastAPI: /run, /stream, /info
+lllm serve brief.py:brief --port 8000
+curl -X POST localhost:8000/run -H 'content-type: application/json' \
+  -d '{"input": "KV caches"}'
 ```
 
-Read more in [The Tactic](protocol/tactic.md) and [Services](protocol/services.md).
+You get `POST /run`, `POST /stream`, `GET /info`, and OpenAPI docs with the
+input and output schemas. See [Serving](serving.md).
 
-## Beyond One Tactic
+## How the pieces fit
 
-<div class="psi-tiles">
-  <div class="psi-tile">
-    <strong>Packages and the hub</strong>
-    One <code>lllm.toml</code> describes a package for the native runtime and the
-    hub. Validate, publish, and browse packages at
-    <a href="https://lllm.one/hub/">lllm.one/hub</a>.
-  </div>
-  <div class="psi-tile">
-    <strong>SSSN: the network module</strong>
-    Channels, events, artifacts, and snapshots that connect systems, plus a
-    <code>TacticProcessor</code> that runs tactics over a channel.
-  </div>
-  <div class="psi-tile">
-    <strong>AAAX: the shell module</strong>
-    Mount packages, tactics, and channels into one strategy and serve it as a
-    single API.
-  </div>
-  <div class="psi-tile">
-    <strong>One CLI</strong>
-    <code>lllm create</code>, <code>init</code>, <code>serve</code>,
-    <code>hub</code>, <code>network</code>, and <code>shell</code>.
-  </div>
-</div>
+LLLM treats an agentic system as a program, built from four objects:
 
-SSSN and AAAX are experimental modules: [SSSN](sssn/index.md),
-[AAAX](aaax/index.md), [packages](packages/manifest.md), [hub](packages/hub.md),
-[CLI](reference/cli.md).
+- **Tactic is the program.** It owns a typed interface and the control flow.
+- **Agent is the caller.** It runs the loop that calls the model, repairs
+  malformed answers, and runs tools.
+- **Prompt is the function.** It specifies one turn: template, output format,
+  parser, tools, and handlers.
+- **Dialog is the mental state.** It holds what one agent has seen and said,
+  as a tree.
 
-## Where It Comes From
+[How LLLM works](concepts.md) explains the model in one page, and each
+concept has its own guide.
 
-LLLM's tactic design grew out of the reusable reasoning units needed by
-**Analytica**, which decomposes complex societal, economic, political, and
-scientific questions into grounded subpropositions, runs specialised agents
-over them, and synthesises a more robust analysis. The same small boundary
-has since served autonomous software development in **Apeiron**: demand
-modeling, computer-use evaluation, activity tracing, and full-lifecycle
-application synthesis.
+## Next steps
 
-- Cheng, Junyan, Kyle Richardson, and Peter Chin. "Analytica: Soft
-  Propositional Reasoning for Robust and Scalable LLM-Driven Analysis."
-  *ICLR*, 2026.
-- Cheng, Junyan, Ankit Srivastava, Jessie Zeng, Milenko Drinic, and Jack W.
-  Stokes. "Apeiron: A Scalable LLM-agentic Framework for Autonomous
-  Full-lifecycle Demand-optimized Application Synthesis." *Findings of ACL*,
-  2026, pp. 3868-3899.
+- [Install LLLM](install.md) and connect a model.
+- Read the core concepts: [agents](agents.md), [prompts](prompts.md),
+  [tools](tools.md), [dialogs](dialogs.md), and [tactics](tactics.md).
+- [Test your agents](testing.md) without calling a model.
+- Browse complete [examples](examples/index.md).
 
-## Next Steps
-
-- [Getting Started](getting-started.md): install, first tactic, first agent.
-- [Tutorials](tutorials/index.md): a guided path from agents to packages.
-- [Architecture](core/architecture.md): the native design in depth.
+LLLM's design grew out of the reasoning units of Analytica (ICLR 2026), which
+breaks questions into grounded subpropositions and runs specialized agents
+over them, and it has since served autonomous software development in
+Apeiron (Findings of ACL 2026).
