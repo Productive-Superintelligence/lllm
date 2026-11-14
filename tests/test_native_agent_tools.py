@@ -197,3 +197,16 @@ def test_tactic_tools_publish_the_tactic_input_schema():
     assert as_task.required == ["task"]
     assert set(as_kwargs.properties) == {"topic", "depth"}
     assert as_kwargs.required == ["topic"] and as_kwargs.strict is False
+
+
+def test_agent_call_sessions_list_their_tool_calls_in_order():
+    from lllm import FunctionCall
+    from lllm.runtimes.native.core.prompt import AgentCallSession
+
+    session = AgentCallSession(
+        agent_name="a", max_exception_retry=3, max_interrupt_steps=5, max_llm_recall=0
+    )
+    session.interrupt([FunctionCall(name="first"), FunctionCall(name="second")], 0)
+    session.interrupt([FunctionCall(name="third")], 1)
+
+    assert [call.name for call in session.tool_calls] == ["first", "second", "third"]

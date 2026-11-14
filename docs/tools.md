@@ -30,13 +30,14 @@ session = agent.respond(return_session=True)
 
 print(session.delivery.content)
 #> Your order A-1001 has shipped and should arrive on Thursday.
-print([call.name for calls in session.interrupts.values() for call in calls])  # (2)!
+print([call.name for call in session.tool_calls])  # (2)!
 #> ['lookup_order']
 ```
 
 1. The prompt offers the tool for this turn. Tools can also be attached to
    the agent itself; see [Giving tools to agents](#giving-tools-to-agents).
-2. `interrupts` records every tool call the agent ran during `respond()`.
+2. `tool_calls` lists every tool call the agent ran during `respond()`, with
+   its arguments and result.
 
 ## Defining tools
 
@@ -71,7 +72,7 @@ print(ship.properties["speed"])
 {
     'enum': ['standard', 'express'],
     'type': 'string',
-    'description': 'Delivery speed; express costs more (default: standard)',
+    'description': "Delivery speed; express costs more (default: 'standard')",
 }
 """
 ```

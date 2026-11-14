@@ -125,7 +125,7 @@ def _recall_name(request):
     return f"Your name is {found.group(1)}." if found else "You have not told me yet."
 
 
-@rule(asks("capital of france"))
+@rule(lambda r: asks("capital of france")(r) and not r.tools)
 def _paris(request):
     return "The capital of France is Paris."
 

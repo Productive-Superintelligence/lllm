@@ -75,16 +75,16 @@ class AgentCallSession(BaseModel):
     max_interrupt_steps: int
     max_llm_recall: int
 
-    exception_retries: Dict[str, List[Exception]] = Field(
+    exception_retries: Dict[int, List[Exception]] = Field(
         default_factory=dict
     )  # records the exceptions during the agent call at each interrupt step
-    interrupts: Dict[str, List[FunctionCall]] = Field(
+    interrupts: Dict[int, List[List[FunctionCall]]] = Field(
         default_factory=dict
-    )  # records the function calls during the agent call at each interrupt step
-    llm_recalls: Dict[str, List[Exception]] = Field(
+    )  # the batch of tool calls run at each interrupt step (see ``tool_calls``)
+    llm_recalls: Dict[int, List[Exception]] = Field(
         default_factory=dict
     )  # records the LLM recalls during the agent call at each interrupt step
-    invoke_traces: Dict[str, List[InvokeResult]] = Field(
+    invoke_traces: Dict[int, List[InvokeResult]] = Field(
         default_factory=dict
     )  # all InvokeResult traces at each interrupt step (including failed retries and the final successful one)
 
@@ -96,6 +96,17 @@ class AgentCallSession(BaseModel):
     ] = "initial"
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @property
+    def tool_calls(self) -> List[FunctionCall]:
+        """Every tool call the agent ran during this call, in order."""
+
+        return [
+            call
+            for step in sorted(self.interrupts)
+            for batch in self.interrupts[step]
+            for call in batch
+        ]
 
     @property
     def exception_retries_count(self) -> int:
