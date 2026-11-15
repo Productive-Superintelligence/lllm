@@ -655,7 +655,11 @@ def nav_pages(config: str) -> list[str]:
 
 
 NAV_SECTIONS = ["Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "Reference"]
-DOCS_SWITCH = [("/", "LLLM"), ("https://sssn.one/", "SSSN"), ("https://aaax.one/", "AAAX")]
+DOCS_SWITCH = [
+    ("https://lllm.one/", "LLLM"),
+    ("https://sssn.one/", "SSSN"),
+    ("https://aaax.one/", "AAAX"),
+]
 
 
 def test_docs_nav_sections_and_no_orphan_pages():

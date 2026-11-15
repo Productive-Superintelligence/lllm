@@ -77,7 +77,7 @@ extra:
   docs_switch:
     - key: lllm
       title: LLLM
-      url: /
+      url: https://lllm.one/
     - key: sssn
       title: SSSN
       url: https://sssn.one/
