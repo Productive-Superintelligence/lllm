@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.4.0
+
+SSSN and AAAX are separate packages again, built on LLLM: `sssn` (channels)
+and `aaax` (strategies) depend on lllm-core and plug into the `lllm` command.
+The package hub stays in LLLM.
+
+- `lllm.network` and `lllm.shell` moved to the `sssn` and `aaax` packages:
+  `pip install sssn aaax`, or the new `lllm-core[network]` and
+  `lllm-core[shell]` extras (`all` includes both). Their tests and
+  `examples/network` moved with them.
+- The old import paths are deprecated shims. `import lllm.network` imports
+  `sssn`, warns once with a `DeprecationWarning` that points to
+  `import sssn`, re-exports its public names, and aliases the old submodules
+  (`lllm.network.server.fastapi` is `sssn.server.fastapi`); `lllm.shell` does
+  the same for `aaax`. Without the package they raise
+  `ImportError: lllm.network moved to the sssn package: pip install sssn`.
+- CLI plugins: `lllm` discovers subcommands from the `lllm.commands`
+  entry-point group, which maps a command name to a module with
+  `main(argv)`. Installing sssn adds `lllm network`, installing aaax adds
+  `lllm shell`, and `lllm --help` lists the installed plugins. Without the
+  package, `lllm network` prints
+  `lllm network needs the sssn package: pip install sssn` and exits 2. The
+  `sssn` and `aaax` commands stay.
+- `lllm.protocol.validation` makes `copy_boundary_value` public for packages
+  built on LLLM; `lllm.protocol._validation` is unchanged.
+- `lllm.Resolver` and `lllm serve` import channel support from sssn when they
+  need it. Tactic refs and settings work without sssn; channel and snapshot
+  refs, and channel resources, say to install it. `lllm.hub` keeps its own
+  list of channel forms, which sssn's tests keep in step with
+  `sssn.ChannelForm`.
+- Docs: lllm.one documents LLLM and the hub, and SSSN and AAAX have their own
+  sites again, sssn.one and aaax.one; lllm.one/sssn and lllm.one/aaax
+  redirect there. The header switches between the three sites, and the nav
+  has no Home section (the logo leads home). Lesson 11 shows SSSN and AAAX
+  with LLLM.
+
 ## 0.3.0
 
 One project: LLLM now includes the package hub and the SSSN and AAAX

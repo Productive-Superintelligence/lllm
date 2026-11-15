@@ -113,10 +113,13 @@ what the package is. Browse and download packages at
 | --- | --- | --- |
 | `lllm` | Tactics, the native runtime (agents, prompts, dialogs, proxies, sandbox), runtimes, services | Stable |
 | `lllm.hub` | The `lllm.toml` package format, validation, local hub, cards, static catalogs | Stable |
-| `lllm.network` (SSSN) | Channels, events, artifacts, snapshots; `TacticProcessor` runs tactics over channels | Experimental |
-| `lllm.shell` (AAAX) | Strategies that mount packages, tactics, and channels into one served API | Experimental |
+| `sssn` ([SSSN](https://sssn.one)) | Channels, events, artifacts, snapshots; `TacticProcessor` runs tactics over channels. A separate package: `pip install sssn` or `lllm-core[network]` | Experimental |
+| `aaax` ([AAAX](https://aaax.one)) | Strategies that mount packages, tactics, and channels into one served API. A separate package: `pip install aaax` or `lllm-core[shell]` | Experimental |
 
-One command covers them all: `lllm create | init | setup | inspect | serve | hub | network | shell`.
+SSSN and AAAX build on LLLM's protocol, refs, hub, and services, and plug into
+the `lllm` command: installing `sssn` adds `lllm network`, and installing
+`aaax` adds `lllm shell`. One command covers them all:
+`lllm create | init | setup | inspect | serve | hub | network | shell`.
 
 ## Install options
 
@@ -128,6 +131,8 @@ One command covers them all: `lllm create | init | setup | inspect | serve | hub
 | `pydantic-ai` | the Pydantic AI adapter |
 | `sandbox` | the Jupyter sandbox |
 | `secure` | OS keyring for `lllm setup` |
+| `network` | the `sssn` package: channels and `lllm network` |
+| `shell` | the `aaax` package: strategies and `lllm shell` |
 | `all` | everything |
 
 For development: `pip install -e ".[dev,docs]"` and `pytest`.

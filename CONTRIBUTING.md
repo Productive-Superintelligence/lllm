@@ -2,8 +2,9 @@
 
 LLLM is a lightweight framework for advanced agentic systems: a native
 runtime for agents, prompts, and dialogs, a typed tactic boundary every
-runtime shares, a package hub, and the experimental SSSN (network) and AAAX
-(shell) modules.
+runtime shares, and a package hub. SSSN (channels) and AAAX (strategies) are
+separate packages built on LLLM, in the sssn and aaax repositories; they plug
+into the `lllm` command through the `lllm.commands` entry-point group.
 
 ## Development setup
 
@@ -27,9 +28,9 @@ for the opt-in live tests (`pytest -m live`).
 | `lllm/runtimes/` | Adapters: plain Python, Pydantic AI. |
 | `lllm/services/` | FastAPI apps, remote tactics, tactic refs. |
 | `lllm/hub/` | The `lllm.toml` package format, validation, local hub, cards, catalogs. |
-| `lllm/network/`, `lllm/shell/` | SSSN and AAAX (experimental). |
+| `lllm/network/`, `lllm/shell/` | Deprecated shims that forward to the sssn and aaax packages. |
 | `lllm/templates/`, `lllm/create/` | `lllm create` project templates and scaffolds. |
-| `docs/` | lllm.one, the docs site. The hub website at lllm.one/hub is the separate `lllm-hub` repository. |
+| `docs/` | lllm.one, the docs site. The hub website at lllm.one/hub is the separate `lllm-hub` repository; sssn.one and aaax.one are built from the sssn and aaax repositories. |
 
 ## Design rules
 
@@ -39,7 +40,10 @@ for the opt-in live tests (`pytest -m live`).
   (prompt, parser, handlers, tools, dialog state) should stay inspectable
   and overridable.
 - `lllm.protocol` stays runtime-neutral: it must not import a runtime,
-  services, the hub, or the experimental modules.
+  services, the hub, sssn, or aaax.
+- lllm never needs sssn or aaax to import or to run tactics: channel support
+  imports sssn when it is used and says what to install when it is missing.
+  Helpers those packages need from lllm are public (`lllm.protocol.validation`).
 - `import lllm` must work with only the base dependencies; optional
   dependencies are imported lazily.
 - Let adapters own their runtime: Pydantic AI keeps its tools, models, and
