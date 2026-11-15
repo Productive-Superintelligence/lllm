@@ -171,24 +171,28 @@ Read more in [The Tactic](protocol/tactic.md) and [Services](protocol/services.m
     <a href="https://lllm.one/hub/">lllm.one/hub</a>.
   </div>
   <div class="psi-tile">
-    <strong>SSSN: the network module</strong>
+    <strong>SSSN: channels</strong>
     Channels, events, artifacts, and snapshots that connect systems, plus a
     <code>TacticProcessor</code> that runs tactics over a channel.
+    <code>pip install sssn</code>; docs at <a href="https://sssn.one/">sssn.one</a>.
   </div>
   <div class="psi-tile">
-    <strong>AAAX: the shell module</strong>
+    <strong>AAAX: strategies</strong>
     Mount packages, tactics, and channels into one strategy and serve it as a
-    single API.
+    single API. <code>pip install aaax</code>; docs at
+    <a href="https://aaax.one/">aaax.one</a>.
   </div>
   <div class="psi-tile">
     <strong>One CLI</strong>
-    <code>lllm create</code>, <code>init</code>, <code>serve</code>,
-    <code>hub</code>, <code>network</code>, and <code>shell</code>.
+    <code>lllm create</code>, <code>init</code>, <code>serve</code>, and
+    <code>hub</code>; installing sssn or aaax adds <code>lllm network</code>
+    or <code>lllm shell</code>.
   </div>
 </div>
 
-SSSN and AAAX are experimental modules: [SSSN](sssn/index.md),
-[AAAX](aaax/index.md), [packages](packages/manifest.md), [hub](packages/hub.md),
+SSSN and AAAX are separate packages built on LLLM's protocol, refs, hub, and
+services ([lesson 11](tutorials/11-channels.md)). Read more about
+[packages](packages/manifest.md), the [hub](packages/hub.md), and the
 [CLI](reference/cli.md).
 
 ## Where It Comes From

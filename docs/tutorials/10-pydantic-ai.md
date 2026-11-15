@@ -501,4 +501,4 @@ python -m pytest tests/test_pydantic_ai_adapter.py tests/test_examples.py
 See [Runtimes](../protocol/runtimes.md) for the full adapter reference and
 [Services](../protocol/services.md) for the HTTP contract.
 
-**Next:** [11. Channels with SSSN](11-channels.md)
+**Next:** [11. SSSN and AAAX](11-channels.md)

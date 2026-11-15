@@ -141,14 +141,16 @@ from lllm import Resolver
 
 resolver = Resolver.from_config(".")
 resolver.tactic("lllm://demo/briefs/tactics/shout")   # a RemoteTactic
-resolver.store("lllm://demo/briefs/channels/events")  # a LocalStore
+resolver.store("lllm://demo/briefs/channels/events")  # a LocalStore (needs sssn)
 
 resolver.register("lllm://demo/briefs/tactics/count", Count())
 resolver.run("lllm://demo/briefs/tactics/count", "x y")  # 2
 ```
 
 Tests register local objects; deployments bind URLs; the code in between
-never changes. Channel refs resolve to [SSSN](../sssn/index.md) stores.
+never changes. Channel refs resolve to stores from the
+[SSSN](https://sssn.one/) package (`pip install sssn`); without it, tactic refs
+still work and `store()` says what to install.
 
 ## Step 6: serve a whole package
 
@@ -169,7 +171,8 @@ its tactic without the service's auth
 ([Services](../protocol/services.md#lllm-serve)).
 
 To serve everything a package declares (tactics and channels) as one API, mount
-it in an [AAAX strategy](../aaax/index.md): `lllm shell serve ./briefs`.
+it in an [AAAX](https://aaax.one/) strategy: `pip install aaax`, then
+`lllm shell serve ./briefs` ([lesson 11](11-channels.md)).
 
 ## Summary
 
@@ -180,6 +183,6 @@ it in an [AAAX strategy](../aaax/index.md): `lllm shell serve ./briefs`.
 | Extra routes | `@endpoint.post("/path")` on the tactic |
 | A remote tactic | `RemoteTactic(url)` |
 | Wiring by name | `lllm://` refs, `.lllm/config.toml`, `lllm.Resolver` |
-| A package | `lllm serve ./package`, `lllm shell serve ./package` |
+| A package | `lllm serve ./package`, or `lllm shell serve ./package` with AAAX |
 
 **Next:** [10. Pydantic AI Agents](10-pydantic-ai.md)

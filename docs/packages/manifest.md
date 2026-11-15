@@ -164,7 +164,7 @@ Entrypoints are `module:attribute`, imported relative to the package folder.
 A tactic entry may name a `Tactic` class or instance, a factory, or a
 handler. A factory is called once, with no arguments, when the package loads;
 a handler is wrapped with `as_tactic` and called once per input. `lllm serve`
-and AAAX package tactics tell them apart by one rule:
+and [AAAX](https://aaax.one/) package tactics tell them apart by one rule:
 
 - Any other class is a factory when it can be constructed without arguments.
 - Any other callable is a factory when it takes no parameters, like

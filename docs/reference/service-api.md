@@ -57,4 +57,4 @@ Error envelopes are stable across protocol and runtime failures.
 `SchemaError` and `TacticUnsupportedError` are 400 responses, an unknown name
 on a `/tactics/{name}/...` route is a 404 `TacticNotFound`, and anything else
 a tactic raises is a 500 ([Services](../protocol/services.md#errors)). The
-AAAX shell routes report errors in the same envelope.
+[AAAX](https://aaax.one/) strategy routes report errors in the same envelope.

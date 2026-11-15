@@ -6,7 +6,7 @@ or to build catalog entries.
 
 ```python
 from lllm.hub import tactic_resource
-from lllm.network import Channel, channel_resource, snapshot_resource
+from sssn import Channel, channel_resource, snapshot_resource
 
 resource = tactic_resource(EchoTactic())
 channel = channel_resource(Channel(name="events", form="log", description="Raw events."))
@@ -23,8 +23,9 @@ channel = channel_resource(Channel(name="events", form="log", description="Raw e
 | `package_ref`, `service_ref` | `lllm://` refs or a service URL |
 | `examples`, `metadata` | Public examples and metadata |
 
-`channel_resource` and `snapshot_resource` do the same for SSSN channels and
-snapshots, including custom store endpoints.
+`channel_resource` and `snapshot_resource`, from the
+[sssn](https://sssn.one/) package, do the same for SSSN channels and snapshots,
+including custom store endpoints.
 
 ## Rules for published metadata
 

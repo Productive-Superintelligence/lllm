@@ -16,7 +16,7 @@ outward.
 | 8 | [Advanced Patterns](08-advanced-patterns.md) | Proxy orchestration, forking, pipelines, streaming, offline testing |
 | 9 | [Serving and Composition](09-serving.md) | `lllm serve`, the HTTP API, remote tactics, refs, `lllm.Resolver` |
 | 10 | [Pydantic AI Agents](10-pydantic-ai.md) | Pydantic AI agents as tactics, tactics as Pydantic AI tools |
-| 11 | [Channels with SSSN](11-channels.md) | Channels, `TacticProcessor`, serving a store, AAAX strategies |
+| 11 | [SSSN and AAAX](11-channels.md) | The companion packages: channels, `TacticProcessor`, channel refs, `lllm shell serve` |
 
 ## Prerequisites
 

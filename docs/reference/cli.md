@@ -1,7 +1,7 @@
 # CLI
 
-`lllm` is the single command. Module command groups (`hub`, `network`,
-`shell`) take their own options before the subcommand.
+`lllm` is the single command. Command groups (`hub`, and the plugin commands
+`network` and `shell`) take their own options before the subcommand.
 
 ```text
 lllm create   NAME [--template T]   new project
@@ -10,8 +10,8 @@ lllm setup    [TARGET]              store the API keys a package declares
 lllm inspect  TARGET                tactic metadata, or what serve would launch
 lllm serve    TARGET                serve a tactic or a package resource
 lllm hub      ...                   validate, publish, read, index packages
-lllm network  ...                   SSSN channel stores (experimental)
-lllm shell    ...                   AAAX strategies (experimental)
+lllm network  ...                   SSSN channel stores (pip install sssn)
+lllm shell    ...                   AAAX strategies (pip install aaax)
 ```
 
 `TARGET` is a `module:attribute` entrypoint (imported from the current
@@ -84,7 +84,7 @@ lllm serve ./briefs --resource services.api
 | `--port` | declared port or 8000 | |
 | `--log-level` | `info` | Uvicorn log level |
 | `--resource` | `[package] primary` | Resource to launch |
-| `--store` | `<package>/.lllm/network` | Store root for channel resources |
+| `--store` | `<package>/.lllm/network` | Store root for channel resources (needs sssn) |
 | `--credentials`, `--env-file`, `--no-keyring` | | Key lookup and interactive setup |
 | `--skip-key-check` | off | Start without checking declared keys |
 
@@ -117,24 +117,26 @@ lllm hub [--hub DIR] COMMAND
 
 See [The Hub](../packages/hub.md).
 
-## `lllm network`
+## Plugin commands
 
-```bash
-lllm network [--store DIR] COMMAND
+Other packages add commands to `lllm` through the `lllm.commands` entry-point
+group, which maps a command name to a module with `main(argv)`:
+
+```toml
+[project.entry-points."lllm.commands"]
+network = "sssn.cli"
 ```
 
-`--store` defaults to `.lllm/network`. Commands: `channels`,
-`create-channel`, `get-channel`, `append`, `query-events`, `get-event`,
-`create-subscription`, `get-subscription`, `pull-subscription`,
-`write-artifact`, `get-artifact`, `read-artifact`, `put-snapshot`,
-`get-snapshot`, `serve`. See [SSSN](../sssn/serving.md).
+`lllm --help` lists the installed ones. LLLM's companion packages add two:
 
-## `lllm shell`
+| Command | Install | Docs |
+| --- | --- | --- |
+| `lllm network [--store DIR] COMMAND` | `pip install sssn` or `"lllm-core[network]"` | [sssn.one](https://sssn.one/) |
+| `lllm shell inspect TARGET`, `lllm shell serve TARGET` | `pip install aaax` or `"lllm-core[shell]"` | [aaax.one](https://aaax.one/) |
 
-```bash
-lllm shell inspect TARGET [--json]
-lllm shell serve TARGET [--host] [--port 8400] [--log-level]
+Each package also keeps its own command, `sssn` or `aaax`. Without the
+package, the `lllm` command says what to install and exits with status 2:
+
+```text
+lllm network needs the sssn package: pip install sssn
 ```
-
-`TARGET` is a `strategy.py` file, a folder (with `strategy.py`, `shell.py`, or
-`lllm.toml`), or a `module:factory`. See [AAAX](../aaax/index.md).

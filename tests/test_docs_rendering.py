@@ -654,6 +654,10 @@ def nav_pages(config: str) -> list[str]:
     return re.findall(r"^\s*-\s+(?:[^:\n]+:\s+)?([\w./-]+\.md)\s*$", config, re.M)
 
 
+NAV_SECTIONS = ["Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "Reference"]
+DOCS_SWITCH = [("/", "LLLM"), ("https://sssn.one/", "SSSN"), ("https://aaax.one/", "AAAX")]
+
+
 def test_docs_nav_sections_and_no_orphan_pages():
     config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
 
@@ -661,17 +665,58 @@ def test_docs_nav_sections_and_no_orphan_pages():
     assert "- navigation.indexes" in config
     assert "- navigation.tabs" not in config
     assert "scheme: slate" not in config
-    for section in ("Home", "Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "SSSN", "AAAX", "Reference"):
-        assert f"  - {section}:" in config
+    # The header renders the top-level sections as tabs; the logo is the way
+    # home, so there is no Home section and index.md stays out of the nav.
+    nav = config.split("\nnav:\n", 1)[1].split("\n\n", 1)[0]
+    assert re.findall(r"^  - ([^:\n]+):\s*$", nav, re.M) == NAV_SECTIONS
+    assert "homepage: https://lllm.one/" in config
     pages = nav_pages(config)
     docs = ROOT / "docs"
     assert [page for page in pages if not (docs / page).is_file()] == []
+    assert "index.md" not in pages
+    assert pages[:2] == ["tutorials/index.md", "getting-started.md"]
     all_pages = {
         str(path.relative_to(docs))
         for path in docs.rglob("*.md")
         if "overrides" not in path.parts
     }
-    assert sorted(all_pages - set(pages)) == []
+    assert sorted(all_pages - set(pages)) == ["index.md"]
+    assert not (docs / "sssn").exists()
+    assert not (docs / "aaax").exists()
+
+
+def test_docs_header_has_section_tabs_and_switches_between_the_three_sites(tmp_path):
+    site_dir = build_docs(tmp_path)
+    config = (ROOT / "mkdocs.yml").read_text(encoding="utf-8")
+    switch = config.split("  docs_switch:\n", 1)[1].split("\n  social:", 1)[0]
+
+    assert re.findall(r"title: (\w+)\n\s+url: (\S+)", switch) == [
+        (title, url) for url, title in DOCS_SWITCH
+    ]
+    for page in ("index.html", "tutorials/index.html", "reference/cli/index.html"):
+        html = (site_dir / page).read_text(encoding="utf-8")
+        header = html.split('class="psi-header-nav"', 1)[1].split("</div>", 1)[0]
+        tabs = re.findall(r'class="psi-header-nav__link[^"]*">\s*(.*?)\s*</a>', header, re.S)
+        menu = html.split('class="psi-doc-switch__menu"', 1)[1].split("</div>", 1)[0]
+        docs = re.findall(r'<a href="([^"]+)" class="psi-doc-switch__link[^"]*">\s*(\w+)', menu)
+        drawer = html.split('class="psi-drawer-sections"', 1)[1].split("</div>", 1)[0]
+        drawer_links = re.findall(r'class="psi-drawer-sections__link[^"]*">\s*(.*?)\s*</a>', drawer, re.S)
+
+        assert tabs == NAV_SECTIONS, page
+        assert docs == DOCS_SWITCH, page
+        assert drawer_links == NAV_SECTIONS + [title for _url, title in DOCS_SWITCH], page
+        assert 'href="https://lllm.one/" title="LLLM" class="md-header__button md-logo"' in html
+
+
+def test_docs_use_sssn_and_aaax_instead_of_the_old_module_paths():
+    text_paths = list((ROOT / "docs").rglob("*.md"))
+    text_paths.extend((ROOT / "examples").rglob("*.py"))
+    text_paths.extend((ROOT / "examples").rglob("*.md"))
+
+    old_paths = re.compile(r"(?<![\w./])lllm[./](?:network|shell)\b")  # not .lllm/network
+    for path in text_paths:
+        match = old_paths.search(path.read_text(encoding="utf-8"))
+        assert match is None, f"{path.relative_to(ROOT)} mentions {match.group(0)}"
 
 
 def test_native_reference_covers_core_surfaces():

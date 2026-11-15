@@ -134,6 +134,6 @@ print(hub.card("acme/briefs"))
 build_catalog(hub, "site/hub")
 ```
 
-`lllm.hub.tactic_resource(tactic)` and
-`lllm.network.channel_resource(channel)` export metadata for tactics and
-channels you want to describe in a manifest.
+`lllm.hub.tactic_resource(tactic)` and, from the sssn package,
+`sssn.channel_resource(channel)` export metadata for tactics and channels you
+want to describe in a manifest.

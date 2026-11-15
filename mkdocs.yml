@@ -30,11 +30,9 @@ theme:
     - search.highlight
 
 nav:
-  - Home:
-      - Overview: index.md
-      - Getting Started: getting-started.md
   - Tutorials:
       - tutorials/index.md
+      - Getting Started: getting-started.md
       - 1. Quick Start: tutorials/01-quick-start.md
       - 2. Agents and Dialogs: tutorials/02-agents-and-dialogs.md
       - 3. Prompts and Structured Output: tutorials/03-prompts.md
@@ -45,7 +43,7 @@ nav:
       - 8. Advanced Patterns: tutorials/08-advanced-patterns.md
       - 9. Serving and Composition: tutorials/09-serving.md
       - 10. Pydantic AI Agents: tutorials/10-pydantic-ai.md
-      - 11. Channels with SSSN: tutorials/11-channels.md
+      - 11. SSSN and AAAX: tutorials/11-channels.md
   - Native Runtime:
       - Architecture: core/architecture.md
       - Agent: core/agent.md
@@ -67,13 +65,6 @@ nav:
       - The Manifest: packages/manifest.md
       - Discovery: packages/discovery.md
       - The Hub: packages/hub.md
-  - SSSN:
-      - sssn/index.md
-      - Channels: sssn/channels.md
-      - Tactic Processing: sssn/processing.md
-      - Serving and Refs: sssn/serving.md
-  - AAAX:
-      - aaax/index.md
   - Reference:
       - CLI: reference/cli.md
       - Service API: reference/service-api.md
@@ -87,15 +78,12 @@ extra:
     - key: lllm
       title: LLLM
       url: /
-    - key: hub
-      title: Hub
-      url: /hub/
     - key: sssn
       title: SSSN
-      url: /sssn/
+      url: https://sssn.one/
     - key: aaax
       title: AAAX
-      url: /aaax/
+      url: https://aaax.one/
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/Productive-Superintelligence/lllm

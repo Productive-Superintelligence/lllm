@@ -511,7 +511,7 @@ lllm: error: resource config.default cannot be launched; launchable resources: t
 A served package keeps its modules loaded and its folder on `sys.path` for the
 life of the process, so its code can import the package's own modules when it
 is called. Packages served in one process, such as the packages of an
-[AAAX](../aaax/index.md) strategy, share `sys.modules`, so give their top-level
+[AAAX](https://aaax.one/) strategy, share `sys.modules`, so give their top-level
 modules distinct names.
 
 ### lllm inspect

@@ -20,7 +20,7 @@ the package sections:
 | --- | --- |
 | `tactics` | A tactic. |
 | `services` | A service. |
-| `channels`, `snapshots` | An SSSN channel or snapshot. |
+| `channels`, `snapshots` | An [SSSN](https://sssn.one/) channel or snapshot. |
 | `schemas`, `runs`, `configs`, `docs`, `examples`, `assets` | Other package resources. |
 
 A package gives each resource a ref built from its `[package]` `org` and
@@ -56,7 +56,10 @@ or an `http(s)` URL.
 ## lllm.Resolver
 
 `lllm.Resolver` turns refs into live objects: tactics (in-process or remote),
-channel stores, and project settings.
+channel stores, and project settings. Channel and snapshot refs need the
+[SSSN](https://sssn.one/) package (`pip install sssn`); without it, the
+resolver still loads the config and resolves tactic refs, and asking for a
+store raises an `ImportError` that says what to install.
 
 ### Register in-process tactics
 
@@ -111,7 +114,8 @@ store = ".lllm/network"
 region = "us"
 ```
 
-`Resolver.from_config()` reads the file once:
+`Resolver.from_config()` reads the file once (with sssn installed for the
+store):
 
 ```python
 from lllm import Resolver
@@ -147,8 +151,8 @@ The rules:
   `RemoteTactic` named after the ref, with the ref as its `package_ref`. It has
   no `input_type` or `output_type`, so it returns JSON as-is.
 - A channel or snapshot ref binds to `store`, a relative path resolved against
-  the project folder (a `LocalStore`; opening it creates the folder), or to
-  `url`, an SSSN store service (a `RemoteStore`).
+  the project folder (an sssn `LocalStore`; opening it creates the folder), or
+  to `url`, an SSSN store service (a `RemoteStore`).
 - Each binding declares exactly one target. A tactic ref bound to anything but
   a `url` is rejected:
 
@@ -183,7 +187,7 @@ The rules:
 | `Resolver.from_config(path=".")` | Load bindings and settings from `.lllm/config.toml`. |
 | `register(ref, tactic)` | Bind a tactic ref to an in-process tactic. |
 | `tactic(ref)` | The tactic bound to a `/tactics/` ref. Raises `TacticRefError` when unbound. |
-| `store(ref)` | The `LocalStore` or `RemoteStore` behind a `/channels/` or `/snapshots/` ref. |
+| `store(ref)` | The sssn `LocalStore` or `RemoteStore` behind a `/channels/` or `/snapshots/` ref. |
 | `resolve(ref)` | `tactic()` or `store()`, chosen by the ref's section. |
 | `run(ref, value, *, context=None, **kwargs)`, `await arun(...)` | Resolve a tactic ref and call it. |
 | `setting(key, default=None)` | A value from `[settings]`. |
@@ -192,8 +196,8 @@ The rules:
 Its parts are attributes: `resolver.tactics` is a `TacticResolver` (also
 importable from `lllm`) whose `bind_url(ref, url, **kwargs)` binds a ref to a
 service in code, passing extra keywords such as `input_type` or `timeout` to
-`RemoteTactic`. `resolver.channels` is the `ChannelResolver` from
-`lllm.network`, and `resolver.config` holds the parsed file.
+`RemoteTactic`. `resolver.channels` is the `ChannelResolver` from `sssn`, and
+`resolver.config` holds the parsed file.
 
 ## Composition patterns
 
@@ -294,12 +298,12 @@ Any tactic, local or bound by ref, can be handed to an agent as a tool. See
 
 ### Tactics over channels
 
-A channel ref resolves to a store, and a `TacticProcessor` runs a tactic over a
-channel's events, appending each output to another channel:
+A channel ref resolves to a store, and SSSN's `TacticProcessor` runs a tactic
+over a channel's events, appending each output to another channel:
 
 ```python
 from lllm import Resolver
-from lllm.network import TacticProcessor
+from sssn import TacticProcessor
 
 resolver = Resolver.from_config(".")
 store = resolver.store("lllm://demo/shout/channels/events")
@@ -322,8 +326,9 @@ result hello there True
 The processor reads through a named subscription, so a second `process()` picks
 up only new events. Each output event links back to its source through
 `parent_ids`, and the tactic receives a `CallContext` naming the channel and
-event. Channels, stores, and processors are covered in [SSSN](../sssn/index.md);
-mounting several packages and channels behind one API is [AAAX](../aaax/index.md).
+event. Channels, stores, and processors are covered in the
+[SSSN docs](https://sssn.one/); mounting several packages and channels behind
+one API is [AAAX](https://aaax.one/).
 
 ## Next
 
