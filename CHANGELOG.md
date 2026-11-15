@@ -34,7 +34,8 @@ The package hub stays in LLLM.
   `_status_code_for_error` in `lllm.services.fastapi` stay as aliases.
 - `lllm.Resolver` and `lllm serve` import channel support from sssn when they
   need it. Tactic refs and settings work without sssn; channel and snapshot
-  refs, and channel resources, say to install it. `lllm.hub` keeps its own
+  refs, and channel resources, say to install it. `Resolver.channels` is made
+  on first use and can still be assigned, as in 0.3. `lllm.hub` keeps its own
   list of channel forms, which sssn's tests keep in step with
   `sssn.ChannelForm`.
 - Docs: lllm.one documents LLLM and the hub, and SSSN and AAAX have their own

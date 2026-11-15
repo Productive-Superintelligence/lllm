@@ -71,11 +71,18 @@ class Resolver:
 
     @property
     def channels(self) -> "ChannelResolver":
-        """The ``sssn.ChannelResolver`` behind channel and snapshot refs."""
+        """The ``sssn.ChannelResolver`` behind channel and snapshot refs.
+
+        It is created on first use; assign one to replace it.
+        """
 
         if self._channels is None:
             self._channels = _channel_resolver_class()()
         return self._channels
+
+    @channels.setter
+    def channels(self, channels: "ChannelResolver | None") -> None:
+        self._channels = channels
 
     def register(self, ref: str, tactic: Tactic[Any, Any]) -> None:
         """Bind a tactic ref to an in-process tactic."""

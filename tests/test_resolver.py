@@ -1,6 +1,7 @@
 """lllm.Resolver resolves tactic refs on its own; channel refs need sssn."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -50,6 +51,36 @@ def test_a_config_with_channel_refs_loads_without_sssn(tmp_path, uninstalled):
     assert resolver.tactic(TACTIC_REF).info().name == "shout"
     with pytest.raises(ImportError, match=SSSN_HINT):
         resolver.resolve(CHANNEL_REF)
+    with pytest.raises(ImportError, match=SSSN_HINT):
+        resolver.channels
+
+
+class _Channels:
+    """Stands in for an ``sssn.ChannelResolver`` with one local channel."""
+
+    def __init__(self, store):
+        self.store = store
+
+    def refs(self):
+        return (CHANNEL_REF,)
+
+    def resolve(self, ref):
+        return SimpleNamespace(url=None)
+
+    def local_store(self, ref):
+        return self.store
+
+
+def test_channels_can_be_assigned_as_in_0_3(uninstalled):
+    uninstalled("sssn")
+    resolver = Resolver()
+    store = object()
+
+    resolver.channels = _Channels(store)
+
+    assert resolver.store(CHANNEL_REF) is store
+    assert resolver.refs() == (CHANNEL_REF,)
+    resolver.channels = None  # back to sssn's resolver, made on first use
     with pytest.raises(ImportError, match=SSSN_HINT):
         resolver.channels
 
