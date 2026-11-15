@@ -1,20 +1,25 @@
 """LLLM command line tools.
 
-``lllm create|init|setup|inspect|serve`` cover tactics and packages.
-``lllm hub``, ``lllm network`` (SSSN), and ``lllm shell`` (AAAX) dispatch to
-their module CLIs.
+``lllm create|init|setup|inspect|serve`` cover tactics and packages, and
+``lllm hub`` dispatches to the hub CLI. Other packages add commands through
+the ``lllm.commands`` entry-point group, which maps a command name to a module
+with ``main(argv)``: installing sssn adds ``lllm network`` and installing aaax
+adds ``lllm shell``.
 """
 
 from __future__ import annotations
 
 import argparse
+import functools
 import importlib
+import importlib.util
 import ipaddress
 import json
 import os
 import sys
+from importlib.metadata import entry_points
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable, NamedTuple
 
 from .create import create_project
 from .hub import tactic_resource
@@ -29,9 +34,27 @@ LOG_LEVEL_ERROR = (
 DEFAULT_SERVE_PORT = 8000
 MODULE_COMMANDS = {
     "hub": ("lllm.hub.cli", "Validate, publish, and index packages"),
-    "network": ("lllm.network.cli", "SSSN channel stores (experimental)"),
-    "shell": ("lllm.shell.cli", "AAAX strategy shell (experimental)"),
 }
+CORE_COMMANDS = frozenset(
+    {"create", "init", "setup", "inspect", "serve", *MODULE_COMMANDS}
+)
+PLUGIN_GROUP = "lllm.commands"
+#: Plugin commands lllm knows by name, used when the package is installed
+#: without its entry point: command -> (package, CLI module, help).
+PLUGIN_FALLBACKS = {
+    "network": ("sssn", "sssn.cli", "SSSN channel stores"),
+    "shell": ("aaax", "aaax.cli", "AAAX strategy shell"),
+}
+
+
+class _PluginCommand(NamedTuple):
+    """A command another package adds to ``lllm``."""
+
+    package: str
+    module: str
+    help: str
+    installed: bool
+    load: Callable[[], Any]
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -40,6 +63,9 @@ def main(argv: list[str] | None = None) -> int:
     if raw_args and raw_args[0] in MODULE_COMMANDS:
         module = importlib.import_module(MODULE_COMMANDS[raw_args[0]][0])
         return module.main(raw_args[1:])
+    plugins = {} if raw_args and raw_args[0] in CORE_COMMANDS else _plugin_commands()
+    if raw_args and raw_args[0] in plugins:
+        return _run_plugin(raw_args[0], plugins[raw_args[0]], raw_args[1:])
 
     from . import __version__
 
@@ -146,6 +172,14 @@ def main(argv: list[str] | None = None) -> int:
 
     for name, (_module, help_text) in MODULE_COMMANDS.items():
         subcommands.add_parser(name, help=help_text, add_help=False)
+    not_installed = []
+    for name, plugin in sorted(plugins.items()):
+        if plugin.installed:
+            subcommands.add_parser(name, help=plugin.help, add_help=False)
+        else:
+            not_installed.append(f"lllm {name} (pip install {plugin.package})")
+    if not_installed:
+        parser.epilog = f"More commands: {', '.join(not_installed)}."
 
     args = parser.parse_args(raw_args)
 
@@ -223,6 +257,71 @@ def main(argv: list[str] | None = None) -> int:
 
     parser.error(f"Unknown command: {args.command}")
     return 2
+
+
+def _plugin_commands() -> dict[str, _PluginCommand]:
+    """Commands other packages add to ``lllm``, by name.
+
+    Entry points in the ``lllm.commands`` group name a module with
+    ``main(argv)``. The commands in :data:`PLUGIN_FALLBACKS` are listed even
+    when their package is missing, so ``lllm network`` can say what to install.
+    """
+
+    plugins = {
+        name: _PluginCommand(
+            package=package,
+            module=module,
+            help=help_text,
+            installed=_importable(package),
+            load=functools.partial(importlib.import_module, module),
+        )
+        for name, (package, module, help_text) in PLUGIN_FALLBACKS.items()
+    }
+    found: set[str] = set()
+    for entry_point in entry_points(group=PLUGIN_GROUP):
+        name = entry_point.name
+        if name in CORE_COMMANDS or name in found:
+            continue
+        found.add(name)
+        dist = getattr(entry_point, "dist", None)
+        package = dist.name if dist is not None else entry_point.module.split(".")[0]
+        fallback = PLUGIN_FALLBACKS.get(name)
+        plugins[name] = _PluginCommand(
+            package=package,
+            module=entry_point.module,
+            help=fallback[2] if fallback else f"Added by {package}",
+            installed=True,
+            load=entry_point.load,
+        )
+    return plugins
+
+
+def _run_plugin(name: str, plugin: _PluginCommand, argv: list[str]) -> int:
+    try:
+        target = plugin.load()
+    except ModuleNotFoundError as exc:
+        # Only the plugin package itself counts as missing; an installed plugin
+        # that cannot import one of its own dependencies raises as usual.
+        if exc.name is None or not f"{plugin.module}.".startswith(f"{exc.name}."):
+            raise
+        print(
+            f"lllm {name} needs the {plugin.package} package: pip install {plugin.package}",
+            file=sys.stderr,
+        )
+        return 2
+    command = getattr(target, "main", target)
+    if not callable(command):
+        raise TypeError(f"lllm {name}: {plugin.module} has no main(argv)")
+    return command(argv)
+
+
+def _importable(name: str) -> bool:
+    if name in sys.modules:
+        return sys.modules[name] is not None
+    try:
+        return importlib.util.find_spec(name) is not None
+    except (ImportError, ValueError):
+        return False
 
 
 def _import_from_working_directory() -> None:
