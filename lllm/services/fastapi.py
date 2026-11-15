@@ -418,7 +418,7 @@ def _make_custom_route(
                 input_value = tactic.validate_input(input_value)
             else:
                 input_value = _query_input(request.query_params)
-                context = _context_from_data(None, tactic=tactic, endpoint=spec.name)
+                context = call_context_from_data(None, tactic=tactic, endpoint=spec.name)
             if spec.mode in {"stream", "events"}:
                 result = _invoke_custom(method, input_value, context=context)
                 return streaming_response(
@@ -675,7 +675,7 @@ async def _input_and_context_from_request(
         value = request_model.value
         context_data = request_model.context
 
-    context = _context_from_data(
+    context = call_context_from_data(
         context_data,
         tactic=tactic,
         endpoint=endpoint,
@@ -714,12 +714,20 @@ def _is_protocol_envelope(body: Mapping[str, Any]) -> bool:
     return bool(keys & {"input", "task"}) and keys <= {"input", "task", "context"}
 
 
-def _context_from_data(
+def call_context_from_data(
     context_data: Mapping[str, Any] | None,
     *,
     tactic: Tactic[Any, Any],
     endpoint: str,
 ) -> CallContext:
+    """Build the ``CallContext`` a served tactic gets from a request's ``context``.
+
+    A missing ``request_id`` (or ``call_id``) gets a fresh one, a missing
+    ``tactic_ref`` defaults to the tactic's ``package_ref``, ``endpoint`` names
+    the route, and unknown keys are ignored. A malformed context raises
+    ``SchemaError``.
+    """
+
     if context_data is not None and not isinstance(context_data, Mapping):
         raise SchemaError("Request context must be an object.")
     data = context_data or {}
@@ -759,6 +767,9 @@ def _context_from_data(
         )
     except ValidationError as exc:
         raise SchemaError(f"Invalid request context: {exc}") from exc
+
+
+_context_from_data = call_context_from_data  # the name before it was public
 
 
 def _error_context(tactic: Tactic[Any, Any], endpoint: str) -> CallContext:
@@ -885,7 +896,7 @@ def _http_error(
 ):
     from fastapi import HTTPException
 
-    status = status_code if status_code is not None else _status_code_for_error(exc)
+    status = status_code if status_code is not None else status_code_for_error(exc)
     return HTTPException(
         status_code=status,
         detail=ErrorResponse(
@@ -900,10 +911,18 @@ def _http_error(
     )
 
 
-def _status_code_for_error(exc: Exception) -> int:
+def status_code_for_error(exc: Exception) -> int:
+    """The HTTP status a tactic service answers with when a call raises ``exc``.
+
+    ``SchemaError`` and ``TacticUnsupportedError`` are 400; anything else is 500.
+    """
+
     if isinstance(exc, (SchemaError, TacticUnsupportedError)):
         return 400
     return 500
+
+
+_status_code_for_error = status_code_for_error  # the name before it was public
 
 
 def _route_name(name: str) -> str:

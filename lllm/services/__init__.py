@@ -2,7 +2,16 @@
 
 from .client import RemoteTactic, RemoteTacticError
 from .endpoints import EndpointSpec, endpoint
-from .fastapi import ErrorDetail, ErrorResponse, RunRequest, RunResponse, create_service_app, create_tactic_app
+from .fastapi import (
+    ErrorDetail,
+    ErrorResponse,
+    RunRequest,
+    RunResponse,
+    call_context_from_data,
+    create_service_app,
+    create_tactic_app,
+    status_code_for_error,
+)
 from .resolver import TacticResolver
 
 __all__ = [
@@ -14,7 +23,9 @@ __all__ = [
     "RemoteTactic",
     "RemoteTacticError",
     "TacticResolver",
+    "call_context_from_data",
     "create_service_app",
     "create_tactic_app",
     "endpoint",
+    "status_code_for_error",
 ]

@@ -43,7 +43,9 @@ for the opt-in live tests (`pytest -m live`).
   services, the hub, sssn, or aaax.
 - lllm never needs sssn or aaax to import or to run tactics: channel support
   imports sssn when it is used and says what to install when it is missing.
-  Helpers those packages need from lllm are public (`lllm.protocol.validation`).
+  Helpers those packages need from lllm are public: `lllm.protocol.validation`
+  and, from `lllm.services`, `call_context_from_data` and
+  `status_code_for_error`.
 - `import lllm` must work with only the base dependencies; optional
   dependencies are imported lazily.
 - Let adapters own their runtime: Pydantic AI keeps its tools, models, and

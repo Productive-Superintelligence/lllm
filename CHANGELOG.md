@@ -27,7 +27,11 @@ The package hub stays in LLLM.
   `lllm inspect`, `serve`, and `hub` put the working directory on
   `sys.path`.
 - `lllm.protocol.validation` makes `copy_boundary_value` public for packages
-  built on LLLM; `lllm.protocol._validation` is unchanged.
+  built on LLLM; `lllm.protocol._validation` is unchanged. `lllm.services`
+  exports `call_context_from_data` (the `CallContext` a request's `context`
+  gives a served tactic) and `status_code_for_error` (the status a tactic
+  error is served with); the private `_context_from_data` and
+  `_status_code_for_error` in `lllm.services.fastapi` stay as aliases.
 - `lllm.Resolver` and `lllm serve` import channel support from sssn when they
   need it. Tactic refs and settings work without sssn; channel and snapshot
   refs, and channel resources, say to install it. `lllm.hub` keeps its own

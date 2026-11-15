@@ -880,6 +880,33 @@ def test_invalid_request_context_returns_stable_error_envelope():
     assert "context" in tactic_ref_string_detail["message"]
 
 
+def test_services_export_the_context_and_status_helpers_packages_reuse():
+    import lllm.services.fastapi
+    from lllm.protocol import SchemaError, TacticUnsupportedError
+    from lllm.services import call_context_from_data, status_code_for_error
+
+    assert {"call_context_from_data", "status_code_for_error"} <= set(lllm.services.__all__)
+    assert lllm.services.fastapi._context_from_data is call_context_from_data
+    assert lllm.services.fastapi._status_code_for_error is status_code_for_error
+
+    tactic = EchoTactic(package_ref="lllm://demo/echo/tactics/echo")
+    context = call_context_from_data(
+        {"call_id": "req-1", "metadata": {"user": "ada"}, "region": "eu"},
+        tactic=tactic,
+        endpoint="act",
+    )
+    assert (context.request_id, context.endpoint) == ("req-1", "act")
+    assert context.tactic_ref == "lllm://demo/echo/tactics/echo"
+    assert context.metadata == {"user": "ada"}
+    assert call_context_from_data(None, tactic=tactic, endpoint="run").request_id
+    with pytest.raises(SchemaError, match="metadata"):
+        call_context_from_data({"metadata": []}, tactic=tactic, endpoint="run")
+
+    assert status_code_for_error(SchemaError("bad input")) == 400
+    assert status_code_for_error(TacticUnsupportedError("no stream")) == 400
+    assert status_code_for_error(RuntimeError("boom")) == 500
+
+
 def test_single_tactic_openapi_includes_default_and_custom_routes():
     app = create_tactic_app(EchoTactic())
     schema = app.openapi()
