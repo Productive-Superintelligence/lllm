@@ -9,6 +9,13 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+NAV_SECTIONS = ["Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "Reference"]
+DOCS_SWITCH = [
+    ("https://lllm.one/", "LLLM"),
+    ("https://sssn.one/", "SSSN"),
+    ("https://aaax.one/", "AAAX"),
+]
+MERMAID_DIAGRAMS = ["flowchart", "sequenceDiagram", "stateDiagram-v2"]
 
 
 def chromium_executable() -> str | None:
@@ -144,7 +151,10 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             assert page.evaluate(
                 "() => document.querySelectorAll('code.language-mermaid, code.highlight-mermaid').length"
             ) == 0
-            assert page.evaluate("() => document.body.innerText.includes('flowchart')") is False
+            assert page.evaluate(
+                "(kinds) => kinds.filter((kind) => document.body.innerText.includes(kind))",
+                MERMAID_DIAGRAMS,
+            ) == []
             diagram_metrics = page.evaluate(
                 """
                 () => [...document.querySelectorAll(".md-typeset .mermaid")]
@@ -184,7 +194,7 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
                 """
             )
             for metric in diagram_metrics:
-                assert metric["source"].lstrip().startswith("flowchart")
+                assert metric["source"].lstrip().startswith(tuple(MERMAID_DIAGRAMS))
                 assert metric["diagramWidth"] > 120
                 assert metric["diagramHeight"] > 80
                 assert metric["svgWidth"] > 120
@@ -293,46 +303,38 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
             """
         )
         page.goto(
-            (site_dir / "tutorials" / "first-tactic" / "index.html").as_uri(),
+            (site_dir / "tutorials" / "01-quick-start" / "index.html").as_uri(),
             wait_until="domcontentloaded",
         )
         tutorial_sidebar = page.locator(
             ".md-sidebar--primary .md-nav--primary > .md-nav__list"
         ).inner_text()
+        tutorial_tab = page.locator(".psi-header-nav__link--active").inner_text()
         page.close()
         browser.close()
 
     assert metrics["header"]["backgroundColor"] == "rgb(255, 255, 255)"
     assert metrics["tabs"] is None
-    assert metrics["footer"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["footer"]["backgroundColor"] == "rgb(253, 253, 252)"  # --psi-paper
     assert metrics["header"]["color"] == "rgb(5, 5, 5)"
     assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
     assert metrics["header"]["boxShadow"] == "none"
-    assert metrics["title"]["fontWeight"] == "700"
+    assert metrics["title"]["fontWeight"] == "400"
     assert metrics["headerLogo"]["width"] == pytest.approx(24, abs=1)
     assert metrics["headerLogo"]["height"] == pytest.approx(24, abs=1)
     assert metrics["palette"]["width"] == pytest.approx(0, abs=1)
     assert metrics["palette"]["height"] == pytest.approx(0, abs=1)
     assert metrics["drawerSections"]["display"] == "none"
     assert metrics["headerNav"]["display"] == "flex"
-    assert metrics["headerNavLinks"] == [
-        "Overview",
-        "Tactic",
-        "Runtime",
-        "Tutorials",
-        "Reference",
-    ]
-    assert "Overview" in metrics["sidebarText"]
-    assert "Getting Started" in metrics["sidebarText"]
-    assert "Concepts" in metrics["sidebarText"]
-    assert "Guides" not in metrics["sidebarText"]
-    assert "Protocol" not in metrics["sidebarText"]
-    assert "Runtime" not in metrics["sidebarText"]
-    assert "Tutorials" not in metrics["sidebarText"]
-    assert "Reference" not in metrics["sidebarText"]
-    assert "Tactic Level" in tutorial_sidebar
-    assert "Runtime" in tutorial_sidebar
-    assert "Tactics" not in tutorial_sidebar
+    assert metrics["headerNavLinks"] == NAV_SECTIONS
+    # The home page is outside the nav, so its sidebar lists every section;
+    # a page in a section lists that section only.
+    for section in NAV_SECTIONS:
+        assert section in metrics["sidebarText"]
+    assert tutorial_tab == "Tutorials"
+    assert "Getting Started" in tutorial_sidebar
+    assert "1. Quick Start" in tutorial_sidebar
+    assert "Architecture" not in tutorial_sidebar
     assert "Service API" not in tutorial_sidebar
     assert metrics["source"]["component"] == "source"
     assert metrics["sourceRepository"].startswith("Productive-Superintelligence/lllm")
@@ -379,18 +381,8 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
         page.goto(
             (site_dir / "index.html").as_uri(), wait_until="domcontentloaded"
         )
-        page.wait_for_function(
-            """
-            () => {
-              const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')];
-              return diagrams.length > 0 &&
-                diagrams.every((diagram) =>
-                  diagram.hasAttribute('data-mermaid-source') &&
-                  diagram.querySelector('svg')
-                );
-            }
-            """,
-            timeout=5000,
+        page.wait_for_selector(
+            ".md-header__button.md-logo img, .md-header__button.md-logo svg"
         )
         metrics = page.evaluate(
             """
@@ -438,9 +430,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
                   ".md-header__button.md-logo img, .md-header__button.md-logo svg"
                 ),
                 headerNav: inspect(".psi-header-nav"),
-                mermaid: inspect(".md-typeset .mermaid"),
                 brandImages: images(".psi-brand img"),
-                mermaidSvgs: images(".md-typeset .mermaid svg"),
               };
             }
             """
@@ -479,12 +469,44 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
             }
             """
         )
+        # The home page has no diagrams; the architecture page's are wider
+        # than a phone.
+        page.goto(
+            (site_dir / "core" / "architecture" / "index.html").as_uri(),
+            wait_until="domcontentloaded",
+        )
+        page.wait_for_function(
+            """
+            () => {
+              const diagrams = [...document.querySelectorAll('.md-typeset .mermaid')];
+              return diagrams.length > 0 &&
+                diagrams.every((diagram) =>
+                  diagram.hasAttribute('data-mermaid-source') &&
+                  diagram.querySelector('svg')
+                );
+            }
+            """,
+            timeout=5000,
+        )
+        diagram_metrics = page.evaluate(
+            """
+            () => ({
+              docWidth: document.documentElement.scrollWidth,
+              mermaidWidth: document
+                .querySelector(".md-typeset .mermaid")
+                .getBoundingClientRect().width,
+              svgWidth: document
+                .querySelector(".md-typeset .mermaid svg")
+                .getBoundingClientRect().width,
+            })
+            """
+        )
         page.close()
         browser.close()
 
     assert metrics["docWidth"] <= metrics["viewportWidth"] + 1
     assert metrics["header"]["backgroundColor"] == "rgb(255, 255, 255)"
-    assert metrics["footer"]["backgroundColor"] == "rgb(255, 255, 255)"
+    assert metrics["footer"]["backgroundColor"] == "rgb(253, 253, 252)"  # --psi-paper
     assert metrics["header"]["color"] == "rgb(5, 5, 5)"
     assert metrics["footer"]["color"] == "rgb(5, 5, 5)"
     assert metrics["header"]["height"] == pytest.approx(49, abs=1)
@@ -497,17 +519,17 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert metrics["footerMark"]["height"] == pytest.approx(27, abs=2)
     assert "Newsreader" in metrics["bodyFont"]
     assert "Space Mono" in metrics["codeFont"]
-    assert metrics["mermaid"]["width"] <= metrics["viewportWidth"]
-    assert metrics["mermaidSvgs"][0]["width"] > metrics["viewportWidth"]
+    assert diagram_metrics["docWidth"] <= metrics["viewportWidth"] + 1
+    assert diagram_metrics["mermaidWidth"] <= metrics["viewportWidth"]
+    assert diagram_metrics["svgWidth"] > metrics["viewportWidth"]
     assert drawer_metrics["title"]["backgroundColor"] == "rgb(255, 255, 255)"
     assert drawer_metrics["title"]["color"] == "rgb(5, 5, 5)"
     assert drawer_metrics["logo"]["src"] == "assets/logo.svg"
     assert drawer_metrics["logo"]["width"] == pytest.approx(48, abs=1)
     assert drawer_metrics["logo"]["height"] == pytest.approx(48, abs=1)
     assert drawer_metrics["sections"]["display"] == "grid"
-    assert "Overview" in drawer_metrics["sectionsText"]
-    assert "Tutorials" in drawer_metrics["sectionsText"]
-    assert "Reference" in drawer_metrics["sectionsText"]
+    for section in NAV_SECTIONS:
+        assert section in drawer_metrics["sectionsText"]
     assert "Getting Started" not in drawer_metrics["sectionsText"]
 
     visible_brands = [
@@ -652,14 +674,6 @@ def test_docs_keep_light_brand_styles(tmp_path):
 
 def nav_pages(config: str) -> list[str]:
     return re.findall(r"^\s*-\s+(?:[^:\n]+:\s+)?([\w./-]+\.md)\s*$", config, re.M)
-
-
-NAV_SECTIONS = ["Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "Reference"]
-DOCS_SWITCH = [
-    ("https://lllm.one/", "LLLM"),
-    ("https://sssn.one/", "SSSN"),
-    ("https://aaax.one/", "AAAX"),
-]
 
 
 def test_docs_nav_sections_and_no_orphan_pages():
