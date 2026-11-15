@@ -37,6 +37,8 @@ FORBIDDEN_PROTOCOL_IMPORT_PREFIXES = (
     "pydantic_ai",
     "lllm.network",
     "lllm.shell",
+    "sssn",
+    "aaax",
 )
 
 
@@ -859,11 +861,24 @@ def test_protocol_layer_has_no_runtime_or_service_imports():
     assert leaks == []
 
 
+def test_public_validation_module_reexports_the_boundary_helpers():
+    from lllm.protocol import _validation, validation
+
+    assert validation.__all__ == ["copy_boundary_value"]
+    for name in validation.__all__:
+        assert getattr(validation, name) is getattr(_validation, name)
+
+    value = {"items": [{"a": 1}], "tags": ("x",)}
+    copied = validation.copy_boundary_value(value)
+    assert copied == value
+    assert copied["items"][0] is not value["items"][0]
+
+
 def test_top_level_import_does_not_require_optional_runtime_dependencies(tmp_path):
     _assert_import_while_blocking(
         tmp_path,
         "lllm",
-        ("fastapi", "httpx", "pydantic_ai", "uvicorn"),
+        ("fastapi", "httpx", "pydantic_ai", "uvicorn", "sssn", "aaax"),
     )
 
 
