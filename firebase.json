@@ -3,20 +3,16 @@
     {
       "target": "docs",
       "public": "site",
+      "redirects": [
+        { "source": "/sssn", "destination": "https://sssn.one/", "type": 301 },
+        { "source": "/sssn/**", "destination": "https://sssn.one/", "type": 301 },
+        { "source": "/aaax", "destination": "https://aaax.one/", "type": 301 },
+        { "source": "/aaax/**", "destination": "https://aaax.one/", "type": 301 }
+      ],
       "rewrites": [
         { "source": "/hub", "run": { "serviceId": "lllm-hub", "region": "us-central1" } },
         { "source": "/hub/**", "run": { "serviceId": "lllm-hub", "region": "us-central1" } }
       ]
-    },
-    {
-      "target": "sssn",
-      "public": "build/redirect",
-      "redirects": [{ "source": "**", "destination": "https://lllm.one/sssn/", "type": 301 }]
-    },
-    {
-      "target": "aaax",
-      "public": "build/redirect",
-      "redirects": [{ "source": "**", "destination": "https://lllm.one/aaax/", "type": 301 }]
     }
   ]
 }

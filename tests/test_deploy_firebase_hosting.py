@@ -21,13 +21,18 @@ def test_firebase_json_targets_translate_to_serving_configs():
     hosting = {entry["target"]: entry for entry in json.loads((ROOT / "firebase.json").read_text())["hosting"]}
     targets = json.loads((ROOT / ".firebaserc").read_text())["targets"]["prosi-501105"]["hosting"]
 
-    assert set(hosting) == set(targets) == {"docs", "sssn", "aaax"}
+    # lllm deploys only lllm.one; sssn.one and aaax.one deploy from their repos.
+    assert targets == {"docs": ["lllm-one"]}
+    assert set(hosting) == {"docs"}
     hub = {"serviceId": "lllm-hub", "region": "us-central1"}
     assert script.serving_config(hosting["docs"]) == {
         "rewrites": [{"glob": "/hub", "run": hub}, {"glob": "/hub/**", "run": hub}],
-    }
-    assert script.serving_config(hosting["sssn"]) == {
-        "redirects": [{"glob": "**", "location": "https://lllm.one/sssn/", "statusCode": 301}]
+        "redirects": [
+            {"glob": "/sssn", "location": "https://sssn.one/", "statusCode": 301},
+            {"glob": "/sssn/**", "location": "https://sssn.one/", "statusCode": 301},
+            {"glob": "/aaax", "location": "https://aaax.one/", "statusCode": 301},
+            {"glob": "/aaax/**", "location": "https://aaax.one/", "statusCode": 301},
+        ],
     }
     assert script.serving_config({"cleanUrls": True, "trailingSlash": False, "rewrites": [{"source": "**", "destination": "/index.html"}]}) == {
         "rewrites": [{"glob": "**", "path": "/index.html"}],
