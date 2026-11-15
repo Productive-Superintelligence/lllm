@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lllm-core"
-version = "0.3.0"
+version = "0.4.0"
 description = "Protocol and service layer for reusable agentic tactics."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -35,6 +35,8 @@ tools = [
     "playwright>=1.45.0",
 ]
 secure = ["keyring>=25.0"]
+network = ["sssn>=0.2"]
+shell = ["aaax>=0.3"]
 docs = ["mkdocs-material>=9.5"]
 dev = [
     "pytest>=8.0",
@@ -59,6 +61,8 @@ all = [
     "tqdm>=4.66.0",
     "playwright>=1.45.0",
     "keyring>=25.0",
+    "sssn>=0.2",
+    "aaax>=0.3",
 ]
 
 [project.scripts]

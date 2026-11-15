@@ -40,8 +40,8 @@ ResourceKind = Literal[
     "asset",
 ]
 RESOURCE_KIND_VALUES = frozenset(get_args(ResourceKind))
-#: Channel forms ``lllm.network`` can create; mirrors ``lllm.network.ChannelForm``
-#: (a test keeps them equal) so the hub does not import the network layer.
+#: Channel forms SSSN can create; mirrors ``sssn.ChannelForm`` (sssn's tests
+#: keep them equal) so the hub does not depend on the sssn package.
 CHANNEL_FORM_VALUES = frozenset(
     {
         "log",

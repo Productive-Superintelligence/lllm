@@ -1,8 +1,13 @@
+import pytest
+
 from lllm import TacticResolver, as_tactic
-from lllm.network import Event, LocalStore
 
 from lllm.hub import LocalConfigResolver, LocalHub, load_manifest, validate_package
 from test_lifecycle import make_combined_package
+
+pytest.importorskip("sssn", reason="channels need the sssn package")
+
+from sssn import Event, LocalStore
 
 
 def test_downloaded_package_composes_tactic_and_network_channels(tmp_path):

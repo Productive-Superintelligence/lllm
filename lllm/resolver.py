@@ -13,9 +13,10 @@ A project keeps its bindings in ``.lllm/config.toml``::
 
 :class:`Resolver` reads that file once and hands back live objects: tactics
 (local or :class:`~lllm.services.RemoteTactic`) for ``/tactics/`` refs and
-channel stores (:class:`~lllm.network.LocalStore` or
-:class:`~lllm.network.RemoteStore`) for ``/channels/`` and ``/snapshots/``
-refs.
+channel stores (``sssn.LocalStore`` or ``sssn.RemoteStore``) for
+``/channels/`` and ``/snapshots/`` refs. Channel and snapshot refs need the
+``sssn`` package (``pip install sssn``); tactic refs and settings work without
+it.
 """
 
 from __future__ import annotations
@@ -28,8 +29,11 @@ from .protocol.refs import parse_resource_ref
 from .services import TacticResolver
 
 if TYPE_CHECKING:
+    from sssn import ChannelResolver, LocalStore, RemoteStore
+
     from .hub.config import LocalConfigResolver
-    from .network import ChannelResolver, LocalStore, RemoteStore
+
+_SSSN_REQUIRED = "Channel and snapshot refs need the sssn package: pip install sssn"
 
 
 class Resolver:
@@ -43,10 +47,9 @@ class Resolver:
         config: "LocalConfigResolver | None" = None,
     ) -> None:
         from .hub.config import LocalConfigResolver
-        from .network import ChannelResolver
 
         self.tactics = tactics if tactics is not None else TacticResolver()
-        self.channels = channels if channels is not None else ChannelResolver()
+        self._channels = channels
         self.config = config if config is not None else LocalConfigResolver()
 
     @classmethod
@@ -54,13 +57,25 @@ class Resolver:
         """Load ``.lllm/config.toml`` from a project folder or a file path."""
 
         from .hub.config import LocalConfigResolver
-        from .network import ChannelResolver
 
+        channel_resolver = _channel_resolver_class(required=False)
         return cls(
             tactics=TacticResolver.from_config(path),
-            channels=ChannelResolver.from_config(path),
+            channels=(
+                channel_resolver.from_config(path)
+                if channel_resolver is not None
+                else None
+            ),
             config=LocalConfigResolver.from_file(path),
         )
+
+    @property
+    def channels(self) -> "ChannelResolver":
+        """The ``sssn.ChannelResolver`` behind channel and snapshot refs."""
+
+        if self._channels is None:
+            self._channels = _channel_resolver_class()()
+        return self._channels
 
     def register(self, ref: str, tactic: Tactic[Any, Any]) -> None:
         """Bind a tactic ref to an in-process tactic."""
@@ -114,4 +129,17 @@ class Resolver:
         return self.config.setting(key, default)
 
     def refs(self) -> tuple[str, ...]:
-        return tuple(sorted({*self.tactics.refs(), *self.channels.refs()}))
+        channel_refs = self._channels.refs() if self._channels is not None else ()
+        return tuple(sorted({*self.tactics.refs(), *channel_refs}))
+
+
+def _channel_resolver_class(*, required: bool = True) -> Any:
+    try:
+        from sssn import ChannelResolver
+    except ModuleNotFoundError as exc:
+        if exc.name != "sssn":
+            raise
+        if not required:
+            return None
+        raise ImportError(_SSSN_REQUIRED, name="sssn") from exc
+    return ChannelResolver

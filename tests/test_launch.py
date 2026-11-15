@@ -6,7 +6,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from lllm.launch import load_launch_api_key_requirements, load_launch_app
+from lllm.launch import LaunchError, load_launch_api_key_requirements, load_launch_app
 from lllm.cli import main
 
 
@@ -61,17 +61,8 @@ port = 8123
 
 
 def test_launch_channel_package_creates_store_api(tmp_path: Path):
-    package = _write_package(
-        tmp_path,
-        kind="channel",
-        primary="channels.events",
-        body="""
-[channels.events]
-schema = "lllm://demo/events/schemas/event"
-form = "log"
-description = "Input events."
-""",
-    )
+    pytest.importorskip("sssn", reason="channel resources need the sssn package")
+    package = _channel_package(tmp_path)
 
     resolved = load_launch_app(package, store=tmp_path / "store")
     assert resolved.kind == "channel"
@@ -80,6 +71,21 @@ description = "Input events."
 
     assert response.status_code == 200
     assert response.json()[0]["name"] == "events"
+
+
+def test_launch_channel_package_without_sssn_says_what_to_install(
+    tmp_path: Path, uninstalled, capsys
+):
+    uninstalled("sssn")
+    package = _channel_package(tmp_path)
+
+    with pytest.raises(LaunchError, match="channel resources need the sssn package: pip install sssn"):
+        load_launch_app(package, store=tmp_path / "store")
+    with pytest.raises(SystemExit) as exc:
+        main(["inspect", str(package)])
+
+    assert exc.value.code == 2
+    assert "channel resources need the sssn package: pip install sssn" in capsys.readouterr().err
 
 
 def test_launch_service_payload_as_fastapi_run_endpoint(tmp_path: Path):
@@ -304,6 +310,20 @@ description = "Launch fixture."
 """.lstrip(),
     )
     return package
+
+
+def _channel_package(tmp_path: Path) -> Path:
+    return _write_package(
+        tmp_path,
+        kind="channel",
+        primary="channels.events",
+        body="""
+[channels.events]
+schema = "lllm://demo/events/schemas/event"
+form = "log"
+description = "Input events."
+""",
+    )
 
 
 def _write(path: Path, text: str) -> None:

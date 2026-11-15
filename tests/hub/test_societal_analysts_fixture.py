@@ -4,9 +4,9 @@ import asyncio
 from pathlib import Path
 
 import httpx
+import pytest
 from lllm import RemoteTactic, TacticResolver, as_tactic
 from lllm.services import create_service_app
-from lllm.network import Event, LocalStore
 
 from lllm.hub import (
     LocalConfigResolver,
@@ -15,6 +15,10 @@ from lllm.hub import (
     load_manifest,
     validate_package,
 )
+
+pytest.importorskip("sssn", reason="channels need the sssn package")
+
+from sssn import Event, LocalStore
 
 
 SOURCE_CHANNELS = (

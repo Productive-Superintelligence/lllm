@@ -1,15 +1,19 @@
 import asyncio
 
 import httpx
+import pytest
 
 from lllm import RemoteTactic, Tactic, TacticResolver
 from lllm.services import create_tactic_app
 from pydantic import BaseModel
-from lllm.network import AsyncRemoteStore, LocalStore
-from lllm.network.server import create_app as create_network_app
 
 from lllm.hub import LocalConfigResolver, LocalHub, load_manifest, validate_package
 from test_lifecycle import make_combined_package
+
+pytest.importorskip("sssn", reason="channels need the sssn package")
+
+from sssn import AsyncRemoteStore, LocalStore
+from sssn.server import create_app as create_network_app
 
 
 TACTIC_REF = "lllm://demo/http-combo/tactics/analyze"

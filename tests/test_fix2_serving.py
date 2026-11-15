@@ -17,7 +17,6 @@ from lllm.launch import LaunchError, load_launch_api_key_requirements, load_laun
 from lllm.protocol import Tactic
 from lllm.runtimes import coerce_tactic
 from lllm.runtimes.python import CallableTactic
-from lllm.shell import create_strategy_app, load_strategy
 
 
 @pytest.fixture(autouse=True)
@@ -163,6 +162,7 @@ def test_a_launched_tactic_can_import_its_package_modules_at_call_time(tmp_path:
 
 
 def test_a_shell_package_tactic_can_import_its_package_modules_at_call_time(tmp_path: Path):
+    aaax = pytest.importorskip("aaax", reason="strategies need the aaax package")
     package = _package(
         tmp_path,
         primary="tactics.shout",
@@ -173,7 +173,7 @@ def test_a_shell_package_tactic_can_import_its_package_modules_at_call_time(tmp_
     _write(package / "fix2_shell" / "helpers.py", _HELPERS)
     _write(package / "fix2_shell" / "tactics.py", _lazy_tactic("fix2_shell"))
 
-    app = create_strategy_app(load_strategy(package))
+    app = aaax.create_strategy_app(aaax.load_strategy(package))
     response = TestClient(app, raise_server_exceptions=False).post(
         "/tactics/shout/run", json={"input": "hi"}
     )
@@ -599,6 +599,26 @@ entry = "fix2_cfg.tactics:Echo"
 
 
 def test_a_snapshot_primary_names_the_channels_that_can_be_launched(tmp_path: Path):
+    package = _snapshot_package(tmp_path)
+    assert validate_package(package).ok
+
+    with pytest.raises(LaunchError) as raised:
+        load_launch_app(package, store=tmp_path / "store")
+
+    assert str(raised.value) == (
+        "resource snapshots.latest cannot be launched; launchable resources: channels.events"
+    )
+
+
+def test_a_named_channel_launches_when_a_snapshot_primary_cannot(tmp_path: Path):
+    pytest.importorskip("sssn", reason="channel resources need the sssn package")
+    package = _snapshot_package(tmp_path)
+
+    resolved = load_launch_app(package, resource="channels.events", store=tmp_path / "store")
+    assert resolved.kind == "channel"
+
+
+def _snapshot_package(tmp_path: Path) -> Path:
     package = tmp_path / "events"
     _write(
         package / "lllm.toml",
@@ -617,16 +637,7 @@ form = "log"
 channel = "events"
 """,
     )
-    assert validate_package(package).ok
-
-    with pytest.raises(LaunchError) as raised:
-        load_launch_app(package, store=tmp_path / "store")
-
-    assert str(raised.value) == (
-        "resource snapshots.latest cannot be launched; launchable resources: channels.events"
-    )
-    resolved = load_launch_app(package, resource="channels.events", store=tmp_path / "store")
-    assert resolved.kind == "channel"
+    return package
 
 
 _ECHO = """

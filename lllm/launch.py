@@ -194,8 +194,15 @@ def _tactic_app(entry: str, *, base_dir: Path, name: str) -> Any:
 
 
 def _channel_app(manifest: Any, *, store: str | Path | None) -> Any:
-    from .network.resources import open_package_store
-    from .network.server import create_app
+    try:
+        from sssn.resources import open_package_store
+        from sssn.server import create_app
+    except ModuleNotFoundError as exc:
+        if exc.name != "sssn":
+            raise
+        raise LaunchError(
+            "channel resources need the sssn package: pip install sssn"
+        ) from exc
 
     return create_app(open_package_store(manifest, store=store))
 
