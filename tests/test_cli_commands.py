@@ -1,6 +1,7 @@
 """The single `lllm` command reaches every module CLI and plugin command."""
 
 import json
+import os
 import re
 import sys
 import types
@@ -133,6 +134,67 @@ def test_a_plugin_missing_its_own_dependency_raises(tmp_path, monkeypatch):
         main(["broken"])
 
     assert exc.value.name == "fake_dependency_that_is_not_installed"
+
+
+@pytest.mark.parametrize("entry_point", [False, True], ids=["fallback", "entry-point"])
+def test_a_local_aaax_or_sssn_module_does_not_shadow_the_installed_plugin(
+    tmp_path, monkeypatch, capsys, entry_point
+):
+    site = tmp_path / "site-packages"  # fake installed aaax and sssn packages
+    work = tmp_path / "work"
+    work.mkdir()
+    for package in ("aaax", "sssn"):
+        (site / package).mkdir(parents=True)
+        (site / package / "__init__.py").write_text("", encoding="utf-8")
+        (site / package / "cli.py").write_text(
+            f"def main(argv):\n    print('installed {package}', *argv)\n    return 0\n",
+            encoding="utf-8",
+        )
+        (work / f"{package}.py").write_text(
+            f"raise AssertionError('imported the local {package}.py')\n", encoding="utf-8"
+        )
+    for name in list(sys.modules):
+        if name.split(".", 1)[0] in {"aaax", "sssn"}:
+            monkeypatch.delitem(sys.modules, name)
+    # "" on sys.path would import from the working directory whatever lllm does.
+    monkeypatch.setattr(sys, "path", [str(site), *(entry for entry in sys.path if entry)])
+    monkeypatch.chdir(work)
+    if entry_point:
+        _entry_points(monkeypatch, network="sssn.cli", shell="aaax.cli")
+    else:
+        _entry_points(monkeypatch)
+
+    try:
+        assert main(["shell", "inspect", "strategy.py"]) == 0
+        assert main(["network", "channels"]) == 0
+    finally:  # forget the fakes; monkeypatch restores the real modules
+        for name in list(sys.modules):
+            if name.split(".", 1)[0] in {"aaax", "sssn"}:
+                del sys.modules[name]
+
+    out = capsys.readouterr().out
+    assert out == "installed aaax inspect strategy.py\ninstalled sssn channels\n"
+    assert os.getcwd() not in sys.path
+
+
+def test_only_core_commands_that_import_user_code_add_the_working_directory(
+    tmp_path, monkeypatch, capsys
+):
+    (tmp_path / "cwd_cli_tactics.py").write_text(
+        "def shout(text):\n    return text.upper()\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(sys, "path", [entry for entry in sys.path if entry])
+    monkeypatch.chdir(tmp_path)
+    cwd = os.getcwd()
+
+    assert main(["init", "briefs", "--org", "demo"]) == 0
+    with pytest.raises(SystemExit):
+        main(["--help"])
+    assert cwd not in sys.path
+
+    assert main(["inspect", "cwd_cli_tactics:shout"]) == 0
+    assert sys.path[0] == cwd
+    assert "shout (python)" in capsys.readouterr().out
 
 
 def test_top_level_help_lists_core_and_installed_plugin_commands(

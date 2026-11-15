@@ -38,6 +38,9 @@ MODULE_COMMANDS = {
 CORE_COMMANDS = frozenset(
     {"create", "init", "setup", "inspect", "serve", *MODULE_COMMANDS}
 )
+#: Core commands that import user code (``module:attr`` entrypoints and package
+#: entries); only these put the working directory on ``sys.path``.
+USER_CODE_COMMANDS = frozenset({"inspect", "serve", "hub"})
 PLUGIN_GROUP = "lllm.commands"
 #: Plugin commands lllm knows by name, used when the package is installed
 #: without its entry point: command -> (package, CLI module, help).
@@ -59,13 +62,18 @@ class _PluginCommand(NamedTuple):
 
 def main(argv: list[str] | None = None) -> int:
     raw_args = list(sys.argv[1:] if argv is None else argv)
-    _import_from_working_directory()
-    if raw_args and raw_args[0] in MODULE_COMMANDS:
-        module = importlib.import_module(MODULE_COMMANDS[raw_args[0]][0])
+    command = raw_args[0] if raw_args else None
+    # Plugin commands load and run before the working directory joins
+    # sys.path, so a local aaax.py or sssn.py cannot stand in for the
+    # installed package.
+    plugins = {} if command in CORE_COMMANDS else _plugin_commands()
+    if command in plugins:
+        return _run_plugin(command, plugins[command], raw_args[1:])
+    if command in USER_CODE_COMMANDS:
+        _import_from_working_directory()
+    if command in MODULE_COMMANDS:
+        module = importlib.import_module(MODULE_COMMANDS[command][0])
         return module.main(raw_args[1:])
-    plugins = {} if raw_args and raw_args[0] in CORE_COMMANDS else _plugin_commands()
-    if raw_args and raw_args[0] in plugins:
-        return _run_plugin(raw_args[0], plugins[raw_args[0]], raw_args[1:])
 
     from . import __version__
 

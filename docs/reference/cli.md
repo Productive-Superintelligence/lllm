@@ -127,7 +127,10 @@ group, which maps a command name to a module with `main(argv)`:
 network = "sssn.cli"
 ```
 
-`lllm --help` lists the installed ones. LLLM's companion packages add two:
+`lllm --help` lists the installed ones. A plugin's `main(argv)` runs as it
+would under the package's own command: `lllm` imports it from the installed
+package and does not put the working directory on `sys.path`, so a local
+`sssn.py` or `aaax.py` cannot shadow it. LLLM's companion packages add two:
 
 | Command | Install | Docs |
 | --- | --- | --- |

@@ -22,7 +22,10 @@ The package hub stays in LLLM.
   `lllm shell`, and `lllm --help` lists the installed plugins. Without the
   package, `lllm network` prints
   `lllm network needs the sssn package: pip install sssn` and exits 2. The
-  `sssn` and `aaax` commands stay.
+  `sssn` and `aaax` commands stay. Plugins load from their installed
+  package, so a local `sssn.py` or `aaax.py` cannot shadow them; only
+  `lllm inspect`, `serve`, and `hub` put the working directory on
+  `sys.path`.
 - `lllm.protocol.validation` makes `copy_boundary_value` public for packages
   built on LLLM; `lllm.protocol._validation` is unchanged.
 - `lllm.Resolver` and `lllm serve` import channel support from sssn when they
