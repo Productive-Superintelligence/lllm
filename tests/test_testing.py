@@ -45,6 +45,33 @@ def test_tool_call_replies_run_the_real_tool():
     assert "5" in fake.requests[1].tool_results()[0]
 
 
+def test_tool_calls_work_when_the_agent_streams():
+    from lllm.runtimes.native.invokers.base import BaseStreamHandler
+
+    class Collect(BaseStreamHandler):
+        def __init__(self):
+            self.pieces = []
+
+        def handle_chunk(self, chunk_content, chunk_response):
+            self.pieces.append(chunk_content)
+
+    @tool(description="Add two numbers")
+    def add(a: int, b: int) -> int:
+        return a + b
+
+    ask = Prompt(path="math/add", prompt="What is {a} + {b}?", function_list=[add])
+    agent = Tactic.quick(system_prompt="You add numbers.", model="gpt-4o-mini")
+    agent.stream_handler = Collect()
+    agent.open("math")
+    agent.receive_prompt(ask, {"a": 2, "b": 3})
+    script = [[ToolCall("add", {"a": 2, "b": 3}), ToolCall("add", {"a": 1, "b": 1})], "5 and 2"]
+    with ScriptedModel(script):
+        session = agent.respond(return_session=True)
+    assert session.delivery.content == "5 and 2"
+    assert [call.result for call in session.tool_calls] == [5, 2]
+    assert "".join(agent.stream_handler.pieces) == "5 and 2"
+
+
 def test_an_inner_fake_model_takes_over_and_restores_the_outer_one():
     with FunctionModel(lambda request: "outer"):
         with ScriptedModel(["inner"]):

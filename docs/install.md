@@ -23,7 +23,7 @@ tactic boundary. The `native` extra adds what agents need to call models.
 | `native` | LiteLLM, YAML configs | agents calling models (most users) |
 | `server` | FastAPI, Uvicorn | [serving](serving.md) tactics with `lllm serve` |
 | `client` | httpx | calling served tactics with `RemoteTactic` |
-| `sandbox` | Jupyter client | the [code sandbox](sandbox.md) |
+| `sandbox` | Jupyter client and kernel | the [code sandbox](sandbox.md) |
 | `pydantic-ai` | Pydantic AI | [running Pydantic AI agents](pydantic-ai.md) as tactics |
 | `secure` | keyring | storing API keys with `lllm setup` |
 | `tools` | OpenAI SDK, Playwright | the experimental browser-use agent |

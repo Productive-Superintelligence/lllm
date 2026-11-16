@@ -130,25 +130,25 @@ class FunctionModel:
         self.requests.append(request)
         reply = self.function(request)
         calls = _tool_calls(reply)
+        stream = bool(kwargs.get("stream"))
         if calls is None:
             return litellm.completion(
                 model=model,
                 messages=messages,
                 mock_response=str(reply),
-                stream=bool(kwargs.get("stream")),
+                stream=stream,
             )
-        response = litellm.completion(
-            model=model,
-            messages=messages,
-            mock_tool_calls=[
-                {
-                    "id": f"call_{uuid.uuid4().hex[:12]}",
-                    "type": "function",
-                    "function": {"name": call.name, "arguments": json.dumps(call.arguments)},
-                }
-                for call in calls
-            ],
-        )
+        tool_calls = [
+            {
+                "id": f"call_{uuid.uuid4().hex[:12]}",
+                "type": "function",
+                "function": {"name": call.name, "arguments": json.dumps(call.arguments)},
+            }
+            for call in calls
+        ]
+        if stream:  # an agent with a stream handler
+            return _tool_call_stream(model, tool_calls)
+        response = litellm.completion(model=model, messages=messages, mock_tool_calls=tool_calls)
         response.choices[0].finish_reason = "tool_calls"
         return response
 
@@ -167,6 +167,29 @@ class ScriptedModel(FunctionModel):
         reply = self.replies[min(self._next, len(self.replies) - 1)]
         self._next += 1
         return reply
+
+
+def _tool_call_stream(model: str, tool_calls: list[dict[str, Any]]) -> Any:
+    """The stream chunks of a tool-call reply (LiteLLM's mock streams text only)."""
+
+    from litellm.types.utils import (
+        ChatCompletionDeltaToolCall,
+        Delta,
+        Function,
+        ModelResponseStream,
+        StreamingChoices,
+    )
+
+    deltas = [
+        ChatCompletionDeltaToolCall(
+            id=call["id"], type="function", index=index, function=Function(**call["function"])
+        )
+        for index, call in enumerate(tool_calls)
+    ]
+    first = Delta(role="assistant", content=None, tool_calls=deltas)
+    yield ModelResponseStream(model=model, choices=[StreamingChoices(index=0, delta=first)])
+    done = StreamingChoices(index=0, delta=Delta(), finish_reason="tool_calls")
+    yield ModelResponseStream(model=model, choices=[done])
 
 
 def _tool_calls(reply: Reply) -> list[ToolCall] | None:

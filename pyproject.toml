@@ -28,6 +28,7 @@ native = [
 sandbox = [
     "nbformat>=5.10.0",
     "jupyter-client>=8.6.0",
+    "ipykernel>=6.29",
 ]
 tools = [
     "openai>=1.40.0",
@@ -59,6 +60,7 @@ all = [
     "Pillow>=10.0.0",
     "nbformat>=5.10.0",
     "jupyter-client>=8.6.0",
+    "ipykernel>=6.29",
     "openai>=1.40.0",
     "tqdm>=4.66.0",
     "playwright>=1.45.0",
