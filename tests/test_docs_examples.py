@@ -28,7 +28,7 @@ from lllm.testing import FunctionModel  # noqa: E402
 DOCS = Path(__file__).resolve().parents[1] / "docs"
 
 
-@pytest.mark.parametrize("example", find_examples(str(DOCS)), ids=str)
+@pytest.mark.parametrize("example", list(find_examples(str(DOCS))), ids=str)
 def test_docs_example(example: CodeExample, eval_example: EvalExample, tmp_path, monkeypatch):
     settings = example.prefix_settings()
     if settings.get("test") == "skip":
