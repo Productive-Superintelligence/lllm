@@ -30,6 +30,28 @@ theme:
     - search.suggest
     - search.highlight
 
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [.]
+          options:
+            docstring_style: google
+            show_source: false
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            separate_signature: true
+            show_signature_annotations: true
+            signature_crossrefs: true
+            show_if_no_docstring: false
+            filters: ["!^_"]
+            heading_level: 2
+
 hooks:
   - scripts/docs_hooks.py
 
@@ -59,7 +81,7 @@ nav:
       - Testing: testing.md
       - Observability: observability.md
       - Packages: packages.md
-      - The hub: hub.md
+      - The hub: publishing.md
   - Integrations:
       - Pydantic AI: pydantic-ai.md
       - Other runtimes: runtimes.md
@@ -67,6 +89,12 @@ nav:
       - examples/index.md
   - API reference:
       - api/index.md
+      - Native runtime: api/native.md
+      - Protocol: api/protocol.md
+      - Services: api/services.md
+      - lllm.hub: api/hub.md
+      - Proxies and sandbox: api/capabilities.md
+      - lllm.testing: api/testing.md
       - CLI: api/cli.md
       - Service API: api/service-api.md
       - Hub metadata: api/hub-metadata.md

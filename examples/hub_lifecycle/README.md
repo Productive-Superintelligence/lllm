@@ -1,6 +1,6 @@
 # Local Package Lifecycle Example
 
-This example mirrors `docs/tutorials/local-package-lifecycle.md`.
+This example walks through the steps in [The hub](https://lllm.one/publishing/) guide.
 
 It initializes a package, validates it, publishes it into a local hub, renders
 cards/config, and downloads a clean copy.

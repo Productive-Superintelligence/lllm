@@ -135,4 +135,4 @@ See [Configuration](configuration.md) and [Packages](packages.md).
 `arun()`, streaming, and `info()` with JSON schemas. The same boundary wraps
 [Pydantic AI agents](pydantic-ai.md) and [plain functions](runtimes.md), so
 everything you build can be [served](serving.md), packaged, published to the
-[hub](hub.md), and handed to another agent as a tool.
+[hub](publishing.md), and handed to another agent as a tool.

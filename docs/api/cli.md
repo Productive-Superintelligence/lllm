@@ -43,7 +43,7 @@ lllm init [PATH] [--name NAME] [--org ORG] [--kind KIND] [--force]
 ```
 
 Writes a minimal `lllm.toml` (with `[card]` and `[docs.readme]`) and a README
-if there is none. See [The manifest](../packages/manifest.md).
+if there is none. See [The manifest](../packages.md).
 
 ## `lllm setup`
 
@@ -89,11 +89,9 @@ lllm serve ./briefs --resource services.api
 | `--skip-key-check` | off | Start without checking declared keys |
 
 An entrypoint names a tactic class or instance, a factory, an object with a
-`run` method, or a handler function
-([Loading entrypoints](../protocol/runtimes.md#loading-entrypoints)). A
-resource that cannot be launched, or a service entry that fails to import or
-build, stops with an error that names the cause
-([Services](../protocol/services.md#lllm-serve)).
+`run` method, or a handler function. A resource that cannot be launched, or a
+service entry that fails to import or build, stops with an error that names
+the cause. See [Serving](../serving.md).
 
 ## `lllm hub`
 
@@ -115,7 +113,7 @@ lllm hub [--hub DIR] COMMAND
 | `index OUTPUT [--generated-at TS]` | Write a static catalog for the hub web app |
 | `serve [--host] [--port 8787]` | Serve the hub API |
 
-See [The Hub](../packages/hub.md).
+See [The Hub](../publishing.md).
 
 ## Plugin commands
 

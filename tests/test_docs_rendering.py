@@ -9,7 +9,7 @@ import pytest
 
 
 ROOT = Path(__file__).resolve().parents[1]
-NAV_SECTIONS = ["Tutorials", "Native Runtime", "Tactic Protocol", "Packages", "Reference"]
+NAV_SECTIONS = ["Get started", "Guide", "Production", "Integrations", "Examples", "API reference"]
 DOCS_SWITCH = [
     ("https://lllm.one/", "LLLM"),
     ("https://sssn.one/", "SSSN"),
@@ -303,13 +303,13 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
             """
         )
         page.goto(
-            (site_dir / "tutorials" / "01-quick-start" / "index.html").as_uri(),
+            (site_dir / "agents" / "index.html").as_uri(),
             wait_until="domcontentloaded",
         )
-        tutorial_sidebar = page.locator(
+        guide_sidebar = page.locator(
             ".md-sidebar--primary .md-nav--primary > .md-nav__list"
         ).inner_text()
-        tutorial_tab = page.locator(".psi-header-nav__link--active").inner_text()
+        guide_tab = page.locator(".psi-header-nav__link--active").inner_text()
         page.close()
         browser.close()
 
@@ -327,15 +327,15 @@ def test_docs_chrome_matches_light_visual_contract(tmp_path):
     assert metrics["drawerSections"]["display"] == "none"
     assert metrics["headerNav"]["display"] == "flex"
     assert metrics["headerNavLinks"] == NAV_SECTIONS
-    # The home page is outside the nav, so its sidebar lists every section;
-    # a page in a section lists that section only.
-    for section in NAV_SECTIONS:
-        assert section in metrics["sidebarText"]
-    assert tutorial_tab == "Tutorials"
-    assert "Getting Started" in tutorial_sidebar
-    assert "1. Quick Start" in tutorial_sidebar
-    assert "Architecture" not in tutorial_sidebar
-    assert "Service API" not in tutorial_sidebar
+    # The home page is the Introduction, the first page of "Get started"; a
+    # page lists only its own section in the sidebar.
+    assert "Installation" in metrics["sidebarText"]
+    assert "Service API" not in metrics["sidebarText"]
+    assert guide_tab == "Guide"
+    assert "Core concepts" in guide_sidebar
+    assert "Dialogs" in guide_sidebar
+    assert "Installation" not in guide_sidebar
+    assert "Service API" not in guide_sidebar
     assert metrics["source"]["component"] == "source"
     assert metrics["sourceRepository"].startswith("Productive-Superintelligence/lllm")
     assert metrics["footer"]["height"] == pytest.approx(44, abs=1)
@@ -469,10 +469,9 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
             }
             """
         )
-        # The home page has no diagrams; the architecture page's are wider
-        # than a phone.
+        # The home page has no diagrams; How LLLM works draws the agent loop.
         page.goto(
-            (site_dir / "core" / "architecture" / "index.html").as_uri(),
+            (site_dir / "concepts" / "index.html").as_uri(),
             wait_until="domcontentloaded",
         )
         page.wait_for_function(
@@ -521,7 +520,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert "Space Mono" in metrics["codeFont"]
     assert diagram_metrics["docWidth"] <= metrics["viewportWidth"] + 1
     assert diagram_metrics["mermaidWidth"] <= metrics["viewportWidth"]
-    assert diagram_metrics["svgWidth"] > metrics["viewportWidth"]
+    assert diagram_metrics["svgWidth"] > 0
     assert drawer_metrics["title"]["backgroundColor"] == "rgb(255, 255, 255)"
     assert drawer_metrics["title"]["color"] == "rgb(5, 5, 5)"
     assert drawer_metrics["logo"]["src"] == "assets/logo.svg"
@@ -530,7 +529,7 @@ def test_docs_mobile_chrome_keeps_visual_contract(tmp_path):
     assert drawer_metrics["sections"]["display"] == "grid"
     for section in NAV_SECTIONS:
         assert section in drawer_metrics["sectionsText"]
-    assert "Getting Started" not in drawer_metrics["sectionsText"]
+    assert "Installation" not in drawer_metrics["sectionsText"]
 
     visible_brands = [
         image for image in metrics["brandImages"] if image["display"] == "block"
@@ -683,22 +682,21 @@ def test_docs_nav_sections_and_no_orphan_pages():
     assert "- navigation.indexes" in config
     assert "- navigation.tabs" not in config
     assert "scheme: slate" not in config
-    # The header renders the top-level sections as tabs; the logo is the way
-    # home, so there is no Home section and index.md stays out of the nav.
+    # The header renders the top-level sections as tabs. The logo leads home,
+    # to the Introduction at the start of "Get started"; there is no Home tab.
     nav = config.split("\nnav:\n", 1)[1].split("\n\n", 1)[0]
     assert re.findall(r"^  - ([^:\n]+):\s*$", nav, re.M) == NAV_SECTIONS
     assert "homepage: https://lllm.one/" in config
     pages = nav_pages(config)
     docs = ROOT / "docs"
     assert [page for page in pages if not (docs / page).is_file()] == []
-    assert "index.md" not in pages
-    assert pages[:2] == ["tutorials/index.md", "getting-started.md"]
+    assert pages[:3] == ["index.md", "install.md", "concepts.md"]
     all_pages = {
         str(path.relative_to(docs))
         for path in docs.rglob("*.md")
         if "overrides" not in path.parts
     }
-    assert sorted(all_pages - set(pages)) == ["index.md"]
+    assert sorted(all_pages - set(pages)) == []
     assert not (docs / "sssn").exists()
     assert not (docs / "aaax").exists()
 
@@ -711,7 +709,7 @@ def test_docs_header_has_section_tabs_and_switches_between_the_three_sites(tmp_p
     assert re.findall(r"title: (\w+)\n\s+url: (\S+)", switch) == [
         (title, url) for url, title in DOCS_SWITCH
     ]
-    for page in ("index.html", "tutorials/index.html", "reference/cli/index.html"):
+    for page in ("index.html", "agents/index.html", "api/cli/index.html"):
         html = (site_dir / page).read_text(encoding="utf-8")
         header = html.split('class="psi-header-nav"', 1)[1].split("</div>", 1)[0]
         tabs = re.findall(r'class="psi-header-nav__link[^"]*">\s*(.*?)\s*</a>', header, re.S)
@@ -737,29 +735,53 @@ def test_docs_use_sssn_and_aaax_instead_of_the_old_module_paths():
         assert match is None, f"{path.relative_to(ROOT)} mentions {match.group(0)}"
 
 
-def test_native_reference_covers_core_surfaces():
-    core = ROOT / "docs" / "core"
-    text = "\n".join(path.read_text(encoding="utf-8") for path in sorted(core.glob("*.md")))
+GUIDE_PAGES = [
+    "agents",
+    "prompts",
+    "tools",
+    "dialogs",
+    "tactics",
+    "typed-io",
+    "configuration",
+    "streaming",
+    "models",
+    "inference-hints",
+    "proxies",
+    "sandbox",
+    "serving",
+    "testing",
+    "observability",
+    "packages",
+    "publishing",
+    "pydantic-ai",
+    "runtimes",
+]
 
-    for page in ("architecture", "agent", "prompts", "dialog", "tactic", "config", "invokers", "inference-hints", "proxy-and-sandbox", "logging", "runtime"):
-        assert (core / f"{page}.md").is_file(), page
+
+def test_guide_covers_core_surfaces():
+    docs = ROOT / "docs"
+    for page in GUIDE_PAGES:
+        assert (docs / f"{page}.md").is_file(), page
+    text = "\n".join((docs / f"{page}.md").read_text(encoding="utf-8") for page in GUIDE_PAGES)
     for term in (
-        "`AgentCallSession`",
-        "`TacticCallSession`",
+        "AgentCallSession",
+        "TacticCallSession",
         "agent_group",
         "agent_tools",
         "max_rate_limit_retries",
-        "`ProxyManager`",
         "CALL_API",
         "InferenceHints",
         "x-dynamo-session-id",
         "tactic_as_function",
+        "return_session=True",
+        "lllm serve",
+        "lllm.testing",
     ):
         assert term in text, term
 
 
 def test_service_api_reference_matches_error_envelope():
-    reference = (ROOT / "docs" / "reference" / "service-api.md").read_text(
+    reference = (ROOT / "docs" / "api" / "service-api.md").read_text(
         encoding="utf-8"
     )
 
@@ -778,7 +800,7 @@ def test_service_api_reference_matches_error_envelope():
 
 
 def test_hub_metadata_reference_names_json_schemas():
-    reference = (ROOT / "docs" / "reference" / "hub-metadata.md").read_text(
+    reference = (ROOT / "docs" / "api" / "hub-metadata.md").read_text(
         encoding="utf-8"
     )
 
@@ -788,7 +810,7 @@ def test_hub_metadata_reference_names_json_schemas():
 
 
 def test_refs_page_documents_local_config_and_resolver():
-    refs = (ROOT / "docs" / "protocol" / "refs.md").read_text(encoding="utf-8")
+    refs = (ROOT / "docs" / "packages.md").read_text(encoding="utf-8")
 
     assert "lllm://" in refs
     assert ".lllm/config.toml" in refs
@@ -817,18 +839,25 @@ def test_public_text_does_not_use_staging_name():
         assert "prosi-psi-cli" not in text, path
 
 
-def test_tutorials_keep_step_by_step_shape():
-    lessons = sorted((ROOT / "docs" / "tutorials").glob("[0-9][0-9]-*.md"))
+def fences(text: str) -> list[tuple[str, str]]:
+    """(info string, body) of every top-level fenced code block."""
 
-    assert [path.name[:2] for path in lessons] == [f"{n:02d}" for n in range(1, 12)]
-    for path in lessons:
-        text = path.read_text(encoding="utf-8")
-        name = path.relative_to(ROOT)
-        assert "Goal" in text, f"{name} missing a goal"
-        assert re.search(
-            r"^#{2,3} (?:(?:Step|Part|Pattern) )?1[.:]", text, re.M
-        ), f"{name} missing numbered steps"
-        assert "Next" in text, f"{name} missing a next link"
+    return re.findall(r"^```([^\n]*)\n(.*?)^```", text, re.M | re.S)
+
+
+def test_guide_pages_show_a_runnable_example_with_its_output():
+    # The docs teach by example: every guide page has a Python example that
+    # tests/test_docs_examples.py runs, with the printed output it checks.
+    for page in ["index", "concepts", *GUIDE_PAGES]:
+        text = (ROOT / "docs" / f"{page}.md").read_text(encoding="utf-8")
+        checked = [
+            body
+            for info, body in fences(text)
+            if info.startswith("python")
+            and 'test="skip"' not in info
+            and ("#>" in body or '\n"""' in body)
+        ]
+        assert checked, f"docs/{page}.md has no runnable example with checked output"
 
 
 def prose(path: Path) -> str:

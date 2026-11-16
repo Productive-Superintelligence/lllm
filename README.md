@@ -89,7 +89,7 @@ lllm serve tactics:brief --port 8000     # POST /run, POST /stream, GET /info
 
 `RemoteTactic` calls a served tactic as if it were local, `lllm://` refs and
 `lllm.Resolver` wire systems together by name, and native agents can send
-[inference hints](https://lllm.one/core/inference-hints/) (session identity
+[inference hints](https://lllm.one/inference-hints/) (session identity
 from dialogs, priorities, expected output length) to KV-cache-aware serving
 stacks such as NVIDIA Dynamo, vLLM, and SGLang.
 
