@@ -132,7 +132,7 @@ print(agent.active_alias, list(agent.dialogs))
 | `open(alias, prompt_args=None)` | Start a dialog; `prompt_args` fill the system prompt's variables |
 | `receive(text)` | Add a user message |
 | `receive_prompt(prompt, args)` | Render a [prompt](prompts.md) and add it, with its format, parser, and tools |
-| `receive_image(image, caption=None)` | Add an image (a path, URL, bytes, or PIL image) |
+| `receive_image(image, caption=None)` | Add an image: a file path, a PIL image, or a base64 PNG, JPEG, WebP, or GIF |
 | `respond(args=None, return_session=False)` | Run the agent loop on the active dialog |
 | `await arespond(...)` | The same, for async code |
 

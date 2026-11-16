@@ -145,8 +145,8 @@ print("\n".join(f"- {bullet}" for bullet in result.bullets))
    tactic or per agent.
 
 The result is an object you can use, and the whole run stays inspectable:
-call `brief(topic, return_session=True)` to get every agent call, its cost,
-and each agent's dialog.
+call `brief(topic, return_session=True)` to get a record of every agent
+call, with each reply and its cost.
 
 ## Serve it
 
