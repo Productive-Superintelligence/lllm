@@ -5,12 +5,20 @@ what an example asks (usually a phrase from the latest user message, or the
 system prompt) and returns the reply a real model would plausibly give, so
 the outputs shown in the docs are realistic and checked on every run.
 Keep replies short and deterministic.
+
+The rules for the first pages are below. Every other page keeps its rules in
+``docs_rules_<page>.py`` next to this file, which imports ``rule``, ``asks``
+and the other helpers from here. Rules are tried in order (this file first,
+then the page files by name), and the first match answers, so match on
+phrases or tool names that only your page uses.
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import re
+from pathlib import Path
 from typing import Callable
 
 from lllm.testing import ModelRequest, Reply, ToolCall
@@ -199,3 +207,9 @@ def _fact_check_call(request):
 @rule(lambda r: "fact_check" in r.tools and bool(r.tool_results()))
 def _fact_check_answer(request):
     return f"Paris is the capital of France (checked: {tool_result(request)})."
+
+
+# -- Other pages: docs_rules_<page>.py ----------------------------------------
+
+for _path in sorted(Path(__file__).parent.glob("docs_rules_*.py")):
+    importlib.import_module(_path.stem)
