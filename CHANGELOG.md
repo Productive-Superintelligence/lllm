@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- `lllm-core[all]` lists PyYAML, which the `native` extra needs. It was only
+  installed as a dependency of other packages.
+
 ## 0.4.0
 
 SSSN and AAAX are separate packages again, built on LLLM: `sssn` (channels)

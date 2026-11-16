@@ -52,6 +52,7 @@ all = [
     "uvicorn>=0.30",
     "pydantic-ai",
     "litellm>=1.82.3",
+    "PyYAML>=6.0",
     "requests>=2.31.0",
     "filelock>=3.13.0",
     "Pillow>=10.0.0",
