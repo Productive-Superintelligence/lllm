@@ -81,7 +81,10 @@ RESEARCH = Prompt(  # (3)!
 )
 WRITE = Prompt(
     path="brief/write",
-    prompt="Write a three-bullet brief about {topic} from these notes:\n{notes}",
+    prompt=(
+        "Write a three-bullet brief about {topic} "
+        "from these notes:\n{notes}"
+    ),
     format=Brief,
 )
 

@@ -860,6 +860,41 @@ def test_guide_pages_show_a_runnable_example_with_its_output():
         assert checked, f"docs/{page}.md has no runnable example with checked output"
 
 
+CODE_COLUMN = 76  # characters of the code font that fit the content column
+
+
+def test_docs_code_fits_the_code_column():
+    # Longer lines are cut off behind a horizontal scrollbar. Printed output
+    # (after `#>`, or in a `"""` block of its own) is exempt: it is what the
+    # program prints.
+    long_lines = []
+    for path in sorted((ROOT / "docs").rglob("*.md")):
+        text = path.read_text(encoding="utf-8")
+        for match in re.finditer(r"^([ \t]*)```([^\n]*)\n(.*?)^\1```", text, re.M | re.S):
+            if match.group(2).strip().startswith("mermaid"):
+                continue
+            quote = None
+            for line in match.group(3).splitlines():
+                stripped = line.strip()
+                if quote == "output":
+                    quote = None if stripped == '"""' else quote
+                    continue
+                if quote is None and stripped == '"""':
+                    quote = "output"
+                    continue
+                if quote == "doc" and stripped.endswith('"""'):
+                    quote = None
+                elif quote is None and stripped.startswith('"""') and not (
+                    len(stripped) >= 6 and stripped.endswith('"""')
+                ):
+                    quote = "doc"
+                if stripped.startswith("#>"):
+                    continue
+                if len(line) - len(match.group(1)) > CODE_COLUMN:
+                    long_lines.append(f"{path.relative_to(ROOT)}: {stripped[:70]}")
+    assert long_lines == []
+
+
 def prose(path: Path) -> str:
     """File text with fenced code blocks removed (code is not links)."""
 

@@ -36,7 +36,9 @@ ASK = Prompt(
     function_list=[to_fahrenheit],
 )
 
-agent = Tactic.quick(system_prompt="You convert units.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You convert units.", model="gpt-4o-mini"
+)
 agent.open("chat")  # (1)!
 agent.receive_prompt(ASK, {"celsius": 21})  # (2)!
 reply = agent.respond()  # (3)!
@@ -98,7 +100,7 @@ are ordinary code:
 def call(self, claim: str) -> Verdict:
     evidence = [self.search(q) for q in self.plan(claim)]  # fan out
     verdict = self.judge(claim, evidence)
-    while verdict.confidence < 0.7 and len(evidence) < 10:  # loop until sure
+    while verdict.confidence < 0.7 and len(evidence) < 10:  # until sure
         evidence.append(self.search(verdict.missing))
         verdict = self.judge(claim, evidence)
     return verdict

@@ -32,9 +32,12 @@ CLASSIFY = Prompt(
     parser=DefaultTagParser(required_xml_tags=["label"]),
 )
 
-agent = Tactic.quick(system_prompt="You triage support tickets.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You triage support tickets.", model="gpt-4o-mini"
+)
 agent.open("triage")
-agent.receive_prompt(CLASSIFY, {"ticket": "I was charged twice this month."})
+ticket = "I was charged twice this month."
+agent.receive_prompt(CLASSIFY, {"ticket": ticket})
 reply = agent.respond()
 print(reply.parsed["xml_tags"]["label"])
 #> ['billing']
@@ -73,7 +76,10 @@ from lllm import Prompt
 
 SUMMARIZE = Prompt(
     path="docs/summarize",
-    prompt="Summarize {title} in {words} words. Return JSON like {{\"summary\": \"...\"}}.",
+    prompt=(
+        "Summarize {title} in {words} words. "
+        'Return JSON like {{"summary": "..."}}.'
+    ),
 )
 print(sorted(SUMMARIZE.template_vars))
 #> ['title', 'words']
@@ -114,7 +120,8 @@ EXTRACT = Prompt(
 
 agent = Tactic.quick(system_prompt="You extract data.", model="gpt-4o-mini")
 agent.open("extract")
-agent.receive_prompt(EXTRACT, {"text": "ACME Corp. Amount due: 1,250.00 EUR"})
+text = "ACME Corp. Amount due: 1,250.00 EUR"
+agent.receive_prompt(EXTRACT, {"text": text})
 invoice = Invoice.model_validate(agent.respond().parsed)  # (1)!
 print(invoice)
 #> vendor='ACME Corp' total=1250.0 currency='EUR'
@@ -213,7 +220,9 @@ STRICT = Prompt(
     prompt="Classify: {ticket}. Answer inside <label></label> tags.",
     parser=DefaultTagParser(required_xml_tags=["label"]),
     handler=DefaultSimpleHandler(
-        exception_msg="Invalid reply: {error_message}\nAnswer again, tags only.",
+        exception_msg=(
+            "Invalid reply: {error_message}\nAnswer again, tags only."
+        ),
     ),
 )
 print(STRICT.handler.exception_msg)
@@ -236,8 +245,14 @@ step can bring exactly the tools it needs. The agent's own tools are offered
 too, unless the prompt sets `agent_tools=False`:
 
 ```python test="skip" reason="fragment; see the Tools guide"
-RESEARCH = Prompt(path="brief/research", prompt="Research {topic}.", function_list=[search])
-SUMMARY = Prompt(path="brief/summary", prompt="Summarize the notes.", agent_tools=False)
+RESEARCH = Prompt(
+    path="brief/research",
+    prompt="Research {topic}.",
+    function_list=[search],
+)
+SUMMARY = Prompt(
+    path="brief/summary", prompt="Summarize the notes.", agent_tools=False
+)
 ```
 
 See [Tools](tools.md).
@@ -257,9 +272,12 @@ BASE = Prompt(
 )
 FINANCE = BASE.extend(
     path="analyst/finance",
-    prompt="As a financial analyst, analyze {topic}. Answer inside <answer></answer> tags.",
+    prompt=(
+        "As a financial analyst, analyze {topic}. "
+        "Answer inside <answer></answer> tags."
+    ),
 )
-print(FINANCE.path, FINANCE.parser.required_xml_tags)  # the parser carries over
+print(FINANCE.path, FINANCE.parser.required_xml_tags)  # parser carries over
 #> analyst/finance ['answer']
 ```
 

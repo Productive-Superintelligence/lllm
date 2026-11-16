@@ -19,7 +19,9 @@ both turns go into the same dialog:
 ```python title="chat.py"
 from lllm import Tactic
 
-agent = Tactic.quick(system_prompt="You are a helpful assistant.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You are a helpful assistant.", model="gpt-4o-mini"
+)
 agent.open("chat")
 
 agent.receive("My name is Ada.")
@@ -45,7 +47,9 @@ reply = Tactic.quick("What is the capital of France?", model="gpt-4o-mini")
 print(reply.content)
 #> The capital of France is Paris.
 
-agent = Tactic.quick(system_prompt="Answer in one word.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="Answer in one word.", model="gpt-4o-mini"
+)
 print(agent.name, agent.model)
 #> assistant gpt-4o-mini
 ```
@@ -64,7 +68,9 @@ class Review(Tactic):
 
 review = Review({
     "global": {"model_name": "gpt-4o-mini"},
-    "agent_configs": [{"name": "reviewer", "system_prompt": "You review code."}],
+    "agent_configs": [
+        {"name": "reviewer", "system_prompt": "You review code."}
+    ],
 })
 ```
 
@@ -77,7 +83,9 @@ from lllm.runtimes.native.invokers import build_invoker
 
 agent = Agent(
     name="writer",
-    system_prompt=Prompt(path="writer/system", prompt="You write clear notes."),
+    system_prompt=Prompt(
+        path="writer/system", prompt="You write clear notes."
+    ),
     model="gpt-4o-mini",
     llm_invoker=build_invoker({"invoker": "litellm"}),
     model_args={"temperature": 0.2},
@@ -96,7 +104,9 @@ the active one. Use one alias per line of work, so histories never mix:
 ```python title="aliases.py"
 from lllm import Tactic
 
-agent = Tactic.quick(system_prompt="You are a careful planner.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You are a careful planner.", model="gpt-4o-mini"
+)
 
 agent.open("plan")  # (1)!
 agent.receive("Plan a launch checklist in three steps.")
@@ -144,9 +154,15 @@ class City(BaseModel):
     country: str
 
 
-ASK = Prompt(path="geo/capital", prompt="Name the capital of {country}.", format=City)
+ASK = Prompt(
+    path="geo/capital",
+    prompt="Name the capital of {country}.",
+    format=City,
+)
 
-agent = Tactic.quick(system_prompt="You answer geography questions.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You answer geography questions.", model="gpt-4o-mini"
+)
 agent.open("q")
 agent.receive_prompt(ASK, {"country": "Japan"})
 session = agent.respond(return_session=True)
@@ -222,7 +238,9 @@ from lllm import Tactic
 
 
 async def main():
-    agent = Tactic.quick(system_prompt="You are terse.", model="gpt-4o-mini")
+    agent = Tactic.quick(
+        system_prompt="You are terse.", model="gpt-4o-mini"
+    )
     agent.open("chat")
     agent.receive("What is 2 + 2?")
     reply = await agent.arespond()

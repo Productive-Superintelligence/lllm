@@ -34,7 +34,7 @@ def test_docs_example(example: CodeExample, eval_example: EvalExample, tmp_path,
     if settings.get("test") == "skip":
         pytest.skip(settings.get("reason", "marked test=skip"))
     monkeypatch.chdir(tmp_path)  # examples that write files write them here
-    eval_example.set_config(line_length=88)
+    eval_example.set_config(line_length=76)  # the code column's width
     with FunctionModel(answer):
         if eval_example.update_examples:
             eval_example.run_print_update(example)

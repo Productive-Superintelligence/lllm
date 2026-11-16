@@ -39,7 +39,7 @@ so any provider it supports works. Set the provider's key in the environment
 and name the model:
 
 ```bash
-export OPENAI_API_KEY=sk-...       # or ANTHROPIC_API_KEY, GEMINI_API_KEY, ...
+export OPENAI_API_KEY=sk-...  # or ANTHROPIC_API_KEY, GEMINI_API_KEY, ...
 ```
 
 ```python test="skip" reason="calls a real provider"

@@ -23,7 +23,9 @@ ANSWER = Prompt(
     function_list=[lookup_order],  # (1)!
 )
 
-agent = Tactic.quick(system_prompt="You are a support agent.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You are a support agent.", model="gpt-4o-mini"
+)
 agent.open("ticket")
 agent.receive_prompt(ANSWER, {"question": "Where is my order A-1001?"})
 session = agent.respond(return_session=True)
@@ -59,9 +61,11 @@ class Address(BaseModel):
 
 @tool(
     description="Ship a package",
-    prop_desc={"speed": "Delivery speed; express costs more"},  # (1)!
+    prop_desc={"speed": "Express costs more"},  # (1)!
 )
-def ship(address: Address, speed: Literal["standard", "express"] = "standard") -> str:
+def ship(
+    address: Address, speed: Literal["standard", "express"] = "standard"
+) -> str:
     return f"{speed} shipping to {address.city}"
 
 
@@ -72,7 +76,7 @@ print(ship.properties["speed"])
 {
     'enum': ['standard', 'express'],
     'type': 'string',
-    'description': "Delivery speed; express costs more (default: 'standard')",
+    'description': "Express costs more (default: 'standard')",
 }
 """
 ```
@@ -102,7 +106,9 @@ def lookup_order(order_id: str) -> dict:
     raise KeyError(f"No order {order_id}")
 
 
-call = lookup_order(FunctionCall(name="lookup_order", arguments={"order_id": "B-9"}))
+call = lookup_order(
+    FunctionCall(name="lookup_order", arguments={"order_id": "B-9"})
+)
 print(call.result_str)
 #> Error: 'No order B-9'
 ```
@@ -157,7 +163,8 @@ def price(ticker: str) -> float:
     return 123.456
 
 
-print(price(FunctionCall(name="price", arguments={"ticker": "ACME"})).result_str)
+call = price(FunctionCall(name="price", arguments={"ticker": "ACME"}))
+print(call.result_str)
 #> ACME: $123.46
 ```
 
@@ -187,7 +194,9 @@ ANSWER = Prompt(
     function_list=[tactic_as_function(FactCheck())],  # (1)!
 )
 
-agent = Tactic.quick(system_prompt="You write careful answers.", model="gpt-4o-mini")
+agent = Tactic.quick(
+    system_prompt="You write careful answers.", model="gpt-4o-mini"
+)
 agent.open("answer")
 agent.receive_prompt(ANSWER, {"question": "What is the capital of France?"})
 print(agent.respond().content)

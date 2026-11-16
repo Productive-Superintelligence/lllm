@@ -4,14 +4,14 @@
 `network` and `shell`) take their own options before the subcommand.
 
 ```text
-lllm create   NAME [--template T]   new project
-lllm init     [PATH]                write lllm.toml
-lllm setup    [TARGET]              store the API keys a package declares
-lllm inspect  TARGET                tactic metadata, or what serve would launch
-lllm serve    TARGET                serve a tactic or a package resource
-lllm hub      ...                   validate, publish, read, index packages
-lllm network  ...                   SSSN channel stores (pip install sssn)
-lllm shell    ...                   AAAX strategies (pip install aaax)
+lllm create   NAME [--template T]  new project
+lllm init     [PATH]               write lllm.toml
+lllm setup    [TARGET]             store the API keys a package declares
+lllm inspect  TARGET               tactic metadata, or what serve launches
+lllm serve    TARGET               serve a tactic or a package resource
+lllm hub      ...                  validate, publish, read, index packages
+lllm network  ...                  SSSN channel stores (pip install sssn)
+lllm shell    ...                  AAAX strategies (pip install aaax)
 ```
 
 `TARGET` is a `module:attribute` entrypoint (imported from the current
@@ -20,11 +20,15 @@ directory) or a package path (a folder with `lllm.toml`, or the file itself).
 ## `lllm create`
 
 ```bash
-lllm create my-app                         # native project, template "minimal"
-lllm create my-app --template pipeline     # pipeline | proxy | research | service
-lllm create my-app --template ./my-template  # a folder with lllm-template.toml
-lllm create plain my-svc                   # service scaffolds: plain | pydantic-ai | native
+lllm create my-app                           # template "minimal"
+lllm create my-app --template research       # or pipeline, proxy, service
+lllm create my-svc --template pydantic-ai    # a typed service scaffold
+lllm create my-app --template ./my-template  # has lllm-template.toml
 ```
+
+The templates `minimal`, `pipeline`, `proxy`, `research`, and `service`
+create native projects; `plain`, `pydantic-ai`, and `native` create typed
+service scaffolds. The older form `lllm create TEMPLATE NAME` also works.
 
 | Option | Default | |
 | --- | --- | --- |
@@ -49,7 +53,8 @@ if there is none. See [The manifest](../packages.md).
 
 ```bash
 lllm setup ./briefs                       # prompts for missing keys
-lllm setup ./briefs --credentials env --env-file .env.local --set OPENAI_API_KEY=sk-...
+lllm setup ./briefs --credentials env --env-file .env.local \
+  --set OPENAI_API_KEY=sk-...
 lllm setup --show-conventions             # common provider key names
 ```
 
@@ -63,8 +68,8 @@ available.
 ## `lllm inspect`
 
 ```bash
-lllm inspect tactics:Shout --json     # name, schemas, capabilities, endpoints
-lllm inspect ./briefs                 # resolved resource, port, routes, key status
+lllm inspect tactics:Shout --json  # name, schemas, capabilities, endpoints
+lllm inspect ./briefs              # resource, port, routes, key status
 ```
 
 Package options: `--resource section.name`, `--store DIR` (channel
