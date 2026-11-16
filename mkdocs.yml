@@ -55,6 +55,10 @@ plugins:
 hooks:
   - scripts/docs_hooks.py
 
+validation:
+  links:
+    anchors: warn  # a link to a missing #heading fails the strict build
+
 nav:
   - Get started:
       - Introduction: index.md
@@ -87,6 +91,10 @@ nav:
       - Other runtimes: runtimes.md
   - Examples:
       - examples/index.md
+      - Research brief: examples/research-brief.md
+      - Support triage: examples/support-triage.md
+      - Writer and reviewer: examples/review-loop.md
+      - A shared service over HTTP: examples/http-service.md
   - API reference:
       - api/index.md
       - Native runtime: api/native.md
