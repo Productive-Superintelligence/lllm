@@ -63,10 +63,14 @@ class ModelRequest:
 
     @property
     def system(self) -> str:
-        """The system prompt, if the dialog has one."""
+        """The system prompt, if the dialog has one.
+
+        Some providers' requests (OpenAI's, for example) carry it with the
+        ``developer`` role instead of ``system``.
+        """
 
         for message in self.messages:
-            if message.get("role") == "system":
+            if message.get("role") in ("system", "developer"):
                 return str(message.get("content") or "")
         return ""
 

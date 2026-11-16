@@ -1,15 +1,39 @@
-# Hub Metadata
+# Hub metadata
 
-Helpers that export what a tactic or channel publishes, in the shape the hub
-indexes. Use them to fill `metadata` in [lllm.toml](../packages/manifest.md)
-or to build catalog entries.
+Helpers that export what a tactic or channel publishes, in the shape the
+hub indexes. Use them to fill `metadata` in a package's
+[`lllm.toml`](../packages.md#the-manifest) or to build catalog entries.
 
-```python
+```python title="tactic_resource.py"
+from pydantic import BaseModel
+
+from lllm import Tactic
 from lllm.hub import tactic_resource
-from sssn import Channel, channel_resource, snapshot_resource
 
-resource = tactic_resource(EchoTactic())
-channel = channel_resource(Channel(name="events", form="log", description="Raw events."))
+
+class Ticket(BaseModel):
+    text: str
+
+
+class Triage(Tactic):
+    """Route a support ticket to a queue."""
+
+    name = "triage"
+    input_model = Ticket
+
+    def call(self, ticket: Ticket) -> str:
+        return "oncall" if "outage" in ticket.text.lower() else "support"
+
+
+triage = Triage(
+    package_ref="lllm://acme/support/tactics/triage",
+    metadata={"owner": "support", "api_key": "sk-123", "token_limit": 5},
+)
+resource = tactic_resource(triage)
+print(resource["name"], resource["runtime"], resource["package_ref"])
+#> triage native lllm://acme/support/tactics/triage
+print(resource["metadata"])
+#> {'owner': 'support', 'token_limit': 5}
 ```
 
 `tactic_resource(tactic)` returns:
@@ -21,11 +45,11 @@ channel = channel_resource(Channel(name="events", form="log", description="Raw e
 | `endpoints` | Custom `@endpoint` routes: name, method, path, mode, description, tags |
 | `input_schema`, `output_schema` | JSON schemas of the typed input and output |
 | `package_ref`, `service_ref` | `lllm://` refs or a service URL |
-| `examples`, `metadata` | Public examples and metadata |
+| `examples`, `metadata` | Public examples and metadata, without secret-shaped keys |
 
-`channel_resource` and `snapshot_resource`, from the
-[sssn](https://sssn.one/) package, do the same for SSSN channels and snapshots,
-including custom store endpoints.
+`channel_resource(channel)` and `snapshot_resource(snapshot)`, from the
+[SSSN](https://sssn.one/) package, do the same for SSSN channels and
+snapshots, including custom store endpoints.
 
 ## Rules for published metadata
 
@@ -48,10 +72,11 @@ keys, including nested maps.
 In `lllm.toml` these keys are errors, not dropped: the package ships the file
 as written, so `lllm hub validate` reports `metadata_secret_key` for them in
 the `metadata` and extra keys of named resource tables, `[config]`, and `[card]`
-(see [Validation](../packages/manifest.md#validation)). Validation does not
-look inside maps under JSON-schema keys (`schema`, `input_schema`,
-`output_schema`, or forms such as `inputSchema`), where a field may be named
-`api_key`, or inside `[config] defaults` and tactic `examples`.
+([How metadata is checked](../publishing.md#how-metadata-is-checked)).
+Validation does not look inside maps under JSON-schema keys (`schema`,
+`input_schema`, `output_schema`, or forms such as `inputSchema`), where a
+field may be named `api_key`, or inside `[config] defaults` and tactic
+`examples`.
 
 Cards, the hub API, and the static catalog drop these keys from resource
 metadata, including `[config] defaults` and tactic `examples`. They also drop

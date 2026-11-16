@@ -153,7 +153,7 @@ and each agent's dialog.
 Every tactic is also a typed web service. Point `lllm serve` at it:
 
 ```bash
-lllm serve brief.py:brief --port 8000
+lllm serve brief:brief --port 8000
 curl -X POST localhost:8000/run -H 'content-type: application/json' \
   -d '{"input": "KV caches"}'
 ```

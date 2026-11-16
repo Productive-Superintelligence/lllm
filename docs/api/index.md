@@ -13,7 +13,7 @@ how the pieces fit together; come here for exact parameters and defaults.
 | [lllm.testing](testing.md) | `ScriptedModel`, `FunctionModel`, `ModelRequest`, `ToolCall` |
 | [CLI](cli.md) | Every `lllm` command and flag |
 | [Service API](service-api.md) | The HTTP endpoints of a served tactic, with request and error envelopes |
-| [Hub metadata](hub-metadata.md) | The JSON schemas of hub records |
+| [Hub metadata](hub-metadata.md) | Helpers that export what a tactic or channel publishes to the hub |
 
 Each page says where to import its names from. Most of what the guides use
 comes straight from `lllm`, as in `from lllm import Agent, Prompt, Tactic, tool`.

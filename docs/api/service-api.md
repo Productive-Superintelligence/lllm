@@ -1,6 +1,7 @@
 # Service API
 
-The FastAPI adapter exposes a tactic through portable endpoints.
+The HTTP API of a served tactic. `create_tactic_app` and `lllm serve` build
+it; [Serving](../serving.md) explains how to use it.
 
 | Endpoint | Use |
 | --- | --- |
@@ -17,6 +18,53 @@ holds one tactic and `expose_single_tactic_routes=True`. `/openapi.json`
 documents the tactic's input schema in the `/run` and `/stream` request
 envelopes and its output schema in the `/run` response.
 
+## Requests
+
+`POST /run`, `POST /stream`, and custom endpoints read a `RunRequest`
+envelope:
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `input` | any JSON | The tactic's input, validated against its input schema |
+| `task` | any JSON | Accepted in place of `input` |
+| `context` | object or `null` | Request metadata, read into a `CallContext` |
+
+A body is an envelope when it is a JSON object with `input` or `task` and
+no keys besides `input`, `task`, and `context`. Any other body, JSON or
+text, is the input itself.
+
+| `context` key | Meaning |
+| --- | --- |
+| `request_id` (or `call_id`) | Generated when missing or empty |
+| `trace_id`, `span_id`, `caller` | Strings for tracing |
+| `tags` | String-to-string object |
+| `metadata` | Object with string keys |
+| `package_ref`, `service_ref` | Refs of the caller's package and service |
+| `tactic_ref` | Defaults to the tactic's `package_ref` |
+
+The service sets `endpoint` to `run`, `stream`, or the custom endpoint's
+name, and ignores other keys. A context that is not an object, or whose
+`tags` or `metadata` is not an object, is a `SchemaError`.
+
+## Responses
+
+A successful `/run` returns a `RunResponse`:
+
+```json
+{"output": {"queue": "billing"}, "request_id": "req-1", "tactic": "triage"}
+```
+
+`/stream` returns `text/event-stream`, one `data:` line per event. Each
+event is a `TacticEvent` as JSON: `id`, `timestamp`, `kind` (`message`,
+`result`, `error`, or a kind the tactic chooses), `data`, and `metadata`.
+A custom endpoint in `mode="stream"` or `mode="events"` sends events as
+`TacticEvent` JSON and other items as plain JSON. A failure after the
+stream has started is a final `error` event, with `error_type`, `tactic`,
+`endpoint`, and `request_id` in its metadata, while the HTTP status stays
+200.
+
+## Custom endpoints
+
 Custom endpoints declared with `@endpoint.*` are mounted alongside these
 portable routes. They must use unique method/path pairs and must not shadow
 reserved LLLM service routes such as `/run`, `/stream`, `/info`, or
@@ -25,6 +73,8 @@ and percent escapes; paths must also avoid `//` network-path prefixes, empty
 or dot segments, backslashes, colons, semicolon path params, query strings, and
 fragments. A `GET` or `DELETE` endpoint called without a body receives the
 query parameters as a dict (or `None`) instead of a validated input.
+
+## Public metadata
 
 Public info endpoints filter raw secret-shaped keys from tactic examples and
 user metadata while preserving local credential refs such as
@@ -37,6 +87,8 @@ SSE stream event metadata is filtered with the same public boundary before it
 is written to the response; event data remains the tactic output.
 Metadata maps must use string keys, including nested maps.
 
+## Errors
+
 Error envelopes are stable across protocol and runtime failures.
 
 ```json
@@ -44,17 +96,24 @@ Error envelopes are stable across protocol and runtime failures.
   "detail": {
     "error": {
       "type": "SchemaError",
-      "message": "Value does not match schema Question: ...",
-      "tactic": "shout",
+      "message": "Value does not match schema Ticket: ...",
+      "tactic": "triage",
       "endpoint": "run",
-      "request_id": "...",
+      "request_id": "req-8",
       "metadata": {}
     }
   }
 }
 ```
 
-`SchemaError` and `TacticUnsupportedError` are 400 responses, an unknown name
-on a `/tactics/{name}/...` route is a 404 `TacticNotFound`, and anything else
-a tactic raises is a 500 ([Services](../protocol/services.md#errors)). The
+| Status | `error.type` | When |
+| --- | --- | --- |
+| 400 | `SchemaError` | Invalid input or output, or a malformed envelope or context |
+| 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
+| 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |
+| 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
+
+`status_code_for_error(exc)` gives the status for an exception, and
+`RemoteTactic` raises `RemoteTacticError` with these fields
+([Serving](../serving.md#calling-a-served-tactic-from-python)). The
 [AAAX](https://aaax.one/) strategy routes report errors in the same envelope.
