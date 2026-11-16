@@ -26,6 +26,9 @@ tactic boundary. The `native` extra adds what agents need to call models.
 | `sandbox` | Jupyter client | the [code sandbox](sandbox.md) |
 | `pydantic-ai` | Pydantic AI | [running Pydantic AI agents](pydantic-ai.md) as tactics |
 | `secure` | keyring | storing API keys with `lllm setup` |
+| `tools` | OpenAI SDK, Playwright | the experimental browser-use agent |
+| `network` | [SSSN](https://sssn.one/) | channels between systems; adds `lllm network` |
+| `shell` | [AAAX](https://aaax.one/) | strategies that serve many tactics; adds `lllm shell` |
 | `all` | everything above | |
 
 ```bash
