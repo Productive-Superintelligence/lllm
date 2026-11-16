@@ -8,7 +8,7 @@ refund limit and the escalation policy, live in code, so they hold even when
 a model ignores its instructions.
 
 ```mermaid
-flowchart LR
+flowchart TB
     T[ticket] --> C[triage agent]
     C -- "urgent, or no route" --> E[human queue]
     C -- billing --> B["resolver + billing tools"]

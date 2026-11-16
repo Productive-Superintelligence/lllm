@@ -81,13 +81,14 @@ decides how replies are checked and what happens when they go wrong:
 ```mermaid
 flowchart TD
     A[call the model] --> B{reply}
-    B -- tool calls --> C[run the tools, add results] --> A
-    B -- text --> D[parse with the prompt's parser / format]
+    B -- tool calls --> C[run the tools] --> A
+    B -- text --> D[parse the reply]
     D -- parses --> E[return the message]
-    D -- fails --> F[prompt's handler adds a repair message] --> A
+    D -- fails --> F[send a repair message] --> A
 ```
 
-Each branch has a limit (`max_interrupt_steps` tool rounds,
+The reply is parsed with the prompt's parser or `format`, and the repair
+message comes from the prompt's handler. Each branch has a limit (`max_interrupt_steps` tool rounds,
 `max_exception_retry` repairs, plus retries for provider errors), so a turn
 always ends. [Agents](agents.md#the-agent-loop) has the details.
 

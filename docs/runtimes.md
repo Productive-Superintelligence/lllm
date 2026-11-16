@@ -84,10 +84,7 @@ public methods are the boundary:
 
 ```mermaid
 flowchart LR
-    A["run(value, context)"] --> B["validate_input()"]
-    B --> C["_run(validated, context=...)"]
-    C --> D["validate_output()"]
-    D --> E[output]
+    A["run()"] --> B[check input] --> C["_run()"] --> D[check output]
 ```
 
 Validation uses the tactic's `input_type` and `output_type`: anything

@@ -2,8 +2,24 @@
 
 ## Unreleased
 
+- New docs at lllm.one, organized by task: Get started, a guide (agents,
+  prompts, tools, dialogs, tactics, typed I/O, configuration, streaming,
+  models, inference hints, proxies, sandbox), production (serving, testing,
+  observability, packages, the hub), integrations (Pydantic AI, other
+  runtimes), four complete examples, and an API reference generated from
+  the code. Every Python example runs in the test suite, which checks the
+  output each page shows. The old tutorial, core, protocol, packages, and
+  reference pages redirect to their new homes.
+- `lllm.testing` answers native agents' model calls without a provider:
+  `ScriptedModel` replies in order, `FunctionModel` answers from each
+  `ModelRequest`, and `ToolCall` replies run your real tools, also for
+  agents that stream. The rest of the agent loop runs for real.
+- `AgentCallSession.tool_calls` lists every tool call of a `respond()`,
+  with its arguments and result.
 - `lllm-core[all]` lists PyYAML, which the `native` extra needs. It was only
   installed as a dependency of other packages.
+- The `sandbox` extra installs `ipykernel`; without a kernel, Jupyter
+  sessions could not run cells.
 
 ## 0.4.0
 

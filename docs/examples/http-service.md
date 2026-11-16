@@ -7,9 +7,9 @@ knowing which models it uses. Each side can change and redeploy on its own
 schedule; the typed contract is all they share.
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph client["support assistant"]
-        A[agent] --> T["policy_check tool (RemoteTactic)"]
+        A[agent] --> T["policy_check tool"]
     end
     subgraph service["policy service"]
         R["POST /run"] --> P[PolicyCheck] --> C[checker agent]

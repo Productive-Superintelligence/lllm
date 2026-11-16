@@ -189,6 +189,7 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
                     svgHeight: svgRect.height,
                     svgText: svg.textContent.trim(),
                     svgWidth: svgRect.width,
+                    naturalWidth: svg.viewBox?.baseVal?.width || 0,
                   };
                 })
                 """
@@ -196,9 +197,13 @@ def test_docs_render_mermaid_svgs_in_chromium(tmp_path):
             for metric in diagram_metrics:
                 assert metric["source"].lstrip().startswith(tuple(MERMAID_DIAGRAMS))
                 assert metric["diagramWidth"] > 120
-                assert metric["diagramHeight"] > 80
+                assert metric["diagramHeight"] > 40  # a one-row flowchart is ~55px
                 assert metric["svgWidth"] > 120
-                assert metric["svgHeight"] > 80
+                assert metric["svgHeight"] > 40
+                # A diagram wider than the column is scaled down; below about
+                # three quarters of its natural size, its labels get too small.
+                assert metric["naturalWidth"] > 0
+                assert metric["svgWidth"] >= 0.75 * metric["naturalWidth"], metric["source"][:60]
                 assert metric["svgText"]
                 assert metric["shapeInk"] > 0
                 assert "rgb(5, 5, 5)" in {
