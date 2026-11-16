@@ -1,7 +1,13 @@
 import importlib.abc
+import os
 import sys
 
 import pytest
+
+# Use the model price table bundled with LiteLLM instead of the copy it would
+# download at import time, so costs in tests (and in the docs examples) are
+# the same on every run.
+os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 
 class _Uninstalled(importlib.abc.MetaPathFinder):
