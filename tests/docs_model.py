@@ -124,7 +124,8 @@ def _said(request, pattern):
 
 @rule(asks("my name is"))
 def _greet(request):
-    return f"Nice to meet you, {_said(request, r'My name is (\w+)').group(1)}!"
+    name = _said(request, r"My name is (\w+)").group(1)
+    return f"Nice to meet you, {name}!"
 
 
 @rule(asks("what is my name"))

@@ -38,7 +38,12 @@ tools = [
 secure = ["keyring>=25.0"]
 network = ["sssn>=0.2"]
 shell = ["aaax>=0.3"]
-docs = ["mkdocs-material>=9.5", "mkdocstrings[python]>=0.26"]
+docs = [
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+    # pymdown-extensions 12.2 needs mkdocstrings 1.0.8, which needs Python 3.11.
+    "pymdown-extensions<12.2; python_version < '3.11'",
+]
 dev = [
     "pytest>=8.0",
     "pytest-examples>=0.0.15",
