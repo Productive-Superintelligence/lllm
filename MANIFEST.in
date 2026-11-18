@@ -14,3 +14,5 @@ prune site
 global-exclude __pycache__
 global-exclude *.py[cod]
 global-exclude .DS_Store
+# mkdocs.yml runs this hook when the docs are built.
+include scripts/docs_hooks.py

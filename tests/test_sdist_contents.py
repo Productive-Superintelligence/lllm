@@ -44,6 +44,7 @@ def test_sdist_includes_repo_materials(tmp_path):
         "docs/javascripts/vendor/mermaid-LICENSE.txt",
         "docs/stylesheets/custom.20260702.css",
         "docs/agents.md",
+        "scripts/docs_hooks.py",
         "examples/echo_service/README.md",
         "examples/echo_service/app.py",
         "examples/echo_service/tactics.py",
