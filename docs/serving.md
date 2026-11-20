@@ -197,8 +197,9 @@ For clients you cannot change, a body that is not an envelope, JSON or
 UTF-8 text, is taken as the input itself, and `task` works in place of
 `input`; only the envelope carries a context. A body that is not UTF-8 is
 a 400 `SchemaError`, except an `application/octet-stream` body, which the
-tactic gets as bytes. The [Service API](api/service-api.md) reference has
-the exact shapes.
+tactic gets as bytes, and so is a lone surrogate, as raw bytes or as an
+unpaired `\ud800` escape in JSON. The
+[Service API](api/service-api.md) reference has the exact shapes.
 
 ## Streaming
 

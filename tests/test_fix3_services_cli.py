@@ -1575,6 +1575,58 @@ def test_json_with_utf8_encoded_surrogates_is_a_400(path):
     _assert_bad_body(response)
 
 
+@pytest.mark.parametrize("path", BODY_ROUTES)
+@pytest.mark.parametrize(
+    "body",
+    [
+        rb'{"input": "\ud800"}',  # plain ASCII, so it passes the UTF-8 decode
+        rb'{"input": {"\udc00": 1}}',  # in a key
+        rb'{"input": "x", "context": {"metadata": {"note": "a\udfffb"}}}',
+    ],
+    ids=["value", "key", "context"],
+)
+def test_json_with_an_escaped_lone_surrogate_is_a_400(path, body):
+    client = TestClient(create_tactic_app(Echo()), raise_server_exceptions=False)
+
+    response = client.post(path, content=body, headers={"content-type": "application/json"})
+
+    assert response.status_code == 400
+    error = response.json()["detail"]["error"]
+    assert error["type"] == "SchemaError"
+    assert "lone surrogate" in error["message"]
+
+
+def test_an_escaped_surrogate_pair_is_fine():
+    client = TestClient(create_tactic_app(Echo()))
+
+    response = client.post(
+        "/run",
+        content=rb'{"input": "\ud83d\ude00"}',  # one escaped pair
+        headers={"content-type": "application/json"},
+    )
+
+    assert response.json()["output"] == "\U0001f600"
+
+
+def test_an_error_message_with_a_lone_surrogate_keeps_the_json_envelope():
+    class Fails(ProtocolTactic):
+        name = "fails"
+
+        def _run(self, value, **kwargs):
+            raise ValueError("bad \ud800 value")
+
+    client = TestClient(create_tactic_app(Fails()), raise_server_exceptions=False)
+
+    response = client.post("/run", json={"input": "x", "context": {"request_id": "r-9"}})
+
+    assert response.status_code == 500
+    assert response.headers["content-type"] == "application/json"
+    error = response.json()["detail"]["error"]
+    assert error["type"] == "ValueError"
+    assert error["message"] == "bad \\ud800 value"
+    assert error["request_id"] == "r-9"
+
+
 def test_an_octet_stream_body_that_is_not_utf8_reaches_the_tactic_as_bytes():
     class Size(ProtocolTactic):
         name = "size"

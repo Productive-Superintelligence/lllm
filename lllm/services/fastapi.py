@@ -549,8 +549,8 @@ def _get_tactic(name: str, tactics: Mapping[str, Tactic[Any, Any]]) -> Tactic[An
             detail=ErrorResponse(
                 error=ErrorDetail(
                     type="TacticNotFound",
-                    message=f"Tactic not found: {name}",
-                    tactic=name,
+                    message=_encodable_text(f"Tactic not found: {name}"),
+                    tactic=_encodable_text(name),
                 )
             ).model_dump(mode="json"),
         ) from exc
@@ -813,11 +813,12 @@ async def _input_and_context_from_request(
 def _body_value(raw: bytes, content_type: str | None) -> Any:
     """What a request body holds, before any envelope in it is read.
 
-    The body is decoded strictly as UTF-8, so a lone surrogate is refused
-    rather than passed on, and is then the JSON it parses as, or else the
-    text; an empty body is None. A body that is not UTF-8 is a
+    The body is decoded strictly as UTF-8 and is then the JSON it parses as,
+    or else the text; an empty body is None. A body that is not UTF-8 is a
     ``SchemaError``, except an ``application/octet-stream`` body, which the
-    tactic gets as bytes.
+    tactic gets as bytes. A lone surrogate is a ``SchemaError`` however it
+    is encoded: as raw bytes it fails the decode, and as a JSON escape
+    (``\\ud800``) it is found in the parsed value.
     """
 
     if not raw:
@@ -829,9 +830,39 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
             return raw
         raise SchemaError("Request body must be JSON or UTF-8 text.") from exc
     try:
-        return json.loads(text.removeprefix("\ufeff"))
+        value = json.loads(text.removeprefix("\ufeff"))
     except (ValueError, RecursionError):
         return text
+    if "\\u" in text and _has_lone_surrogate(value):
+        raise SchemaError(
+            "Request body holds a lone surrogate, which is not valid Unicode."
+        )
+    return value
+
+
+_LONE_SURROGATE = re.compile(f"[{chr(0xD800)}-{chr(0xDFFF)}]")
+
+
+def _has_lone_surrogate(value: Any) -> bool:
+    """Whether a parsed JSON value holds a lone surrogate in a key or string.
+
+    ``json.loads`` joins escaped pairs into one character, so any surrogate
+    left is unpaired. The value is walked with a stack rather than
+    recursion, so a deeply nested body cannot exhaust the call stack.
+    """
+
+    stack = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            if _LONE_SURROGATE.search(item):
+                return True
+        elif isinstance(item, dict):
+            stack.extend(item)
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
+    return False
 
 
 def _query_input(query_params: Any) -> dict[str, Any] | None:
@@ -1059,13 +1090,20 @@ def _http_error(
         detail=ErrorResponse(
             error=ErrorDetail(
                 type=type(exc).__name__,
-                message=str(exc),
+                message=_encodable_text(str(exc)),
                 tactic=tactic.tactic_name,
                 endpoint=endpoint,
                 request_id=context.request_id,
             )
         ).model_dump(mode="json"),
     )
+
+
+def _encodable_text(text: str) -> str:
+    """``text`` with any lone surrogate written as an escape, so that an
+    error envelope always encodes as UTF-8."""
+
+    return text.encode("utf-8", "backslashreplace").decode("utf-8")
 
 
 def status_code_for_error(exc: Exception) -> int:

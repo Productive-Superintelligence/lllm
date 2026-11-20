@@ -32,8 +32,10 @@ envelope:
 A body is decoded strictly as UTF-8 and is an envelope when it is a JSON
 object with `input` or `task` and no keys besides `input`, `task`, and
 `context`. Any other body, JSON or UTF-8 text, is the input itself. A body
-that is not UTF-8 (a lone surrogate included) is a `SchemaError`, except
-an `application/octet-stream` body, which the tactic gets as bytes.
+that is not UTF-8 is a `SchemaError`, except an `application/octet-stream`
+body, which the tactic gets as bytes. A lone surrogate is a `SchemaError`
+however it is encoded: as raw bytes, or as an unpaired `\ud800` escape in
+the JSON.
 
 | `context` key | Meaning |
 | --- | --- |
