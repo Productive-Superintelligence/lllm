@@ -34,7 +34,9 @@ print(agent.current_dialog.overview())
 
 Each entry shows the message's index, the sender's name, and its role. The
 system prompt is sent with the `developer` role, so that is what it shows.
-`overview()` cuts long messages at `max_length` characters (100 by default).
+`overview()` cuts long messages at `max_length` characters (100 by default)
+and shows an image by its type, size, and caption, such as
+`<image/png, 2.0 KB> Revenue by quarter`, instead of its data.
 
 ## Messages
 
@@ -170,12 +172,12 @@ plus a `tree_node` that holds only ids (its own `dialog_id`, its parent's,
 and its children's) and the `split_point`, how many messages it copied.
 `print(dialog.tree_overview())` draws the tree below a dialog.
 
-!!! note "The agent loop forks too"
-    For each model call, `respond()` works on a fork of the dialog. Repair
+!!! note "The agent loop works on a copy"
+    For each model call, `respond()` works on a copy of the dialog. Repair
     messages and replies that failed to parse stay in that working copy, and
     only the accepted reply (with any tool calls and results) is added to
-    your dialog. The working copies stay attached as children, so
-    `children` and `tree_overview()` list them next to your own forks.
+    your dialog. The copy is dropped when the call ends, so `children` and
+    `tree_overview()` list only your own forks.
 
 ## Saving and loading
 
@@ -211,12 +213,11 @@ print(restored.tail.model, restored.dialog_id == original.dialog_id)
 ```
 
 The data holds every message with its usage and metadata, the dialog's
-owner, its tree node, its children (recursively, including the loop's
-working copies), and the prompt that drove the last turn. That prompt's
-tools are saved as schemas without their code, and a Pydantic `format` as
-its import path and JSON schema. Loading never imports code: a `format`
-model is used only if its module is already imported, and its saved schema
-otherwise.
+owner, its tree node, the forks made from it (recursively), and the prompt
+that drove the last turn. That prompt's tools are saved as schemas without
+their code, and a Pydantic `format` as its import path and JSON schema.
+Loading never imports code: a `format` model is used only if its module is
+already imported, and its saved schema otherwise.
 
 Use saved dialogs to review runs, compare branches offline, or build
 datasets. To write a dialog by hand, for a test or a dataset, create a
@@ -252,10 +253,11 @@ print(agent.respond().content)
 1. Any image works; this one draws a small bar chart so the example runs on
    its own. Pillow comes with `lllm-core[native]`.
 
-The model receives the caption as text followed by the image. URLs and raw
-bytes are not accepted (`ValueError`), and the model must support image
-input. An image does not change which prompt drives the turn, so after
-`receive_prompt()`, that prompt's parser and tools still apply.
+The model receives the caption as text followed by the image, labeled with
+its format (`image/png` here). URLs and raw bytes are not accepted
+(`ValueError`), and the model must support image input. An image does not
+change which prompt drives the turn, so after `receive_prompt()`, that
+prompt's parser and tools still apply.
 
 ## Long conversations
 
@@ -267,13 +269,13 @@ that fit:
 
 ```python title="standups.py"
 from lllm import Tactic
-from lllm.runtimes.native.core.dialog import DefaultContextManager
+from lllm.runtimes.native import DefaultContextManager
 
 agent = Tactic.quick(
     system_prompt="You track standup notes.", model="gpt-4o-mini"
 )
 agent.context_manager = DefaultContextManager(  # (1)!
-    "gpt-4o-mini", max_tokens=5_100
+    "gpt-4o-mini", max_tokens=240
 )
 agent.open("standups")
 notes = {
@@ -294,16 +296,41 @@ print(len(agent.current_dialog.messages))
 #> 13
 ```
 
-1. `max_tokens` is the budget for what is sent, and 5,000 tokens of it are
-   always kept free as a safety margin. This tiny budget leaves 100 tokens:
-   room for the last few notes.
+1. `max_tokens` is the budget for what is sent, minus a margin kept free
+   for the reply: 5,000 tokens, or half of a budget under 10,000. This tiny
+   budget leaves 120 tokens: room for the last few notes.
 2. The model saw the system prompt and the six most recent messages; the
    dialog still holds all 13.
 
-Set `max_tokens` yourself. Without it, the budget comes from
-`litellm.get_max_tokens()`, which for many models is the output limit
-(16,384 for `gpt-4o-mini`), not the context window. A message that only
-partly fits may be cut short instead of dropped.
+Without `max_tokens`, the budget is the model's context window from
+LiteLLM's model list (128,000 tokens for `gpt-4o-mini`). For a model
+LiteLLM does not know, such as one on your own server, set `max_tokens`,
+or register the model with `litellm.register_model`, giving its
+`max_input_tokens`: without either, nothing is trimmed, and a warning says
+so.
+
+Messages are counted the way they are sent, tool calls included. An image
+counts by its size, read from its header with Pillow, at OpenAI's
+high-detail rate: 765 tokens for a 1024×768 photo, however long its data.
+Everything else that is not text counts as 1,500 tokens (`IMAGE_TOKENS`):
+an image whose size cannot be read (HEIC, data that does not decode, or
+any image without Pillow), an image URL, or audio. Sizing these parts
+never fetches anything. Text is counted by LiteLLM, and for Llama 2/3 and
+Replicate models LiteLLM loads a tokenizer from Hugging Face; on a host
+that cannot reach it, recent LiteLLM versions try again on every count,
+and each try can take from about 20 seconds (connection refused) to
+about 25 minutes or more (connection dropped), because Hugging Face's
+client retries five times and waits out its timeout on each of
+huggingface.co's addresses. Set
+`litellm.disable_hf_tokenizer_download = True` to count with tiktoken
+instead; `HF_HUB_OFFLINE=1` also stops the download, but LiteLLM then logs
+a warning on every count.
+
+The newest message is always sent whole, with a warning if it alone is
+over the budget, and a tool call is kept or dropped together with its
+results. An older message that only partly fits keeps its end, after an
+`[...earlier content truncated...]` marker; an image that does not fit is
+dropped whole, with a warning.
 
 In a tactic, set a context manager per agent, or for every agent under
 `global`:
@@ -321,13 +348,18 @@ agent_configs:
       type: null        # never trim this agent's calls
 ```
 
+Config builds a `DefaultContextManager` for each agent, so to change the
+margin kept free for replies everywhere, set
+`DefaultContextManager.SAFETY_BUFFER`; a value you set is used as is,
+without the halving for small budgets.
+
 For another policy, such as summarizing old turns, subclass `ContextManager`
-(from the same module), set a `name`, and implement `__call__(dialog)` to
-return the dialog to send, usually built with `dialog.fork(...)`. Config
-builds it with `model_name` and `max_tokens` keyword arguments, so accept
-both. Register the class on the runtime the tactic uses, such as
-`get_default_runtime().register_context_manager(cls)`, and select it with
-`type: <name>` ([Configuration](configuration.md)).
+(also from `lllm.runtimes.native`), set a `name`, and implement
+`__call__(dialog)` to return the dialog to send, usually built with
+`dialog.fork(...)`. Config builds it with `model_name` and `max_tokens`
+keyword arguments, so accept both. Register the class on the runtime the
+tactic uses, such as `get_default_runtime().register_context_manager(cls)`,
+and select it with `type: <name>` ([Configuration](configuration.md)).
 
 ## Dialogs and agents
 

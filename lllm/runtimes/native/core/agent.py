@@ -47,6 +47,8 @@ class Agent:
         max_exception_retry: Max retries for agent parsing/validation exceptions.
         max_interrupt_steps: Max consecutive tool call interrupts.
         max_llm_recall: Max retries for LLM API errors.
+        extra_settings: Free-form settings for your own code, from the
+            agent config's ``extra_settings``.
     """
 
     name: str  # the role of the agent, or a name of the agent
@@ -71,6 +73,9 @@ class Agent:
     # Serving hints (session identity, priority, KV-cache intent) sent with
     # every model call; None = no hints. See ``core.hints``.
     inference_hints: Optional[InferenceHints] = None
+    # Free-form settings for your own code (config ``extra_settings``);
+    # LLLM does not read them.
+    extra_settings: Dict[str, Any] = field(default_factory=dict)
 
     # Dialog management
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)
@@ -395,6 +400,9 @@ class Agent:
 
         Raises:
             ValueError: If the agent fails to produce a valid response after retries.
+            Whatever the call raises carries the call's ``AgentCallSession``
+            as ``agent_session``: every reply, repair, and provider-error
+            retry (rate-limit waits are not recorded).
         """
         session = AgentCallSession(
             agent_name=self.name,
@@ -402,6 +410,23 @@ class Agent:
             max_interrupt_steps=self.max_interrupt_steps,
             max_llm_recall=self.max_llm_recall,
         )
+        try:
+            return self._loop(session, dialog, metadata, args, parser_args)
+        except Exception as exc:
+            # Keep the failed call's record for whoever records sessions.
+            session.state = "failure"
+            exc.agent_session = session
+            raise
+
+    def _loop(
+        self,
+        session: AgentCallSession,
+        dialog: Dialog,
+        metadata: Optional[Dict[str, Any]],
+        args: Optional[Dict[str, Any]],
+        parser_args: Optional[Dict[str, Any]],
+    ) -> AgentCallSession:
+        """The agent loop of :meth:`_call`, recording into ``session``."""
         metadata = dict(metadata) if metadata else {}
         args = dict(args) if args else {}
         parser_args = dict(parser_args) if parser_args else {}
@@ -435,9 +460,9 @@ class Agent:
             else {}
         )
         for i in range(_max_steps):
-            working_dialog = (
-                dialog.fork()
-            )  # make a copy of the dialog, truncate all exception handling dialogs
+            # Repairs go to a working copy, which is not one of the dialog's
+            # children: only the accepted reply reaches the dialog.
+            working_dialog = dialog._copy()
             if self.context_manager is not None:
                 working_dialog = self.context_manager(working_dialog)
             while True:  # ensure the response is no exception

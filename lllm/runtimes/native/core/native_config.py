@@ -7,8 +7,10 @@ inheritance stay in :mod:`lllm.core.config`.
 
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -542,6 +544,237 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
+#: How deep ``extra_settings`` may nest. The copy is iterative, so this is
+#: a fixed policy, not a measure of the stack left.
+_SETTINGS_DEPTH = 500
+#: What a frame's children give once they are used up.
+_END = object()
+#: What ``_visit`` gives when it opened a frame instead of copying.
+_OPENED = object()
+
+
+class _TooDeep(Exception):
+    """``extra_settings`` nested more than ``_SETTINGS_DEPTH`` levels."""
+
+
+def _agent_settings(settings: Any, name: str) -> Any:
+    """An agent's ``extra_settings``: {} for None, else its own copy."""
+    try:
+        if settings is None:
+            return {}
+        if isinstance(settings, Mapping):
+            return _copy_settings(settings)
+        return _settings_copy(settings, {}, _SETTINGS_DEPTH + 1)
+    except _TooDeep:
+        raise ValueError(
+            f"Agent '{name}': 'extra_settings' is nested more than "
+            f"{_SETTINGS_DEPTH} levels deep"
+        ) from None
+
+
+def _copy_settings(settings: Mapping) -> Dict[str, Any]:
+    """``extra_settings`` as a dict of its own, through ``_settings_copy``.
+
+    The top-level mapping goes through the same memo, so a value that
+    refers back to it closes on the copy.
+    """
+    copied: Dict[str, Any] = {}
+    memo: Dict[int, Any] = {}
+    _memoize(memo, settings, copied)
+    for key, item in settings.items():
+        copied[key] = _settings_copy(item, memo, _SETTINGS_DEPTH)
+    return copied
+
+
+def _memoize(memo: Dict[int, Any], original: Any, copied: Any) -> None:
+    """Remember ``copied`` for ``original``, and keep ``original`` alive
+    until the copy is done, as deepcopy does: a mapping that builds its
+    values as they are read (a shelve.Shelf) frees each after use, and a
+    new value at a reused address would get another value's copy."""
+    memo[id(original)] = copied
+    memo.setdefault(id(memo), []).append(original)
+
+
+def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
+    """Copy containers, share everything else.
+
+    Dicts, lists, and sets are copied all the way down, subclasses included
+    (a Counter, a defaultdict with its factory), and so are plain tuples and
+    namedtuples, so each agent can change its own. As in ``deepcopy``, a
+    container met twice is copied once, so shared parts stay shared and
+    cycles end. Strings, numbers, booleans, and None need no copy. Any
+    other object (a lock, a client, a connection, a ``struct_time``), a
+    subclass container that cannot be copied, and a read-only one are
+    shared as is, never deep-copied. A container whose copy is itself is
+    shared, empty or not; an empty one whose copy is a new object counts
+    as writable, having nothing to probe, so it is copied.
+
+    The walk is iterative: one frame per open container reads its children
+    lazily, one at a time, so the walk uses a small, constant stack depth;
+    a caller already at the recursion limit may get a subclass container
+    shared, or a RecursionError. It visits depth first, as a recursive
+    copy would: a dict, list, or set is copied and remembered before its
+    children, a tuple rebuilt after them. A dict or set changed while it
+    is read raises, as iterating one does. ``room`` is how many container
+    levels may still be entered; a container met with none left raises
+    ``_TooDeep``. An error from a child propagates at any depth, releasing
+    the open iterators on its way out.
+    """
+    frames: List[_Frame] = []
+    try:
+        copied = _visit(value, memo, room, frames)
+        while frames:
+            frame = frames[-1]
+            child = next(frame.children, _END)
+            if child is _END:  # all its children are copied
+                frames.pop()
+                # Used up, it may still hold a source open (zip, map): let
+                # it go now, as a for loop does, before anything can fail.
+                frame.children = None
+                copied = frame.finish(memo)
+                if frames:
+                    frames[-1].put(copied)
+                continue
+            if frame.keyed:  # a dict's or list's child comes with its key
+                frame.key, child = child
+            copied = _visit(child, memo, frame.room, frames)
+            if copied is not _OPENED:
+                frame.put(copied)
+    except BaseException:
+        # Release the open iterators now, innermost first, as a recursive
+        # copy's unwinding does: a frame still held in the traceback (by
+        # ``frame``, or a method's ``self``) would keep its iterator, and a
+        # generator's resource, until the caller drops the error.
+        while frames:
+            frames.pop().children = None
+        raise
+    return copied
+
+
+def _visit(value: Any, memo: Dict[int, Any], room: int, frames: List[_Frame]) -> Any:
+    """``value``'s copy, or ``_OPENED`` when its children must be copied
+    first: then a frame for it is on ``frames``."""
+    if id(value) in memo:
+        return memo[id(value)]
+    if not isinstance(value, (dict, list, set, tuple)):
+        return value
+    if room < 1:
+        raise _TooDeep()
+    if isinstance(value, tuple):
+        make = getattr(value, "_make", None)  # a namedtuple
+        if type(value) is not tuple and make is None:
+            return value  # a struct_time: a rebuild loses fields
+        frames.append(_Frame(value, None, iter(value), room - 1, make))
+        return _OPENED
+    result = _container_copy(value, memo)
+    if result is value:  # shared
+        return value
+    if isinstance(value, dict):
+        children = iter(value.items())
+    elif isinstance(value, list):
+        children = enumerate(value)
+    else:
+        children = iter(value)
+    frames.append(_Frame(value, result, children, room - 1))
+    return _OPENED
+
+
+class _Frame:
+    """A container open in the walk, read one child at a time.
+
+    Each child's copy goes into a dict's or list's copy at once, and onto
+    ``items`` for a set or tuple, which are filled in or rebuilt once the
+    last child is copied.
+    """
+
+    __slots__ = ("children", "items", "key", "keyed", "make", "result", "room", "value")
+
+    def __init__(
+        self, value: Any, result: Any, children: Any, room: int, make: Any = None
+    ) -> None:
+        self.value = value
+        self.result = result  # the copy; a tuple's is made at the end
+        self.children = children  # an iterator over the original
+        self.room = room  # the levels its children may still enter
+        self.keyed = isinstance(value, (dict, list))
+        self.key: Any = None  # where the child being copied goes
+        self.items: List[Any] = []
+        self.make = make  # a namedtuple's _make
+
+    def put(self, copied: Any) -> None:
+        """Take the copy of the child read last."""
+        if self.keyed:
+            self.result[self.key] = copied
+        else:
+            self.items.append(copied)
+
+    def finish(self, memo: Dict[int, Any]) -> Any:
+        """The container's copy, once all its children are copied."""
+        if self.keyed:
+            return self.result
+        if isinstance(self.value, set):
+            # Only an empty copy of an empty set is left alone, as it may
+            # be read-only; one that seeded defaults is emptied. Its size
+            # is read as a set's, whatever its own __bool__ or __len__ say;
+            # a copy that is no real set by type (isinstance passes proxies
+            # and spec mocks) is filled in, as it always was.
+            if (
+                self.items
+                or not issubclass(type(self.result), set)
+                or set.__len__(self.result)
+            ):
+                self.result.clear()
+                self.result.update(self.items)
+            return self.result
+        if id(self.value) in memo:  # a cycle through its items copied it
+            return memo[id(self.value)]
+        result = self.make(self.items) if self.make else tuple(self.items)
+        _memoize(memo, self.value, result)
+        return result
+
+
+def _container_copy(value: Any, memo: Dict[int, Any]) -> Any:
+    """A fresh copy of a dict, list, or set, remembered before its children
+    are copied, or ``value`` itself, remembered too, when it is shared."""
+    if type(value) in (dict, list, set):
+        result = value.copy()  # cannot fail: an error here is a real one
+    else:
+        try:
+            result = copy.copy(value)  # keeps the type, a defaultdict's factory
+        except Exception:  # it cannot be copied (its copy may even recurse)
+            _memoize(memo, value, value)  # tried once, not per reference
+            return value
+        if result is value or not _writable(result):  # read-only: share
+            _memoize(memo, value, value)
+            return value
+    _memoize(memo, value, result)  # before the children, so cycles end
+    return result
+
+
+def _writable(copied: Any) -> bool:
+    """Whether a fresh copy of a dict, list, or set takes writes, tried by
+    storing one entry back as it is (a dict's first key, a list's first
+    item, or one item of a set), before any child is copied. An empty copy
+    counts as writable, there being nothing to probe; a container whose
+    copy is itself is shared before this is asked, empty or not."""
+    try:
+        if isinstance(copied, dict):
+            for key in copied:
+                copied[key] = copied[key]
+                break
+        elif isinstance(copied, list):
+            if copied:
+                copied[0] = copied[0]
+        else:
+            for item in copied:
+                copied.discard(item)
+                copied.add(item)
+                break
+    except Exception:
+        return False
+    return True
+
+
 def _copy_prompt_with_update(prompt, update: Dict[str, Any]):
     copied = prompt.model_copy(update=update)
     for attr in ("_qualified_key", "_resource_namespace"):
@@ -592,7 +825,7 @@ class AgentSpec:
         max_exception_retry: 3
         max_interrupt_steps: 5
         max_llm_recall: 0
-        extra_settings: {}
+        extra_settings: {}    # for your own code, as agent.extra_settings
         tools:
           - shared_pkg.tactics:code_review
           - shared_pkg.tools:search
@@ -654,7 +887,15 @@ class AgentSpec:
         max_interrupt_steps = raw.pop("max_interrupt_steps", 5)
         max_llm_recall = raw.pop("max_llm_recall", 0)
         max_rate_limit_retries = raw.pop("max_rate_limit_retries", 8)
-        extra_settings = raw.pop("extra_settings", {})
+        extra_settings = raw.pop("extra_settings", None)
+        if extra_settings is None:
+            extra_settings = {}
+        elif not isinstance(extra_settings, Mapping):
+            raise TypeError(
+                f"Agent '{name}': 'extra_settings' must be a mapping, "
+                f"got {type(extra_settings).__name__}"
+            )
+        extra_settings = _agent_settings(extra_settings, name)
 
         # -- proxy config (already deep-merged with global by the caller) --
         proxy_raw = raw.pop("proxy", None)
@@ -877,6 +1118,8 @@ class AgentSpec:
             max_rate_limit_retries=self.max_rate_limit_retries,
             context_manager=context_manager,
             inference_hints=self.inference_hints,
+            # Fresh agents share one spec: each gets its own plain data.
+            extra_settings=_agent_settings(self.extra_settings, self.name),
         )
 
 

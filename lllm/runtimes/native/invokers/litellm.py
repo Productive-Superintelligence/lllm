@@ -13,8 +13,8 @@ from litellm import (
     stream_chunk_builder,
 )
 
-from ..core.const import APITypes, InvokeResult, Invokers, Modalities, Roles
-from ..core.dialog import Dialog, Message, TokenLogprob
+from ..core.const import APITypes, InvokeResult, Invokers, Roles
+from ..core.dialog import Dialog, Message, TokenLogprob, _chat_message
 from ..core.prompt import FunctionCall, Prompt
 from .base import BaseInvoker, BaseStreamHandler
 
@@ -77,97 +77,23 @@ def _check_env_vars():
 
 _check_env_vars()
 
+#: Responses API usage keys and the Chat Completions keys they mean.
+_RESPONSES_USAGE_KEYS = {
+    "input_tokens": "prompt_tokens",
+    "output_tokens": "completion_tokens",
+    "input_tokens_details": "prompt_tokens_details",
+    "output_tokens_details": "completion_tokens_details",
+}
+
 
 class LiteLLMInvoker(BaseInvoker):
-    def _convert_dialog(self, dialog: Dialog) -> List[Dict[str, str]]:
-        """Convert internal Dialog state into OpenAI-compatible messages."""
-        messages: List[Dict[str, str]] = []
-        for message in dialog.messages:
-            if message.role in (Roles.ASSISTANT, Roles.TOOL_CALL):
-                assistant_entry: Dict[str, str] = {
-                    "role": "assistant",
-                    "content": message.content,
-                }
-                if message.name and message.name not in (
-                    "assistant",
-                    "user",
-                    "system",
-                    "internal",
-                ):
-                    assistant_entry["name"] = message.sanitized_name
-                if message.function_calls:
-                    assistant_entry["tool_calls"] = [
-                        {
-                            "id": fc.id,
-                            "type": "function",
-                            "function": {
-                                "name": fc.name,
-                                "arguments": json.dumps(fc.arguments),
-                            },
-                        }
-                        for fc in message.function_calls
-                    ]
-                messages.append(assistant_entry)
-                continue
+    def _convert_dialog(self, dialog: Dialog) -> List[Dict[str, Any]]:
+        """Convert internal Dialog state into OpenAI-compatible messages.
 
-            if message.role == Roles.TOOL:
-                tool_call_id = message.metadata.get("tool_call_id")
-                if not tool_call_id:
-                    raise ValueError(
-                        "Tool call id is not found in the message metadata for tool message: "
-                        f"{message}"
-                    )
-                tool_entry = {
-                    "role": "tool",
-                    "content": message.content,
-                    "tool_call_id": tool_call_id,
-                }
-                if message.name and message.name not in (
-                    "assistant",
-                    "user",
-                    "system",
-                    "internal",
-                ):
-                    tool_entry["name"] = message.sanitized_name
-                messages.append(tool_entry)
-                continue
-
-            if message.modality == Modalities.IMAGE:
-                content_parts = []
-                if "caption" in message.metadata:
-                    content_parts.append(
-                        {"type": "text", "text": message.metadata["caption"]}
-                    )
-                content_parts.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{message.content}"
-                        },
-                    }
-                )
-                messages.append(
-                    {
-                        "role": message.role.msg_value,
-                        "content": content_parts,
-                        "name": message.sanitized_name,
-                    }
-                )
-                continue
-
-            if message.modality == Modalities.TEXT:
-                messages.append(
-                    {
-                        "role": message.role.msg_value,
-                        "content": message.content,
-                        "name": message.sanitized_name,
-                    }
-                )
-                continue
-
-            raise ValueError(f"Unsupported modality: {message.modality}")
-
-        return messages
+        The per-message format lives in ``core.dialog`` so that
+        ``DefaultContextManager`` counts messages as they are sent here.
+        """
+        return [_chat_message(message) for message in dialog.messages]
 
     def _build_tools(self, prompt: Prompt) -> List[Dict[str, Any]]:
         tools: List[Dict[str, Any]] = []
@@ -183,6 +109,12 @@ class LiteLLMInvoker(BaseInvoker):
 
     def _build_usage(self, usage_dict: dict, response_obj: Any, model: str) -> dict:
         import litellm
+
+        # 0. The Responses API counts input/output tokens; use the Chat
+        # Completions names, which costs and Message.cost read.
+        for responses_key, chat_key in _RESPONSES_USAGE_KEYS.items():
+            if usage_dict.get(chat_key) is None and responses_key in usage_dict:
+                usage_dict[chat_key] = usage_dict[responses_key]
 
         # 1. Extract total cost directly from the response object
         usage_dict["response_cost"] = getattr(response_obj, "_hidden_params", {}).get(
@@ -358,8 +290,8 @@ class LiteLLMInvoker(BaseInvoker):
                     errors.append(exc)
                     parsed = {"raw": content}
             else:
-                try:
-                    parsed = json.loads(content)
+                try:  # decodes, and validates against a Pydantic format
+                    parsed = prompt.parse(content, **parser_args)
                 except Exception as exc:
                     errors.append(exc)
                     parsed = {"raw": content}

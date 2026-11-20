@@ -65,8 +65,9 @@ print(repr(triage))
 2. The tactic's contract. Every call validates its input into a `Ticket` and
    its result into a `Triage`, and `info()` publishes both.
 3. The caller passed a dict, but `call()` receives a `Ticket`.
-4. `parsed` is a dict decoded from the model's JSON. The tactic validates it
-   into a `Triage` before the caller sees it.
+4. `parsed` is a dict of the reply's fields, already checked against
+   `Triage` by `format=`. The tactic validates it into a `Triage` before
+   the caller sees it.
 
 ## Declaring types
 
@@ -192,32 +193,23 @@ Most results start as a model reply, and LLLM checks replies at two points:
 | The prompt's `format=` or `parser=` | Each model reply | The error goes back to the model to fix; after `max_exception_retry` repairs (3), `AgentException` |
 | The tactic's `output_model` | The tactic's result | `SchemaError`; the call fails |
 
-`format=` decodes the reply as JSON, and providers with structured output
-enforce the schema as they generate. It does not check the decoded fields
-against the model, though. When a reply can still be wrong, for example with
-a provider that lacks structured output, validate it with the model in a
-parser. A reply that does not fit is then repaired inside the agent loop
-instead of failing the call:
+`format=` validates every reply against its model, so a reply that does
+not fit is repaired inside the agent loop instead of failing the call.
+Providers with structured output enforce the schema as they generate, but
+with other providers, or with validators a schema cannot express, a reply
+can still be wrong:
 
 ```python title="repair.py"
 from typing import Literal
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel
 
-from lllm import ParseError, Prompt, Tactic
+from lllm import Prompt, Tactic
 
 
 class Triage(BaseModel):
     team: Literal["billing", "bugs", "accounts"]
     priority: int
-
-
-def as_triage(text: str, **kwargs) -> dict:  # (1)!
-    try:
-        return Triage.model_validate_json(text).model_dump()
-    except ValidationError as error:
-        problems = "; ".join(e["msg"] for e in error.errors())
-        raise ParseError(f"Invalid triage: {problems}")
 
 
 TRIAGE = Prompt(
@@ -226,7 +218,7 @@ TRIAGE = Prompt(
         "Route this ticket to billing, bugs, or accounts: {ticket}\n"
         'Reply with JSON like {{"team": "bugs", "priority": 2}}.'
     ),
-    parser=as_triage,
+    format=Triage,
 )
 
 agent = Tactic.quick(
@@ -237,25 +229,32 @@ ticket = "My invoice has the wrong company name."
 agent.receive_prompt(TRIAGE, {"ticket": ticket})
 session = agent.respond(return_session=True)
 
-print(session.exception_retries_count)  # (2)!
+print(session.exception_retries_count)  # (1)!
 #> 1
-print(repr(Triage.model_validate(session.delivery.parsed)))
-#> Triage(team='billing', priority=3)
+print(session.delivery.parsed)
+#> {'team': 'billing', 'priority': 3}
 ```
 
-1. A parser turns the reply text into `parsed`. A `ParseError` sends its
-   message back to the model: `Error: Invalid triage: Input should be
-   'billing', 'bugs' or 'accounts'. Please fix.`
-2. The first reply named a team that does not exist, and the model fixed it
-   after one repair.
+1. The first reply named a team that does not exist. The model received
+   `Error: The reply does not match Triage: team: Input should be
+   'billing', 'bugs' or 'accounts'. Please fix.` and fixed it after one
+   repair.
 
-A prompt uses `format=` or a parser, not both: when `format=` is set, the
-parser is not called. In a tactic with `output_model = Triage`, return
-`parsed` as before. A parser's result also carries the reply text under
-`raw`, which validation ignores unless the model forbids extra fields. The
-same goes for steps inside `call()`:
+The repair message lists each problem with its field. Validators on the
+model run too, so a rule the schema cannot express, such as one field
+depending on another, is repaired the same way. For replies that are not
+JSON, use a [parser](prompts.md#parsers), which raises `ParseError` to ask
+for a repair. A prompt uses `format=` or a parser, not both: when
+`format=` is set, the parser is not called.
+
+`parsed` is the reply's JSON object as it came, which the model accepted,
+so in a tactic with `output_model = Triage`, return it as is. The same
+goes for steps inside `call()`:
 `Plan.model_validate(planner.respond().parsed)` turns a planner's reply into
-an object the rest of the program can use ([Tactics](tactics.md)).
+an object the rest of the program can use ([Tactics](tactics.md)). A
+strict model (`ConfigDict(strict=True)`) rejects JSON forms such as a date
+string in Python mode, so read `parsed` with
+`Triage.model_validate_json(json.dumps(parsed))` and return the result.
 
 ## JSON schemas
 

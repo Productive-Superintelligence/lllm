@@ -65,9 +65,13 @@ def _review_name(request):
 
 @rule(asks("what is the trend in this chart"))
 def _chart_trend(request):
-    has_image = any(
+    has_image = any(  # the chart is a PNG, and is sent as one
         isinstance(message.get("content"), list)
-        and any(part.get("type") == "image_url" for part in message["content"])
+        and any(
+            part.get("type") == "image_url"
+            and part["image_url"]["url"].startswith("data:image/png;base64,")
+            for part in message["content"]
+        )
         for message in request.messages
     )
     if not has_image:
@@ -89,4 +93,6 @@ def _standup_monday(request):
     for text in earlier:
         if "monday" in text.lower():
             return text.split(":", 1)[1].strip()
+    if len(request.messages) != 7:  # the system prompt and six recent ones
+        return f"I see {len(request.messages)} messages."
     return "I no longer see Monday's note in our conversation."

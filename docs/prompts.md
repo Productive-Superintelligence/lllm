@@ -11,7 +11,7 @@ parse is sent back with the error until it does.
 | `path` | A unique name, such as `support/classify`; prompts are registered and loaded by path |
 | `prompt` | The template; `{name}` placeholders are its inputs |
 | `parser` | Turns the reply into `parsed`; raising `ParseError` triggers a repair |
-| `format` | A Pydantic model (or JSON schema) the reply must match |
+| `format` | A Pydantic model the reply must match; a `dict` JSON schema only asks for a JSON object |
 | `function_list` | [Tools](tools.md) offered while this prompt drives the turn |
 | `handler` | The messages sent after a parse error or a tool result |
 | `agent_tools` | Whether the agent's own tools stay on offer (default `True`) |
@@ -97,8 +97,10 @@ any model call. To use another template language, give the prompt a
 
 Give a prompt a Pydantic model as `format`, and the model is asked for JSON
 matching it (OpenAI-style structured output where the provider supports
-it). The reply is decoded into `parsed`, and invalid JSON is repaired like
-any parse error:
+it). The reply is validated against the model, and `parsed` is the reply's
+JSON object as it came, which the model accepted. A reply that is not
+valid JSON or does not fit the model (a missing field, a wrong type, a
+failed validator) is repaired like any parse error:
 
 ```python title="structured.py"
 from pydantic import BaseModel
@@ -130,14 +132,21 @@ print(invoice)
 1. Inside a tactic you rarely do this by hand: declare `output_model =
    Invoice` and the tactic validates its result. See [Typed I/O](typed-io.md).
 
-A `dict` JSON schema works as `format` too. For replies that are not JSON,
-use a parser.
+Since `parsed` is JSON data, a strict model (`ConfigDict(strict=True)`),
+which rejects a date string or a list for a tuple in Python mode, reads it
+with `Invoice.model_validate_json(json.dumps(parsed))`.
+
+A `dict` JSON schema works as `format` too, loosely: the provider is asked
+for a JSON object (the schema itself is not sent), and the reply must be
+one, but its fields are not checked. For replies that are not JSON, use a
+parser.
 
 ## Parsers
 
 A parser is any object with a `parse(text, **kwargs)` method, or a plain
 function. Whatever it returns becomes `parsed` (non-dict values are wrapped as
-`{"value": ...}`), and whatever it raises is sent back to the model.
+`{"value": ...}`; the reply text stays in `content`), and whatever it raises
+is sent back to the model.
 
 `DefaultTagParser` extracts tagged sections, which is often more robust than
 JSON for long reasoning:
@@ -192,7 +201,7 @@ ESTIMATE = Prompt(
     parser=percentage,
 )
 print(ESTIMATE.parse("37%"))
-#> {'value': 37.0, 'raw': '37%'}
+#> {'value': 37.0}
 ```
 
 Arguments passed to `agent.respond(parser_args={...})` reach the parser as

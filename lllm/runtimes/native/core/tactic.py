@@ -21,6 +21,7 @@ import hashlib
 import inspect
 import logging
 import os
+import itertools
 import sys
 import threading
 import traceback as tb
@@ -28,7 +29,8 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from contextlib import aclosing, contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
+from dataclasses import fields as dataclass_fields
 from typing import (
     Any,
     ClassVar,
@@ -42,7 +44,7 @@ from typing import (
     overload,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter
 
 from ....protocol.errors import TacticUnsupportedError
 from ....protocol.events import TacticEvent
@@ -131,6 +133,12 @@ def _config_get(config: Any, key: str, default: Any = None) -> Any:
     if isinstance(config, Mapping):
         return config.get(key, default)
     if isinstance(config, BaseModel):
+        data = _model_config_data(config)
+        if key in data:
+            return data[key]
+        if key in type(config).model_fields:  # a field left unset at None
+            return default
+        # A property or ClassVar (a tactic_type, say), as 0.4.0 read it.
         return getattr(config, key, default)
     return default
 
@@ -139,19 +147,158 @@ def _config_as_mapping(config: Any, label: str) -> Dict[str, Any]:
     if isinstance(config, Mapping):
         return dict(config)
     if isinstance(config, BaseModel):
-        return config.model_dump()
+        return _model_config_data(config)
     raise TypeError(f"{label} must be a mapping or Pydantic BaseModel.")
 
 
+def _model_config_data(config: BaseModel) -> Dict[str, Any]:
+    """A Pydantic config as the dict a config file would give.
+
+    Fields are read by name, so aliases (an alias generator's camelCase,
+    say) only shape the input. ``global`` is a Python keyword, so the field
+    aliased ``global`` (its alias, serialization alias, or validation
+    alias) becomes the ``global`` section. A field left unset at None, at
+    any depth, is left out: it means "not given", so ``global`` and the
+    defaults apply, while a None that was set is kept.
+    """
+    # by_alias=False even for serialize_by_alias models: names, not aliases.
+    data = config.model_dump(by_alias=False)
+    _drop_unset_none(config, data)
+    for name, field in type(config).model_fields.items():
+        if name in data and "global" in _field_aliases(field):
+            data["global"] = data.pop(name)
+    return data
+
+
+def _field_aliases(field: Any) -> set:
+    """A field's alias, serialization alias, and validation aliases.
+
+    A validation alias may be a string, a one-key ``AliasPath``, or
+    ``AliasChoices`` of those.
+    """
+    names = {field.alias, field.serialization_alias}
+    validation = field.validation_alias
+    for choice in getattr(validation, "choices", [validation]):
+        path = getattr(choice, "path", None)
+        if path is None:
+            names.add(choice)
+        elif len(path) == 1:  # AliasPath("global"): that key, whole
+            names.add(path[0])
+    return {name for name in names if isinstance(name, str)}
+
+
+def _drop_unset_none(value: Any, data: Any) -> None:
+    """Remove fields left unset at None from ``data``, ``value``'s dump."""
+    if isinstance(value, RootModel):  # dumped as its root value
+        _drop_unset_none(value.root, data)
+    elif isinstance(value, BaseModel) and isinstance(data, dict):
+        for name in type(value).model_fields:
+            if name not in data:
+                continue
+            item = getattr(value, name)
+            if item is None and name not in value.model_fields_set:
+                del data[name]
+            else:
+                _drop_unset_none(item, data[name])
+    elif isinstance(value, (list, tuple)) and isinstance(data, (list, tuple)):
+        for item, item_data in zip(value, data):
+            _drop_unset_none(item, item_data)
+    elif isinstance(value, Mapping) and isinstance(data, dict):
+        for key, item in value.items():
+            if key in data:
+                _drop_unset_none(item, data[key])
+
+
+#: How far a task is read to name its session: levels, and values in all.
+_PREVIEW_DEPTH = 20
+_PREVIEW_VALUES = 10_000
+
+
 def _task_to_string(task: Any) -> str:
+    """A canonical preview of ``task``, only to hash into a session name.
+
+    repr() recurses in C, so a task nested a few thousand levels deep (an
+    18 KB JSON request) would overflow a small thread stack and kill the
+    process. The preview is built by an iterative walk with an explicit
+    stack instead: mappings, lists, tuples, and sets (subclasses included),
+    Pydantic models, and dataclasses are walked, at most 20 levels deep and
+    10,000 values in all; a container already on the path (a cycle) becomes
+    "...", and any other object is its type's name, so repr() is never
+    called on a container or an arbitrary object. Stable within a process.
+    """
     if isinstance(task, str):
         return task
-    if isinstance(task, BaseModel):
-        try:
-            return task.model_dump_json()
-        except Exception:  # e.g. bytes that are not UTF-8
-            return repr(task)
-    return repr(task)
+    out: List[str] = []
+    on_path: set = set()
+    stack: List[Tuple[str, Any, int]] = [("value", task, 0)]
+    seen = 0
+    while stack:
+        kind, value, depth = stack.pop()
+        if kind == "text":
+            out.append(value)
+            continue
+        if kind == "leave":
+            on_path.discard(value)
+            continue
+        seen += 1
+        if seen > _PREVIEW_VALUES:
+            out.append("...")
+            break
+        leaf = _preview_leaf(value)
+        if leaf is not None:
+            out.append(leaf)
+        elif not _walkable(value):
+            out.append(type(value).__qualname__)
+        elif depth >= _PREVIEW_DEPTH or id(value) in on_path:
+            out.append("...")  # decided before reading any children
+        else:
+            on_path.add(id(value))
+            out.append(type(value).__qualname__ + "(")
+            stack.append(("leave", id(value), depth))
+            stack.append(("text", ")", depth))
+            children = _preview_children(value, _PREVIEW_VALUES - seen + 1)
+            stack.extend(("value", child, depth + 1) for child in reversed(children))
+    return " ".join(out)
+
+
+def _walkable(value: Any) -> bool:
+    """Whether the preview walks into ``value``: a cheap type check."""
+    if isinstance(value, (Mapping, list, tuple, set, frozenset, BaseModel)):
+        return True
+    return is_dataclass(value) and not isinstance(value, type)
+
+
+def _preview_leaf(value: Any) -> Optional[str]:
+    """The preview of a scalar, or None for anything else."""
+    if value is None or isinstance(value, bool):
+        return repr(value)
+    if isinstance(value, int):  # by the int itself: no subclass repr
+        if value.bit_length() > 64:  # no 4,300-digit str() limit
+            return f"int{value.bit_length()}:{value % 1_000_000_007}"
+        return int.__repr__(value)
+    if isinstance(value, float):
+        return float.__repr__(value)
+    if isinstance(value, str):
+        return str.__repr__(value)
+    if isinstance(value, (bytes, bytearray)):
+        return f"{bytes(value[:64])!r}:{len(value)}"
+    return None
+
+
+def _preview_children(value: Any, limit: int) -> List[Any]:
+    """The values to walk inside a walkable ``value``: at most ``limit``
+    items or key-value pairs, read lazily."""
+    if isinstance(value, (list, tuple, set, frozenset)):
+        return list(itertools.islice(value, limit))
+    if isinstance(value, Mapping):
+        pairs: Any = value.items()
+    elif isinstance(value, BaseModel):
+        fields = ((name, getattr(value, name, None)) for name in type(value).model_fields)
+        extra = getattr(value, "__pydantic_extra__", None) or {}
+        pairs = itertools.chain(fields, extra.items())
+    else:  # a dataclass instance
+        pairs = ((f.name, getattr(value, f.name, None)) for f in dataclass_fields(value))
+    return [part for pair in itertools.islice(pairs, limit) for part in pair]
 
 
 def _zero_invoke_cost() -> Any:
@@ -864,7 +1011,9 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
 
         tactic_name = self.tactic_name
         if session_name is None:
-            task_hash = hashlib.md5(_task_to_string(task).encode()).hexdigest()[:8]
+            preview = _task_to_string(task).encode("utf-8", "surrogatepass")
+            # Not for security: plain md5 raises on FIPS-mode Python.
+            task_hash = hashlib.md5(preview, usedforsecurity=False).hexdigest()[:8]
             timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
             session_name = f"{tactic_name}_{task_hash}_{timestamp}"
         session = TacticCallSession(
@@ -1163,7 +1312,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: bool = False,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Agent: ...
 
     @overload
@@ -1174,7 +1323,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: Literal[False] = False,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Message: ...
 
     @overload
@@ -1185,7 +1334,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: Literal[True] = True,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Tuple[Message, Agent]: ...
 
     @classmethod
@@ -1195,13 +1344,18 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: bool = False,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Union[Message, Agent, Tuple[Message, Agent]]:
         """One agent, no configuration: ``Tactic.quick("What is LLLM?")``.
 
         With ``query`` it returns the reply (and the agent when
         ``return_agent=True``); without ``query`` it returns the agent so you
         can ``open``/``receive``/``respond`` yourself.
+
+        A keyword argument named after an :class:`Agent` field, such as
+        ``max_llm_recall``, ``stream_handler``, ``context_manager`` or
+        ``name``, sets that field; every other one (``temperature=0.2``) is
+        added to ``model_args`` and sent with each call.
         """
 
         from ..native.tactic import _build_native_invoker, _get_default_registry
@@ -1212,14 +1366,16 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
             prompt = Prompt(path="_quick/system", prompt=system_prompt)
         else:
             prompt = system_prompt
-        agent = Agent(
-            name="assistant",
-            system_prompt=prompt,
-            model=model,
-            llm_invoker=_build_native_invoker({"invoker": "litellm"}),
-            runtime=_get_default_registry(),
-            model_args=model_args,
-        )
+        agent_fields = {
+            f.name for f in dataclass_fields(Agent) if not f.name.startswith("_")
+        }
+        settings = {k: kwargs.pop(k) for k in list(kwargs) if k in agent_fields}
+        settings["model_args"] = {**(settings.get("model_args") or {}), **kwargs}
+        settings.setdefault("name", "assistant")
+        if "llm_invoker" not in settings:
+            settings["llm_invoker"] = _build_native_invoker({"invoker": "litellm"})
+        settings.setdefault("runtime", _get_default_registry())
+        agent = Agent(system_prompt=prompt, model=model, **settings)
         if query is None:
             return agent
         agent.open("chat")

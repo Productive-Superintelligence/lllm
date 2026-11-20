@@ -186,9 +186,9 @@ class InvokeCost(BaseModel):
     def __str__(self):
         rates = []
         if self.input_cost_per_token:
-            rates.append(f"In: ${self.input_cost_per_token:.7f}/tok")
+            rates.append(f"In: {_per_million(self.input_cost_per_token)}/1M tok")
         if self.output_cost_per_token:
-            rates.append(f"Out: ${self.output_cost_per_token:.7f}/tok")
+            rates.append(f"Out: {_per_million(self.output_cost_per_token)}/1M tok")
         rates_str = f" | Rates: [{', '.join(rates)}]" if rates else ""
 
         return (
@@ -220,6 +220,12 @@ class InvokeCost(BaseModel):
             completion_cost=self.completion_cost + other.completion_cost,
             cost=self.cost + other.cost,
         )
+
+
+def _per_million(rate: float) -> str:
+    """A USD rate per token as dollars per million tokens: 1.5e-07 -> $0.15."""
+    whole, _, cents = f"{rate * 1_000_000:,.4f}".rstrip("0").partition(".")
+    return f"${whole}.{cents.ljust(2, '0')}"
 
 
 def validate_tool_name(value: str, label: str) -> None:

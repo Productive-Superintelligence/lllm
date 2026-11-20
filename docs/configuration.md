@@ -2,8 +2,9 @@
 
 A tactic's agents are described by a config: the model each agent uses, its
 system prompt, its settings and tools, and how many retries it gets. The
-config is data, a dict or a YAML file, so you can review, diff, and swap the
-shape of a system without touching the program that runs it.
+config is data, a dict or a YAML file (or a
+[Pydantic model](#configs-as-pydantic-models)), so you can review, diff,
+and swap the shape of a system without touching the program that runs it.
 
 ```python title="release_notes.py"
 from lllm import Tactic
@@ -76,6 +77,7 @@ construction, which is a quick way to check what a config produces.
 | `skills` | | Agent skills: local names, `SKILL.md` URLs, or `"*"` ([Agents](agents.md#tools-and-skills)) |
 | `context_manager` | | Keeps the dialog inside the context window ([Dialogs](dialogs.md)) |
 | `inference_hints` | | Session and priority hints ([Inference hints](inference-hints.md)) |
+| `extra_settings` | `{}` | Your own settings, which your code reads as `agent.extra_settings`; LLLM ignores them. Each agent gets its own copy of plain data (dicts, lists, tuples, sets); other objects, such as a client, are shared |
 
 Every agent needs `model_name` and one of `system_prompt` or
 `system_prompt_path`, from its own entry or from `global`. Both kinds of
@@ -125,6 +127,69 @@ agent_configs:
 Anything else at the top level is yours. The tactic keeps the whole config
 as `self.config`, so `call()` can read a rubric, a word limit, or a list of
 sources from it.
+
+## Configs as Pydantic models
+
+A config can also be a Pydantic model, which checks it before the tactic
+is built. The tactic reads the model's fields like the keys of a dict,
+with one difference for defaults (1):
+
+```python title="typed_config.py"
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+from lllm import Tactic
+
+
+class AgentEntry(BaseModel):
+    name: str
+    system_prompt: str
+    model_name: Optional[str] = None  # (1)!
+
+
+class TeamConfig(BaseModel):
+    global_: dict = Field(default_factory=dict, alias="global")  # (2)!
+    agent_configs: list[AgentEntry]
+
+
+class Team(Tactic):
+    name = "team"
+    agent_group = ["writer", "editor"]
+
+
+config = TeamConfig.model_validate(
+    {
+        "global": {"model_name": "gpt-4o-mini"},
+        "agent_configs": [
+            {"name": "writer", "system_prompt": "You write."},
+            {
+                "name": "editor",
+                "system_prompt": "You edit.",
+                "model_name": "gpt-4o",
+            },
+        ],
+    }
+)
+team = Team(config)
+print({name: agent.model for name, agent in team.agents.items()})
+#> {'writer': 'gpt-4o-mini', 'editor': 'gpt-4o'}
+```
+
+1. A field left unset at `None` counts as not given, at any depth, so the
+   writer gets its model from `global`. A value that was set is used, even
+   `None`, like a `null` in a dict config. A field with any other default
+   always counts, set or not, and overrides `global`, so declare a field
+   that should inherit as `Optional[...] = None`.
+2. `global` is a Python keyword, so the field gets another name and
+   `global` as its alias (a `validation_alias` works too). That field
+   becomes the `global` section.
+
+Every other field is read by its name, so an alias generator such as
+`to_camel` only changes how the input is spelled: `agent_configs` reaches
+the tactic as `agent_configs`. The top-level keys read one at a time,
+`max_workers` and `tactic_type`, can also be properties or class
+variables. `self.config` is the model itself.
 
 ## Configs in a project
 

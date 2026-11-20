@@ -2,9 +2,10 @@
 
 LLLM records every run as plain Python data. Each tactic call produces a
 `TacticCallSession` holding every agent call, each model call inside it,
-every repair and tool round, and the cost; each agent keeps its dialogs as
-full transcripts. Nothing is sent anywhere by default. You read the records
-in your own code, and an observer hook saves them wherever you keep runs.
+every repair and tool round, and the cost; each agent keeps its dialogs,
+the conversation it carried forward. Nothing is sent anywhere by default.
+You read the records in your own code, and an observer hook saves them
+wherever you keep runs.
 
 Ask a tactic for its session with `return_session=True`:
 
@@ -82,7 +83,7 @@ Cost Breakdown: Prompt: $0.000005, Completion: $0.000036 | Total Cost: $0.000040
 TacticCallSession                  one tactic call
 ├── state, delivery, error, error_traceback
 ├── agent_sessions[agent]          one AgentCallSession per respond()
-│   ├── state, delivery            the final Message
+│   ├── state, delivery            the final Message (None if it failed)
 │   ├── invoke_traces[step]        one InvokeResult per model call
 │   ├── exception_retries[step]    parse errors that caused repairs
 │   ├── interrupts[step]           tool calls (tool_calls lists them all)
@@ -93,11 +94,14 @@ TacticCallSession                  one tactic call
 
 An `InvokeResult` keeps the `message` the model returned, the exact
 `model_args` sent, any `execution_errors` (such as the parse error above),
-and the provider's `raw_response`. Tactics called inside a tactic record
-their sessions into the caller's, so the cost of a whole program adds up in
-one place; [Tactics](tactics.md#sessions) lists the session's fields. A
-plain agent outside a tactic has no tactic session, but
-`agent.respond(return_session=True)` returns the same `AgentCallSession`.
+and the provider's `raw_response`. A `respond()` that raised is recorded
+too, with `state="failure"` and no `delivery`, so `agent_sessions`,
+`agent_call_count`, and `total_cost` include failed calls. Tactics called
+inside a tactic record their sessions into the caller's, so the cost of a
+whole program adds up in one place; [Tactics](tactics.md#sessions) lists
+the session's fields. A plain agent outside a tactic has no tactic
+session, but `agent.respond(return_session=True)` returns the same
+`AgentCallSession`.
 
 ## Cost and token usage
 
@@ -119,10 +123,12 @@ dollar fields are `0.0`.
 
 ## Saving runs with an observer
 
-The session holds each agent call's replies; the dialogs hold everything
-each agent saw and said. Every tactic call gets fresh agents, so the place
-to read both is an observer: any object with some of these methods, passed
-as `observer=` when you build the tactic.
+The session holds every model call, including replies that failed to
+parse and the errors that sent them back; the dialogs hold the
+conversation each agent carried forward, with only the accepted replies
+([Dialogs](dialogs.md#forking)). Every tactic call gets fresh agents, so
+the place to read both is an observer: any object with some of these
+methods, passed as `observer=` when you build the tactic.
 
 | Method | Called | Receives |
 | --- | --- | --- |
@@ -134,8 +140,8 @@ Arguments come by keyword. `tactic` is the call's own copy, so
 `tactic.agents` holds this call's agents and their dialogs, and whatever
 `observe_tactic`'s context manager yields arrives as `span`. An exception
 inside an observer is logged and never breaks the call. This observer
-appends one JSON line per call, failed calls included, with the full
-transcripts:
+appends one JSON line per call, failed calls included, with every dialog
+and every model call:
 
 ```python title="run_log.py"
 import json
@@ -160,6 +166,17 @@ class RunLog:
             for name, agent in tactic.agents.items()
             for alias, dialog in agent.dialogs.items()
         }
+        calls = [  # (2)!
+            {
+                "agent": name,
+                "reply": trace.message.content,
+                "errors": [str(error) for error in trace.execution_errors],
+            }
+            for name, agent_calls in session.agent_sessions.items()
+            for agent_call in agent_calls
+            for traces in agent_call.invoke_traces.values()
+            for trace in traces
+        ]
         run = {
             "tactic": session.tactic_path,
             "state": session.state,
@@ -167,6 +184,7 @@ class RunLog:
             "cost": session.total_cost.cost,
             "error": session.error,
             "dialogs": dialogs,
+            "calls": calls,
         }
         with self.path.open("a") as file:
             file.write(json.dumps(run) + "\n")
@@ -203,7 +221,7 @@ summarize(
 try:
     summarize("   ", tags={"exp": "c"})
 except ValueError:
-    pass  # (2)!
+    pass  # (3)!
 
 runs = [json.loads(line) for line in open("runs.jsonl")]
 print([(run["tags"]["exp"], run["state"], run["error"]) for run in runs])
@@ -214,7 +232,7 @@ print([(run["tags"]["exp"], run["state"], run["error"]) for run in runs])
     ('c', 'failure', 'ValueError: nothing to summarize'),
 ]
 """
-dialog = Dialog.from_dict(runs[1]["dialogs"]["writer/summary"])  # (3)!
+dialog = Dialog.from_dict(runs[1]["dialogs"]["writer/summary"])  # (4)!
 print(dialog.overview())
 """
 [0. system (developer)]: You summarize.
@@ -223,15 +241,23 @@ print(dialog.overview())
 
 [2. writer (assistant)]: Observers save every run.
 """
+print(runs[1]["calls"])
+"""
+[{'agent': 'writer', 'reply': 'Observers save every run.', 'errors': []}]
+"""
 ```
 
 1. `to_dict()` is JSON-ready: every message with its tool calls, parsed
    output, and usage, plus the dialog's lineage. See
    [Dialogs](dialogs.md#saving-and-loading).
-2. A failing call raises as usual, and the observer still gets its session,
-   with `state="failure"`, the `error`, the full `error_traceback`, and the
-   agent calls that finished before the failure.
-3. A saved dialog loads back as a `Dialog`, to review, fork, or replay.
+2. Every model call, from the session. A reply that failed to parse is
+   here with its `errors`, but not in the dialog, which keeps only the
+   accepted exchange.
+3. A failing call raises as usual, and the observer still gets its session,
+   with `state="failure"`, the `error`, the full `error_traceback`, and
+   every agent call made before the failure, including one that failed,
+   with the replies it rejected.
+4. A saved dialog loads back as a `Dialog`, to review, fork, or replay.
 
 `tags` and `metadata` are passed per call, as in `tactic(task, tags={...},
 metadata={...})`, and reach the observer untouched; `bcall`, `acall`, and

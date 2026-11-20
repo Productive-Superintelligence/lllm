@@ -4,13 +4,15 @@ import base64
 import copy
 import datetime as dt
 import io
+import json
 import logging
+import math
 import re
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 
@@ -40,6 +42,165 @@ def _is_pil_image(obj: Any) -> bool:
         return isinstance(obj, Image.Image)
     except ImportError:
         return False
+
+
+def _media_type(data: bytes) -> Optional[str]:
+    """The media type of PNG, JPEG, WebP, or GIF data, from its first bytes."""
+    if data.startswith(b"\x89PNG"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"GIF8"):
+        return "image/gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def _image_media_type(image_base64: str) -> Optional[str]:
+    """The media type of base64 image data, decoding only its first bytes."""
+    head = "".join(image_base64[:32].split())
+    try:
+        return _media_type(base64.b64decode(head[: len(head) // 4 * 4]))
+    except ValueError:  # not base64
+        return None
+
+
+def _image_parts(message: "Message") -> List[Dict[str, Any]]:
+    """An image message as chat content parts: its caption, then the image."""
+    parts: List[Dict[str, Any]] = []
+    if "caption" in message.metadata:
+        parts.append({"type": "text", "text": message.metadata["caption"]})
+    media_type = _image_media_type(message.content) or "image/jpeg"
+    url = f"data:{media_type};base64,{message.content}"
+    parts.append({"type": "image_url", "image_url": {"url": url}})
+    return parts
+
+
+#: Base64 characters tried first for an image's header (about 48 KB of data,
+#: past any usual header); the whole image only if that fails.
+_IMAGE_HEAD = 65_536
+
+
+def _image_size(image_base64: str) -> Optional[Tuple[int, int]]:
+    """An image's width and height, read from its header with Pillow.
+
+    None without Pillow, or when the header cannot be read (HEIC, data
+    that does not decode).
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    head = "".join(image_base64[:_IMAGE_HEAD].split())
+    attempts = [head[: len(head) // 4 * 4]]
+    if len(image_base64) > _IMAGE_HEAD:
+        attempts.append(image_base64)
+    for data in attempts:
+        try:
+            with Image.open(io.BytesIO(base64.b64decode(data))) as image:
+                return image.size
+        except Exception:
+            continue
+    return None
+
+
+def _high_detail_tokens(width: int, height: int) -> int:
+    """OpenAI's token cost of an image at high detail.
+
+    Fit within 2048x2048, scale the shortest side down to 768, then 170
+    tokens per 512-pixel tile plus 85: 765 for a 1024x768 photo.
+    """
+    if width < 1 or height < 1:
+        return 85
+    if max(width, height) > 2048:
+        scale = 2048 / max(width, height)
+        width, height = round(width * scale), round(height * scale)
+    if min(width, height) > 768:
+        scale = 768 / min(width, height)
+        width, height = round(width * scale), round(height * scale)
+    return 85 + 170 * math.ceil(width / 512) * math.ceil(height / 512)
+
+
+def _text_and_parts(raw: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Any]]:
+    """A chat message with only its text, and its other content parts."""
+    content = raw.get("content")
+    if not isinstance(content, list):
+        return raw, []
+    texts, parts = [], []
+    for part in content:
+        if isinstance(part, dict) and part.get("type") == "text":
+            texts.append(str(part.get("text") or ""))
+        else:
+            parts.append(part)
+    return {**raw, "content": "\n".join(texts)}, parts
+
+
+#: Sender names the chat format leaves out of a message's ``name``.
+_GENERIC_NAMES = ("assistant", "user", "system", "internal")
+
+
+def _chat_message(message: "Message") -> Dict[str, Any]:
+    """A message in the Chat Completions format the LiteLLM invoker sends."""
+    if message.role in (Roles.ASSISTANT, Roles.TOOL_CALL):
+        entry: Dict[str, Any] = {"role": "assistant", "content": message.content}
+        if message.name and message.name not in _GENERIC_NAMES:
+            entry["name"] = message.sanitized_name
+        if message.function_calls:
+            entry["tool_calls"] = [
+                {
+                    "id": call.id,
+                    "type": "function",
+                    "function": {
+                        "name": call.name,
+                        "arguments": json.dumps(call.arguments),
+                    },
+                }
+                for call in message.function_calls
+            ]
+        return entry
+    if message.role == Roles.TOOL:
+        tool_call_id = message.metadata.get("tool_call_id")
+        if not tool_call_id:
+            raise ValueError(
+                "Tool call id is not found in the message metadata for tool message: "
+                f"{message}"
+            )
+        entry = {
+            "role": "tool",
+            "content": message.content,
+            "tool_call_id": tool_call_id,
+        }
+        if message.name and message.name not in _GENERIC_NAMES:
+            entry["name"] = message.sanitized_name
+        return entry
+    if message.modality == Modalities.IMAGE:
+        content: Any = _image_parts(message)
+    elif message.modality == Modalities.TEXT:
+        content = message.content
+    else:
+        raise ValueError(f"Unsupported modality: {message.modality}")
+    return {
+        "role": message.role.msg_value,
+        "content": content,
+        "name": message.sanitized_name,
+    }
+
+
+def _image_placeholder(message: "Message") -> str:
+    """``<image/png, 2.0 KB> caption``: an image message without its data."""
+    content = message.content if isinstance(message.content, str) else ""
+    data = "".join(content.split())
+    size = len(data) * 3 // 4 - data[-2:].count("=")
+    if size < 1024:
+        shown = f"{size} B"
+    elif size < 1024 * 1024:
+        shown = f"{size / 1024:.1f} KB"
+    else:
+        shown = f"{size / (1024 * 1024):.1f} MB"
+    placeholder = f"<{_image_media_type(content) or 'image'}, {shown}>"
+    caption = message.metadata.get("caption")
+    return f"{placeholder} {caption}" if caption else placeholder
 
 
 class TokenLogprob(BaseModel):
@@ -541,17 +702,11 @@ class Dialog:
             image_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         elif isinstance(image, str):
             # Validate that the base64 string decodes to a known image format
-            _IMAGE_MAGIC = (
-                b"\x89PNG",  # PNG
-                b"\xff\xd8\xff",  # JPEG
-                b"RIFF",  # WebP (RIFF....WEBP)
-                b"GIF8",  # GIF
-            )
             try:
                 raw = base64.b64decode(image)
             except Exception:
                 raise ValueError("Invalid base64 encoded image string")
-            if not any(raw.startswith(m) for m in _IMAGE_MAGIC):
+            if _media_type(raw) is None:
                 raise ValueError(
                     f"Base64 string does not appear to be a supported image "
                     f"(PNG/JPEG/WebP/GIF); got header {raw[:8]!r}"
@@ -648,6 +803,20 @@ class Dialog:
         Returns:
             The new child Dialog.
         """
+        child = self._copy(last_n, first_k)
+        # List the child among this dialog's children (node ids and live refs).
+        self.tree_node.add_child(child.tree_node)
+        self._children_dialogs.append(child)
+        return child
+
+    def _copy(self, last_n: int = 0, first_k: int = 1) -> "Dialog":
+        """A fork that names this dialog as its parent but is not its child.
+
+        The agent loop answers each model call on such a working copy: its
+        repairs and failed replies are dropped with it when the call ends,
+        so ``children``, ``tree_overview()`` and ``to_dict()`` list only
+        the forks made with :meth:`fork`.
+        """
         last_n = _nonnegative_int_value("last_n", last_n)
         first_k = _nonnegative_int_value("first_k", first_k)
         if last_n >= len(self._messages):
@@ -677,14 +846,9 @@ class Dialog:
             owner=self.owner,
             tree_node=child_tree_node,
         )
-
-        # Wire tree_node parent ↔ child (sets parent_id, live refs, children_ids)
-        self.tree_node.add_child(child.tree_node)
-
-        # Wire Dialog-level live refs
+        child_tree_node.parent_id = self.dialog_id
+        child_tree_node._parent = self.tree_node
         child._parent_dialog = self
-        self._children_dialogs.append(child)
-
         return child
 
     # -----------------------------------------------------------------------
@@ -704,10 +868,13 @@ class Dialog:
         for idx, message in enumerate(self.messages):
             if remove_tail and idx == len(self.messages) - 1:
                 break
-            content_preview = (
-                str(message.content)[:max_length] + "..."
-                if len(str(message.content)) > max_length
+            text = (
+                _image_placeholder(message)
+                if message.modality == Modalities.IMAGE
                 else str(message.content)
+            )
+            content_preview = (
+                text[:max_length] + "..." if len(text) > max_length else text
             )
             _overview += f"[{idx}. {message.name} ({message.role.msg_value})]: {content_preview}\n\n"
 
@@ -781,6 +948,93 @@ class Dialog:
 # ---------------------------------------------------------------------------
 
 
+#: Context windows found, by model; unknown ones are looked up again.
+_CONTEXT_WINDOWS: Dict[str, int] = {}
+#: Models whose unknown window was warned about.
+_UNKNOWN_WINDOWS: set = set()
+
+
+def _model_info(model_name: str) -> Dict[str, Any]:
+    """LiteLLM's model info, or {} for a model it does not know.
+
+    Looked up by the name without its provider prefix: for a Hugging Face
+    model, LiteLLM builds the hub URL from that name, and the prefix would
+    make it a 404. A name whose prefix is no provider (a model registered
+    as ``pkg/model``) is looked up whole.
+    """
+    import litellm
+
+    try:
+        name, provider, _, _ = litellm.get_llm_provider(model_name)
+        return litellm.get_model_info(name, custom_llm_provider=provider)
+    except Exception:
+        pass
+    try:
+        return litellm.get_model_info(model_name)
+    except Exception:
+        return {}
+
+
+def _context_window(model_name: str) -> Optional[int]:
+    """The model's context window from LiteLLM's model info, or None.
+
+    That is ``max_input_tokens``; a model registered with
+    ``litellm.register_model`` should give it. For a Hugging Face model,
+    LiteLLM reports the hub's ``max_position_embeddings`` as ``max_tokens``
+    alone, and that is the window; elsewhere ``max_tokens`` can be the
+    output limit, so it is not used. A window found is remembered. An
+    unknown one is warned about once and looked up again next time, so a
+    model registered later is found.
+    """
+    if model_name in _CONTEXT_WINDOWS:
+        return _CONTEXT_WINDOWS[model_name]
+    info = _model_info(model_name)
+    window = info.get("max_input_tokens")
+    if (
+        not window
+        and info.get("litellm_provider") == "huggingface"
+        and not info.get("max_output_tokens")
+    ):
+        window = info.get("max_tokens")
+    if window:
+        _CONTEXT_WINDOWS[model_name] = int(window)
+        return int(window)
+    if model_name not in _UNKNOWN_WINDOWS:
+        _UNKNOWN_WINDOWS.add(model_name)
+        logger.warning(
+            "DefaultContextManager: LiteLLM does not know the context window "
+            "of %r, so its calls are not trimmed. Set max_tokens to trim them.",
+            model_name,
+        )
+    return None
+
+
+def _trim_units(messages: List[Message]) -> List[List[int]]:
+    """Indexes of ``messages[1:]``, newest first, in the groups trimming keeps
+    or drops whole: a tool call with its results, or a single message.
+
+    A tool result sent without the call it answers is rejected by
+    OpenAI-compatible APIs.
+    """
+    units: List[List[int]] = []
+    results: List[int] = []
+    for index in range(len(messages) - 1, 0, -1):
+        message = messages[index]
+        if message.role == Roles.TOOL:
+            results.insert(0, index)
+            continue
+        if message.role == Roles.TOOL_CALL or message.is_function_call:
+            units.append([index, *results])
+        else:
+            if results:  # results whose call is not in the dialog
+                units.append(results)
+            units.append([index])
+        results = []
+    if results:
+        units.append(results)
+    return units
+
+
 class ContextManager(ABC):
     """
     Pre-processing hook applied to a Dialog before it is sent to the LLM.
@@ -842,7 +1096,7 @@ class ContextManager(ABC):
 
     **Programmatic usage** (without config)::
 
-        from .dialog import DefaultContextManager
+        from lllm.runtimes.native import DefaultContextManager
 
         cm = DefaultContextManager("gpt-4o")
         agent = Agent(..., context_manager=cm)
@@ -857,30 +1111,60 @@ class ContextManager(ABC):
         pass
 
 
+class _DefaultSafetyBuffer(int):
+    """The default ``SAFETY_BUFFER``: an int that marks it as not set.
+
+    It reads as 5000, as in 0.4.0, but only it is scaled down for small
+    budgets; any plain value someone sets is used as is.
+    """
+
+
 class DefaultContextManager(ContextManager):
     """
     Token-aware dialog truncator — the built-in :class:`ContextManager`.
 
     Uses ``litellm.token_counter`` for accurate, model-specific token counting
     and drops or truncates the oldest non-system messages when the dialog
-    exceeds the model's context window.
+    exceeds the token budget: ``max_tokens``, or else the model's context
+    window from LiteLLM's model info (``max_input_tokens``, or the hub's
+    context length for a Hugging Face model). For a model LiteLLM does not
+    know, such as one on your own server, set ``max_tokens`` (or register
+    the model with ``litellm.register_model``, giving ``max_input_tokens``);
+    without it nothing is trimmed (and a warning is logged).
 
     **Truncation strategy**
 
+    Messages are counted as they are sent. LiteLLM counts the text, tool
+    calls included; LLLM sizes every other content part, without any
+    network. An image in a data URL is sized from its header (Pillow) with
+    OpenAI's high-detail formula: 765 tokens for a 1024x768 photo. Any other
+    part (an image whose header cannot be read, such as HEIC or data that
+    does not decode, any image without Pillow, an image URL, audio) counts
+    as ``IMAGE_TOKENS``. A message LiteLLM cannot count counts as its plain
+    text plus ``IMAGE_TOKENS`` per non-text part, so counting never fails.
+
     1. The first message (system / developer prompt) is always preserved.
-    2. Messages are retained from the **tail** (most recent) inward until the
-       token budget is exhausted.
-    3. The *border* message — the oldest message that partially fits — is
-       character-truncated with a ``[...earlier content truncated...]`` prefix.
-    4. A ``SAFETY_BUFFER`` (default 5 000 tokens) is subtracted from the
-       model's context limit so the invoker never lands right at the edge.
+    2. The newest message is always sent whole, with a warning if it alone
+       exceeds the budget.
+    3. Older messages are retained from the **tail** (most recent) inward
+       until the token budget is exhausted. A tool call and its results are
+       kept or dropped together: APIs reject a result without its call.
+    4. The *border* message — the oldest message that partially fits — keeps
+       its end, the part closest to the kept messages, after a
+       ``[...earlier content truncated...]`` marker. Images and other
+       non-text messages are never cut: an image that does not fit is
+       dropped, with a warning.
+    5. A ``SAFETY_BUFFER`` is subtracted from the budget, leaving room for
+       the reply, so the invoker never lands right at the edge: 5 000 tokens
+       by default, or half of a budget under 10 000. A value you set, on an
+       instance, a subclass, or this class (as config-built agents use), is
+       used as is.
 
     **Quickstart**::
 
-        from .dialog import DefaultContextManager
-        from .agent import Agent
+        from lllm.runtimes.native import DefaultContextManager
 
-        cm = DefaultContextManager("gpt-4o")          # auto-detects window size
+        cm = DefaultContextManager("gpt-4o")          # the model's window
         cm = DefaultContextManager("gpt-4o", max_tokens=32000)  # manual cap
 
         agent = Agent(..., context_manager=cm)
@@ -908,14 +1192,23 @@ class DefaultContextManager(ContextManager):
     """
 
     name: ClassVar[str] = "default"
-    SAFETY_BUFFER: int = 5000
+    #: Tokens kept free for the reply. This default (5000) shrinks to half of
+    #: a small budget; a value you set is used as is.
+    SAFETY_BUFFER: int = _DefaultSafetyBuffer(5000)
+    #: Tokens counted for a content part LLLM does not size, with nothing
+    #: fetched: an image whose header cannot be read (HEIC, data that does
+    #: not decode, or no Pillow), an image URL, audio, any other non-text
+    #: part. A photo at high detail costs 765 to 1,105 tokens on OpenAI,
+    #: about 1,600 on Claude.
+    IMAGE_TOKENS: int = 1500
 
     def __init__(self, model_name: str, max_tokens: Optional[int] = None):
         """
         Args:
             model_name: litellm-compatible model name (e.g. "gpt-4o").
-            max_tokens:  Hard override for the context window size.  When
-                         omitted the limit is looked up from litellm.
+            max_tokens:  Token budget for what is sent, including the
+                         ``SAFETY_BUFFER``.  When omitted, the model's
+                         context window is looked up in LiteLLM.
         """
         self.model_name = model_name
         self._max_tokens = max_tokens
@@ -925,28 +1218,92 @@ class DefaultContextManager(ContextManager):
     # ------------------------------------------------------------------
 
     @property
-    def max_tokens(self) -> int:
+    def max_tokens(self) -> Optional[int]:
+        """``max_tokens`` if given, else the model's context window.
+
+        None when LiteLLM does not know the model's window; then nothing
+        is trimmed.
+        """
         if self._max_tokens is not None:
             return self._max_tokens
-        try:
-            from litellm import get_max_tokens
-
-            val = get_max_tokens(self.model_name)
-            return int(val) if val else 4096
-        except Exception:
-            return 4096
+        return _context_window(self.model_name)
 
     def _to_raw(self, m: Message) -> dict:
-        """Convert a Message to the dict format litellm token_counter expects."""
-        return {
-            "role": m.role.value,
-            "content": m.content if isinstance(m.content, str) else str(m.content),
-        }
+        """A message as the invoker sends it (``_chat_message``), to count."""
+        try:
+            return _chat_message(m)
+        except ValueError:  # e.g. a tool result without its tool_call_id
+            return {"role": m.role.value, "content": str(m.content)}
 
     def _count(self, raw_msgs: list) -> int:
         from litellm import token_counter
 
         return token_counter(model=self.model_name, messages=raw_msgs)
+
+    def _safety_buffer(self, max_tokens: int) -> int:
+        """Tokens kept free for the reply.
+
+        The default 5,000 shrinks to half of a budget under 10,000, so it
+        never leaves less than half of the budget. A ``SAFETY_BUFFER`` you
+        set, on an instance, a subclass, or this class, is used as is.
+        """
+        if isinstance(self.SAFETY_BUFFER, _DefaultSafetyBuffer):
+            return min(int(self.SAFETY_BUFFER), max_tokens // 2)
+        return self.SAFETY_BUFFER
+
+    def _tokens(self, raw: dict) -> int:
+        """One message's tokens, as it is sent. Counting never fails a call.
+
+        LiteLLM counts the text (with any tool calls); every other content
+        part is sized here, without any network (``_part_tokens``). If
+        LiteLLM cannot count the message, its plain text is counted instead,
+        plus ``IMAGE_TOKENS`` for each part that is not text.
+        """
+        text, parts = _text_and_parts(raw)
+        return self._message_tokens(text, parts, sum(map(self._part_tokens, parts)))
+
+    def _message_tokens(self, text: dict, parts: list, sized: int) -> int:
+        """``_tokens`` for a message already split, its parts sized."""
+        try:
+            return self._count([text]) + sized
+        except Exception:
+            content = str(text.get("content") or "")
+            try:
+                tokens = self._count([{"role": "user", "content": content}])
+            except Exception:
+                tokens = len(content) // 3 + 4  # a rough count
+            return tokens + self.IMAGE_TOKENS * len(parts)
+
+    def _part_tokens(self, part: Any) -> int:
+        """A content part that is not text: an image in a data URL is sized
+        from its header with OpenAI's high-detail formula; any other part
+        counts as ``IMAGE_TOKENS``, with nothing fetched."""
+        is_image = isinstance(part, dict) and part.get("type") == "image_url"
+        image = part.get("image_url") if is_image else None
+        url = image.get("url") if isinstance(image, dict) else None
+        if isinstance(url, str) and url.startswith("data:") and "," in url:
+            size = _image_size(url.split(",", 1)[1])
+            if size is not None:
+                return _high_detail_tokens(*size)
+        return self.IMAGE_TOKENS
+
+    @staticmethod
+    def _cut(message: Message, budget: int, tokens: int) -> Optional[Message]:
+        """The end of a text message that only partly fits, after a marker.
+
+        None when the budget left is too small, or for an image, whose data
+        cannot be cut.
+        """
+        if budget <= 50 or message.modality != Modalities.TEXT:
+            return None
+        if not isinstance(message.content, str):
+            return None
+        content = message.content
+        # Approximate character count via token ratio (0.85 headroom)
+        keep = max(1, int(len(content) * budget / tokens * 0.85))
+        border = copy.deepcopy(message)
+        border.content = "[...earlier content truncated...]\n" + content[-keep:]
+        return border
 
     # ------------------------------------------------------------------
     # Core truncation
@@ -957,11 +1314,24 @@ class DefaultContextManager(ContextManager):
         if not messages:
             return dialog
 
-        limit = self.max_tokens - self.SAFETY_BUFFER
-        raw_all = [self._to_raw(m) for m in messages]
-
-        if self._count(raw_all) <= limit:
+        max_tokens = self.max_tokens
+        if max_tokens is None:  # unknown window: nothing to trim against
             return dialog
+        limit = max_tokens - self._safety_buffer(max_tokens)
+        split = [_text_and_parts(self._to_raw(m)) for m in messages]
+        sized = [sum(map(self._part_tokens, parts)) for _, parts in split]  # once
+        counts: Optional[List[int]] = None
+        try:
+            # One call over the text, as the request is sent: each call adds
+            # its reply priming, so a sum of per-message counts is too high.
+            total = self._count([text for text, _ in split]) + sum(sized)
+        except Exception:
+            counts = [self._message_tokens(*s, n) for s, n in zip(split, sized)]
+            total = sum(counts)
+        if total <= limit:
+            return dialog
+        if counts is None:  # per-message counts, only to trim
+            counts = [self._message_tokens(*s, n) for s, n in zip(split, sized)]
 
         logger.debug(
             "DefaultContextManager: dialog %s exceeds token limit, truncating",
@@ -969,31 +1339,48 @@ class DefaultContextManager(ContextManager):
         )
 
         # Always keep the first (system) message
-        head_tokens = self._count([raw_all[0]])
-        budget = limit - head_tokens
+        budget = limit - counts[0]
 
-        # Walk from the tail inward; collect messages that fit within budget
+        # Walk from the tail inward; collect messages that fit within budget.
+        # A tool call goes with its results, and the newest is sent whole.
         kept: List[Message] = []
-        for orig, raw in zip(reversed(messages[1:]), reversed(raw_all[1:])):
-            t = self._count([raw])
-            if t <= budget:
-                kept.insert(0, orig)
-                budget -= t
-            else:
-                # Truncate this border message to fill whatever budget remains
-                if budget > 50:
-                    content = raw["content"]
-                    # Approximate character count via token ratio (0.85 headroom)
-                    ratio = budget / t
-                    truncated_content = content[
-                        : max(1, int(len(content) * ratio * 0.85))
-                    ]
-                    border = copy.deepcopy(orig)
-                    border.content = (
-                        "[...earlier content truncated...]\n" + truncated_content
+        kept_indexes = set()
+        for position, unit in enumerate(_trim_units(messages)):
+            t = sum(counts[index] for index in unit)
+            if t <= budget or position == 0:
+                if t > budget:
+                    logger.warning(
+                        "DefaultContextManager: the newest message of dialog %s "
+                        "needs %d tokens, more than the %d left; it is sent whole.",
+                        dialog.dialog_id,
+                        t,
+                        budget,
                     )
+                kept[:0] = [messages[index] for index in unit]
+                kept_indexes.update(unit)
+                budget -= t
+                continue
+            if len(unit) == 1:
+                border = self._cut(messages[unit[0]], budget, t)
+                if border is not None:
                     kept.insert(0, border)
-                break
+                    kept_indexes.add(unit[0])
+            break
+
+        dropped_images = sum(
+            1
+            for index in range(1, len(messages))
+            if index not in kept_indexes
+            and messages[index].modality == Modalities.IMAGE
+        )
+        if dropped_images:
+            logger.warning(
+                "DefaultContextManager dropped %d image(s) from dialog %s to "
+                "fit its %d-token budget.",
+                dropped_images,
+                dialog.dialog_id,
+                limit,
+            )
 
         new_messages = [copy.deepcopy(messages[0])] + kept
 

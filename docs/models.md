@@ -84,7 +84,9 @@ print(session.invoke_traces[0][0].model_args)  # (2)!
 """
 ```
 
-1. Extra keyword arguments to `Tactic.quick()` become `model_args`.
+1. Extra keyword arguments to `Tactic.quick()` become `model_args`, except
+   the agent's own settings, such as `max_llm_recall`
+   ([below](#retries-and-rate-limits)).
 2. `invoke_traces` keeps every model call of `respond()`, keyed by tool
    round. Each entry records the arguments that went to LiteLLM.
 
@@ -157,14 +159,18 @@ for each kind of failure ([The agent loop](agents.md#the-agent-loop)):
   through the prompt's handler, up to `max_exception_retry` times.
 
 When a provider budget runs out, `respond()` raises the provider's
-exception; when repairs run out, it raises `AgentException`. Here the first
-request drops its connection:
+exception; when repairs run out, it raises `AgentException`. Either way,
+the exception's `agent_session` holds the call's record (every reply,
+repair, and provider-error retry; rate-limit waits are not recorded), and
+a tactic's session keeps it too. Here the first request drops its
+connection:
 
 ```python title="recall.py"
 from lllm import Tactic
 
-agent = Tactic.quick(system_prompt="You answer briefly.", model="gpt-4o")
-agent.max_llm_recall = 2  # (1)!
+agent = Tactic.quick(
+    system_prompt="You answer briefly.", model="gpt-4o", max_llm_recall=2
+)  # (1)!
 agent.open("q")
 agent.receive("What is the boiling point of water at sea level?")
 session = agent.respond(return_session=True)
@@ -174,7 +180,9 @@ print(session.llm_recalls_count, type(session.llm_recalls[0][0]).__name__)
 #> 1 APIConnectionError
 ```
 
-1. In a config, set `max_llm_recall: 2` on the agent or under `global`.
+1. `Tactic.quick()` sets the agent's own settings, such as the retry
+   budgets, by name. In a config, set `max_llm_recall: 2` on the agent or
+   under `global`.
 
 ## Chat Completions or Responses
 
@@ -224,8 +232,7 @@ and returns an `InvokeResult`:
 
 ```python title="custom_invoker.py"
 from lllm import Message, Role, Tactic, register_invoker
-from lllm.runtimes.native import InvokeResult
-from lllm.runtimes.native.invokers.base import BaseInvoker
+from lllm.runtimes.native import BaseInvoker, InvokeResult
 
 
 def house_model(text: str) -> str:

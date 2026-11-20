@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import inspect
+import json
 import logging as _logging
 import string
 import sys
@@ -30,6 +31,7 @@ from pydantic import (
     PrivateAttr,
     StrictBool,
     StrictStr,
+    ValidationError,
     field_validator,
 )
 
@@ -937,18 +939,31 @@ class Prompt(BaseModel):
         return self.renderer.render(self.prompt, **kwargs)
 
     def parse(self, content: str, **runtime_args: Any) -> Dict[str, Any]:
+        """Turn a reply into ``parsed``, by ``format`` or else by ``parser``.
+
+        With ``format`` the reply must be a JSON object, and the result is
+        that object, unchanged; the parser is not called. A Pydantic model
+        also validates it, so ``Model.model_validate(parsed)`` gives the
+        model back (for a strict model, which rejects JSON forms such as
+        date strings in Python mode, use
+        ``Model.model_validate_json(json.dumps(parsed))``). A parser's
+        result is used as returned, a non-dict wrapped as
+        ``{"value": ...}``. Without either the result is empty; the reply
+        text is always the message's ``content``.
+
+        A reply that does not fit raises (``ParseError`` here, or whatever
+        the parser raises), and the agent loop asks the model to repair it.
+        """
+        if self.format is not None:
+            return _parse_format(self.format, content)
         if self.parser is not None and _has_static_callable(self.parser, "parse"):
             parsed = self.parser.parse(content, **runtime_args)
         elif callable(self.parser):
             parsed = self.parser(content, **runtime_args)
         else:
-            return {
-                "raw": content,
-            }
+            return {}
         if not isinstance(parsed, dict):
             parsed = {"value": parsed}
-        if "raw" not in parsed:
-            parsed["raw"] = content
         return parsed
 
     # -- Tool management --------------------------------------------------
@@ -1243,6 +1258,41 @@ def tactic_as_function(
 def register_prompt(prompt: Prompt, overwrite: bool = True) -> None:
     """Register a prompt into the default runtime."""
     get_default_runtime().register_prompt(prompt, overwrite)
+
+
+def _parse_format(spec: Any, content: str) -> Dict[str, Any]:
+    """Decode a reply to a ``format=`` prompt, validating it against a model.
+
+    The result is the reply's JSON object, unchanged: the model validated
+    it, so ``Model.model_validate(parsed)`` gives the same model, through
+    aliases, validators, and root models alike. A strict model
+    (``strict=True``) rejects JSON forms such as date strings in Python
+    mode; validate those with ``Model.model_validate_json(json.dumps(parsed))``.
+    """
+
+    try:
+        data = json.loads(content)
+    except (TypeError, json.JSONDecodeError) as exc:
+        # The decoder's message is the repair hint.
+        raise ParseError(str(exc)) from exc
+    if isinstance(spec, type) and issubclass(spec, BaseModel):
+        try:
+            spec.model_validate_json(content)
+        except ValidationError as exc:
+            raise ParseError(_validation_problems(exc)) from exc
+    if not isinstance(data, dict):
+        raise ParseError("The reply must be a JSON object")
+    return data
+
+
+def _validation_problems(exc: ValidationError) -> str:
+    """One line for the model: each problem with where it is."""
+
+    problems = []
+    for error in exc.errors(include_url=False):
+        location = ".".join(str(part) for part in error["loc"])
+        problems.append(f"{location}: {error['msg']}" if location else error["msg"])
+    return f"The reply does not match {exc.title}: " + "; ".join(problems)
 
 
 def _format_to_dict(value: Any) -> Any:
