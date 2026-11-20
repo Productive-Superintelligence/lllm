@@ -142,7 +142,8 @@ def render_proxy_prompt(
         Truncation threshold; embedded in the interpreter-mode template.
         Passed through for all modes (unused by the no-python template).
     truncation_indicator:
-        Truncation suffix; embedded in the interpreter-mode template.
+        Marker put where long output was cut, between its kept start and
+        end; embedded in the interpreter-mode template.
         Passed through for all modes (unused by the no-python template).
     exec_env:
         Controls which default template is selected when ``custom_template``
