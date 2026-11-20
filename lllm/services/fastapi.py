@@ -792,7 +792,13 @@ async def _input_and_context_from_request(
     tactic: Tactic[Any, Any],
     endpoint: str,
 ) -> tuple[Any, CallContext]:
-    body = _body_value(await request.body(), request.headers.get("content-type"))
+    from starlette.concurrency import run_in_threadpool
+
+    # In a worker thread: decoding, scanning, and parsing a big body take a
+    # while, and the event loop serves other requests meanwhile.
+    body = await run_in_threadpool(
+        _body_value, await request.body(), request.headers.get("content-type")
+    )
 
     value = body
     context_data: Mapping[str, Any] | None = None
@@ -819,9 +825,10 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
     or else the text; an empty body is None. A body that is not UTF-8 is a
     ``SchemaError`` unless it is ``application/octet-stream``, which the
     tactic gets as bytes. A lone surrogate written as a JSON escape
-    (``\\ud800``) is also a ``SchemaError``, and so is a body nested
-    more than 500 arrays and objects deep, which is refused before it is
-    parsed.
+    (``\\ud800``) is also a ``SchemaError``, and so is a body whose first
+    value is an array or object nested more than 500 levels deep (brackets
+    in strings aside), which is refused before it is parsed. Routes run
+    this in a worker thread, so a big body does not block the event loop.
     """
 
     if not raw:
@@ -850,27 +857,35 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
     return value
 
 
-# How deep a body may nest arrays and objects, as in AAAX. Deeper ones are
-# refused before they are parsed: code that walks such a value recursively,
-# as a native tactic's repr() of its task does in a worker thread, can
-# overflow a small thread stack and crash the process.
+# How deep a body's first value, if it is an array or object, may nest
+# (brackets in strings aside), as in AAAX. A body whose first value is
+# nested deeper is refused before it is parsed: code that walks such a
+# value recursively, as a native tactic's repr() of its task does in a
+# worker thread, can overflow a small thread stack and crash the process.
 _MAX_JSON_DEPTH = 500
 _JSON_STRUCTURE = re.compile(r'[\[\]{}"\\]')
+# A body json.loads would recurse into: an array or object first, after an
+# optional byte order mark and JSON whitespace.
+_JSON_CONTAINER_FIRST = re.compile(r"\ufeff?[ \t\n\r]*[\[{]")
 
 
 def _nested_too_deep(text: str) -> bool:
-    """Whether ``text`` nests arrays and objects more than ``_MAX_JSON_DEPTH`` deep.
+    """Whether json.loads would recurse into ``text`` more than ``_MAX_JSON_DEPTH`` deep.
 
-    The brackets outside strings are counted, one at a time, so a body that
-    is not JSON counts too, and the check itself never recurses.
+    json.loads recurses only into a first value that is an array or an
+    object, and refuses anything after that value, so the scan starts at
+    that value's first bracket and ends where it closes. The brackets
+    outside strings are counted one at a time, so the scan never recurses,
+    and a body that is not valid JSON is judged the same way.
     """
 
-    if text.count("[") + text.count("{") <= _MAX_JSON_DEPTH:
+    first = _JSON_CONTAINER_FIRST.match(text)
+    if first is None or text.count("[") + text.count("{") <= _MAX_JSON_DEPTH:
         return False
     depth = 0
     in_string = False
     escaped_at = -1  # the position of a character a backslash escapes
-    for match in _JSON_STRUCTURE.finditer(text):
+    for match in _JSON_STRUCTURE.finditer(text, first.end() - 1):
         position, char = match.start(), match.group()
         if position == escaped_at:
             continue
@@ -887,6 +902,8 @@ def _nested_too_deep(text: str) -> bool:
                 return True
         elif char in "]}":
             depth -= 1
+            if depth == 0:
+                return False  # the first value closed
     return False
 
 

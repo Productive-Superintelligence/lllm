@@ -35,8 +35,10 @@ object with `input` or `task` and no keys besides `input`, `task`, and
 that is not UTF-8 is a 400 `SchemaError` unless it is
 `application/octet-stream`, which the tactic gets as bytes. A lone
 surrogate written as a JSON escape (`\ud800`) is also a 400, and so is a
-body nested more than 500 arrays and objects deep, which is refused before
-it is parsed.
+body whose first value is an array or object nested more than 500 levels
+deep (brackets in strings aside), which is refused before it is parsed.
+Bodies are read off the event loop, so a big one does not hold up other
+requests.
 
 | `context` key | Meaning |
 | --- | --- |
@@ -113,7 +115,7 @@ Error envelopes are stable across protocol and runtime failures.
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | Invalid input; a body that is not UTF-8 (other than `application/octet-stream`), holds an escaped lone surrogate, or is nested more than 500 levels deep; or a malformed envelope or context |
+| 400 | `SchemaError` | Invalid input; a body that is not UTF-8 (other than `application/octet-stream`), holds an escaped lone surrogate, or has a first value nested more than 500 levels deep; or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A cross-site `POST` to a tactic route that is not JSON, or a cross-site `GET` or `HEAD` to a custom endpoint ([below](#cross-site-requests)) |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |

@@ -1757,6 +1757,89 @@ def test_a_recursion_error_while_parsing_is_the_same_400(monkeypatch):
         service._body_value(b"[1]", "application/json")
 
 
+def test_the_depth_scan_stops_where_json_stops_reading():
+    # As in AAAX: json.loads recurses only into a first value that is an
+    # array or an object, and refuses anything after that value.
+    client = TestClient(create_tactic_app(Echo()))
+    deep = "[" * 20000
+    as_text = [
+        "1 " + deep,
+        '"x" ' + deep,
+        "[1] " + deep,
+        "{} " + deep,
+        # A first value that never closes and never passes 500 levels.
+        json.dumps({"items": [{"id": i} for i in range(600)]})[:-1],
+        '{"note": "' + "[" * 600,
+        # A form feed is not JSON whitespace: json.loads stops at it.
+        "\x0c" + "[" * 501 + "]" * 501,
+    ]
+    for body in as_text:
+        response = client.post("/run", content=body, headers={"content-type": "text/plain"})
+        assert response.status_code == 200, body[:12]
+        assert response.json()["output"] == body  # not JSON: the text
+    # Bodies json.loads could parse, so only the scan refuses them: after a
+    # byte order mark and JSON whitespace, past a bracket that closed, and
+    # past a string that ends in an escaped backslash.
+    refused = [
+        "\ufeff \n\t" + "[" * 501 + "]" * 501,
+        " \r\n" + '{"a": ' * 501 + "1" + "}" * 501,
+        '{"b": [1], "a": ' + "[" * 600 + "]" * 600 + "}",
+        '["\\\\", ' + "[" * 501 + "]" * 501 + "]",
+    ]
+    for body in refused:
+        json.loads(body.removeprefix("\ufeff"))
+        response = client.post("/run", content=body.encode(), headers={"content-type": "application/json"})
+        assert response.status_code == 400, body[:12]
+        assert response.json()["detail"]["error"]["message"] == TOO_DEEP
+
+
+def test_bodies_the_scan_accepts_pass():
+    # As in AAAX: each has more than 500 brackets, so the scan reads it.
+    client = TestClient(create_tactic_app(Ok()))
+    accepted = [
+        '{"a": "' + "[" * 20000 + '"}',
+        json.dumps({"items": [{"id": i} for i in range(600)]}),
+        '{"b": [1], "a": ' + '{"a": ' * 499 + "1" + "}" * 499 + "}",  # 500 deep
+        '{"a": "\\"' + "[" * 600 + '"}',  # an escaped quote keeps the string open
+        '{"a": "x\\\\", "b": "' + "[" * 600 + '"}',  # an escaped backslash ends it
+    ]
+    for body in accepted:
+        json.loads(body)
+        response = client.post("/run", content=body, headers={"content-type": "application/json"})
+        assert response.json()["output"] == "ok", body[:30]
+
+
+def test_a_big_body_is_read_off_the_event_loop():
+    app = create_tactic_app(Ok())
+    big = "[" + "[]" * 5_000_000 + "]"  # 10 MB, scanned to the end
+
+    async def scenario():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            done: list[str] = []
+
+            async def post_big():
+                response = await client.post(
+                    "/run", content=big, headers={"content-type": "application/json"}
+                )
+                done.append("big")
+                return response
+
+            async def get_health():
+                await asyncio.sleep(0.2)  # the big body is being read by now
+                response = await client.get("/health")
+                done.append("health")
+                return response
+
+            responses = await asyncio.gather(post_big(), get_health())
+            return done, responses
+
+    done, (big_response, health) = asyncio.run(scenario())
+
+    assert done == ["health", "big"]
+    assert big_response.status_code == health.status_code == 200
+
+
 DEEP_BODY_SCRIPT = """
 import threading
 
