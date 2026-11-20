@@ -226,14 +226,10 @@ def create_service_app(
                 tactic=tactic,
                 endpoint="run",
             )
-            output = jsonable_encoder(await tactic.arun(input_value, context=context))
+            output = await tactic.arun(input_value, context=context)
+            return _run_response(output, tactic=tactic, context=context)
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint="run", context=context) from exc
-        return RunResponse(
-            output=output,
-            request_id=context.request_id,
-            tactic=tactic.tactic_name,
-        )
 
     @app.post("/tactics/{name}/stream")
     async def stream_tactic(name: str, request: Request):
@@ -282,14 +278,10 @@ def create_service_app(
                     tactic=only,
                     endpoint="run",
                 )
-                output = jsonable_encoder(await only.arun(input_value, context=context))
+                output = await only.arun(input_value, context=context)
+                return _run_response(output, tactic=only, context=context)
             except Exception as exc:
                 raise _http_error(exc, tactic=only, endpoint="run", context=context) from exc
-            return RunResponse(
-                output=output,
-                request_id=context.request_id,
-                tactic=only.tactic_name,
-            )
 
         @app.post("/stream")
         async def single_stream(request: Request):
@@ -459,6 +451,7 @@ def _make_custom_route(
     check_cross_site: bool = True,
 ):
     from fastapi import Request
+    from fastapi.responses import JSONResponse
 
     async def route(request: Request):
         context = _error_context(tactic, spec.name)
@@ -489,7 +482,9 @@ def _make_custom_route(
             result = _invoke_custom(method, input_value, context=context)
             if inspect.isawaitable(result):
                 result = await result
-            return jsonable_encoder(result)
+            # Rendered here, so a result that cannot be encoded is this
+            # route's error rather than a bare 500.
+            return JSONResponse(jsonable_encoder(result))
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint=spec.name, context=context) from exc
 
@@ -795,10 +790,7 @@ async def _input_and_context_from_request(
     tactic: Tactic[Any, Any],
     endpoint: str,
 ) -> tuple[Any, CallContext]:
-    try:
-        body = await request.json()
-    except Exception:
-        body = _body_from_raw(await request.body())
+    body = _body_value(await request.body(), request.headers.get("content-type"))
 
     value = body
     context_data: Mapping[str, Any] | None = None
@@ -818,19 +810,28 @@ async def _input_and_context_from_request(
     return value, context
 
 
-def _body_from_raw(raw: bytes) -> Any:
-    """The input a body that is not JSON gives: its text, or None when empty.
+def _body_value(raw: bytes, content_type: str | None) -> Any:
+    """What a request body holds, before any envelope in it is read.
 
-    Bytes that are not UTF-8 are a ``SchemaError``: a tactic gets JSON or
-    text, and its response could not encode them.
+    The body is decoded strictly as UTF-8, so a lone surrogate is refused
+    rather than passed on, and is then the JSON it parses as, or else the
+    text; an empty body is None. A body that is not UTF-8 is a
+    ``SchemaError``, except an ``application/octet-stream`` body, which the
+    tactic gets as bytes.
     """
 
     if not raw:
         return None
     try:
-        return raw.decode("utf-8")
+        text = raw.decode("utf-8")
     except UnicodeDecodeError as exc:
+        if _media_type(content_type) == "application/octet-stream":
+            return raw
         raise SchemaError("Request body must be JSON or UTF-8 text.") from exc
+    try:
+        return json.loads(text.removeprefix("\ufeff"))
+    except (ValueError, RecursionError):
+        return text
 
 
 def _query_input(query_params: Any) -> dict[str, Any] | None:
@@ -906,6 +907,30 @@ _context_from_data = call_context_from_data  # the name before it was public
 
 def _error_context(tactic: Tactic[Any, Any], endpoint: str) -> CallContext:
     return CallContext(tactic_ref=tactic.package_ref, endpoint=endpoint)
+
+
+def _run_response(
+    output: Any,
+    *,
+    tactic: Tactic[Any, Any],
+    context: CallContext,
+) -> Any:
+    """The ``RunResponse`` of a call, rendered as JSON right away.
+
+    Rendering inside the route's error handling turns a result that cannot
+    be encoded (bytes that are not UTF-8, a lone surrogate) into an error
+    envelope instead of a bare 500.
+    """
+
+    from fastapi.encoders import jsonable_encoder
+    from fastapi.responses import JSONResponse
+
+    response = RunResponse(
+        output=jsonable_encoder(output),
+        request_id=context.request_id,
+        tactic=tactic.tactic_name,
+    )
+    return JSONResponse(response.model_dump(mode="json"))
 
 
 async def _event_chunks(

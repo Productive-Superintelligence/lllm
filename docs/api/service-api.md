@@ -29,9 +29,11 @@ envelope:
 | `task` | any JSON | Accepted in place of `input` |
 | `context` | object or `null` | Request metadata, read into a `CallContext` |
 
-A body is an envelope when it is a JSON object with `input` or `task` and
-no keys besides `input`, `task`, and `context`. Any other body, JSON or
-UTF-8 text, is the input itself; other bytes are a `SchemaError`.
+A body is decoded strictly as UTF-8 and is an envelope when it is a JSON
+object with `input` or `task` and no keys besides `input`, `task`, and
+`context`. Any other body, JSON or UTF-8 text, is the input itself. A body
+that is not UTF-8 (a lone surrogate included) is a `SchemaError`, except
+an `application/octet-stream` body, which the tactic gets as bytes.
 
 | `context` key | Meaning |
 | --- | --- |
@@ -108,7 +110,7 @@ Error envelopes are stable across protocol and runtime failures.
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | Invalid input, a body that is neither JSON nor UTF-8 text, or a malformed envelope or context |
+| 400 | `SchemaError` | Invalid input, a body that is not UTF-8 (other than `application/octet-stream`), or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A cross-site `POST` to a tactic route that is not JSON, or a cross-site `GET` or `HEAD` to a custom endpoint ([below](#cross-site-requests)) |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |

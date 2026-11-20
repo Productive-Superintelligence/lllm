@@ -186,7 +186,7 @@ print(sorted(error))
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is neither JSON nor UTF-8 text |
+| 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is not UTF-8 (and not `application/octet-stream`) |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A cross-site browser `POST` that is not JSON, or a cross-site `GET` to a custom endpoint ([Requests from browsers](#requests-from-browsers)) |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
@@ -194,10 +194,11 @@ print(sorted(error))
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
 
 For clients you cannot change, a body that is not an envelope, JSON or
-UTF-8 text, is taken as the input itself (other bytes are a 400
-`SchemaError`), and `task` works in place of `input`; only the envelope
-carries a context. The [Service API](api/service-api.md) reference has the
-exact shapes.
+UTF-8 text, is taken as the input itself, and `task` works in place of
+`input`; only the envelope carries a context. A body that is not UTF-8 is
+a 400 `SchemaError`, except an `application/octet-stream` body, which the
+tactic gets as bytes. The [Service API](api/service-api.md) reference has
+the exact shapes.
 
 ## Streaming
 
