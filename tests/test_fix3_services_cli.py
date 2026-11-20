@@ -812,6 +812,12 @@ entry = "fix3_ports.tactics:Echo"
 entry = "fix3_ports.tactics:Echo"
 port = 8200
 
+[tactics.zeta]
+entry = "fix3_ports.tactics:Echo"
+
+[tactics.eta]
+entry = "fix3_ports.tactics:Echo"
+
 [services.api]
 tactic = "alpha"
 metadata = {port = 9000}
@@ -840,6 +846,19 @@ metadata = {port = 9700}
 [services.direct]
 entry = "fix3_ports.app:create_app"
 port = 9600
+
+[services.zz_first]
+entry = "fix3_ports.app:create_app"
+tactics = ["zeta"]
+metadata = {port = 9990}
+
+[services.aa_second]
+tactic = "zeta"
+metadata = {port = 9100}
+
+[services.eta_host]
+tactic = "eta"
+port = 9800
 """
 
 
@@ -907,6 +926,10 @@ def test_config_template_ports_match_the_ports_lllm_serve_uses(tmp_path):
         "tactics.gamma": 8000,  # served only by a service without one
         "tactics.delta": 9500,  # two serving services have ports: the first
         "tactics.epsilon": 8200,  # a port written in the table itself
+        # The first serving service in manifest order wins, though it lists
+        # the tactic in tactics, has the higher port, and sorts last.
+        "tactics.zeta": 9990,
+        "tactics.eta": 9800,  # its only service writes its port in its table
         "services.api": 9000,
         "services.plain": 8000,
         "services.multi": 8000,
@@ -914,6 +937,9 @@ def test_config_template_ports_match_the_ports_lllm_serve_uses(tmp_path):
         "services.second": 9500,
         "services.third": 9700,
         "services.direct": 9600,  # a port written in the table itself
+        "services.zz_first": 9990,
+        "services.aa_second": 9100,
+        "services.eta_host": 9800,
     }
 
 
