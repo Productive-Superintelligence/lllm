@@ -137,7 +137,11 @@ print(fx("fx/rates/USD", {"quote": "JPY"}))  # (4)!
 4. The path as listed (`fx/rates/USD`), the template with the value in the
    params (`fx/rates/{base}`), and the method name (`fx.rate`) all reach
    this endpoint. Parameters can also be keyword arguments, alone or next
-   to the dict.
+   to the dict, or any iterable of `(name, value)` pairs. An endpoint with
+   one parameter, or one required parameter, also takes that value alone.
+   `None` and empty containers mean no params; a falsy value (`0`, `False`,
+   `""`) is the lone value where the endpoint takes one, and means no
+   params otherwise.
 
 The other arguments of `@BaseProxy.endpoint` are `method` (`"GET"`, or
 `"POST"` to send a JSON body), `remove_keys` (keys to drop from each item of

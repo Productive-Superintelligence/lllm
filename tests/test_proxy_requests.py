@@ -6,12 +6,14 @@ import importlib
 import json
 import logging
 import sys
+from collections import deque
 from dataclasses import dataclass
 from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from pydantic import BaseModel
+from pydantic import v1 as pydantic_v1
 
 from lllm import Tactic
 from lllm.runtimes.native import Runtime
@@ -130,7 +132,7 @@ def exa(monkeypatch, tmp_path):
     sys.modules.pop(name, None)
 
 
-def test_the_exa_proxy_honors_use_cache(exa, tmp_path):
+def test_the_exa_proxy_honors_use_cache(exa, tmp_path, monkeypatch):
     module, sent = exa
     info = {"endpoint": "contents"}
     cached = module.ExaProxy(runtime=Runtime())
@@ -141,10 +143,14 @@ def test_the_exa_proxy_honors_use_cache(exa, tmp_path):
     assert len(sent) == 1
     assert len(cache_files(tmp_path)) == 1
 
-    uncached._call_api("contents", {"urls": ["https://a.test"]}, info, {})  # no read
-    uncached._call_api("contents", {"urls": ["https://b.test"]}, info, {})  # no write
+    reads = []
+    load = U.load_cache_by_key
+    monkeypatch.setattr(U, "load_cache_by_key", lambda *a: reads.append(a) or load(*a))
+    uncached._call_api("contents", {"urls": ["https://a.test"]}, info, {})
+    uncached._call_api("contents", {"urls": ["https://b.test"]}, info, {})
+    assert reads == []  # never read
     assert len(sent) == 3
-    assert len(cache_files(tmp_path)) == 1
+    assert len(cache_files(tmp_path)) == 1  # never written
 
 
 class RatesProxy(BaseProxy):
@@ -174,6 +180,16 @@ class RatesProxy(BaseProxy):
         method="POST",
     )
     def convert(self, params):
+        return params
+
+    @BaseProxy.endpoint(
+        category="rates",
+        endpoint="history",
+        description="Rates between two dates.",
+        params={"start": (str, "2024-01-01"), "end": (str, "2024-12-31")},
+        response={},
+    )
+    def history(self, params):
         return params
 
 
@@ -288,6 +304,36 @@ def test_keyword_params_join_the_positional_ones():
     assert proxies("tools/repeat", text="ab", times=3) == "ababab"
 
 
+class PlainProxy:
+    """A proxy that does not subclass BaseProxy."""
+
+    def __init__(self, **kwargs):
+        pass
+
+    def call(self, path, params=None):
+        return path, params
+
+
+class OwnCallProxy(BaseProxy):
+    """A BaseProxy that routes calls itself."""
+
+    def call(self, path, params=None):
+        return path, params
+
+
+@pytest.mark.parametrize("proxy_cls", [PlainProxy, OwnCallProxy])
+def test_keyword_params_reach_proxies_with_their_own_call(proxy_cls):
+    proxies = ProxyManager(runtime=Runtime())
+    proxies.register("own", proxy_cls)
+
+    assert proxies("own/anything", {"a": 1}, b=2) == ("anything", {"a": 1, "b": 2})
+    assert proxies("own/anything", params={"a": 1}, b=2) == ("anything", {"a": 1, "b": 2})
+    assert proxies("own/anything", b=2) == ("anything", {"b": 2})
+    assert proxies("own/anything", [("a", 1)], b=2) == ("anything", {"a": 1, "b": 2})
+    with pytest.raises(TypeError, match="as a dict"):
+        proxies("own/anything", "lone", b=2)  # no endpoint to name it after
+
+
 def test_more_than_one_positional_param_is_an_error():
     proxies = tactic_tools()
 
@@ -311,21 +357,69 @@ class Text(BaseModel):
     text: str
 
 
-def test_models_pairs_and_empty_values_are_params_as_before(http):
+class V1Base(pydantic_v1.BaseModel):
+    base: str
+
+
+def sent_params(http):
+    return [{k: v for k, v in sent.items() if k != "apikey"} for _m, _u, sent in http]
+
+
+def test_models_and_any_iterable_of_pairs_are_params(http):
     proxy = UncachedRatesProxy(runtime=Runtime())
 
-    for params in (Base(base="JPY"), [("base", "GBP")], (["base", "CHF"],), "", [], None):
+    for params in (
+        Base(base="JPY"),
+        V1Base(base="NZD"),  # iterates as pairs
+        [("base", "GBP")],
+        (["base", "CHF"],),
+        {"base": "SEK"}.items(),
+        zip(["base"], ["NOK"]),
+        (pair for pair in [("base", "DKK")]),
+        {("base", "AUD")},
+        deque([("base", "CAD")]),
+    ):
         proxy.call("rates", params)
 
-    assert [sent for _method, _url, sent in http] == [
-        {"base": "JPY", "apikey": "secret"},
-        {"base": "GBP", "apikey": "secret"},
-        {"base": "CHF", "apikey": "secret"},
-        {"apikey": "secret"},
-        {"apikey": "secret"},
-        {"apikey": "secret"},
+    assert [sent["base"] for sent in sent_params(http)] == [
+        "JPY", "NZD", "GBP", "CHF", "SEK", "NOK", "DKK", "AUD", "CAD",
     ]
     assert tactic_tools()("tools/shout", Text(text="hi")) == "HI"
+
+
+def test_other_iterables_are_a_lone_value(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    proxy.call("rates", ("USD", "EUR"))  # kept as it is
+    proxy.call("rates", iter(["USD", "EUR"]))  # read once, into a list
+    proxy.call("rates", ["ab", "cd"])  # two-letter strings are not pairs
+
+    assert [sent["base"] for sent in sent_params(http)] == [
+        ("USD", "EUR"), ["USD", "EUR"], ["ab", "cd"],
+    ]
+
+
+def test_none_and_empty_containers_mean_no_params(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    for params in (None, {}, [], (), set(), iter([])):
+        proxy.call("rates", params)
+
+    assert sent_params(http) == [{}] * 6
+
+
+def test_falsy_values_are_a_lone_value_only_where_the_endpoint_takes_one(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    for params in (0, 0.0, False, ""):
+        proxy.call("rates", params)  # one parameter: the lone value
+        proxy.call("history", params)  # two optional ones: no params, as in 0.4.0
+
+    assert sent_params(http) == [
+        {"base": 0}, {}, {"base": 0.0}, {}, {"base": False}, {}, {"base": ""}, {},
+    ]
+    with pytest.raises(TypeError, match=r"\(start, end\), not str"):
+        proxy.call("history", "2024")
 
 
 class MarkedProxy(BaseProxy):
