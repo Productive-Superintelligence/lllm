@@ -240,12 +240,12 @@ print(session.delivery.parsed)
    'billing', 'bugs' or 'accounts'. Please fix.` and fixed it after one
    repair.
 
-The repair message lists each problem with its field, and validators on
-the model run too, so a rule such as a check across two fields is
-repaired the same way. For replies that are not JSON, use a
-[parser](prompts.md#parsers), which raises `ParseError` to ask for a
-repair. A prompt uses `format=` or a parser, not both: when `format=` is
-set, the parser is not called.
+The repair message lists each problem with its field. Validators on the
+model run too, so a rule the schema cannot express, such as one field
+depending on another, is repaired the same way. For replies that are not
+JSON, use a [parser](prompts.md#parsers), which raises `ParseError` to ask
+for a repair. A prompt uses `format=` or a parser, not both: when
+`format=` is set, the parser is not called.
 
 `parsed` holds exactly the model's fields, so in a tactic with
 `output_model = Triage`, return it as is, even if the model forbids extra

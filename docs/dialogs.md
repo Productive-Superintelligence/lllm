@@ -255,8 +255,9 @@ print(agent.respond().content)
 
 The model receives the caption as text followed by the image, labeled with
 its format (`image/png` here). URLs and raw bytes are not accepted
-(`ValueError`), and the model must support image input. An image does not change which prompt drives the turn, so after
-`receive_prompt()`, that prompt's parser and tools still apply.
+(`ValueError`), and the model must support image input. An image does not
+change which prompt drives the turn, so after `receive_prompt()`, that
+prompt's parser and tools still apply.
 
 ## Long conversations
 
