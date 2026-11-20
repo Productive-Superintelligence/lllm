@@ -10,8 +10,12 @@ from pydantic import BaseModel, ConfigDict, Field
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
 from lllm import ParseError, Prompt, Tactic, tool  # noqa: E402
-from lllm.runtimes.native import Dialog, InvokeCost, Role  # noqa: E402
-from lllm.runtimes.native.core.dialog import DefaultContextManager  # noqa: E402
+from lllm.runtimes.native import (  # noqa: E402
+    DefaultContextManager,
+    Dialog,
+    InvokeCost,
+    Role,
+)
 from lllm.testing import ScriptedModel, ToolCall  # noqa: E402
 
 
@@ -63,10 +67,7 @@ def test_respond_keeps_working_copies_out_of_the_dialog_tree():
 
 
 def test_context_manager_copies_stay_out_of_the_dialog_tree():
-    agent = Tactic.quick(
-        system_prompt="You take notes.",
-        model="gpt-4o-mini",
-    )
+    agent = Tactic.quick(system_prompt="You take notes.", model="gpt-4o-mini")
     agent.context_manager = DefaultContextManager("gpt-4o-mini", max_tokens=5_030)
     agent.open("notes")
     with ScriptedModel(["Noted."]) as model:

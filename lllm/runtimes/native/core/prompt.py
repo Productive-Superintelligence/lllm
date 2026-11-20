@@ -1257,14 +1257,14 @@ def register_prompt(prompt: Prompt, overwrite: bool = True) -> None:
     get_default_runtime().register_prompt(prompt, overwrite)
 
 
-def _parse_format(format: Any, content: str) -> Dict[str, Any]:
+def _parse_format(spec: Any, content: str) -> Dict[str, Any]:
     """Decode a reply to a ``format=`` prompt, validating it against a model."""
 
     # Invalid JSON raises the decoder's error, whose message is the repair.
     data = json.loads(content)
-    if isinstance(format, type) and issubclass(format, BaseModel):
+    if isinstance(spec, type) and issubclass(spec, BaseModel):
         try:
-            value = format.model_validate_json(content)
+            value = spec.model_validate_json(content)
         except ValidationError as exc:
             raise ParseError(_validation_problems(exc)) from exc
         return value.model_dump(mode="json", by_alias=True)

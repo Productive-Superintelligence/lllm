@@ -196,9 +196,8 @@ class LiteLLMInvoker(BaseInvoker):
         # 0. The Responses API counts input/output tokens; use the Chat
         # Completions names, which costs and Message.cost read.
         for responses_key, chat_key in _RESPONSES_USAGE_KEYS.items():
-            if usage_dict.get(chat_key) is None:
-                if usage_dict.get(responses_key) is not None:
-                    usage_dict[chat_key] = usage_dict[responses_key]
+            if usage_dict.get(chat_key) is None and responses_key in usage_dict:
+                usage_dict[chat_key] = usage_dict[responses_key]
 
         # 1. Extract total cost directly from the response object
         usage_dict["response_cost"] = getattr(response_obj, "_hidden_params", {}).get(
