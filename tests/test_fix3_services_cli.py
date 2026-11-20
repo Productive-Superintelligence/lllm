@@ -2522,6 +2522,79 @@ def test_any_os_error_from_the_env_file_helpers_is_a_credential_error(tmp_path):
         check_env_file_writable(too_long)
 
 
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root reads anywhere")
+def test_an_unreadable_env_file_folder_is_a_credential_error_everywhere(tmp_path):
+    # On Python 3.14 pathlib's exists() and is_symlink() return False for
+    # EACCES instead of raising, so the helpers probe with os.lstat.
+    from lllm.credentials import (
+        CredentialError,
+        check_env_file_writable,
+        read_env_file,
+        write_env_file,
+    )
+
+    folder = tmp_path / "locked"
+    folder.mkdir()
+    env_file = folder / "keys.env"
+    folder.chmod(0o000)
+    try:
+        with pytest.raises(CredentialError, match="cannot read env file .*: Permission denied"):
+            read_env_file(env_file)
+        with pytest.raises(CredentialError, match="cannot write env file .*: Permission denied"):
+            check_env_file_writable(env_file)
+        with pytest.raises(CredentialError, match="cannot write env file .*: Permission denied"):
+            write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+    finally:
+        folder.chmod(0o700)
+
+
+def test_an_env_file_that_is_not_utf8_is_a_credential_error(
+    key_package, served, tmp_path, monkeypatch, capsys
+):
+    from lllm.credentials import CredentialError, read_env_file, write_env_file
+
+    env_file = tmp_path / ".env.local"
+    env_file.write_bytes(b'OTHER="caf\xe9"\n')  # Latin-1, not UTF-8
+    message = f"env file {env_file} is not UTF-8 text"
+
+    with pytest.raises(CredentialError, match=message):
+        read_env_file(env_file)
+    with pytest.raises(CredentialError, match=message):
+        write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+    _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
+    with pytest.raises(SystemExit) as caught:
+        main(["serve", str(key_package), "--credentials", "env", "--env-file", str(env_file)])
+    assert caught.value.code == 2
+    assert message in capsys.readouterr().err
+    assert env_file.read_bytes() == b'OTHER="caf\xe9"\n' and served == []
+
+
+def test_a_file_someone_else_owns_keeps_its_permissions(tmp_path, monkeypatch):
+    # Root (or CAP_FOWNER) could fchmod a file it does not own, so the
+    # owner is checked rather than the call left to fail.
+    import lllm.credentials
+    from lllm.credentials import write_env_file
+
+    changed = []
+    env_file = tmp_path / ".env.local"
+    env_file.write_text("OTHER=1\n", encoding="utf-8")
+    env_file.chmod(0o664)
+    monkeypatch.setattr(
+        lllm.credentials,
+        "os",
+        _FailingOs(
+            geteuid=lambda: os.stat(env_file).st_uid + 1,  # not the owner
+            fchmod=lambda fd, mode: changed.append(mode),
+        ),
+    )
+
+    write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+
+    assert changed == []
+    assert env_file.stat().st_mode & 0o777 == 0o664
+    assert env_file.read_text(encoding="utf-8") == 'OTHER=1\n\nFIX3_TEST_KEY="sk"\n'
+
+
 def test_a_rewrite_that_shortens_the_env_file_leaves_no_old_bytes(tmp_path):
     from lllm.credentials import write_env_file
 
@@ -2594,7 +2667,13 @@ def test_an_env_file_under_a_broken_folder_link_stops_before_asking(
         main(["serve", str(key_package), "--credentials", "env", "--env-file", str(env_file)])
 
     assert caught.value.code == 2
-    assert f"cannot write env file {env_file}: {folder} is not a folder" in capsys.readouterr().err
+    expected = (
+        f"cannot write env file {env_file}: {folder} is not a folder"
+        if kind == "dangling"
+        # Reading the file through a looping link already fails.
+        else f"cannot read env file {env_file}: Too many levels of symbolic links"
+    )
+    assert expected in capsys.readouterr().err
     assert served == [] and not (tmp_path / "missing").exists()
 
 

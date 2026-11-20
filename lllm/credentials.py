@@ -246,19 +246,32 @@ def _env_file_path(path: str | Path) -> Path:
 
 
 def read_env_file(path: str | Path | None) -> dict[str, str]:
+    """The keys in the env file, or none when it does not exist.
+
+    Any symlink (a dangling or looping one included) or other file that is
+    not regular, any error but a missing file, and a file that is not UTF-8
+    text are a ``CredentialError``, so keys are never asked for and then
+    written through a link.
+    """
+
     if path is None:
         return {}
     env_path = _env_file_path(path)
-    # A symlink is refused before exists(), which is False for a dangling or
-    # looping one, so keys are never asked for and then written through it.
-    if env_path.is_symlink():
-        raise CredentialError("env file must be a regular file")
-    if not env_path.exists():
-        return {}
-    if not env_path.is_file():
-        raise CredentialError("env file must be a regular file")
+    try:
+        info = _lstat_or_none(env_path)
+        if info is None:
+            return {}
+        if not stat.S_ISREG(info.st_mode):
+            raise CredentialError("env file must be a regular file")
+        text = _read_env_text(env_path)
+    except CredentialError:
+        raise
+    except OSError as exc:
+        raise CredentialError(
+            f"cannot read env file {env_path}: {exc.strerror or exc}"
+        ) from exc
     values: dict[str, str] = {}
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in text.splitlines():
         parsed = _parse_env_line(raw_line)
         if parsed is not None:
             key, value = parsed
@@ -286,20 +299,23 @@ def check_env_file_writable(path: str | Path) -> None:
 
 
 def _check_env_file_writable(env_path: Path) -> None:
-    if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
-        raise CredentialError("env file must be a regular file")
-    if env_path.exists():
+    info = _lstat_or_none(env_path)
+    if info is not None:
+        if not stat.S_ISREG(info.st_mode):
+            raise CredentialError("env file must be a regular file")
         if not os.access(env_path, os.W_OK):
             raise CredentialError(f"cannot write env file {env_path}: permission denied")
         return
+    # The nearest folder that exists, to create the missing ones in.
     folder = env_path.parent
-    while not folder.exists() and folder != folder.parent:
-        if folder.is_symlink():  # a dangling or looping link, not a folder
+    while (folder_info := _stat_or_none(folder)) is None and folder != folder.parent:
+        link = _lstat_or_none(folder)
+        if link is not None and stat.S_ISLNK(link.st_mode):  # dangling or looping
             raise CredentialError(
                 f"cannot write env file {env_path}: {folder} is not a folder"
             )
-        folder = folder.parent  # the nearest folder that exists, to create in
-    if not folder.is_dir():
+        folder = folder.parent
+    if folder_info is None or not stat.S_ISDIR(folder_info.st_mode):
         raise CredentialError(f"cannot write env file {env_path}: {folder} is not a folder")
     if not os.access(folder, os.W_OK | os.X_OK):
         raise CredentialError(f"cannot write env file {env_path}: {folder} is not writable")
@@ -318,9 +334,10 @@ def write_env_file(path: str | Path, values: dict[str, str]) -> None:
 
     env_path = _env_file_path(path)
     try:
-        if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
+        info = _lstat_or_none(env_path)
+        if info is not None and not stat.S_ISREG(info.st_mode):
             raise CredentialError("env file must be a regular file")
-        _write_env_file(env_path, values)
+        _write_env_file(env_path, values, exists=info is not None)
     except CredentialError:
         raise
     except OSError as exc:
@@ -329,13 +346,43 @@ def write_env_file(path: str | Path, values: dict[str, str]) -> None:
         ) from exc
 
 
-def _write_env_file(env_path: Path, values: dict[str, str]) -> None:
+def _lstat_or_none(path: Path) -> os.stat_result | None:
+    """``os.lstat(path)``, or None when nothing is there.
+
+    Only a missing path (or a parent that is not a folder) counts as
+    nothing; any other error is raised. pathlib's exists() and is_symlink()
+    hide such errors on Python 3.14.
+    """
+
+    try:
+        return os.lstat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+
+
+def _stat_or_none(path: Path) -> os.stat_result | None:
+    """``os.stat(path)``, or None when nothing is there or a link is broken."""
+
+    try:
+        return os.stat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:  # a looping link: the caller checks it
+            return None
+        raise
+
+
+def _read_env_text(env_path: Path) -> str:
+    try:
+        return env_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise CredentialError(f"env file {env_path} is not UTF-8 text") from exc
+
+
+def _write_env_file(env_path: Path, values: dict[str, str], *, exists: bool) -> None:
     env_path.parent.mkdir(parents=True, exist_ok=True)
-    existing_lines = (
-        env_path.read_text(encoding="utf-8").splitlines()
-        if env_path.exists()
-        else []
-    )
+    existing_lines = _read_env_text(env_path).splitlines() if exists else []
     pending = dict(_validated_secret_values(values))
     rendered: list[str] = []
     for line in existing_lines:
@@ -365,14 +412,18 @@ def _write_env_file(env_path: Path, values: dict[str, str]) -> None:
             raise CredentialError("env file must be a regular file") from exc
         raise
     with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        if not stat.S_ISREG(os.fstat(fd).st_mode):
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
             raise CredentialError("env file must be a regular file")
         fchmod = getattr(os, "fchmod", None)
-        if fchmod is not None:
+        geteuid = getattr(os, "geteuid", None)
+        # Only a file the caller owns is made private: root, or a process
+        # with CAP_FOWNER, could change a shared file it does not own.
+        if fchmod is not None and (geteuid is None or info.st_uid == geteuid()):
             try:
                 fchmod(fd, 0o600)  # the open file, never a link's target
             except OSError:
-                pass  # a file you can write but do not own, as 0.4.0 allowed
+                pass  # e.g. a FAT or CIFS mount, as 0.4.0 allowed
         os.ftruncate(fd, 0)
         handle.write(content)
 
