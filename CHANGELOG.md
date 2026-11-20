@@ -316,7 +316,9 @@ for output that fails validation, and the rules for storing keys.
   `[services.NAME]` entry. A factory that returns nothing usable, such as
   `None`, also stops both commands with a `LaunchError` that says what it
   returned and what it must return; 0.4.0 served the factory itself as a
-  tactic that failed on every request.
+  tactic that failed on every request, or, when the factory's return
+  annotation (such as `-> FastAPI` or `-> Tactic`) has no JSON Schema,
+  stopped with a `SchemaError` traceback.
 - `install_package(..., alias=...)` accepts underscores, as in the names
   `lllm create` writes (`my_glossary`); an alias still starts and ends
   with a lowercase letter or a digit.
