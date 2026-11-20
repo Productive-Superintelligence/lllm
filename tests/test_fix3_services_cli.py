@@ -2597,8 +2597,40 @@ def test_a_target_that_cannot_be_read_is_a_clean_error(
     assert "Traceback" not in err and served == []
 
 
+# Round 9, 4: a module:attr entrypoint is not a path, so a working folder
+# that cannot be searched, where stat fails with EACCES, does not refuse it.
+
+
+@pytest.mark.parametrize("command", ["serve", "inspect"])
+def test_an_entrypoint_runs_when_the_working_folder_cannot_be_searched(
+    app_module, served, monkeypatch, capsys, command
+):
+    import errno
+
+    import lllm.cli
+
+    def unsearchable(path, *args, **kwargs):
+        raise PermissionError(errno.EACCES, "Permission denied", str(path))
+
+    monkeypatch.setattr(lllm.cli, "os", _FailingOs(stat=unsearchable))
+
+    assert main([command, f"{app_module}:shout"]) == 0
+
+    if command == "serve":
+        [(app, _options)] = served
+        assert TestClient(app).get("/info").json()["name"] == "shout"
+    else:
+        assert capsys.readouterr().out.splitlines()[0] == "shout (python)"
+    # A path, even one without a slash, is still refused.
+    for path in ("fix3-folder/pkg", "fix3-pkg"):
+        with pytest.raises(SystemExit) as caught:
+            main([command, path])
+        assert caught.value.code == 2
+        assert f"cannot read {path}: Permission denied" in capsys.readouterr().err
+
+
 class _FailingOs:
-    """``os`` for lllm.credentials, with chosen functions replaced."""
+    """``os`` for a module under test, with chosen functions replaced."""
 
     def __init__(self, **replacements):
         self._replacements = replacements

@@ -412,6 +412,10 @@ def _is_package_target(parser: argparse.ArgumentParser, target: str) -> bool:
     except (FileNotFoundError, NotADirectoryError):
         return False
     except OSError as exc:  # e.g. EACCES, or a name that is too long
+        if _has_entrypoint_form(target):
+            # Not a path, so a working folder that cannot be searched
+            # does not stop it.
+            return False
         parser.error(f"cannot read {target}: {exc.strerror or exc}")
         raise
     return True
@@ -674,15 +678,10 @@ def _load_entrypoint(entrypoint: str) -> Any:
         not isinstance(entrypoint, str)
         or not entrypoint
         or entrypoint != entrypoint.strip()
+        or not _has_entrypoint_form(entrypoint)
     ):
         raise ValueError("Entrypoint must have the form 'module:attribute'.")
-    module_name, sep, attr_path = entrypoint.partition(":")
-    if (
-        not sep
-        or not _entrypoint_segments(module_name)
-        or not _entrypoint_segments(attr_path)
-    ):
-        raise ValueError("Entrypoint must have the form 'module:attribute'.")
+    module_name, _, attr_path = entrypoint.partition(":")
     module = importlib.import_module(module_name)
     value: Any = module
     for part in attr_path.split("."):
@@ -702,6 +701,13 @@ def _load_cli_entrypoint(parser: argparse.ArgumentParser, entrypoint: str) -> An
     except (AttributeError, ImportError, TypeError, ValueError) as exc:
         parser.error(str(exc))
         raise
+
+
+def _has_entrypoint_form(value: str) -> bool:
+    """Whether ``value`` is ``module:attribute``, as dotted names."""
+
+    module_name, sep, attr_path = value.partition(":")
+    return bool(sep) and _entrypoint_segments(module_name) and _entrypoint_segments(attr_path)
 
 
 def _entrypoint_segments(value: str) -> bool:
