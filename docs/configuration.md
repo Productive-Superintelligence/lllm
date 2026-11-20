@@ -177,7 +177,7 @@ print({name: agent.model for name, agent in team.agents.items()})
 
 1. A field left unset at `None` counts as not given, at any depth, so the
    writer gets its model from `global`. A value that was set is used, even
-   `None`: `context_manager={"type": None}` turns trimming off.
+   `None`, like a `null` in a dict config.
 2. `global` is a Python keyword, so the field gets another name and
    `global` as its alias (a `validation_alias` works too). That field
    becomes the `global` section.
