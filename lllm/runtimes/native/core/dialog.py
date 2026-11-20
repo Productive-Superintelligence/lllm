@@ -1051,6 +1051,14 @@ class ContextManager(ABC):
         pass
 
 
+class _DefaultSafetyBuffer(int):
+    """The default ``SAFETY_BUFFER``: an int that marks it as not set.
+
+    It reads as 5000, as in 0.4.0, but only it is scaled down for small
+    budgets; any plain value someone sets is used as is.
+    """
+
+
 class DefaultContextManager(ContextManager):
     """
     Token-aware dialog truncator — the built-in :class:`ContextManager`.
@@ -1083,8 +1091,9 @@ class DefaultContextManager(ContextManager):
        dropped, with a warning.
     5. A ``SAFETY_BUFFER`` is subtracted from the budget, leaving room for
        the reply, so the invoker never lands right at the edge: 5 000 tokens
-       by default, or half of a budget under 10 000. A value set on a
-       subclass or an instance is used as is.
+       by default, or half of a budget under 10 000. A value you set, on an
+       instance, a subclass, or this class (as config-built agents use), is
+       used as is.
 
     **Quickstart**::
 
@@ -1118,7 +1127,9 @@ class DefaultContextManager(ContextManager):
     """
 
     name: ClassVar[str] = "default"
-    SAFETY_BUFFER: int = 5000
+    #: Tokens kept free for the reply. This default (5000) shrinks to half of
+    #: a small budget; a value you set is used as is.
+    SAFETY_BUFFER: int = _DefaultSafetyBuffer(5000)
     #: Tokens counted for an image whose size cannot be read. A photo at
     #: high detail costs 765 to 1,105 tokens on OpenAI, about 1,600 on Claude.
     IMAGE_TOKENS: int = 1500
@@ -1177,18 +1188,13 @@ class DefaultContextManager(ContextManager):
     def _safety_buffer(self, max_tokens: int) -> int:
         """Tokens kept free for the reply.
 
-        A ``SAFETY_BUFFER`` set on a subclass or an instance is used as is;
-        the default 5,000 shrinks to half of a budget under 10,000, so it
-        never leaves less than half of the budget.
+        The default 5,000 shrinks to half of a budget under 10,000, so it
+        never leaves less than half of the budget. A ``SAFETY_BUFFER`` you
+        set, on an instance, a subclass, or this class, is used as is.
         """
-        overridden = "SAFETY_BUFFER" in vars(self) or any(
-            "SAFETY_BUFFER" in vars(cls)
-            for cls in type(self).__mro__
-            if cls is not DefaultContextManager
-        )
-        if overridden:
-            return self.SAFETY_BUFFER
-        return min(self.SAFETY_BUFFER, max_tokens // 2)
+        if isinstance(self.SAFETY_BUFFER, _DefaultSafetyBuffer):
+            return min(int(self.SAFETY_BUFFER), max_tokens // 2)
+        return self.SAFETY_BUFFER
 
     def _tokens(self, message: Message, raw: dict) -> int:
         """One message's tokens; an image LiteLLM cannot size (its data does

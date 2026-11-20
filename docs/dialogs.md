@@ -335,6 +335,11 @@ agent_configs:
       type: null        # never trim this agent's calls
 ```
 
+Config builds a `DefaultContextManager` for each agent, so to change the
+margin kept free for replies everywhere, set
+`DefaultContextManager.SAFETY_BUFFER`; a value you set is used as is,
+without the halving for small budgets.
+
 For another policy, such as summarizing old turns, subclass `ContextManager`
 (also from `lllm.runtimes.native`), set a `name`, and implement
 `__call__(dialog)` to return the dialog to send, usually built with

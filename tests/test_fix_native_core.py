@@ -440,11 +440,21 @@ def test_a_safety_buffer_that_is_set_is_used_as_is():
     class Roomy(DefaultContextManager):
         SAFETY_BUFFER = 6_000  # more than half of 8,000
 
-    assert _trims(Roomy("gpt-4o-mini", max_tokens=8_000), 2_990)  # 2,000 left
+    # 2,000 left; a value capped at half the budget would leave 4,000.
+    assert _trims(Roomy("gpt-4o-mini", max_tokens=8_000), 2_990)
 
-    tight = DefaultContextManager("gpt-4o-mini", max_tokens=8_000)
-    tight.SAFETY_BUFFER = 1_000
-    assert not _trims(tight, 6_900)  # 7,000 left
+    roomy = DefaultContextManager("gpt-4o-mini", max_tokens=8_000)
+    roomy.SAFETY_BUFFER = 6_000
+    assert _trims(roomy, 2_990)
+
+    # On the class itself, the one-line way to set it for config-built agents.
+    default = DefaultContextManager.SAFETY_BUFFER
+    try:
+        DefaultContextManager.SAFETY_BUFFER = 6_000
+        assert _trims(DefaultContextManager("gpt-4o-mini", max_tokens=8_000), 2_990)
+    finally:
+        DefaultContextManager.SAFETY_BUFFER = default
+    assert DefaultContextManager.SAFETY_BUFFER == 5_000  # as in 0.4.0
 
 
 # -- 4: a Pydantic config keeps its aliased ``global`` section ---------------
