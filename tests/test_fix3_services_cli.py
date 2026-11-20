@@ -1939,6 +1939,49 @@ def test_the_boundary_copies_do_not_recurse():
         assert node == [] and node is not original
 
 
+# Round 9, 2: a labeled copy builds a mapping's label only when it refuses
+# a key, so deep metadata costs memory in proportion to its size.
+
+
+def test_a_labeled_copy_builds_no_labels_until_it_refuses_a_key():
+    import tracemalloc
+
+    from lllm.protocol._validation import (
+        _copy_metadata_value,
+        _copy_string_keyed_value,
+        copy_boundary_value,
+    )
+
+    chain: object = "leaf"
+    for _ in range(10_000):
+        chain = {"children": chain}
+
+    def peak(copy) -> int:
+        tracemalloc.start()
+        try:
+            copy(chain)
+            return tracemalloc.get_traced_memory()[1]
+        finally:
+            tracemalloc.stop()
+
+    plain = peak(copy_boundary_value)
+    labeled = peak(lambda value: _copy_metadata_value("metadata", value))
+
+    # Labels built on the way down, one per level, held about 450 MB here.
+    assert labeled < plain + 256 * 1024
+    assert labeled < 8 * 1024 * 1024
+
+    keys = [f"level{i}" for i in range(1_000)]
+    bad: object = {"fine": 1, 2: "a key that is not a string"}
+    for i in reversed(range(len(keys))):
+        bad = {keys[i]: [bad] if i % 100 == 50 else bad}  # a list adds no label
+    expected = "metadata." + ".".join(keys) + " keys must be strings."
+    for copy in (_copy_metadata_value, _copy_string_keyed_value):
+        with pytest.raises(TypeError) as caught:
+            copy("metadata", bad)
+        assert str(caught.value) == expected
+
+
 SMALL_STACK_ENVELOPE_SCRIPT = """
 import sys
 import threading

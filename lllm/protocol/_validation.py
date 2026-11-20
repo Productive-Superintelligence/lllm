@@ -42,29 +42,32 @@ def _copy_nested(value: Any, label: str | None) -> Any:
 
     Without a ``label`` this is ``copy_boundary_value``; with one, mapping
     keys must be strings, and a ``TypeError`` names the label of the mapping
-    with the bad key (``label.key`` for one nested under ``key``). Shared
-    items are copied separately, and anything that is not a container is
-    deep-copied. The value is walked with an explicit stack rather than
-    recursion, so a deeply nested value cannot overflow a small thread
-    stack; a value that contains itself raises ``RecursionError``, as the
-    recursive copy did.
+    with the bad key (``label.key`` for one nested under ``key``). That label
+    is built only then, from the keys on the stack, so a labeled copy takes
+    no more memory than an unlabeled one. Shared items are copied
+    separately, and anything that is not a container is deep-copied. The
+    value is walked with an explicit stack rather than recursion, so a
+    deeply nested value cannot overflow a small thread stack; a value that
+    contains itself raises ``RecursionError``, as the recursive copy did.
     """
 
     kind = _container_kind(value)
     if kind is None:
         return deepcopy(value)
     # A frame: the container, its kind, an iterator over its children, the
-    # copies so far, its label, and the key of the child being copied.
-    stack = [[value, kind, _children(value, kind), [], label, None]]
+    # copies so far, and the key of the child being copied.
+    stack = [[value, kind, _children(value, kind), [], None]]
     copying = {id(value)}  # the containers on the stack
     while True:
         frame = stack[-1]
-        source, kind, children, copies, frame_label, _ = frame
+        source, kind, children, copies, _ = frame
         for entry in children:
             if kind is dict:
                 key, child = entry
-                if frame_label is not None and not isinstance(key, str):
-                    raise TypeError(f"{frame_label} keys must be strings.")
+                if label is not None and not isinstance(key, str):
+                    # Each enclosing mapping adds the key it is copying.
+                    path = "".join(f".{f[4]}" for f in stack[:-1] if f[1] is dict)
+                    raise TypeError(f"{label}{path} keys must be strings.")
             else:
                 key, child = None, entry
             if type(child) in _ATOMIC:
@@ -78,15 +81,9 @@ def _copy_nested(value: Any, label: str | None) -> Any:
                 elif id(child) in copying:
                     raise RecursionError("cannot copy a value that contains itself")
                 else:
-                    frame[5] = key
-                    if kind is dict and frame_label is not None:
-                        child_label: str | None = f"{frame_label}.{key}"
-                    else:
-                        child_label = frame_label
+                    frame[4] = key
                     copying.add(id(child))
-                    stack.append(
-                        [child, child_kind, _children(child, child_kind), [], child_label, None]
-                    )
+                    stack.append([child, child_kind, _children(child, child_kind), [], None])
                     break
             copies.append((key, copied) if kind is dict else copied)
         else:
@@ -96,7 +93,7 @@ def _copy_nested(value: Any, label: str | None) -> Any:
             if not stack:
                 return copied
             parent = stack[-1]
-            parent[3].append((parent[5], copied) if parent[1] is dict else copied)
+            parent[3].append((parent[4], copied) if parent[1] is dict else copied)
 
 
 def _children(value: Any, kind: Any) -> Any:
