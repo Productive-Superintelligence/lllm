@@ -911,7 +911,7 @@ class ContextManager(ABC):
 
     **Programmatic usage** (without config)::
 
-        from .dialog import DefaultContextManager
+        from lllm.runtimes.native import DefaultContextManager
 
         cm = DefaultContextManager("gpt-4o")
         agent = Agent(..., context_manager=cm)

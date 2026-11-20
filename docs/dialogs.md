@@ -268,7 +268,7 @@ that fit:
 
 ```python title="standups.py"
 from lllm import Tactic
-from lllm.runtimes.native.core.dialog import DefaultContextManager
+from lllm.runtimes.native import DefaultContextManager
 
 agent = Tactic.quick(
     system_prompt="You track standup notes.", model="gpt-4o-mini"
@@ -325,12 +325,12 @@ agent_configs:
 ```
 
 For another policy, such as summarizing old turns, subclass `ContextManager`
-(from the same module), set a `name`, and implement `__call__(dialog)` to
-return the dialog to send, usually built with `dialog.fork(...)`. Config
-builds it with `model_name` and `max_tokens` keyword arguments, so accept
-both. Register the class on the runtime the tactic uses, such as
-`get_default_runtime().register_context_manager(cls)`, and select it with
-`type: <name>` ([Configuration](configuration.md)).
+(also from `lllm.runtimes.native`), set a `name`, and implement
+`__call__(dialog)` to return the dialog to send, usually built with
+`dialog.fork(...)`. Config builds it with `model_name` and `max_tokens`
+keyword arguments, so accept both. Register the class on the runtime the
+tactic uses, such as `get_default_runtime().register_context_manager(cls)`,
+and select it with `type: <name>` ([Configuration](configuration.md)).
 
 ## Dialogs and agents
 

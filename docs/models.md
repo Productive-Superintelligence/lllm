@@ -224,8 +224,7 @@ and returns an `InvokeResult`:
 
 ```python title="custom_invoker.py"
 from lllm import Message, Role, Tactic, register_invoker
-from lllm.runtimes.native import InvokeResult
-from lllm.runtimes.native.invokers.base import BaseInvoker
+from lllm.runtimes.native import BaseInvoker, InvokeResult
 
 
 def house_model(text: str) -> str:

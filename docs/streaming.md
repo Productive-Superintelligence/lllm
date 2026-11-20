@@ -243,7 +243,7 @@ reply and passes each piece of text to it as it arrives:
 
 ```python title="tokens.py"
 from lllm import Tactic
-from lllm.runtimes.native.invokers.base import BaseStreamHandler
+from lllm.runtimes.native import BaseStreamHandler
 
 
 class Collect(BaseStreamHandler):
@@ -284,7 +284,7 @@ import queue
 from concurrent.futures import ThreadPoolExecutor
 
 from lllm import Tactic, TacticEvent
-from lllm.runtimes.native.invokers.base import BaseStreamHandler
+from lllm.runtimes.native import BaseStreamHandler
 
 
 class ToQueue(BaseStreamHandler):

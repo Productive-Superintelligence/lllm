@@ -423,3 +423,22 @@ def test_extra_settings_reach_the_agent():
     assert styled("calls") == 1  # every call's agent gets its own copy
     assert styled("calls") == 1
     assert Tactic.quick(model="gpt-4o-mini").extra_settings == {}
+
+
+# -- 9: context managers and stream handlers are exported -------------------
+
+
+def test_extension_base_classes_are_exported_from_the_native_runtime():
+    import lllm.runtimes.native as native
+    from lllm.runtimes.native.core import dialog
+    from lllm.runtimes.native.invokers import base
+
+    exported = {
+        "BaseInvoker": base.BaseInvoker,
+        "BaseStreamHandler": base.BaseStreamHandler,
+        "ContextManager": dialog.ContextManager,
+        "DefaultContextManager": dialog.DefaultContextManager,
+    }
+    for name, value in exported.items():
+        assert getattr(native, name) is value
+        assert name in native.__all__
