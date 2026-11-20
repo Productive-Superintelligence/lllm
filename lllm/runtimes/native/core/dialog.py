@@ -1074,7 +1074,7 @@ class DefaultContextManager(ContextManager):
         """A message as litellm's token_counter should see it: as it is sent.
 
         An image is its caption and an ``image_url`` part, as the invoker
-        sends it, so it counts by its size (about a hundred tokens for a
+        sends it, so it counts as an image (about a hundred tokens for a
         photo), not as its base64 text.
         """
         if m.modality == Modalities.IMAGE and isinstance(m.content, str):
