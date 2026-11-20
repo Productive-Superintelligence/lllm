@@ -7,7 +7,6 @@ inheritance stay in :mod:`lllm.core.config`.
 
 from __future__ import annotations
 
-import copy
 import datetime as dt
 import logging
 from collections.abc import Mapping
@@ -544,14 +543,20 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
-def _own_copy(settings: Dict[str, Any]) -> Dict[str, Any]:
-    """Settings for one agent: fresh agents share one spec, so each gets a
-    deep copy, or a shallow one when a value (a lock, a client, a
-    connection) cannot be copied."""
-    try:
-        return copy.deepcopy(settings)
-    except Exception:
-        return dict(settings)
+def _settings_copy(value: Any) -> Any:
+    """Copy plain data, share everything else.
+
+    Dicts, lists, tuples, and sets are copied, recursively, so each agent
+    can change its own; strings, numbers, booleans, and None need no copy.
+    Any other object (a lock, a client, a connection) is shared as is,
+    without trying to deep-copy it.
+    """
+    kind = type(value)
+    if kind is dict:
+        return {key: _settings_copy(item) for key, item in value.items()}
+    if kind in (list, tuple, set, frozenset):
+        return kind(_settings_copy(item) for item in value)
+    return value
 
 
 def _copy_prompt_with_update(prompt, update: Dict[str, Any]):
@@ -674,7 +679,7 @@ class AgentSpec:
                 f"Agent '{name}': 'extra_settings' must be a mapping, "
                 f"got {type(extra_settings).__name__}"
             )
-        extra_settings = dict(extra_settings)
+        extra_settings = _settings_copy(dict(extra_settings))
 
         # -- proxy config (already deep-merged with global by the caller) --
         proxy_raw = raw.pop("proxy", None)
@@ -897,7 +902,8 @@ class AgentSpec:
             max_rate_limit_retries=self.max_rate_limit_retries,
             context_manager=context_manager,
             inference_hints=self.inference_hints,
-            extra_settings=_own_copy(self.extra_settings),
+            # Fresh agents share one spec: each gets its own plain data.
+            extra_settings=_settings_copy(self.extra_settings),
         )
 
 

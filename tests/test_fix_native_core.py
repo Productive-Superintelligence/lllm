@@ -920,6 +920,48 @@ def test_extra_settings_take_any_mapping_and_values_deepcopy_cannot_copy():
     assert unset.extra_settings == {}
 
 
+class NoCopies:
+    """A live object, such as a client, that must never be deep-copied."""
+
+    def __deepcopy__(self, memo):
+        raise AssertionError("deep-copied a live object")
+
+
+def test_extra_settings_copy_plain_data_and_share_other_objects():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    client = NoCopies()
+    settings = {"client": client, "tags": ["a"], "limits": {"words": [100]}}
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    first, second = (spec.build(Runtime(), object()) for _ in range(2))
+
+    first.extra_settings["tags"].append("b")
+    first.extra_settings["limits"]["words"].append(200)
+    settings["tags"].append("c")  # the config given, after parsing
+    for owner in (second, spec):
+        assert getattr(owner, "extra_settings") == {
+            "client": client,
+            "tags": ["a"],
+            "limits": {"words": [100]},
+        }
+    assert first.extra_settings["client"] is client
+
+
+@pytest.mark.filterwarnings("error::pytest.PytestUnraisableExceptionWarning")
+def test_an_sdk_client_in_extra_settings_is_shared_cleanly():
+    import gc
+
+    openai = pytest.importorskip("openai")
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    client = openai.OpenAI(api_key="sk-test", base_url="http://localhost:9")
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"client": client}})
+    agents = [spec.build(Runtime(), object()) for _ in range(2)]
+    gc.collect()  # a half-copied client would complain here
+
+    assert all(agent.extra_settings["client"] is client for agent in agents)
+
+
 # -- 9: context managers and stream handlers are exported -------------------
 
 
