@@ -231,10 +231,24 @@ def configure_missing_api_keys(
     return store_api_keys(values, credentials=credentials, env_file=env_file)
 
 
+def _env_file_path(path: str | Path) -> Path:
+    """The env file's path with ``~`` expanded.
+
+    A ``~`` that names no home folder, as in ``~typo/keys.env``, or in
+    ``./~keys.env``, which pathlib reads as ``~keys.env``, is a
+    ``CredentialError`` rather than the RuntimeError pathlib raises.
+    """
+
+    try:
+        return Path(path).expanduser()
+    except RuntimeError as exc:
+        raise CredentialError(f"cannot expand env file {path}: {exc}") from exc
+
+
 def read_env_file(path: str | Path | None) -> dict[str, str]:
     if path is None:
         return {}
-    env_path = Path(path).expanduser()
+    env_path = _env_file_path(path)
     # A symlink is refused before exists(), which is False for a dangling or
     # looping one, so keys are never asked for and then written through it.
     if env_path.is_symlink():
@@ -260,7 +274,7 @@ def check_env_file_writable(path: str | Path) -> None:
     its folder must exist, or be creatable, and be writable.
     """
 
-    env_path = Path(path).expanduser()
+    env_path = _env_file_path(path)
     if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
         raise CredentialError("env file must be a regular file")
     if env_path.exists():
@@ -288,7 +302,7 @@ def write_env_file(path: str | Path, values: dict[str, str]) -> None:
     ``CredentialError`` naming the file and the reason.
     """
 
-    env_path = Path(path).expanduser()
+    env_path = _env_file_path(path)
     if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
         raise CredentialError("env file must be a regular file")
     try:

@@ -2170,6 +2170,23 @@ def test_an_unwritable_env_file_stops_before_asking(
     assert served == [] and not env_file.exists()
 
 
+@pytest.mark.parametrize("env_file", ["~fix3-no-such-user/keys.env", "./~keys.env"])
+@pytest.mark.parametrize("command", ["serve", "setup"])
+def test_an_env_file_path_that_cannot_be_expanded_is_a_clean_error(
+    key_package, served, tmp_path, monkeypatch, capsys, command, env_file
+):
+    _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit) as caught:
+        main([command, str(key_package), "--env-file", env_file])
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert f"cannot expand env file {env_file}: Could not determine home directory" in err
+    assert "Traceback" not in err and served == []
+
+
 class _FailingOs:
     """``os`` for lllm.credentials, with chosen functions replaced."""
 
