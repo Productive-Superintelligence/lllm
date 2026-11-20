@@ -831,7 +831,7 @@ def test_quick_sets_agent_fields_and_sends_the_rest_as_model_args():
         max_rate_limit_retries=0,
         extra_settings={"team": "docs"},
         temperature=0.1,
-        model_args={"seed": 7},
+        model_args={"seed": 7, "temperature": 0.9},
     )
 
     assert agent.name == "assistant"
@@ -840,6 +840,7 @@ def test_quick_sets_agent_fields_and_sends_the_rest_as_model_args():
     assert agent.max_interrupt_steps == 2
     assert agent.max_rate_limit_retries == 0
     assert agent.extra_settings == {"team": "docs"}
+    # A keyword wins over the same key in model_args=.
     assert agent.model_args == {"seed": 7, "temperature": 0.1}
 
     agent.open("chat")
