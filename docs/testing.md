@@ -235,9 +235,9 @@ def test_one_agent_call_per_comment():
   whole process, so they also answer calls from other threads, such as
   `bcall` workers. Do not run tests with different fake models in parallel
   threads.
-- They answer chat-completion calls, the default, and agents configured
-  with `api_type: response`, which use OpenAI's Responses API. Replies,
-  tool calls, and streaming work the same way for both.
+- They answer chat-completion calls, the default, and the Responses API
+  calls of agents configured with `api_type: response`. Replies, tool
+  calls, and streaming work the same way for both.
 - LiteLLM builds the chat-completion responses, so the model name must be
   one it can route: any real name, or a provider prefix such as
   `openai/my-model`.

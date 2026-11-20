@@ -52,6 +52,8 @@ class _ThreadStdout:
             target.flush()
 
     def __getattr__(self, name: str) -> Any:
+        if name.startswith("__") or name == "_stream":  # e.g. while copying
+            raise AttributeError(name)
         return getattr(self._target(), name)
 
 
