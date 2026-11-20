@@ -544,13 +544,27 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
-def _agent_settings(settings: Any) -> Any:
-    """One agent's ``extra_settings``: {} for None, else its own copy."""
-    if settings is None:
-        return {}
-    if isinstance(settings, Mapping):
-        return _copy_settings(settings)
-    return _settings_copy(settings, {})
+#: How deep ``extra_settings`` may nest: well below Python's recursion limit.
+_SETTINGS_DEPTH = 500
+
+
+class _TooDeep(Exception):
+    """``extra_settings`` nested more than ``_SETTINGS_DEPTH`` levels."""
+
+
+def _agent_settings(settings: Any, name: str) -> Any:
+    """An agent's ``extra_settings``: {} for None, else its own copy."""
+    try:
+        if settings is None:
+            return {}
+        if isinstance(settings, Mapping):
+            return _copy_settings(settings)
+        return _settings_copy(settings, {}, 0)
+    except _TooDeep:
+        raise ValueError(
+            f"Agent '{name}': 'extra_settings' is nested more than "
+            f"{_SETTINGS_DEPTH} levels deep"
+        ) from None
 
 
 def _copy_settings(settings: Mapping) -> Dict[str, Any]:
@@ -563,7 +577,7 @@ def _copy_settings(settings: Mapping) -> Dict[str, Any]:
     memo: Dict[int, Any] = {}
     _memoize(memo, settings, copied)
     for key, item in settings.items():
-        copied[key] = _settings_copy(item, memo)
+        copied[key] = _settings_copy(item, memo, 1)
     return copied
 
 
@@ -576,7 +590,7 @@ def _memoize(memo: Dict[int, Any], original: Any, copied: Any) -> None:
     memo.setdefault(id(memo), []).append(original)
 
 
-def _settings_copy(value: Any, memo: Dict[int, Any]) -> Any:
+def _settings_copy(value: Any, memo: Dict[int, Any], depth: int) -> Any:
     """Copy containers, share everything else.
 
     Dicts, lists, and sets are copied recursively, subclasses included (a
@@ -584,48 +598,72 @@ def _settings_copy(value: Any, memo: Dict[int, Any]) -> Any:
     namedtuples, so each agent can change its own. As in ``deepcopy``, a
     container met twice is copied once, so shared parts stay shared and
     cycles end. Strings, numbers, booleans, and None need no copy. Any
-    other object (a lock, a client, a connection, a ``struct_time``) and a
-    container that cannot be copied are shared as is, never deep-copied.
+    other object (a lock, a client, a connection, a ``struct_time``), a
+    container that cannot be copied, and a read-only one are shared as is,
+    never deep-copied. Containers nested past ``_SETTINGS_DEPTH`` levels
+    raise ``_TooDeep``; an error from a child propagates at any depth.
     """
     if id(value) in memo:
         return memo[id(value)]
+    if not isinstance(value, (dict, list, set, tuple)):
+        return value
+    if depth > _SETTINGS_DEPTH:
+        raise _TooDeep()
     if isinstance(value, tuple):
         make = getattr(value, "_make", None)  # a namedtuple
         if type(value) is not tuple and make is None:
             return value  # e.g. a struct_time, whose hidden fields a rebuild loses
-        items = [_settings_copy(item, memo) for item in value]
+        items = []
+        for item in value:  # a loop: one Python frame per level
+            items.append(_settings_copy(item, memo, depth + 1))
         if id(value) in memo:  # a cycle through the items copied it already
             return memo[id(value)]
         result = make(items) if make else tuple(items)
-    elif isinstance(value, (dict, list, set)):
-        try:
-            result = copy.copy(value)  # keeps the type, and a defaultdict's factory
-        except RecursionError:
-            raise  # too deep: fail rather than share it from here down
-        except Exception:
-            return value
-        _memoize(memo, value, result)  # before recursing, so cycles end
-        if result is value:  # a read-only container whose copy is itself
-            return value
-        try:
-            if isinstance(value, dict):
-                for key, item in value.items():
-                    result[key] = _settings_copy(item, memo)
-            elif isinstance(value, list):
-                for index, item in enumerate(value):
-                    result[index] = _settings_copy(item, memo)
-            else:
-                result.clear()
-                result.update(_settings_copy(item, memo) for item in value)
-        except RecursionError:
-            raise
-        except Exception:  # a copy that cannot be filled in (read-only): share
-            memo[id(value)] = value
-            return value
-    else:
+        _memoize(memo, value, result)
+        return result
+    try:
+        result = copy.copy(value)  # keeps the type, and a defaultdict's factory
+    except Exception:  # it cannot be copied (its copy may even recurse)
         return value
-    _memoize(memo, value, result)
+    if result is value or not _writable(result):  # read-only: share
+        _memoize(memo, value, value)
+        return value
+    _memoize(memo, value, result)  # before the children, so cycles end
+    if isinstance(value, dict):
+        for key, item in value.items():
+            result[key] = _settings_copy(item, memo, depth + 1)
+    elif isinstance(value, list):
+        for index, item in enumerate(value):
+            result[index] = _settings_copy(item, memo, depth + 1)
+    else:
+        items = []
+        for item in value:
+            items.append(_settings_copy(item, memo, depth + 1))
+        result.clear()
+        result.update(items)
     return result
+
+
+def _writable(copied: Any) -> bool:
+    """Whether a fresh copy of a dict, list, or set takes writes, tried by
+    storing one entry back as it is (a dict's first key, a list's first
+    item, or one item of a set), before any child is copied."""
+    try:
+        if isinstance(copied, dict):
+            for key in copied:
+                copied[key] = copied[key]
+                break
+        elif isinstance(copied, list):
+            if copied:
+                copied[0] = copied[0]
+        else:
+            for item in copied:
+                copied.discard(item)
+                copied.add(item)
+                break
+    except Exception:
+        return False
+    return True
 
 
 def _copy_prompt_with_update(prompt, update: Dict[str, Any]):
@@ -748,7 +786,7 @@ class AgentSpec:
                 f"Agent '{name}': 'extra_settings' must be a mapping, "
                 f"got {type(extra_settings).__name__}"
             )
-        extra_settings = _copy_settings(extra_settings)
+        extra_settings = _agent_settings(extra_settings, name)
 
         # -- proxy config (already deep-merged with global by the caller) --
         proxy_raw = raw.pop("proxy", None)
@@ -972,7 +1010,7 @@ class AgentSpec:
             context_manager=context_manager,
             inference_hints=self.inference_hints,
             # Fresh agents share one spec: each gets its own plain data.
-            extra_settings=_agent_settings(self.extra_settings),
+            extra_settings=_agent_settings(self.extra_settings, self.name),
         )
 
 

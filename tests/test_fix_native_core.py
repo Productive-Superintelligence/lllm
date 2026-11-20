@@ -1267,14 +1267,44 @@ def _reaches(root: Any, target: Any) -> bool:
     return False
 
 
-def test_extra_settings_too_deep_to_copy_raise_recursion_error():
+def test_extra_settings_too_deep_to_copy_raise_a_clear_error():
     from lllm.runtimes.native import AgentSpec
 
-    deep: list = []
-    for _ in range(3_000):
-        deep = [deep]
-    with pytest.raises(RecursionError):  # rather than share it from depth ~995
-        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"deep": deep}})
+    def nested(levels: int) -> list:
+        value: list = []
+        for _ in range(levels):
+            value = [value]
+        return value
+
+    message = "Agent 'writer': 'extra_settings' is nested more than 500 levels deep"
+    with pytest.raises(ValueError, match=message):  # not shared from some depth
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": nested(3_000)}})
+    # Just under the bound it copies, well inside Python's recursion limit.
+    shallow = nested(490)
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": shallow}})
+    assert spec.extra_settings["d"] is not shallow
+
+
+class Settings(dict):
+    """Reads missing attributes from a parent: copying it recurses."""
+
+    def __init__(self, *args: Any, parent: Any = None, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.parent = parent
+
+    def __getattr__(self, name: str) -> Any:
+        if self.parent is not None:  # loops on a copy not yet initialized
+            return getattr(self.parent, name)
+        raise AttributeError(name)
+
+
+def test_a_container_whose_copy_recurses_is_shared():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    settings = Settings(tags=["a"], parent=Settings())
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": settings}})
+
+    assert spec.build(Runtime(), object()).extra_settings["s"] is settings
 
 
 class Immutable(dict):
@@ -1313,6 +1343,42 @@ def test_read_only_containers_in_extra_settings_are_shared():
 
     assert copied["immutable"] is immutable
     assert copied["frozen"] is frozen
+
+
+def test_a_read_only_container_is_shared_before_its_children_are_copied():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    loop: list = []
+    frozen = FrozenCopies()
+    dict.__setitem__(frozen, "loop", loop)
+    loop.append(frozen)  # a cycle through the read-only container
+    settings = {"frozen": frozen, "loop": loop}
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    copied = spec.build(Runtime(), object()).extra_settings
+
+    assert copied["frozen"] is frozen
+    assert copied["loop"][0] is frozen  # no half-built copy of it
+
+
+class Unlistable(dict):
+    """Copies, and takes writes, but its items cannot be listed."""
+
+    def __copy__(self):
+        return Unlistable(dict.items(self))
+
+    def items(self):
+        raise RuntimeError("cannot list its items")
+
+
+@pytest.mark.parametrize("depth", [1, 2])
+def test_a_child_that_cannot_be_copied_fails_alike_at_any_depth(depth):
+    from lllm.runtimes.native import AgentSpec
+
+    value: Any = Unlistable(a=1)
+    for _ in range(depth - 1):
+        value = {"inside": value}  # a writable parent, not shared instead
+    with pytest.raises(RuntimeError, match="cannot list its items"):
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"v": value}})
 
 
 def test_values_built_on_access_each_get_their_own_copy(tmp_path):
