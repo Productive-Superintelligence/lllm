@@ -1375,3 +1375,53 @@ def test_responses_api_usage_counts_prompt_and_completion_tokens(monkeypatch):
     assert cost.prompt_cost == pytest.approx(1200 * 0.15e-6)
     assert cost.completion_cost == pytest.approx(300 * 0.6e-6)
     assert cost.cost == pytest.approx(0.00036)
+
+
+# -- a deeply nested task does not overflow a small thread stack -----------
+
+
+DEEP_TASK = """
+import asyncio
+import threading
+
+threading.stack_size(1 << 20)  # 1 MiB, as on python:alpine
+
+from lllm import Tactic
+
+
+class Depth(Tactic):
+    name = "depth"
+
+    def call(self, task):
+        depth = 0
+        while isinstance(task, dict):
+            task, depth = task["next"], depth + 1
+        return depth
+
+
+task = None
+for _ in range(10_000):
+    task = {"next": task}
+print(asyncio.run(Depth().arun(task)))  # arun works on a worker thread
+"""
+
+
+def test_a_deeply_nested_task_runs_on_a_small_thread_stack():
+    import os
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1]
+    env = {**os.environ, "PYTHONPATH": str(root)}
+    # A crash (SIGSEGV) would kill pytest itself, so run it apart.
+    result = subprocess.run(
+        [sys.executable, "-c", DEEP_TASK],
+        capture_output=True,
+        text=True,
+        env=env,
+        timeout=120,
+    )
+
+    assert result.returncode == 0, result.stderr[-2000:]
+    assert result.stdout.strip() == "10000"

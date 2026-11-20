@@ -21,6 +21,7 @@ import hashlib
 import inspect
 import logging
 import os
+import reprlib
 import sys
 import threading
 import traceback as tb
@@ -208,15 +209,45 @@ def _drop_unset_none(value: Any, data: Any) -> None:
                 _drop_unset_none(item, data[key])
 
 
+def _bounded_repr() -> reprlib.Repr:
+    """A repr that stops 20 levels down, with no other limits.
+
+    repr() recurses in C, so a task nested a few thousand levels deep (an
+    18 KB JSON request) overflows a small thread stack and kills the
+    process; reprlib recurses in Python, at most ``maxlevel`` deep. The
+    attributes are set after construction, for Python 3.10.
+    """
+    bounded = reprlib.Repr()
+    for limit in (
+        "maxdict",
+        "maxlist",
+        "maxtuple",
+        "maxset",
+        "maxfrozenset",
+        "maxdeque",
+        "maxarray",
+        "maxlong",
+        "maxstring",
+        "maxother",
+    ):
+        setattr(bounded, limit, sys.maxsize)
+    bounded.maxlevel = 20
+    return bounded
+
+
+_TASK_REPR = _bounded_repr()
+
+
 def _task_to_string(task: Any) -> str:
+    """The task as text, only to hash into a session name."""
     if isinstance(task, str):
         return task
     if isinstance(task, BaseModel):
         try:
             return task.model_dump_json()
         except Exception:  # e.g. bytes that are not UTF-8
-            return repr(task)
-    return repr(task)
+            pass
+    return _TASK_REPR.repr(task)
 
 
 def _zero_invoke_cost() -> Any:
