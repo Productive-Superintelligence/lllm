@@ -138,8 +138,10 @@ tactic entry is loaded like a tactic target of `lllm serve
 module:attribute` ([Serving](serving.md#serve-from-the-command-line)): a
 class or a function without parameters is called once, and any other
 function answers each input. An app belongs in a `[services.NAME]` entry;
-a tactic entry that names one stops `lllm serve` with an error. `lllm hub
-validate` checks all of this before you share the package
+a tactic entry that names one stops `lllm serve` with an error. Before you
+share the package, `lllm hub validate` checks that each entry imports and
+that a tactic entry does not name an app; it does not call factories, so
+`lllm serve` is the check for what a factory returns
 ([The hub](publishing.md#validate-a-package)).
 
 ## How resources are named

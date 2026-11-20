@@ -115,6 +115,7 @@ a `code`, a `message`, and the `resource` concerned. The main codes:
 | --- | --- | --- |
 | `manifest_load_failed` | error | `lllm.toml` does not parse or does not fit the format |
 | `entrypoint_import_failed` | error | An `entry` cannot be imported |
+| `tactic_entry_is_app` | error | A tactic's `entry` names a FastAPI or Starlette app, which belongs in a service |
 | `primary_missing` | error | `primary` names a resource that is not declared |
 | `schema_ref_missing` | error | A tactic's `input` or `output` names no declared schema |
 | `service_tactic_missing` | error | A service's `tactic` is not declared |

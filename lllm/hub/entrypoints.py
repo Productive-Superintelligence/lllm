@@ -53,6 +53,12 @@ def import_entrypoint(
         return value
 
 
+def is_asgi_app(value: Any) -> bool:
+    """Whether ``value`` is a FastAPI or Starlette app."""
+
+    return callable(value) and hasattr(value, "routes") and hasattr(value, "router")
+
+
 def _entrypoint_segments(value: str) -> bool:
     return all(
         part

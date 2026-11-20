@@ -10,6 +10,7 @@ from typing import Any
 
 from .credentials import ApiKeyRequirement, collect_manifest_api_key_requirements
 from .hub import import_entrypoint, load_manifest
+from .hub.entrypoints import is_asgi_app as _is_asgi_app
 from .hub.ports import DEFAULT_PORT, resource_metadata, serve_port
 from .protocol import Tactic
 from .runtimes import coerce_tactic
@@ -204,32 +205,36 @@ def _service_app(manifest: Any, name: str, service: Any, base_dir: Path) -> Any:
 def _tactic_app(entry: str, *, base_dir: Path, name: str) -> Any:
     value = import_entrypoint(entry, base_dir=base_dir, keep_loaded=True)
     try:
-        target = _entrypoint_target(value, name=name)
+        target = _entrypoint_target(value, name=name, apps=False)
     except TypeError as exc:
         raise LaunchError(
             f"tactic {name} entry {entry} did not resolve to a tactic: {exc}"
         ) from exc
     if _is_asgi_app(target):
         raise LaunchError(
-            f"tactic {name} entry {entry} is a FastAPI or Starlette app, not a "
-            "tactic; serve an app from a [services.NAME] entry"
+            f"tactic {name} entry {entry} is or returns a FastAPI or Starlette "
+            "app, not a tactic; serve an app from a [services.NAME] entry"
         )
     return create_tactic_app(target)
 
 
-#: What a factory named by an entrypoint may return.
+#: What a factory named by a tactic entry may return.
+TACTIC_FACTORY_RESULTS = "a tactic or Tactic subclass, an object with run(), or a callable"
+#: What a factory named by a ``module:attribute`` target may return.
 FACTORY_RESULTS = (
     "a tactic or Tactic subclass, an object with run(), a callable, "
     "or a FastAPI or Starlette app"
 )
 
 
-def _entrypoint_target(value: Any, *, name: str | None = None) -> Any:
+def _entrypoint_target(value: Any, *, name: str | None = None, apps: bool = True) -> Any:
     """A FastAPI or Starlette app, or the app a factory returns, as it is;
     otherwise the tactic :func:`coerce_tactic` makes of ``value``.
 
-    A factory is called once. One that returns none of
-    :data:`FACTORY_RESULTS` raises ``TypeError``.
+    A factory is called once. One that returns none of the accepted values
+    raises ``TypeError``, whose message lists them: :data:`FACTORY_RESULTS`,
+    or :data:`TACTIC_FACTORY_RESULTS` when ``apps`` is false because the
+    caller does not serve apps.
     """
 
     if _is_asgi_app(value):
@@ -241,9 +246,9 @@ def _entrypoint_target(value: Any, *, name: str | None = None) -> Any:
         return produced
     tactic = _factory_result_tactic(produced, name)
     if tactic is None:
+        accepted = FACTORY_RESULTS if apps else TACTIC_FACTORY_RESULTS
         raise TypeError(
-            f"the factory returned {type(produced).__name__}; it must return "
-            f"{FACTORY_RESULTS}"
+            f"the factory returned {type(produced).__name__}; it must return {accepted}"
         )
     return tactic
 
@@ -350,10 +355,6 @@ def _looks_like_tactic(value: Any) -> bool:
 
 def _has_run_method(value: Any) -> bool:
     return value is not None and callable(getattr(value, "run", None))
-
-
-def _is_asgi_app(value: Any) -> bool:
-    return callable(value) and hasattr(value, "routes") and hasattr(value, "router")
 
 
 def _can_call_without_args(value: Any) -> bool:

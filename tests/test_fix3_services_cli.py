@@ -189,6 +189,24 @@ def test_load_tactic_entrypoint_explains_a_factory_that_returns_nothing_usable(
 def test_a_tactic_entry_that_names_an_app_is_a_launch_error(tmp_path, entry):
     from lllm.launch import LaunchError, load_launch_app
 
+    package = _web_package(tmp_path, entry)
+
+    with pytest.raises(LaunchError) as caught:
+        load_launch_app(package, resource="tactics.web")
+    assert (
+        f"tactic web entry fix3_web.app:{entry} is or returns a FastAPI or "
+        "Starlette app, not a tactic; serve an app from a [services.NAME] entry"
+    ) in str(caught.value)
+
+    with pytest.raises(LaunchError) as junk:
+        load_launch_app(package, resource="tactics.number")
+    assert str(junk.value).endswith(
+        "the factory returned int; it must return a tactic or Tactic subclass, "
+        "an object with run(), or a callable"
+    )
+
+
+def _web_package(tmp_path: Path, entry: str) -> Path:
     package = tmp_path / "web"
     _write(
         package / "lllm.toml",
@@ -206,13 +224,52 @@ entry = "fix3_web.app:build_number"
     )
     _write(package / "fix3_web" / "__init__.py", "")
     _write(package / "fix3_web" / "app.py", APP_MODULE)
+    return package
 
-    with pytest.raises(LaunchError, match="is a FastAPI or Starlette app, not a tactic"):
-        load_launch_app(package, resource="tactics.web")
-    with pytest.raises(LaunchError, match=r"\[services\.NAME\]"):
-        load_launch_app(package, resource="tactics.web")
-    with pytest.raises(LaunchError, match="the factory returned int"):
-        load_launch_app(package, resource="tactics.number")
+
+def test_validate_refuses_a_tactic_entry_that_is_an_app(tmp_path):
+    from lllm.hub import LocalHub, PublishValidationError, validate_package
+
+    package = _web_package(tmp_path, "app")
+
+    report = validate_package(package)
+
+    assert not report.ok
+    [issue] = [issue for issue in report.issues if issue.code == "tactic_entry_is_app"]
+    assert issue.level == "error"
+    assert issue.resource == "lllm://demo/web/tactics/web"
+    assert "fix3_web.app:app is a FastAPI or Starlette app" in issue.message
+    assert "[services.NAME]" in issue.message
+    with pytest.raises(PublishValidationError):
+        LocalHub(tmp_path / "hub").publish(package)
+
+
+def test_validate_does_not_call_a_tactic_entry_factory(tmp_path):
+    from lllm.hub import validate_package
+
+    package = _web_package(tmp_path, "create_app")
+    _write(
+        package / "fix3_web" / "app.py",
+        """
+from pathlib import Path
+
+from fastapi import FastAPI
+
+
+def create_app():
+    Path(__file__).with_name("called").write_text("yes")
+    return FastAPI()
+
+
+def build_number():
+    return 42
+""",
+    )
+
+    report = validate_package(package)
+
+    assert report.ok
+    assert not (package / "fix3_web" / "called").exists()
 
 
 # 2: a result that fails the tactic's output schema is a bug in the tactic,
