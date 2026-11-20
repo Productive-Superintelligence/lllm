@@ -1170,6 +1170,114 @@ def test_inspect_help_hides_store_but_inspect_still_accepts_it(
     assert not (tmp_path / "s").exists()
 
 
+# Round 4, 1: a tactic with routes and router attributes is a tactic, not
+# an app, as in 0.4.0.
+
+DISPATCH_MODULE = """
+from lllm import Tactic
+
+
+class Dispatch(Tactic):
+    name = "dispatch"
+    description = "Route a ticket by keyword."
+    routes = {"refund": "billing", "crash": "bugs"}
+    router = "keyword"
+
+    def call(self, text: str) -> str:
+        for word, queue in self.routes.items():
+            if word in text:
+                return queue
+        return "general"
+
+
+dispatch = Dispatch()
+"""
+
+
+def test_a_routing_tactic_is_not_an_asgi_app():
+    from fastapi import FastAPI
+    from starlette.applications import Starlette
+
+    from lllm.hub.entrypoints import is_asgi_app
+
+    namespace: dict = {}
+    exec(DISPATCH_MODULE, namespace)
+
+    assert not is_asgi_app(namespace["Dispatch"])
+    assert not is_asgi_app(namespace["dispatch"])
+    assert not is_asgi_app(FastAPI)  # a class, not an app
+    assert is_asgi_app(FastAPI()) and is_asgi_app(Starlette())
+
+
+def test_without_starlette_an_app_is_a_callable_with_routes_and_router(uninstalled):
+    from lllm.hub.entrypoints import is_asgi_app
+
+    namespace: dict = {}
+    exec(DISPATCH_MODULE, namespace)
+    uninstalled("starlette")
+
+    class App:
+        routes: list = []
+        router = object()
+
+        def __call__(self, scope, receive, send):
+            return None
+
+    assert is_asgi_app(App())
+    assert not is_asgi_app(App)
+    assert not is_asgi_app(namespace["Dispatch"])
+    assert not is_asgi_app(namespace["dispatch"])
+
+
+def test_validate_and_package_serve_accept_a_routing_tactic(tmp_path):
+    from lllm.hub import LocalHub, validate_package
+    from lllm.launch import load_launch_app
+
+    package = tmp_path / "dispatch"
+    _write(
+        package / "lllm.toml",
+        """
+[package]
+org = "demo"
+name = "dispatch"
+
+[tactics.by_class]
+entry = "fix3_dispatch:Dispatch"
+
+[tactics.by_instance]
+entry = "fix3_dispatch:dispatch"
+""",
+    )
+    _write(package / "fix3_dispatch.py", DISPATCH_MODULE)
+
+    report = validate_package(package)
+
+    assert report.ok, report.issues
+    assert not any(issue.code == "tactic_entry_is_app" for issue in report.issues)
+    LocalHub(tmp_path / "hub").publish(package)
+    for resource in ("tactics.by_class", "tactics.by_instance"):
+        app = load_launch_app(package, resource=resource).app
+        response = TestClient(app).post("/run", json={"input": "refund please"})
+        assert response.json()["output"] == "billing"
+
+
+@pytest.mark.parametrize("attr", ["Dispatch", "dispatch"])
+def test_the_cli_serves_and_inspects_a_routing_tactic(
+    tmp_path, monkeypatch, served, capsys, attr
+):
+    _write(tmp_path / "fix3_dispatch.py", DISPATCH_MODULE)
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    assert load_tactic_entrypoint(f"fix3_dispatch:{attr}").tactic_name == "dispatch"
+    assert main(["inspect", f"fix3_dispatch:{attr}"]) == 0
+    assert capsys.readouterr().out.splitlines()[0] == "dispatch (native)"
+    assert main(["serve", f"fix3_dispatch:{attr}"]) == 0
+
+    [(app, _options)] = served
+    response = TestClient(app).post("/run", json={"input": "the app crashed"})
+    assert response.json()["output"] == "bugs"
+
+
 # Review 6, final rule: a web page cannot make a visitor's browser run a
 # served tactic. A cross-site POST that is not JSON, or a cross-site GET to
 # a custom endpoint, is refused; PUT, PATCH, and DELETE are left to CORS.

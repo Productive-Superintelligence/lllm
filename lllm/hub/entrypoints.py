@@ -54,9 +54,23 @@ def import_entrypoint(
 
 
 def is_asgi_app(value: Any) -> bool:
-    """Whether ``value`` is a FastAPI or Starlette app."""
+    """Whether ``value`` is a FastAPI or Starlette app.
 
-    return callable(value) and hasattr(value, "routes") and hasattr(value, "router")
+    A class is not an app, and neither is a tactic, even one with ``routes``
+    and ``router`` attributes. With Starlette installed, an app is an
+    instance of its ``Starlette`` class (FastAPI's included); without it,
+    any other callable with ``routes`` and a ``router`` counts.
+    """
+
+    from ..protocol import Tactic
+
+    if isinstance(value, type) or isinstance(value, Tactic):
+        return False
+    try:
+        from starlette.applications import Starlette
+    except ImportError:
+        return callable(value) and hasattr(value, "routes") and hasattr(value, "router")
+    return isinstance(value, Starlette)
 
 
 def _entrypoint_segments(value: str) -> bool:
