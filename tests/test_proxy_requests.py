@@ -364,7 +364,8 @@ class InstanceCall:
 
 
 @pytest.mark.parametrize(
-    "kind", ["delegating", "bound elsewhere", "spied", "mock", "instance call"]
+    "kind",
+    ["delegating", "bound elsewhere", "spied", "mocked", "mocked with spec", "mock", "instance call"],
 )
 def test_a_lone_value_with_keywords_on_other_kinds_of_proxy(kind):
     proxies = tactic_tools()
@@ -373,6 +374,11 @@ def test_a_lone_value_with_keywords_on_other_kinds_of_proxy(kind):
     if kind == "spied":  # mock.patch.object(..., wraps=...), mocker.spy
         with patch.object(tools, "call", wraps=tools.call):
             assert proxies("tools/repeat", "ab", times=3) == "ababab"
+    elif kind.startswith("mocked"):  # the mock gets the documented params
+        options = {"spec": True} if kind == "mocked with spec" else {"return_value": "mocked"}
+        with patch.object(tools, "call", **options) as mocked:
+            proxies("tools/repeat", "ab", times=3)
+        mocked.assert_called_once_with("repeat", {"text": "ab", "times": 3})
     elif kind in ("delegating", "bound elsewhere"):  # BaseProxy.call names the value
         other = Delegating(tools) if kind == "delegating" else SimpleNamespace(call=tools.call)
         proxies.proxies["other"] = other

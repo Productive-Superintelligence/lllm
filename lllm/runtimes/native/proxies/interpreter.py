@@ -117,11 +117,17 @@ def _known(stream: Any) -> bool:
       before any call (rich's Progress or Live) is marked once the program
       prints through it during a call. Afterwards, writes through held
       router references skip it (see :func:`_program_stream`).
-    - Code that prints on the same thread while an operation on a plain
-      program stream P is in progress (a signal handler, a ``__del__``
-      finalizer, a generator that ``P.writelines`` reads) marks P, and that
-      print goes to the stream saved before P, or to ``sys.__stdout__``,
-      instead of into P.
+    - Code that enters the router on the same thread while one of its
+      operations is forwarded to a plain program stream P (a print, a
+      flush or an attribute lookup from a signal handler, a ``__del__``
+      finalizer, or a generator read by ``writelines`` called through
+      ``sys.stdout``) marks P, and that nested operation goes to the stream
+      saved before P, or to ``sys.__stdout__``, rather than to P (unless P is
+      ``sys.__stdout__`` itself). P stays marked while it is saved.
+      Afterwards, writes through held router references skip P once it is
+      back in ``sys.stdout``, and if P is the stream saved beneath the
+      program's wrapper, everything written through that wrapper goes to
+      ``sys.__stdout__`` (nowhere if the saved stream is None).
     """
 
     return stream is not None and any(stream is wrapper for wrapper in _wrappers)
@@ -203,7 +209,8 @@ def _entered() -> Any:
     that is in the middle of a router operation on this thread and calls
     back into the router is marked as a wrapper of it (the evidence), and
     the operation is a re-entry. Inside any other operation (one going
-    nowhere, or into a call), it is a first operation."""
+    nowhere, into a call, or to ``sys.__stdout__`` when that is not a
+    program stream), it is a first operation."""
 
     stack = _stack()
     outer = stack[-1] if stack else None  # targets are never None (_NULL is)

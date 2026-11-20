@@ -234,7 +234,7 @@ class BaseProxy:
         self, attr_name: str, method, info: Dict[str, Any]
     ) -> Dict[str, Any]:
         tactic_meta = self._callable_attr(method, "_lllm_tactic_endpoint")
-        if not tactic_meta:
+        if not isinstance(tactic_meta, Mapping):  # a mock's made-up attribute too
             return info
 
         from ..core.tactic_tool import build_tactic_endpoint_info
@@ -258,7 +258,9 @@ class BaseProxy:
         """
         for name, method in inspect.getmembers(self, predicate=callable):
             info = self._callable_attr(method, "endpoint_info")
-            if info:
+            # Only real metadata: a mock in place of a method (say a patched
+            # call) makes up truthy attributes for any name.
+            if isinstance(info, Mapping) and info:
                 info = self._materialize_endpoint_info(name, method, dict(info))
                 yield name, method, info
 

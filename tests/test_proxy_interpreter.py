@@ -603,6 +603,12 @@ def during_a_call(action):
 @pytest.mark.parametrize("order", ["code running", "code ended"])
 @pytest.mark.parametrize("wrapper", sorted(WRAPPERS))
 def test_a_wrapper_of_sys_stdout_made_while_timed_out_code_runs(tmp_path, wrapper, order, operation):
+    if wrapper == "rich" and operation == "isatty":
+        pytest.importorskip("rich")  # rich has no __version__ for minversion
+        from rich.file_proxy import FileProxy
+
+        if "isatty" not in vars(FileProxy):
+            pytest.skip("before rich 15, FileProxy answers isatty itself")
     stdout = sys.stdout
     during, after = ("during the call", "again during the call"), ("after the calls",)
     with open(tmp_path / "fd", "w") as fd_holder:
@@ -784,24 +790,33 @@ def test_a_quiet_call_keeps_the_mark_of_the_programs_tee(monkeypatch):
 
 
 def test_a_print_inside_an_operation_on_the_programs_stream_is_taken_for_a_call_back(monkeypatch):
-    # A known false positive, pinned: code that prints on the same thread
-    # while an operation on a plain program stream is in progress (here a
-    # generator its writelines reads; a signal handler or a finalizer too)
-    # marks that stream as a wrapper of the router, and that print goes to
-    # the stream saved before it, here to sys.__stdout__.
+    # A known false positive, pinned: code that enters the router on the same
+    # thread while one of its operations is forwarded to a plain program
+    # stream (here a generator read by sys.stdout.writelines; a signal
+    # handler or a finalizer too) marks that stream as a wrapper of the
+    # router, and the nested operation goes to the stream saved before it,
+    # here to sys.__stdout__. The mark lasts while the stream is saved: once
+    # it is back in sys.stdout, writes through held router references skip it.
     terminal = io.StringIO()
     monkeypatch.setattr(sys, "__stdout__", terminal)
     program = io.StringIO()
     monkeypatch.setattr(sys, "stdout", program)
+    held = []
 
     def lines():
         print("nested")
         yield "outer\n"
 
-    during_a_call(lambda: sys.stdout.writelines(lines()))
+    def write_lines_and_hold():
+        sys.stdout.writelines(lines())
+        held.append(sys.stdout)  # the router
+
+    during_a_call(write_lines_and_hold)
+    assert sys.stdout is program
+    held[0].write("held\n")
 
     assert program.getvalue() == "outer\n"
-    assert terminal.getvalue() == "nested\n"
+    assert terminal.getvalue() == "nested\nheld\n"
     assert interpreter_module._known(program)
 
 
