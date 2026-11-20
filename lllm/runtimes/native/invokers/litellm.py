@@ -77,6 +77,14 @@ def _check_env_vars():
 
 _check_env_vars()
 
+#: Responses API usage keys and the Chat Completions keys they mean.
+_RESPONSES_USAGE_KEYS = {
+    "input_tokens": "prompt_tokens",
+    "output_tokens": "completion_tokens",
+    "input_tokens_details": "prompt_tokens_details",
+    "output_tokens_details": "completion_tokens_details",
+}
+
 
 class LiteLLMInvoker(BaseInvoker):
     def _convert_dialog(self, dialog: Dialog) -> List[Dict[str, str]]:
@@ -184,6 +192,13 @@ class LiteLLMInvoker(BaseInvoker):
 
     def _build_usage(self, usage_dict: dict, response_obj: Any, model: str) -> dict:
         import litellm
+
+        # 0. The Responses API counts input/output tokens; use the Chat
+        # Completions names, which costs and Message.cost read.
+        for responses_key, chat_key in _RESPONSES_USAGE_KEYS.items():
+            if usage_dict.get(chat_key) is None:
+                if usage_dict.get(responses_key) is not None:
+                    usage_dict[chat_key] = usage_dict[responses_key]
 
         # 1. Extract total cost directly from the response object
         usage_dict["response_cost"] = getattr(response_obj, "_hidden_params", {}).get(

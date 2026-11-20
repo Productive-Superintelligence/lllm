@@ -527,3 +527,48 @@ def test_quick_takes_a_stream_handler_and_a_name():
 
     assert reply.name == "greeter"
     assert "".join(collect.pieces) == reply.content == "Hello there."
+
+
+# -- 12: Responses API usage counts prompt and completion tokens ------------
+
+
+def test_responses_api_usage_counts_prompt_and_completion_tokens(monkeypatch):
+    from types import SimpleNamespace
+
+    from litellm.types.llms.openai import ResponseAPIUsage
+
+    from lllm.runtimes.native import APITypes
+    from lllm.runtimes.native.invokers import litellm as invoker_module
+
+    usage = ResponseAPIUsage(
+        input_tokens=1200,
+        output_tokens=300,
+        total_tokens=1500,
+        input_tokens_details={"cached_tokens": 1000},
+        output_tokens_details={"reasoning_tokens": 200},
+    )
+    response = SimpleNamespace(
+        output=[],
+        output_text="Paris.",
+        usage=usage,
+        reasoning=None,
+        _hidden_params={"response_cost": 0.00036},
+    )
+    monkeypatch.setattr(invoker_module, "responses_api", lambda **kwargs: response)
+
+    agent = Tactic.quick(
+        system_prompt="Be brief.", model="gpt-4o-mini", api_type=APITypes.RESPONSE
+    )
+    agent.open("q")
+    agent.receive("What is the capital of France?")
+    cost = agent.respond().cost
+
+    assert (cost.prompt_tokens, cost.completion_tokens, cost.total_tokens) == (
+        1200,
+        300,
+        1500,
+    )
+    assert (cost.cached_prompt_tokens, cost.reasoning_tokens) == (1000, 200)
+    assert cost.prompt_cost == pytest.approx(1200 * 0.15e-6)
+    assert cost.completion_cost == pytest.approx(300 * 0.6e-6)
+    assert cost.cost == pytest.approx(0.00036)
