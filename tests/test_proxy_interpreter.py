@@ -731,9 +731,12 @@ def test_putting_the_programs_wrapper_back_after_a_timeout_keeps_its_stream(monk
     assert terminal.getvalue() == ""
 
 
-def test_marks_of_wrappers_the_program_left_behind_are_dropped():
+def test_marks_of_wrappers_the_program_left_behind_are_dropped(monkeypatch):
+    terminal = io.StringIO()
+    monkeypatch.setattr(sys, "__stdout__", terminal)
     stdout = sys.stdout
-    sys.stdout = io.StringIO()
+    program = io.StringIO()
+    sys.stdout = program
     try:
         with stuck(BLOCK):
             for n in range(4):  # e.g. a new rich Progress for each step
@@ -746,6 +749,8 @@ def test_marks_of_wrappers_the_program_left_behind_are_dropped():
 
     assert 0 < len(marks) <= 2
     assert all(any(mark is stream for stream in current) for mark in marks)
+    # Beneath each later tee is the one before, itself a wrapper of the router.
+    assert (program.getvalue(), terminal.getvalue()) == ("0\n", "1\n2\n3\n")
 
 
 @pytest.mark.parametrize("first_printed", [True, False])
