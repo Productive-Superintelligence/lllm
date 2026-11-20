@@ -1609,8 +1609,10 @@ def test_json_with_utf8_encoded_surrogates_is_a_400(path):
         rb'{"input": "\ud800"}',  # plain ASCII, so it passes the UTF-8 decode
         rb'{"input": {"\udc00": 1}}',  # in a key
         rb'{"input": "x", "context": {"metadata": {"note": "a\udfffb"}}}',
+        rb'{"input": ["a", "\ud800"]}',  # in a list
+        rb'"\ud800"',  # a bare JSON string, not an envelope
     ],
-    ids=["value", "key", "context"],
+    ids=["value", "key", "context", "list", "bare-string"],
 )
 def test_json_with_an_escaped_lone_surrogate_is_a_400(path, body):
     client = TestClient(create_tactic_app(Echo()), raise_server_exceptions=False)
