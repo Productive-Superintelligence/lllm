@@ -1434,33 +1434,63 @@ def test_responses_api_usage_counts_prompt_and_completion_tokens(monkeypatch):
 # -- a deeply nested task does not overflow a small thread stack -----------
 
 
-DEEP_TASK = """
+DEEP_TASKS = """
 import asyncio
 import threading
+from collections import OrderedDict
+from dataclasses import dataclass
+from typing import Any, Dict
 
 threading.stack_size(1 << 20)  # 1 MiB, as on python:alpine
+
+from pydantic import BaseModel
 
 from lllm import Tactic
 
 
-class Depth(Tactic):
-    name = "depth"
+def deep(levels):
+    value = []
+    for _ in range(levels):
+        value = [value]
+    return value
+
+
+class Notes(BaseModel):
+    data: Dict[str, Any]
+
+
+@dataclass
+class Box:
+    items: Any
+
+
+chain = OrderedDict()
+for _ in range(9_000):
+    chain = OrderedDict(next=chain)
+
+
+class Kind(Tactic):
+    name = "kind"
 
     def call(self, task):
-        depth = 0
-        while isinstance(task, dict):
-            task, depth = task["next"], depth + 1
-        return depth
+        return type(task).__name__
 
 
-task = None
-for _ in range(10_000):
-    task = {"next": task}
-print(asyncio.run(Depth().arun(task)))  # arun works on a worker thread
+tasks = [
+    {"next": chain},  # a dict, as an HTTP body would be
+    Notes(data={"x": deep(9_000)}),
+    chain,
+    Box(items=deep(9_000)),
+    {"notes": Notes(data={"x": deep(9_000)})},
+]
+for task in tasks:
+    print(asyncio.run(Kind().arun(task)))  # arun works on a worker thread
 """
 
 
-def test_a_deeply_nested_task_runs_on_a_small_thread_stack():
+def _run_apart(script: str, timeout: int = 120) -> Any:
+    """Run a script in its own process: a crash (SIGSEGV) or a hang would
+    take pytest down with it."""
     import os
     import subprocess
     import sys
@@ -1468,14 +1498,69 @@ def test_a_deeply_nested_task_runs_on_a_small_thread_stack():
 
     root = Path(__file__).resolve().parents[1]
     env = {**os.environ, "PYTHONPATH": str(root)}
-    # A crash (SIGSEGV) would kill pytest itself, so run it apart.
-    result = subprocess.run(
-        [sys.executable, "-c", DEEP_TASK],
+    return subprocess.run(
+        [sys.executable, "-c", script],
         capture_output=True,
         text=True,
         env=env,
-        timeout=120,
+        timeout=timeout,
     )
 
+
+def test_deeply_nested_tasks_run_on_a_small_thread_stack():
+    result = _run_apart(DEEP_TASKS)
+
     assert result.returncode == 0, result.stderr[-2000:]
-    assert result.stdout.strip() == "10000"
+    assert result.stdout.split() == ["dict", "Notes", "OrderedDict", "Box", "dict"]
+
+
+QUICK_NAMES = """
+import time
+
+from lllm.runtimes.native.core.tactic import _task_to_string
+
+loop = {}
+loop["a"] = loop["b"] = loop["c"] = loop  # three ways back to itself
+for task in (loop, list(range(1_000_000))):
+    start = time.perf_counter()
+    _task_to_string(task)
+    print(round(time.perf_counter() - start, 3))
+"""
+
+
+def test_cycles_and_huge_lists_name_their_session_quickly():
+    result = _run_apart(QUICK_NAMES, timeout=60)
+
+    assert result.returncode == 0, result.stderr[-2000:]
+    assert all(float(seconds) < 1 for seconds in result.stdout.split())
+
+
+def test_session_names_hash_equal_tasks_alike_and_others_apart():
+    from lllm.runtimes.native.core.tactic import _task_to_string as text
+
+    task = {"ticket": "Refund", "lines": [1, 2.5, None, True, b"\x00"]}
+    assert text(task) == text({**task, "lines": list(task["lines"])})  # a copy
+    assert text(task) != text({**task, "lines": [1, 2.5, None, True, b"\x01"]})
+    assert text({"a": 1}) != text({"a": "1"})
+    assert text("plain text") == "plain text"
+
+    names = []
+
+    class Names:
+        def observe_tactic(self, *, session_name, **_):
+            names.append(session_name)
+
+    class Kind(Tactic):
+        name = "fix_kind"
+
+        def call(self, task):
+            return type(task).__name__
+
+    kind = Kind(observer=Names())
+    for value in (task, dict(task), {"other": True}, "\ud800 a lone surrogate"):
+        kind(value)
+    # {tactic}_{hash8}_{YYYYmmdd}_{HHMMSS}
+    prefixes = [name.rsplit("_", 3)[:2] for name in names]
+    assert prefixes[0] == prefixes[1] == ["fix_kind", prefixes[0][1]]
+    assert prefixes[2] != prefixes[0]
+    assert len(prefixes[0][1]) == 8

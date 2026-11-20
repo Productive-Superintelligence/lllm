@@ -21,7 +21,7 @@ import hashlib
 import inspect
 import logging
 import os
-import reprlib
+import itertools
 import sys
 import threading
 import traceback as tb
@@ -29,7 +29,7 @@ import warnings
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from contextlib import aclosing, contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, is_dataclass
 from dataclasses import fields as dataclass_fields
 from typing import (
     Any,
@@ -209,45 +209,93 @@ def _drop_unset_none(value: Any, data: Any) -> None:
                 _drop_unset_none(item, data[key])
 
 
-def _bounded_repr() -> reprlib.Repr:
-    """A repr that stops 20 levels down, with no other limits.
-
-    repr() recurses in C, so a task nested a few thousand levels deep (an
-    18 KB JSON request) overflows a small thread stack and kills the
-    process; reprlib recurses in Python, at most ``maxlevel`` deep. The
-    attributes are set after construction, for Python 3.10.
-    """
-    bounded = reprlib.Repr()
-    for limit in (
-        "maxdict",
-        "maxlist",
-        "maxtuple",
-        "maxset",
-        "maxfrozenset",
-        "maxdeque",
-        "maxarray",
-        "maxlong",
-        "maxstring",
-        "maxother",
-    ):
-        setattr(bounded, limit, sys.maxsize)
-    bounded.maxlevel = 20
-    return bounded
-
-
-_TASK_REPR = _bounded_repr()
+#: How far a task is read to name its session: levels, and values in all.
+_PREVIEW_DEPTH = 20
+_PREVIEW_VALUES = 10_000
 
 
 def _task_to_string(task: Any) -> str:
-    """The task as text, only to hash into a session name."""
+    """A canonical preview of ``task``, only to hash into a session name.
+
+    repr() recurses in C, so a task nested a few thousand levels deep (an
+    18 KB JSON request) would overflow a small thread stack and kill the
+    process. The preview is built by an iterative walk with an explicit
+    stack instead: mappings, lists, tuples, and sets (subclasses included),
+    Pydantic models, and dataclasses are walked, at most 20 levels deep and
+    10,000 values in all; a container already on the path (a cycle) becomes
+    "...", and any other object is its type's name, so repr() is never
+    called on a container or an arbitrary object. Stable within a process.
+    """
     if isinstance(task, str):
         return task
-    if isinstance(task, BaseModel):
-        try:
-            return task.model_dump_json()
-        except Exception:  # e.g. bytes that are not UTF-8
-            pass
-    return _TASK_REPR.repr(task)
+    out: List[str] = []
+    on_path: set = set()
+    stack: List[Tuple[str, Any, int]] = [("value", task, 0)]
+    seen = 0
+    while stack:
+        kind, value, depth = stack.pop()
+        if kind == "text":
+            out.append(value)
+            continue
+        if kind == "leave":
+            on_path.discard(value)
+            continue
+        seen += 1
+        if seen > _PREVIEW_VALUES:
+            out.append("...")
+            break
+        leaf = _preview_leaf(value)
+        if leaf is not None:
+            out.append(leaf)
+            continue
+        children = _preview_children(value, _PREVIEW_VALUES - seen + 1)
+        if children is None:
+            out.append(type(value).__qualname__)
+        elif depth >= _PREVIEW_DEPTH or id(value) in on_path:
+            out.append("...")
+        else:
+            on_path.add(id(value))
+            out.append(type(value).__qualname__ + "(")
+            stack.append(("leave", id(value), depth))
+            stack.append(("text", ")", depth))
+            stack.extend(("value", child, depth + 1) for child in reversed(children))
+    return " ".join(out)
+
+
+def _preview_leaf(value: Any) -> Optional[str]:
+    """The preview of a scalar, or None for anything else."""
+    if value is None or isinstance(value, bool):
+        return repr(value)
+    if isinstance(value, int):  # by the int itself: no subclass repr
+        if value.bit_length() > 64:  # no 4,300-digit str() limit
+            return f"int{value.bit_length()}:{value % 1_000_000_007}"
+        return int.__repr__(value)
+    if isinstance(value, float):
+        return float.__repr__(value)
+    if isinstance(value, str):
+        return str.__repr__(value)
+    if isinstance(value, (bytes, bytearray)):
+        return f"{bytes(value[:64])!r}:{len(value)}"
+    return None
+
+
+def _preview_children(value: Any, limit: int) -> Optional[List[Any]]:
+    """The values to walk inside ``value`` (at most ``limit`` items or
+    pairs), or None for an object that is not walked."""
+    if isinstance(value, Mapping):
+        pairs = itertools.islice(value.items(), limit)
+    elif isinstance(value, (list, tuple, set, frozenset)):
+        return list(itertools.islice(value, limit))
+    elif isinstance(value, BaseModel):
+        fields = [(name, getattr(value, name, None)) for name in type(value).model_fields]
+        extra = getattr(value, "__pydantic_extra__", None) or {}
+        pairs = itertools.islice([*fields, *extra.items()], limit)
+    elif is_dataclass(value) and not isinstance(value, type):
+        fields = [(f.name, getattr(value, f.name, None)) for f in dataclass_fields(value)]
+        pairs = itertools.islice(fields, limit)
+    else:
+        return None
+    return [part for pair in pairs for part in pair]
 
 
 def _zero_invoke_cost() -> Any:
@@ -960,7 +1008,8 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
 
         tactic_name = self.tactic_name
         if session_name is None:
-            task_hash = hashlib.md5(_task_to_string(task).encode()).hexdigest()[:8]
+            preview = _task_to_string(task).encode("utf-8", "surrogatepass")
+            task_hash = hashlib.md5(preview).hexdigest()[:8]
             timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
             session_name = f"{tactic_name}_{task_hash}_{timestamp}"
         session = TacticCallSession(
