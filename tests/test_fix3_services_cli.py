@@ -1837,6 +1837,41 @@ def test_serve_still_stores_prompted_keys_through_credentials(
     assert len(served) == 1
 
 
+# Round 4, 7: an env file that is a symlink, dangling or looping, is refused
+# before any key is asked for, so typed keys are never written through it.
+
+
+def _symlinked_env_file(tmp_path: Path, kind: str) -> tuple[Path, Path | None]:
+    env_file = tmp_path / ".env.local"
+    if kind == "dangling":
+        target = tmp_path / "elsewhere.env"  # its folder exists, the file not
+        env_file.symlink_to(target)
+        return env_file, target
+    env_file.symlink_to(env_file)  # a link to itself
+    return env_file, None
+
+
+@pytest.mark.parametrize("kind", ["dangling", "looping"])
+@pytest.mark.parametrize("command", ["serve", "setup"])
+def test_an_env_file_that_is_a_symlink_is_refused(
+    keyed_package, served, tmp_path, capsys, kind, command
+):
+    package, stored = keyed_package
+    env_file, target = _symlinked_env_file(tmp_path, kind)
+    args = [command, str(package), "--credentials", "env", "--env-file", str(env_file)]
+    if command == "setup":
+        args += ["--set", "FIX3_TEST_KEY=sk-set"]
+
+    with pytest.raises(SystemExit) as caught:
+        main(args)
+
+    assert caught.value.code == 2
+    assert "env file must be a regular file" in capsys.readouterr().err
+    assert env_file.is_symlink()
+    assert target is None or not target.exists()
+    assert served == [] and stored == {}
+
+
 def _help(command: str, monkeypatch, capsys) -> str:
     """``lllm COMMAND --help`` on one line: argparse wraps to the terminal
     width and breaks at hyphens, so the width is pinned first."""

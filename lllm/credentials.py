@@ -223,9 +223,13 @@ def read_env_file(path: str | Path | None) -> dict[str, str]:
     if path is None:
         return {}
     env_path = Path(path).expanduser()
+    # A symlink is refused before exists(), which is False for a dangling or
+    # looping one, so keys are never asked for and then written through it.
+    if env_path.is_symlink():
+        raise CredentialError("env file must be a regular file")
     if not env_path.exists():
         return {}
-    if env_path.is_symlink() or not env_path.is_file():
+    if not env_path.is_file():
         raise CredentialError("env file must be a regular file")
     values: dict[str, str] = {}
     for raw_line in env_path.read_text(encoding="utf-8").splitlines():
@@ -238,7 +242,7 @@ def read_env_file(path: str | Path | None) -> dict[str, str]:
 
 def write_env_file(path: str | Path, values: dict[str, str]) -> None:
     env_path = Path(path).expanduser()
-    if env_path.exists() and (env_path.is_symlink() or not env_path.is_file()):
+    if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
         raise CredentialError("env file must be a regular file")
     env_path.parent.mkdir(parents=True, exist_ok=True)
     existing_lines = (
