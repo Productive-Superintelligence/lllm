@@ -185,6 +185,7 @@ def store_api_keys(
         return "none"
     backend = choose_credential_backend(credentials)
     if backend == "keyring":
+        _require_usable_keyring()
         for name, value in clean_values.items():
             keyring_set(name, value)
         return "keyring"
@@ -210,7 +211,9 @@ def configure_missing_api_keys(
     provided_values = _validated_secret_values(provided or {})
     requirements = dedupe_requirements(requirements)
     credentials = choose_credential_backend(credentials)
-    if credentials == "env":
+    if credentials == "keyring":
+        _require_usable_keyring()
+    else:
         check_env_file_writable(env_file)
     values: dict[str, str] = {}
     for requirement in requirements:
@@ -360,6 +363,14 @@ def keyring_available() -> bool:
         return False
 
 
+def _require_usable_keyring() -> None:
+    if not keyring_available():
+        raise CredentialError(
+            "no usable OS keyring is available; use --credentials env to write "
+            "a local env file"
+        )
+
+
 def keyring_get(name: str) -> str | None:
     """A key from the OS keyring, or None, also when no usable keyring exists."""
 
@@ -393,14 +404,12 @@ def keyring_set(name: str, value: str) -> None:
 
 def choose_credential_backend(credentials: CredentialBackend) -> Literal["keyring", "env"]:
     """Where keys are stored: ``auto`` is the keyring only when a usable one
-    is available; an explicit ``keyring`` without one is a ``CredentialError``."""
+    is available, and ``keyring`` and ``env`` are themselves.
+
+    A pure mapping, as in 0.4.0: storing refuses an unusable keyring.
+    """
 
     if credentials == "keyring":
-        if not keyring_available():
-            raise CredentialError(
-                "no usable OS keyring is available; use --credentials env to "
-                "write a local env file"
-            )
         return "keyring"
     if credentials == "env":
         return "env"

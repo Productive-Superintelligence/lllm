@@ -1982,6 +1982,17 @@ def test_keyring_available_needs_a_usable_backend(fail_keyring, monkeypatch):
     assert not credentials.keyring_available()
 
 
+def test_choose_credential_backend_stays_a_pure_mapping(fail_keyring):
+    from lllm.credentials import CredentialError, choose_credential_backend, store_api_keys
+
+    # As in 0.4.0, which AAAX's CLI calls directly.
+    assert choose_credential_backend("keyring") == "keyring"
+    assert choose_credential_backend("env") == "env"
+    assert choose_credential_backend("auto") == "env"  # no usable keyring
+    with pytest.raises(CredentialError, match="no usable OS keyring"):
+        store_api_keys({"FIX3_TEST_KEY": "sk"}, credentials="keyring")
+
+
 def test_auto_falls_back_to_the_env_file_without_a_usable_keyring(
     key_package, fail_keyring, served, tmp_path, monkeypatch, capsys
 ):
