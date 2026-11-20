@@ -998,7 +998,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
             metadata=metadata,
         )
         logger.info(
-            "Tactic '%s' completed — cost=%s agent_calls=%d",
+            "Tactic '%s' completed — cost=$%.6f agent_calls=%d",
             session.tactic_name,
             session.total_cost.cost,
             session.agent_call_count,

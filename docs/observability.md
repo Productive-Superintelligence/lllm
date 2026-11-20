@@ -256,7 +256,7 @@ is `summarize(text, session_name="run-1")` from the example above:
 
 ```text
 INFO Tactic 'summarize' started — session_name=run-1
-INFO Tactic 'summarize' completed — cost=1.35e-05 agent_calls=1
+INFO Tactic 'summarize' completed — cost=$0.000013 agent_calls=1
 ```
 
 | Level | Adds |
