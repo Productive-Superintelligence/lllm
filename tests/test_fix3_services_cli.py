@@ -746,3 +746,49 @@ def test_install_package_still_rejects_invalid_aliases(glossary_zip, alias):
 
     with pytest.raises(ValueError, match="not a valid package name"):
         install_package(glossary_zip, alias=alias, scope="project", load=False)
+
+
+# 7: every heading of the agent card follows a blank line, tags or not.
+
+
+@pytest.mark.parametrize(
+    "card",
+    [
+        'tags = ["support", "routing"]',
+        'safety = "Reads tickets only."\nlatency = "About a second."',
+        'tags = ["support"]\nsuggested_commands = ["lllm serve ./triage"]',
+        'summary = "Routes tickets."',
+    ],
+)
+@pytest.mark.parametrize("api_keys", [False, True])
+def test_agent_card_headings_follow_a_blank_line(tmp_path, card, api_keys):
+    from lllm.hub import load_manifest, record_from_manifest, render_agent_card
+
+    requirements = (
+        '\n[requirements.api_keys]\nOPENAI_API_KEY = "Model access."\n'
+        if api_keys
+        else ""
+    )
+    package = tmp_path / "triage"
+    _write(
+        package / "lllm.toml",
+        f"""
+[package]
+org = "acme"
+name = "triage"
+
+[card]
+{card}
+
+[tactics.triage]
+entry = "main:create_tactic"
+{requirements}""",
+    )
+
+    lines = render_agent_card(record_from_manifest(load_manifest(package))).splitlines()
+
+    headings = [index for index, line in enumerate(lines) if line.startswith("## ")]
+    assert headings
+    for index in headings:
+        assert lines[index - 1] == "", lines[index - 1 : index + 1]
+    assert "## Resources" in lines

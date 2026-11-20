@@ -55,6 +55,8 @@ def render_agent_card(record: PackageRecord) -> str:
             for command in card.suggested_commands:
                 lines.append(f"- `{command}`")
             lines.append("")
+    if lines[-1] != "":  # after the card's tags, safety, or latency
+        lines.append("")
     lines.extend(["## Resources", ""])
     if not record.resources:
         lines.append("No resources declared.")
