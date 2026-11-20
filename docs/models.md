@@ -84,7 +84,9 @@ print(session.invoke_traces[0][0].model_args)  # (2)!
 """
 ```
 
-1. Extra keyword arguments to `Tactic.quick()` become `model_args`.
+1. Extra keyword arguments to `Tactic.quick()` become `model_args`, except
+   the agent's own settings, such as `max_llm_recall`
+   ([below](#retries-and-rate-limits)).
 2. `invoke_traces` keeps every model call of `respond()`, keyed by tool
    round. Each entry records the arguments that went to LiteLLM.
 
@@ -163,8 +165,9 @@ request drops its connection:
 ```python title="recall.py"
 from lllm import Tactic
 
-agent = Tactic.quick(system_prompt="You answer briefly.", model="gpt-4o")
-agent.max_llm_recall = 2  # (1)!
+agent = Tactic.quick(
+    system_prompt="You answer briefly.", model="gpt-4o", max_llm_recall=2
+)  # (1)!
 agent.open("q")
 agent.receive("What is the boiling point of water at sea level?")
 session = agent.respond(return_session=True)
@@ -174,7 +177,9 @@ print(session.llm_recalls_count, type(session.llm_recalls[0][0]).__name__)
 #> 1 APIConnectionError
 ```
 
-1. In a config, set `max_llm_recall: 2` on the agent or under `global`.
+1. `Tactic.quick()` sets the agent's own settings, such as the retry
+   budgets, by name. In a config, set `max_llm_recall: 2` on the agent or
+   under `global`.
 
 ## Chat Completions or Responses
 

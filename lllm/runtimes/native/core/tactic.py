@@ -29,6 +29,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Mapping
 from contextlib import aclosing, contextmanager
 from dataclasses import dataclass
+from dataclasses import fields as dataclass_fields
 from typing import (
     Any,
     ClassVar,
@@ -1165,7 +1166,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: bool = False,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Agent: ...
 
     @overload
@@ -1176,7 +1177,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: Literal[False] = False,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Message: ...
 
     @overload
@@ -1187,7 +1188,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: Literal[True] = True,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Tuple[Message, Agent]: ...
 
     @classmethod
@@ -1197,13 +1198,18 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         system_prompt: Optional[Union[str, Prompt]] = "You are a helpful assistant.",
         model: str = "gpt-4o",
         return_agent: bool = False,
-        **model_args: Any,
+        **kwargs: Any,
     ) -> Union[Message, Agent, Tuple[Message, Agent]]:
         """One agent, no configuration: ``Tactic.quick("What is LLLM?")``.
 
         With ``query`` it returns the reply (and the agent when
         ``return_agent=True``); without ``query`` it returns the agent so you
         can ``open``/``receive``/``respond`` yourself.
+
+        A keyword argument named after an :class:`Agent` field, such as
+        ``max_llm_recall``, ``stream_handler``, ``context_manager`` or
+        ``name``, sets that field; every other one (``temperature=0.2``) is
+        added to ``model_args`` and sent with each call.
         """
 
         from ..native.tactic import _build_native_invoker, _get_default_registry
@@ -1214,14 +1220,16 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
             prompt = Prompt(path="_quick/system", prompt=system_prompt)
         else:
             prompt = system_prompt
-        agent = Agent(
-            name="assistant",
-            system_prompt=prompt,
-            model=model,
-            llm_invoker=_build_native_invoker({"invoker": "litellm"}),
-            runtime=_get_default_registry(),
-            model_args=model_args,
-        )
+        agent_fields = {
+            f.name for f in dataclass_fields(Agent) if not f.name.startswith("_")
+        }
+        settings = {k: kwargs.pop(k) for k in list(kwargs) if k in agent_fields}
+        settings["model_args"] = {**(settings.get("model_args") or {}), **kwargs}
+        settings.setdefault("name", "assistant")
+        if "llm_invoker" not in settings:
+            settings["llm_invoker"] = _build_native_invoker({"invoker": "litellm"})
+        settings.setdefault("runtime", _get_default_registry())
+        agent = Agent(system_prompt=prompt, model=model, **settings)
         if query is None:
             return agent
         agent.open("chat")

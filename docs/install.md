@@ -72,9 +72,10 @@ reply = Tactic.quick(
 print(reply.content)
 ```
 
-Extra keyword arguments to `Tactic.quick()` are sent with every model call;
-in a config they go under `model_args`. [Models](models.md) covers providers,
-settings, and custom invokers.
+Extra keyword arguments to `Tactic.quick()` are sent with every model call,
+except the agent's own settings such as `max_llm_recall`; in a config they
+go under `model_args`. [Models](models.md) covers providers, settings, and
+custom invokers.
 
 ## Check the install
 

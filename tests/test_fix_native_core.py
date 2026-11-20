@@ -470,3 +470,60 @@ def test_reply_cost_shows_the_model_rates():
     with ScriptedModel(["Hi."]):
         reply = Tactic.quick("Hello", model="gpt-4o-mini")
     assert "Rates: [In: $0.15/1M tok, Out: $0.60/1M tok]" in str(reply.cost)
+
+
+# -- 11: Tactic.quick() takes agent settings as agent settings --------------
+
+
+def test_quick_sets_agent_fields_and_sends_the_rest_as_model_args():
+    agent = Tactic.quick(
+        system_prompt="You answer briefly.",
+        model="gpt-4o-mini",
+        max_llm_recall=2,
+        max_exception_retry=1,
+        max_interrupt_steps=2,
+        max_rate_limit_retries=0,
+        extra_settings={"team": "docs"},
+        temperature=0.1,
+        model_args={"seed": 7},
+    )
+
+    assert agent.name == "assistant"
+    assert agent.max_llm_recall == 2
+    assert agent.max_exception_retry == 1
+    assert agent.max_interrupt_steps == 2
+    assert agent.max_rate_limit_retries == 0
+    assert agent.extra_settings == {"team": "docs"}
+    assert agent.model_args == {"seed": 7, "temperature": 0.1}
+
+    agent.open("chat")
+    agent.receive("Hi.")
+    with ScriptedModel(["Hello."]):
+        session = agent.respond(return_session=True)
+    assert session.max_llm_recall == 2
+    assert session.invoke_traces[0][0].model_args == {
+        "seed": 7,
+        "temperature": 0.1,
+        "drop_params": True,
+        "stream": False,
+    }
+
+
+def test_quick_takes_a_stream_handler_and_a_name():
+    from lllm.runtimes.native import BaseStreamHandler
+
+    class Collect(BaseStreamHandler):
+        def __init__(self):
+            self.pieces = []
+
+        def handle_chunk(self, chunk_content, chunk_response):
+            self.pieces.append(chunk_content)
+
+    collect = Collect()
+    with ScriptedModel(["Hello there."]):
+        reply = Tactic.quick(
+            "Hi", model="gpt-4o-mini", stream_handler=collect, name="greeter"
+        )
+
+    assert reply.name == "greeter"
+    assert "".join(collect.pieces) == reply.content == "Hello there."
