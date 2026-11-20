@@ -94,7 +94,7 @@ lllm serve ./briefs --resource services.api
 | `--log-level` | `info` | Uvicorn log level |
 | `--resource` | `[package] primary` | Resource to launch |
 | `--store` | `<package>/.lllm/network` | Store root for channel resources (needs sssn) |
-| `--credentials`, `--env-file`, `--no-keyring` | | Key lookup and interactive setup |
+| `--credentials`, `--env-file`, `--no-keyring` | | Key lookup and interactive setup; with `--no-keyring`, typed keys go to the env file |
 | `--skip-key-check` | off | Start without checking declared keys |
 
 An entrypoint names a tactic class or instance, a factory, an object with a

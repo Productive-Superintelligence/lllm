@@ -250,6 +250,11 @@ def main(argv: list[str] | None = None) -> int:
             log_level = _serve_log_level(args.log_level)
         except ValueError as exc:
             parser.error(str(exc))
+        if args.no_keyring and args.credentials == "keyring":
+            parser.error(
+                "--no-keyring does not read the OS keyring, so --credentials keyring "
+                "would store keys it cannot see; use --credentials env"
+            )
 
         if _is_package_target(args.target):
             if not args.skip_key_check:
@@ -520,7 +525,9 @@ def _ensure_launch_keys(parser: argparse.ArgumentParser, args: Any) -> None:
         try:
             backend = configure_missing_api_keys(
                 resolution.missing,
-                credentials=args.credentials,
+                # The check below reads the env file but, with --no-keyring,
+                # not the keyring, so keys typed here go to the env file.
+                credentials="env" if args.no_keyring else args.credentials,
                 env_file=args.env_file,
             )
             print(f"Configured {len(resolution.missing)} API key(s) via {backend}.")

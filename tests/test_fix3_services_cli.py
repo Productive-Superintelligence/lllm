@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import sys
 from pathlib import Path
@@ -1273,6 +1274,81 @@ def test_a_result_that_cannot_be_encoded_is_a_500_in_the_envelope():
     error = response.json()["detail"]["error"]
     assert error["type"] == "UnicodeDecodeError"
     assert error["request_id"] == "r-7"
+
+
+# Review 8: with --no-keyring, lllm serve stores the keys it asks for in the
+# env file, where its own check looks, never in the OS keyring.
+
+
+@pytest.fixture
+def keyed_package(tmp_path, monkeypatch):
+    import types
+
+    import lllm.credentials
+
+    package = tmp_path / "keyed"
+    _write(
+        package / "lllm.toml",
+        """
+[package]
+org = "demo"
+name = "keyed"
+primary = "tactics.echo"
+
+[requirements.api_keys]
+FIX3_TEST_KEY = "Model access."
+
+[tactics.echo]
+entry = "fix3_keyed:Echo"
+""",
+    )
+    _write(
+        package / "fix3_keyed.py",
+        "class Echo:\n    def run(self, value, *, context=None):\n        return value\n",
+    )
+    monkeypatch.delenv("FIX3_TEST_KEY", raising=False)
+    monkeypatch.setattr(sys, "stdin", types.SimpleNamespace(isatty=lambda: True))
+    # The keyring looks available, but nothing may write to it.
+    monkeypatch.setattr(lllm.credentials, "keyring_available", lambda: True)
+    stored = []
+    monkeypatch.setattr(
+        lllm.credentials, "keyring_set", lambda name, value: stored.append(name)
+    )
+    typed = functools.partial(
+        lllm.credentials.configure_missing_api_keys,
+        secret_func=lambda prompt: "sk-typed",
+    )
+    monkeypatch.setattr(lllm.credentials, "configure_missing_api_keys", typed)
+    return package, stored
+
+
+def test_serve_no_keyring_stores_prompted_keys_in_the_env_file(
+    keyed_package, served, tmp_path, capsys
+):
+    package, stored = keyed_package
+    env_file = tmp_path / "keys.env"
+
+    args = ["serve", str(package), "--no-keyring", "--env-file", str(env_file)]
+    assert main(args) == 0
+
+    assert stored == []
+    assert 'FIX3_TEST_KEY="sk-typed"' in env_file.read_text(encoding="utf-8")
+    assert f"via {env_file}" in capsys.readouterr().out
+    assert len(served) == 1
+
+
+def test_serve_refuses_no_keyring_with_keyring_credentials(
+    keyed_package, served, capsys
+):
+    package, stored = keyed_package
+
+    with pytest.raises(SystemExit) as caught:
+        main(["serve", str(package), "--no-keyring", "--credentials", "keyring"])
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert "--no-keyring" in err and "--credentials keyring" in err
+    assert stored == [] and served == []
 
 
 def test_status_code_for_error_maps_cross_site_requests_to_403():

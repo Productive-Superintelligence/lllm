@@ -576,6 +576,8 @@ lllm serve ./triage     # serve tactics.triage on port 8100
 - Before starting, `lllm serve` checks the API keys the package declares
   ([API keys](packages.md#api-keys)). In a terminal it asks for missing
   ones; otherwise it stops and lists them. `--skip-key-check` skips this.
+  With `--no-keyring` it neither reads the OS keyring nor stores keys
+  there: the keys it asks for go to the env file.
 - A served package keeps its folder on `sys.path` and its modules loaded,
   so its code can import its own modules. Packages served in one process
   share `sys.modules`, so give their top-level modules distinct names.
