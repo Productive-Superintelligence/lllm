@@ -3,7 +3,7 @@ import inspect
 import re
 import logging
 from typing import Any, Dict, List, Optional
-from urllib.parse import quote
+from urllib.parse import quote, urlencode, urlsplit
 
 from ..core.runtime import Registry, Runtime, _select_runtime
 
@@ -264,7 +264,9 @@ class BaseProxy:
         The endpoint method receives the params and returns the (possibly
         adjusted) params to send. Proxies that declare a ``base_url`` then
         call ``_call_api`` with the full URL, adding the API key as a query
-        parameter (``api_key_name``) or a header (``"*header-name"``).
+        parameter (``api_key_name``) or a header (``"*header-name"``). A
+        POST endpoint sends its params as the JSON body, so a query-parameter
+        key goes in the URL.
         Proxies that send requests themselves (an overridden ``_call_api``
         without ``base_url``, e.g. an SDK client) receive the endpoint path.
         Proxies with neither, and tactic endpoints, return the method's result
@@ -308,6 +310,11 @@ class BaseProxy:
         if key_name and key:
             if key_name.startswith("*"):
                 headers[key_name[1:]] = key
+            elif (info.get("method") or "GET").upper() == "POST":
+                # A POST sends the params as its JSON body, so the key goes
+                # in the URL's query string.
+                separator = "&" if urlsplit(url).query else "?"
+                url = f"{url}{separator}{urlencode({key_name: key})}"
             else:
                 prepared[key_name] = key
         return self._call_api(url, prepared, info, headers)

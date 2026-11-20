@@ -143,3 +143,25 @@ def test_names_in_activate_proxies_that_nothing_registered_are_reported(caplog):
     assert record.levelno == logging.WARNING
     assert "'weather'" in record.getMessage()
     assert "rates" in record.getMessage()  # the proxies that are registered
+
+
+def test_post_endpoints_send_a_query_param_key_in_the_query(http):
+    proxy = RatesProxy(runtime=Runtime())
+
+    proxy.call("convert", {"amount": 2.5})
+
+    ((method, url, body),) = http
+    assert method == "POST"
+    assert url.startswith("https://api.example.test/v1/convert?")
+    assert parse_qs(urlsplit(url).query) == {"apikey": ["secret"]}
+    assert body == {"amount": 2.5}
+
+
+def test_get_endpoints_send_a_query_param_key_with_the_params(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    proxy.call("rates", {"base": "USD"})
+
+    assert http == [
+        ("GET", "https://api.example.test/v1/rates", {"base": "USD", "apikey": "secret"})
+    ]
