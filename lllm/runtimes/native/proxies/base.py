@@ -224,12 +224,29 @@ class BaseProxy:
 
     @staticmethod
     def _callable_attr(method, attr: str, default: Any = None) -> Any:
-        # A spy (a mock that wraps the method, e.g. patch.object(proxy,
-        # name, wraps=...)) is read through to the method it wraps; _mock_*
-        # names are real attributes of mocks, never made up.
-        wrapped = getattr(method, "_mock_wraps", None)
-        if wrapped is not None:
+        """An endpoint attribute of ``method``.
+
+        One set on the object itself (in its ``__dict__``, as Mock keeps its
+        configured attributes) wins. Otherwise a spy, a mock that wraps the
+        method (``patch.object(proxy, name, wraps=...)``), is read through
+        to what it wraps, spies of spies too. Only the names Mock sets
+        itself, like ``_mock_wraps``, are real attributes of a mock (other
+        ``_mock_*`` names are not), so the wrapped object is taken from the
+        mock's ``__dict__``, and an object whose ``__getattr__`` answers
+        anything is never followed.
+        """
+        for _ in range(16):  # a bound, for a cycle of wrappers
+            own = getattr(method, "__dict__", None)
+            if not isinstance(own, dict):
+                break
+            if attr in own:
+                return own[attr]
+            wrapped = own.get("_mock_wraps")
+            if wrapped is None:
+                break
             method = wrapped
+        else:  # a cycle (reading one of its mocks would recurse in Mock)
+            return default
         value = getattr(method, attr, None)
         if value is not None:
             return value

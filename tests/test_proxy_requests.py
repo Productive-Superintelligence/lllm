@@ -397,8 +397,87 @@ def test_a_spied_tactic_endpoint_is_still_found_and_called():
 
     with patch.object(tools, "repeat", wraps=tools.repeat) as spy:
         assert proxies("tools/repeat", {"text": "ab", "times": 3}) == "ababab"
+        # A lone value is named from the tactic's materialized params.
+        assert proxies("tools/repeat", "ab", times=3) == "ababab"
+
+    assert spy.call_count == 2
+
+
+def test_a_spy_of_a_spy_of_a_tactic_endpoint_is_found_and_called():
+    proxies = tactic_tools()
+    tools = proxies.proxies["tools"]
+
+    with patch.object(tools, "repeat", wraps=tools.repeat) as inner:  # a fixture's spy
+        with patch.object(tools, "repeat", wraps=tools.repeat) as outer:  # the test's
+            listed = [entry["callable"] for entry in tools.endpoint_directory()]
+            assert proxies("tools/repeat", {"text": "ab", "times": 3}) == "ababab"
+
+    assert listed == ["join", "repeat", "shout"]
+    inner.assert_called_once()
+    outer.assert_called_once()
+
+
+MOCKED_INFO = {
+    "category": "rates",
+    "endpoint": "mocked",
+    "description": "A mocked endpoint.",
+    "params": {"base": (str, "USD")},
+    "response": {},
+    "method": "GET",
+}
+
+
+def test_a_wrapping_mock_with_its_own_endpoint_info_is_an_endpoint(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    proxy.mocked = MagicMock(wraps=lambda params: params, endpoint_info=MOCKED_INFO)
+
+    assert "mocked" in [entry["callable"] for entry in proxy.endpoint_directory()]
+    proxy.call("mocked", {"base": "AUD"})
+
+    assert http == [
+        ("GET", "https://api.example.test/v1/mocked", {"base": "AUD", "apikey": "secret"})
+    ]
+
+
+def test_a_spys_own_endpoint_info_wins_over_the_wrapped_one(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as spy:
+        spy.endpoint_info = {**RatesProxy.rates.endpoint_info, "endpoint": "rates/v2"}
+        proxy.call("rates/v2", {"base": "USD"})
+
+    assert http == [
+        ("GET", "https://api.example.test/v1/rates/v2", {"base": "USD", "apikey": "secret"})
+    ]
+
+
+def test_a_cycle_of_wrapping_mocks_is_not_an_endpoint():
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    first, second = MagicMock(), MagicMock()
+    first.__dict__["_mock_wraps"], second.__dict__["_mock_wraps"] = second, first
+    proxy.cyclic = first  # reading one of these mocks would recurse in Mock
+
+    assert [entry["callable"] for entry in proxy.endpoint_directory()] == [
+        "convert", "history", "rates",
+    ]
+
+
+class MixedProxy(UncachedRatesProxy):
+    """An HTTP proxy with a tactic endpoint too."""
+
+    shout = BaseProxy.tactic_endpoint("shout", config={})
+
+
+def test_a_spied_tactic_endpoint_on_an_http_proxy_still_runs_the_tactic(http):
+    runtime = Runtime()
+    runtime.register_tactic("shout", Shout)
+    proxy = MixedProxy(runtime=runtime)
+
+    with patch.object(proxy, "shout", wraps=proxy.shout) as spy:
+        assert proxy.call("shout", {"text": "hi"}) == "HI"
 
     spy.assert_called_once()
+    assert http == []  # run as a tactic: no request
 
 
 def test_a_spied_http_endpoint_still_sends_its_request(http):
