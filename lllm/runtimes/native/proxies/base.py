@@ -12,6 +12,7 @@ logger = logging.getLogger(__name__)
 
 # A ``{name}`` placeholder in an endpoint path, e.g. ``companies/{ticker}``.
 _PLACEHOLDER = re.compile(r"\{([^}/]+)\}")
+_MISSING = object()
 
 
 def _param_name(documented: str) -> str:
@@ -229,7 +230,8 @@ class BaseProxy:
         One set on the object itself (in its ``__dict__``, as Mock keeps its
         configured attributes) wins. Otherwise a spy, a mock that wraps the
         method (``patch.object(proxy, name, wraps=...)``), is read through
-        to what it wraps, spies of spies too. Only the names Mock sets
+        to what it wraps, spies of spies too, unless the spy deleted the
+        attribute (no value then) or its type provides one. Only the names Mock sets
         itself, like ``_mock_wraps``, are real attributes of a mock (other
         ``_mock_*`` names are not), so the wrapped object is taken from the
         mock's ``__dict__``, and an object whose ``__getattr__`` answers
@@ -244,6 +246,16 @@ class BaseProxy:
             wrapped = own.get("_mock_wraps")
             if wrapped is None:
                 break
+            # Before reading through the mock, honor what plain getattr would
+            # on the mock itself: a deleted attribute (del spy.endpoint_info),
+            # or one from its type (a PropertyMock, a subclass's attribute).
+            # getattr_static never calls __getattr__, so made-up ones stay out.
+            from unittest.mock import sentinel  # loaded already: this is a mock
+
+            if (own.get("_mock_children") or {}).get(attr) is sentinel.DELETED:
+                return default
+            if inspect.getattr_static(type(method), attr, _MISSING) is not _MISSING:
+                return getattr(method, attr, default)
             method = wrapped
         else:  # a cycle (reading one of its mocks would recurse in Mock)
             return default

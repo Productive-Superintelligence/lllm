@@ -11,7 +11,7 @@ from array import array
 from collections import deque
 from dataclasses import dataclass
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -449,6 +449,95 @@ def test_a_spys_own_endpoint_info_wins_over_the_wrapped_one(http):
     assert http == [
         ("GET", "https://api.example.test/v1/rates/v2", {"base": "USD", "apikey": "secret"})
     ]
+
+
+def rates_info(path):
+    return {**RatesProxy.rates.endpoint_info, "endpoint": path}
+
+
+def test_a_property_mock_on_a_spys_type_gives_its_endpoint_info(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as spy:
+        type(spy).endpoint_info = PropertyMock(return_value=rates_info("rates/v3"))
+        proxy.call("rates/v3", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/v3"
+
+
+class EndpointSpy(MagicMock):
+    """A spy class that carries its own endpoint metadata."""
+
+    endpoint_info = rates_info("rates/spied")
+
+
+def test_a_spy_class_with_its_own_endpoint_info_routes_by_it(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    proxy.spied = EndpointSpy(wraps=proxy.rates)
+
+    proxy.call("rates/spied", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/spied"
+
+
+def test_deleting_a_spys_endpoint_info_hides_the_endpoint():
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as spy:
+        del spy.endpoint_info
+        listed = [entry["callable"] for entry in proxy.endpoint_directory()]
+
+    assert listed == ["convert", "history"]
+
+
+def test_a_wrapping_mock_with_its_own_tactic_metadata_runs_as_a_tactic(http):
+    runtime = Runtime()
+    runtime.register_tactic("shout", Shout)
+    proxy = MixedProxy(runtime=runtime)  # has a base_url and an API key
+    proxy.fake = MagicMock(
+        wraps=lambda params: params["text"].upper(),
+        endpoint_info=dict(MixedProxy.shout.endpoint_info),
+        _lllm_tactic_endpoint=dict(MixedProxy.shout._lllm_tactic_endpoint),
+    )
+
+    assert "fake" in [entry["callable"] for entry in proxy.endpoint_directory()]
+    assert proxy.call("fake", {"text": "hi"}) == "HI"
+    assert proxy.call("fake", "hey") == "HEY"  # named from the tactic's params
+    assert http == []  # no request, so no API key sent anywhere
+
+
+def test_an_inner_spys_own_endpoint_info_wins_through_an_outer_spy(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as fixture_spy:
+        fixture_spy.endpoint_info = rates_info("rates/v2")
+        with patch.object(proxy, "rates", wraps=proxy.rates):  # the test's own spy
+            proxy.call("rates/v2", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/v2"
+
+
+class Forwarding:
+    """A wrapper whose __getattr__ forwards everything, _mock_wraps too."""
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+    def __call__(self, *args, **kwargs):
+        return self._inner(*args, **kwargs)
+
+
+def test_a_forwarding_wrapper_is_read_as_is_not_followed(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    proxy.mocked = Forwarding(MagicMock(wraps=lambda params: params, endpoint_info=MOCKED_INFO))
+
+    assert "mocked" in [entry["callable"] for entry in proxy.endpoint_directory()]
+    proxy.call("mocked", {"base": "AUD"})
+
+    assert http[0][1] == "https://api.example.test/v1/mocked"
 
 
 def test_a_cycle_of_wrapping_mocks_is_not_an_endpoint():
