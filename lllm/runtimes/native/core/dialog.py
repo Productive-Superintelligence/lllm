@@ -1081,9 +1081,10 @@ class DefaultContextManager(ContextManager):
        ``[...earlier content truncated...]`` marker. Images and other
        non-text messages are never cut: an image that does not fit is
        dropped, with a warning.
-    5. A ``SAFETY_BUFFER`` (default 5 000 tokens, or a quarter of a budget
-       under 20 000) is subtracted from the budget, leaving room for the
-       reply, so the invoker never lands right at the edge.
+    5. A ``SAFETY_BUFFER`` is subtracted from the budget, leaving room for
+       the reply, so the invoker never lands right at the edge: 5 000 tokens
+       by default, or half of a budget under 10 000. A value set on a
+       subclass or an instance is used as is.
 
     **Quickstart**::
 
@@ -1173,6 +1174,22 @@ class DefaultContextManager(ContextManager):
 
         return token_counter(model=self.model_name, messages=raw_msgs)
 
+    def _safety_buffer(self, max_tokens: int) -> int:
+        """Tokens kept free for the reply.
+
+        A ``SAFETY_BUFFER`` set on a subclass or an instance is used as is;
+        the default 5,000 shrinks to half of a budget under 10,000, so it
+        never leaves less than half of the budget.
+        """
+        overridden = "SAFETY_BUFFER" in vars(self) or any(
+            "SAFETY_BUFFER" in vars(cls)
+            for cls in type(self).__mro__
+            if cls is not DefaultContextManager
+        )
+        if overridden:
+            return self.SAFETY_BUFFER
+        return min(self.SAFETY_BUFFER, max_tokens // 2)
+
     def _tokens(self, message: Message, raw: dict) -> int:
         """One message's tokens; an image LiteLLM cannot size (its data does
         not decode) counts as ``IMAGE_TOKENS`` beside its caption."""
@@ -1214,8 +1231,7 @@ class DefaultContextManager(ContextManager):
         max_tokens = self.max_tokens
         if max_tokens is None:  # unknown window: nothing to trim against
             return dialog
-        # Room for the reply: SAFETY_BUFFER, or a quarter of a small budget.
-        limit = max_tokens - min(self.SAFETY_BUFFER, max_tokens // 4)
+        limit = max_tokens - self._safety_buffer(max_tokens)
         raw_all = [self._to_raw(m) for m in messages]
         try:
             total = self._count(raw_all)

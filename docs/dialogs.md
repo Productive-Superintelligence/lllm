@@ -275,7 +275,7 @@ agent = Tactic.quick(
     system_prompt="You track standup notes.", model="gpt-4o-mini"
 )
 agent.context_manager = DefaultContextManager(  # (1)!
-    "gpt-4o-mini", max_tokens=160
+    "gpt-4o-mini", max_tokens=240
 )
 agent.open("standups")
 notes = {
@@ -297,8 +297,8 @@ print(len(agent.current_dialog.messages))
 ```
 
 1. `max_tokens` is the budget for what is sent, minus a margin kept free
-   for the reply: 5,000 tokens, or a quarter of a budget under 20,000. This
-   tiny budget leaves 120 tokens: room for the last few notes.
+   for the reply: 5,000 tokens, or half of a budget under 10,000. This tiny
+   budget leaves 120 tokens: room for the last few notes.
 2. The model saw the system prompt and the six most recent messages; the
    dialog still holds all 13.
 

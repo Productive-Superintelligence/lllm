@@ -418,18 +418,33 @@ def test_a_newest_tool_result_keeps_its_call():
     assert _roles(trimmed) == [Role.SYSTEM, Role.TOOL_CALL, Role.TOOL]
 
 
-def test_the_safety_buffer_is_5000_tokens_or_a_quarter_of_the_budget():
-    def trims(max_tokens: int, dialog: Dialog) -> bool:
-        manager = DefaultContextManager("gpt-4o-mini", max_tokens=max_tokens)
-        return manager(dialog) is not dialog
+def _trims(manager: DefaultContextManager, words: int) -> bool:
+    dialog = _dialog("word " * words, "What now?")  # about words + 20 tokens
+    return manager(dialog) is not dialog
 
-    small = _dialog("word " * 700, "What now?")  # about 710 tokens
-    assert not trims(4_000, small)  # 3,000 left after 1,000 (a quarter)
-    assert trims(900, small)  # 675 left after 225
 
-    large = _dialog("word " * 15_500, "What now?")
-    assert trims(20_000, large)  # 15,000 left after 5,000
-    assert not trims(21_000, large)  # 16,000 left after 5,000
+def test_the_default_buffer_is_5000_tokens_or_half_a_smaller_budget():
+    def default(max_tokens: int) -> DefaultContextManager:
+        return DefaultContextManager("gpt-4o-mini", max_tokens=max_tokens)
+
+    # 16,000 left after 5,000; an uncapped half or quarter would leave less.
+    assert not _trims(default(21_000), 15_880)
+    # 4,000 left after half; a quarter would leave 6,000.
+    assert _trims(default(8_000), 4_990)
+    assert not _trims(default(8_000), 3_900)
+    # 800 left after half: small budgets still work.
+    assert not _trims(default(1_600), 700)
+
+
+def test_a_safety_buffer_that_is_set_is_used_as_is():
+    class Roomy(DefaultContextManager):
+        SAFETY_BUFFER = 6_000  # more than half of 8,000
+
+    assert _trims(Roomy("gpt-4o-mini", max_tokens=8_000), 2_990)  # 2,000 left
+
+    tight = DefaultContextManager("gpt-4o-mini", max_tokens=8_000)
+    tight.SAFETY_BUFFER = 1_000
+    assert not _trims(tight, 6_900)  # 7,000 left
 
 
 # -- 4: a Pydantic config keeps its aliased ``global`` section ---------------
