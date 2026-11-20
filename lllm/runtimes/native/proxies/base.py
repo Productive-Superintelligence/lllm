@@ -6,12 +6,20 @@ from collections.abc import Mapping
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote, urlencode, urlsplit
 
+from pydantic import BaseModel
+
 from ..core.runtime import Registry, Runtime, _select_runtime
 
 logger = logging.getLogger(__name__)
 
 # A ``{name}`` placeholder in an endpoint path, e.g. ``companies/{ticker}``.
 _PLACEHOLDER = re.compile(r"\{([^}/]+)\}")
+
+
+def _param_name(documented: str) -> str:
+    """A parameter's name without its marks: ``"$ticker*"`` -> ``"ticker"``
+    (``$`` marks a path value, ``#`` a POST body item, ``*`` a required one)."""
+    return documented.lstrip("$#").rstrip("*")
 
 
 class BaseProxy:
@@ -259,7 +267,7 @@ class BaseProxy:
             + ", ".join(sorted(endpoint for endpoint, *_ in routes))
         )
 
-    def call(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def call(self, path: str, params: Any = None) -> Any:
         """Call an endpoint: shape the params, then make the HTTP request.
 
         The endpoint method receives the params and returns the (possibly
@@ -277,15 +285,15 @@ class BaseProxy:
         params, each value URL-encoded as a single path segment. A missing
         value, ``.`` or ``..`` raises ``ValueError``.
 
-        Params that are not a dict, such as a tactic endpoint's text input,
-        are the value of the endpoint's only parameter, or of its only
-        required one; otherwise they raise ``TypeError``.
+        Params are a dict, a Pydantic model (its fields), or ``(name, value)``
+        pairs; an empty value means no params. Any other value, such as a
+        tactic endpoint's text input, is the value of the endpoint's only
+        parameter, or of its only required one; otherwise it raises
+        ``TypeError``.
         """
 
         method, info, path_params = self.resolve_endpoint(path)
-        if params is not None and not isinstance(params, Mapping):
-            params = self._lone_value_params(path, info, params)
-        params = {**path_params, **dict(params or {})}
+        params = {**path_params, **self._params_dict(path, info, params)}
         if self._callable_attr(method, "_lllm_tactic_endpoint"):
             return method(params)
         prepared = method(params)
@@ -327,20 +335,30 @@ class BaseProxy:
         return self._call_api(url, prepared, info, headers)
 
     @staticmethod
-    def _lone_value_params(path: str, info: Dict[str, Any], value: Any) -> dict:
-        """Name a value passed instead of a params dict after the endpoint's
-        only parameter, or its only required one (e.g. a tactic's input)."""
+    def _params_dict(path: str, info: Dict[str, Any], params: Any) -> dict:
+        """The params as a dict. A mapping, a Pydantic model, ``(name,
+        value)`` pairs, and empty values work as in ``dict(params or {})``;
+        any other value is named after the endpoint's only parameter, or its
+        only required one (e.g. a tactic's input)."""
 
+        if isinstance(params, (Mapping, BaseModel)):
+            return dict(params)
+        if isinstance(params, (list, tuple)) and all(
+            isinstance(pair, (list, tuple)) and len(pair) == 2 for pair in params
+        ):
+            return dict(params)  # also an empty list or tuple
+        if params is None or (isinstance(params, (str, bytes, int, float)) and not params):
+            return {}
         documented = [str(name) for name in info.get("params") or {}]
         required = [name for name in documented if name.endswith("*")]
-        names = [name.rstrip("*") for name in documented]
         for candidates in (documented, required):
             if len(candidates) == 1:
-                return {candidates[0].rstrip("*"): value}
-        expected = f" ({', '.join(names)})" if names else ""
+                return {_param_name(candidates[0]): params}
+        names = ", ".join(_param_name(name) for name in documented)
+        expected = f" ({names})" if names else ""
         raise TypeError(
             f"Endpoint '{path}' takes its params as a dict{expected}, "
-            f"not {type(value).__name__}."
+            f"not {type(params).__name__}."
         )
 
     def _call_api(

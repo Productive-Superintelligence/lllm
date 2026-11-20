@@ -7,6 +7,7 @@ import logging
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from pydantic import BaseModel
 
 from lllm import Tactic
 from lllm.runtimes.native import Runtime
@@ -227,3 +228,85 @@ def test_an_http_endpoint_with_one_param_takes_a_lone_value_too(http):
     proxy.call("rates", "EUR")
 
     assert http[0][2] == {"base": "EUR", "apikey": "secret"}
+
+
+class Base(BaseModel):
+    base: str
+
+
+class Text(BaseModel):
+    text: str
+
+
+def test_models_pairs_and_empty_values_are_params_as_before(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    for params in (Base(base="JPY"), [("base", "GBP")], (["base", "CHF"],), "", [], None):
+        proxy.call("rates", params)
+
+    assert [sent for _method, _url, sent in http] == [
+        {"base": "JPY", "apikey": "secret"},
+        {"base": "GBP", "apikey": "secret"},
+        {"base": "CHF", "apikey": "secret"},
+        {"apikey": "secret"},
+        {"apikey": "secret"},
+        {"apikey": "secret"},
+    ]
+    assert tactic_tools()("tools/shout", Text(text="hi")) == "HI"
+
+
+class MarkedProxy(BaseProxy):
+    """Marks params like the built-in msd proxy: "$" for a path value, "#"
+    for an item of a POST body."""
+
+    base_url = "https://api.example.test/v1"
+
+    def _call_api(self, url, params, endpoint_info, headers):
+        return url, params
+
+    @BaseProxy.endpoint(
+        category="companies",
+        endpoint="companies/{ticker}/kpi",
+        description="A company's KPIs.",
+        params={"$ticker*": (str, "AAPL")},
+        response=[],
+    )
+    def kpi(self, params):
+        return params
+
+    @BaseProxy.endpoint(
+        category="companies",
+        endpoint="companies",
+        description="Several companies.",
+        params={"#tickers*": (list, ["AAPL"]), "startDate": (str, "2023-01-01")},
+        response={},
+        method="POST",
+    )
+    def companies(self, params):
+        return params
+
+    @BaseProxy.endpoint(
+        category="companies",
+        endpoint="compare/{left}",
+        description="Compare two companies.",
+        params={"$left*": (str, "AAPL"), "#right*": (str, "MSFT")},
+        response={},
+        method="POST",
+    )
+    def compare(self, params):
+        return params
+
+
+def test_lone_values_name_params_marked_with_dollar_or_hash():
+    proxy = MarkedProxy(runtime=Runtime())
+
+    assert proxy.call("companies/{ticker}/kpi", "MSFT") == (
+        "https://api.example.test/v1/companies/MSFT/kpi",
+        {},
+    )
+    assert proxy.call("companies", ["AAPL", "MSFT"]) == (
+        "https://api.example.test/v1/companies",
+        {"tickers": ["AAPL", "MSFT"]},
+    )
+    with pytest.raises(TypeError, match=r"takes its params as a dict \(left, right\), not str"):
+        proxy.call("compare/{left}", "AAPL")
