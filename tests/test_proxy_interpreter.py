@@ -795,8 +795,12 @@ def test_a_print_inside_an_operation_on_the_programs_stream_is_taken_for_a_call_
     # stream (here a generator read by sys.stdout.writelines; a signal
     # handler or a finalizer too) marks that stream as a wrapper of the
     # router, and the nested operation goes to the stream saved before it,
-    # here to sys.__stdout__. The mark lasts while the stream is saved: once
-    # it is back in sys.stdout, writes through held router references skip it.
+    # here to sys.__stdout__. The stream stays marked while it is saved.
+    # Afterwards, once it is back in sys.stdout, writes, flushes and lookups
+    # through held router references go where that nested operation went:
+    # to the stream saved before it, or to sys.__stdout__ (so still to the
+    # stream if it is sys.__stdout__ with nothing saved before it), or
+    # nowhere if the stream saved before it is None. Here: sys.__stdout__.
     terminal = io.StringIO()
     monkeypatch.setattr(sys, "__stdout__", terminal)
     program = io.StringIO()

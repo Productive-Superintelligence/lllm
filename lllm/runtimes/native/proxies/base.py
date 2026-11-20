@@ -224,17 +224,30 @@ class BaseProxy:
 
     @staticmethod
     def _callable_attr(method, attr: str, default: Any = None) -> Any:
+        # A spy (a mock that wraps the method, e.g. patch.object(proxy,
+        # name, wraps=...)) is read through to the method it wraps; _mock_*
+        # names are real attributes of mocks, never made up.
+        wrapped = getattr(method, "_mock_wraps", None)
+        if wrapped is not None:
+            method = wrapped
         value = getattr(method, attr, None)
         if value is not None:
             return value
         func = getattr(method, "__func__", None)
         return getattr(func, attr, default)
 
+    @classmethod
+    def _tactic_meta(cls, method) -> Optional[Mapping]:
+        """A tactic endpoint's metadata, or None (also for the attribute a
+        mock makes up for any name)."""
+        meta = cls._callable_attr(method, "_lllm_tactic_endpoint")
+        return meta if isinstance(meta, Mapping) else None
+
     def _materialize_endpoint_info(
         self, attr_name: str, method, info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        tactic_meta = self._callable_attr(method, "_lllm_tactic_endpoint")
-        if not isinstance(tactic_meta, Mapping):  # a mock's made-up attribute too
+        tactic_meta = self._tactic_meta(method)
+        if tactic_meta is None:
             return info
 
         from ..core.tactic_tool import build_tactic_endpoint_info
@@ -340,7 +353,7 @@ class BaseProxy:
             **path_params,
             **_params_dict(params, path, lambda: info.get("params")),
         }
-        if self._callable_attr(method, "_lllm_tactic_endpoint"):
+        if self._tactic_meta(method) is not None:
             return method(params)
         prepared = method(params)
         base_url = getattr(self, "base_url", None)

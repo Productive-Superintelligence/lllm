@@ -124,10 +124,14 @@ def _known(stream: Any) -> bool:
       ``sys.stdout``) marks P, and that nested operation goes to the stream
       saved before P, or to ``sys.__stdout__``, rather than to P (unless P is
       ``sys.__stdout__`` itself). P stays marked while it is saved.
-      Afterwards, writes through held router references skip P once it is
-      back in ``sys.stdout``, and if P is the stream saved beneath the
-      program's wrapper, everything written through that wrapper goes to
-      ``sys.__stdout__`` (nowhere if the saved stream is None).
+      Afterwards, once P is back in ``sys.stdout``, writes, flushes and
+      lookups through held router references go where that nested
+      operation went: to the stream saved before P, or to ``sys.__stdout__``
+      (so still to P if P is ``sys.__stdout__`` with nothing saved before
+      it), or nowhere if the stream saved before P is None. If P is the
+      stream saved beneath the program's wrapper, they and everything
+      written through that wrapper go to ``sys.__stdout__`` (nowhere if
+      ``sys.__stdout__`` is None).
     """
 
     return stream is not None and any(stream is wrapper for wrapper in _wrappers)

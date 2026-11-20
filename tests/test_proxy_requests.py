@@ -377,7 +377,9 @@ def test_a_lone_value_with_keywords_on_other_kinds_of_proxy(kind):
     elif kind.startswith("mocked"):  # the mock gets the documented params
         options = {"spec": True} if kind == "mocked with spec" else {"return_value": "mocked"}
         with patch.object(tools, "call", **options) as mocked:
+            listed = [entry["callable"] for entry in tools.endpoint_directory()]
             proxies("tools/repeat", "ab", times=3)
+        assert listed == ["join", "repeat", "shout"]  # the mock is not an endpoint
         mocked.assert_called_once_with("repeat", {"text": "ab", "times": 3})
     elif kind in ("delegating", "bound elsewhere"):  # BaseProxy.call names the value
         other = Delegating(tools) if kind == "delegating" else SimpleNamespace(call=tools.call)
@@ -387,6 +389,49 @@ def test_a_lone_value_with_keywords_on_other_kinds_of_proxy(kind):
         proxies.proxies["other"] = MagicMock() if kind == "mock" else InstanceCall()
         with pytest.raises(TypeError, match=r"'other/anything': pass the params as a dict"):
             proxies("other/anything", "lone", b=2)
+
+
+def test_a_spied_tactic_endpoint_is_still_found_and_called():
+    proxies = tactic_tools()
+    tools = proxies.proxies["tools"]
+
+    with patch.object(tools, "repeat", wraps=tools.repeat) as spy:
+        assert proxies("tools/repeat", {"text": "ab", "times": 3}) == "ababab"
+
+    spy.assert_called_once()
+
+
+def test_a_spied_http_endpoint_still_sends_its_request(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as spy:
+        proxy.call("rates", {"base": "USD"})
+
+    spy.assert_called_once()
+    assert http == [
+        ("GET", "https://api.example.test/v1/rates", {"base": "USD", "apikey": "secret"})
+    ]
+
+
+def test_a_mock_with_real_endpoint_info_is_an_http_endpoint(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    proxy.mocked = MagicMock(  # its _lllm_tactic_endpoint is made up, not metadata
+        return_value={"base": "AUD"},
+        endpoint_info={
+            "category": "rates",
+            "endpoint": "mocked",
+            "description": "A mocked endpoint.",
+            "params": {"base": (str, "USD")},
+            "response": {},
+            "method": "GET",
+        },
+    )
+
+    proxy.call("mocked", {"base": "AUD"})
+
+    assert http == [
+        ("GET", "https://api.example.test/v1/mocked", {"base": "AUD", "apikey": "secret"})
+    ]
 
 
 def test_more_than_one_positional_param_is_an_error():
