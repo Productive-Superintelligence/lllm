@@ -93,4 +93,6 @@ def _standup_monday(request):
     for text in earlier:
         if "monday" in text.lower():
             return text.split(":", 1)[1].strip()
+    if len(request.messages) != 7:  # the system prompt and six recent ones
+        return f"I see {len(request.messages)} messages."
     return "I no longer see Monday's note in our conversation."

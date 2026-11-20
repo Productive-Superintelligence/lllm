@@ -1006,8 +1006,9 @@ class DefaultContextManager(ContextManager):
        ``[...earlier content truncated...]`` marker. Images and other
        non-text messages are never cut: an image that does not fit is
        dropped, with a warning.
-    5. A ``SAFETY_BUFFER`` (default 5 000 tokens) is subtracted from the
-       budget so the invoker never lands right at the edge.
+    5. A ``SAFETY_BUFFER`` (default 5 000 tokens, or a quarter of a budget
+       under 20 000) is subtracted from the budget, leaving room for the
+       reply, so the invoker never lands right at the edge.
 
     **Quickstart**::
 
@@ -1119,7 +1120,8 @@ class DefaultContextManager(ContextManager):
         max_tokens = self.max_tokens
         if max_tokens is None:  # unknown window: nothing to trim against
             return dialog
-        limit = max_tokens - self.SAFETY_BUFFER
+        # Room for the reply: SAFETY_BUFFER, or a quarter of a small budget.
+        limit = max_tokens - min(self.SAFETY_BUFFER, max_tokens // 4)
         raw_all = [self._to_raw(m) for m in messages]
 
         if self._count(raw_all) <= limit:

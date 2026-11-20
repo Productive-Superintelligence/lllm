@@ -323,6 +323,20 @@ def test_a_newest_tool_result_keeps_its_call():
     assert _roles(trimmed) == [Role.SYSTEM, Role.TOOL_CALL, Role.TOOL]
 
 
+def test_the_safety_buffer_is_5000_tokens_or_a_quarter_of_the_budget():
+    def trims(max_tokens: int, dialog: Dialog) -> bool:
+        manager = DefaultContextManager("gpt-4o-mini", max_tokens=max_tokens)
+        return manager(dialog) is not dialog
+
+    small = _dialog("word " * 700, "What now?")  # about 710 tokens
+    assert not trims(4_000, small)  # 3,000 left after 1,000 (a quarter)
+    assert trims(900, small)  # 675 left after 225
+
+    large = _dialog("word " * 15_500, "What now?")
+    assert trims(20_000, large)  # 15,000 left after 5,000
+    assert not trims(21_000, large)  # 16,000 left after 5,000
+
+
 # -- 4: a Pydantic config keeps its aliased ``global`` section ---------------
 
 
