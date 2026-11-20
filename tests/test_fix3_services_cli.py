@@ -2254,10 +2254,17 @@ def test_write_env_file_refuses_a_file_that_is_not_regular_once_open(
 
 
 def _help(command: str, monkeypatch, capsys) -> str:
-    """``lllm COMMAND --help`` on one line: argparse wraps to the terminal
-    width and breaks at hyphens, so the width is pinned first."""
+    """``lllm COMMAND --help`` on one line, as plain text.
+
+    argparse wraps to the terminal width and breaks at hyphens, so the width
+    is pinned; Python 3.14's argparse colors option names under FORCE_COLOR
+    even when the output is captured, so color is turned off.
+    """
 
     monkeypatch.setenv("COLUMNS", "1000")
+    monkeypatch.setenv("PYTHON_COLORS", "0")
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
     with pytest.raises(SystemExit):
         main([command, "--help"])
     return " ".join(capsys.readouterr().out.split())
