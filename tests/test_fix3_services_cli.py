@@ -2386,6 +2386,19 @@ def test_any_os_error_from_the_env_file_helpers_is_a_credential_error(tmp_path):
         check_env_file_writable(too_long)
 
 
+def test_a_rewrite_that_shortens_the_env_file_leaves_no_old_bytes(tmp_path):
+    from lllm.credentials import write_env_file
+
+    env_file = tmp_path / ".env.local"
+    env_file.write_text(
+        'FIX3_TEST_KEY="sk-a-much-longer-old-value"\nOTHER=1\n', encoding="utf-8"
+    )
+
+    write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+
+    assert env_file.read_text(encoding="utf-8") == 'FIX3_TEST_KEY="sk"\nOTHER=1\n'
+
+
 def test_an_existing_env_file_is_made_private_and_keeps_its_keys(tmp_path):
     from lllm.credentials import write_env_file
 
