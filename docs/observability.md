@@ -251,8 +251,9 @@ print(runs[1]["calls"])
    here with its `errors`, but not in the dialog, which keeps only the
    accepted exchange.
 3. A failing call raises as usual, and the observer still gets its session,
-   with `state="failure"`, the `error`, the full `error_traceback`, and the
-   agent calls that finished before the failure.
+   with `state="failure"`, the `error`, the full `error_traceback`, and
+   every agent call made before the failure, including one that failed,
+   with the replies it rejected.
 4. A saved dialog loads back as a `Dialog`, to review, fork, or replay.
 
 `tags` and `metadata` are passed per call, as in `tactic(task, tags={...},

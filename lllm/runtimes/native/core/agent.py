@@ -400,6 +400,8 @@ class Agent:
 
         Raises:
             ValueError: If the agent fails to produce a valid response after retries.
+            Whatever the call raises carries the call's ``AgentCallSession``
+            (its replies, repairs, and retries) as ``agent_session``.
         """
         session = AgentCallSession(
             agent_name=self.name,
@@ -407,6 +409,23 @@ class Agent:
             max_interrupt_steps=self.max_interrupt_steps,
             max_llm_recall=self.max_llm_recall,
         )
+        try:
+            return self._loop(session, dialog, metadata, args, parser_args)
+        except Exception as exc:
+            # Keep the failed call's record for whoever records sessions.
+            session.state = "failure"
+            exc.agent_session = session
+            raise
+
+    def _loop(
+        self,
+        session: AgentCallSession,
+        dialog: Dialog,
+        metadata: Optional[Dict[str, Any]],
+        args: Optional[Dict[str, Any]],
+        parser_args: Optional[Dict[str, Any]],
+    ) -> AgentCallSession:
+        """The agent loop of :meth:`_call`, recording into ``session``."""
         metadata = dict(metadata) if metadata else {}
         args = dict(args) if args else {}
         parser_args = dict(parser_args) if parser_args else {}

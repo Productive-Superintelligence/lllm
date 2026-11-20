@@ -159,7 +159,9 @@ for each kind of failure ([The agent loop](agents.md#the-agent-loop)):
   through the prompt's handler, up to `max_exception_retry` times.
 
 When a provider budget runs out, `respond()` raises the provider's
-exception; when repairs run out, it raises `AgentException`. Here the first
+exception; when repairs run out, it raises `AgentException`. Either way,
+the exception's `agent_session` holds the call's record, every reply and
+retry included, and a tactic's session keeps it too. Here the first
 request drops its connection:
 
 ```python title="recall.py"

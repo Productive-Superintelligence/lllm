@@ -64,13 +64,20 @@ class _TrackedAgent:
         parser_args: Optional[Dict[str, Any]] = None,
         return_session: bool = False,
     ) -> Any:
-        agent_session = self._agent.respond(
-            alias=alias,
-            metadata=metadata,
-            args=args,
-            parser_args=parser_args,
-            return_session=True,
-        )
+        try:
+            agent_session = self._agent.respond(
+                alias=alias,
+                metadata=metadata,
+                args=args,
+                parser_args=parser_args,
+                return_session=True,
+            )
+        except Exception as exc:
+            # A failed call is recorded too, with its rejected replies.
+            failed = getattr(exc, "agent_session", None)
+            if failed is not None:
+                self._session.record_agent_call(self._name, failed)
+            raise
         self._session.record_agent_call(self._name, agent_session)
 
         if return_session:

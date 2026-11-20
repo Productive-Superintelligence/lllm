@@ -1019,6 +1019,68 @@ def test_an_sdk_client_in_extra_settings_is_shared_cleanly():
     assert all(agent.extra_settings["client"] is client for agent in agents)
 
 
+# -- a failed agent call keeps its record ------------------------------------
+
+
+RATE = Prompt(path="fix/rate-reply", prompt="Rate 1-5: {review}", format=Rating)
+NOT_JSON = ["Four stars.", "Four stars, really."]
+
+
+def _replies(call: Any) -> list:
+    return [t.message.content for ts in call.invoke_traces.values() for t in ts]
+
+
+def test_a_failed_respond_carries_its_session():
+    from lllm.runtimes.native import AgentException
+
+    agent = Tactic.quick(
+        system_prompt="You rate reviews.", model="gpt-4o-mini", max_exception_retry=1
+    )
+    agent.open("rate")
+    agent.receive_prompt(RATE, {"review": "Fast shipping, crushed box."})
+    with ScriptedModel(NOT_JSON), pytest.raises(AgentException) as info:
+        agent.respond()
+
+    call = info.value.agent_session
+    assert (call.state, call.exception_retries_count) == ("failure", 1)
+    assert _replies(call) == NOT_JSON
+
+
+class Rate(Tactic):
+    name = "fix_rate"
+    agent_group = ["rater"]
+
+    def call(self, review: str) -> dict:
+        rater = self.agents["rater"]
+        rater.open("rate")
+        rater.receive_prompt(RATE, {"review": review})
+        return rater.respond().parsed
+
+
+def test_a_tactic_session_records_the_agent_call_that_failed():
+    from lllm.runtimes.native import AgentException
+
+    sessions = []
+
+    class Keep:
+        def on_tactic_failure(self, *, session, **_):
+            sessions.append(session)
+
+    rate = Rate(
+        {
+            "global": {"model_name": "gpt-4o-mini", "max_exception_retry": 1},
+            "agent_configs": [{"name": "rater", "system_prompt": "You rate."}],
+        },
+        observer=Keep(),
+    )
+    with ScriptedModel(NOT_JSON), pytest.raises(AgentException):
+        rate("Fast shipping, crushed box.")
+
+    (session,) = sessions
+    (call,) = session.agent_sessions["rater"]
+    assert (call.state, _replies(call)) == ("failure", NOT_JSON)
+
+
 # -- 9: context managers and stream handlers are exported -------------------
 
 
