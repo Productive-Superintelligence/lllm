@@ -1275,16 +1275,18 @@ def _nested(levels: int, wrap: Any) -> Any:
 
 
 @pytest.mark.parametrize(
-    "wrap", [lambda v: [v], lambda v: (v,)], ids=["lists", "tuples"]
+    "wrap",
+    [lambda v: [v], lambda v: (v,), lambda v: {0: v}],
+    ids=["lists", "tuples", "dicts"],
 )
 def test_extra_settings_too_deep_to_copy_raise_a_clear_error(wrap):
     from lllm.runtimes.native import AgentSpec
 
     message = "Agent 'writer': 'extra_settings' is nested more than 500 levels deep"
-    with pytest.raises(ValueError, match=message):  # not shared from some depth
-        deep = _nested(3_000, wrap)
+    with pytest.raises(ValueError, match=message):  # the same on every Python
+        deep = _nested(2_000, wrap)
         AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": deep}})
-    # Just under the bound it copies, one frame a level, down to the end.
+    # Just under the bound it copies, down to the end.
     shallow = _nested(490, wrap)
     spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": shallow}})
     original, copied = shallow, spec.extra_settings["d"]
@@ -1293,27 +1295,56 @@ def test_extra_settings_too_deep_to_copy_raise_a_clear_error(wrap):
     assert copied == ["end"] and copied is not original
 
 
-def test_settings_copied_under_a_deep_caller_raise_the_clear_error():
-    import sys
+def _levels_that_fit() -> int:
+    """How many nested class instantiations fit on the stack from here.
+
+    Class calls are how a deep caller stack hides depth on Python 3.10 and
+    3.11, where the C-level call counts toward the limit without a frame.
+    """
+    reached = [0]
+
+    class Descend:
+        def __init__(self) -> None:
+            reached[0] += 1
+            try:
+                Descend()
+            except RecursionError:
+                pass
+
+    Descend()
+    return reached[0]
+
+
+def test_settings_copy_fully_under_a_deep_caller_stack():
+    from collections import OrderedDict
 
     from lllm.runtimes.native import AgentSpec
 
-    def frames() -> int:
-        frame, count = sys._getframe(), 0
-        while frame is not None:
-            frame, count = frame.f_back, count + 1
-        return count
+    def mixed(levels: int) -> Any:  # lists and OrderedDicts, alternating
+        value: Any = ["end"]
+        for level in range(levels):
+            value = OrderedDict(v=value) if level % 2 else [value]
+        return value
 
-    def deep_caller(more: int) -> Any:
-        if more > 0:
-            return deep_caller(more - 1)
-        settings = {"d": _nested(40, lambda v: [v])}
-        return AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    class Deep:
+        def __init__(self, more: int, out: list) -> None:
+            if more:
+                Deep(more - 1, out)
+            else:
+                settings = {"d": mixed(200)}
+                config = {**WRITER, "extra_settings": settings}
+                out.append((settings, AgentSpec.from_config("writer", config)))
 
-    # About 60 frames left: too few to copy 40 levels without running out.
-    more = sys.getrecursionlimit() - 60 - frames()
-    with pytest.raises(ValueError, match=r"is nested more than \d+ levels deep"):
-        deep_caller(more)
+    out: list = []
+    Deep(_levels_that_fit() - 60, out)  # a few dozen levels left: no room
+    (settings, spec), = out  # for a recursive copy of 200 levels
+
+    original, copied = settings["d"], spec.extra_settings["d"]
+    for level in reversed(range(200)):  # nothing below is shared
+        assert copied is not original and type(copied) is type(original)
+        index = "v" if level % 2 else 0
+        original, copied = original[index], copied[index]
+    assert copied == ["end"] and copied is not original
 
 
 class CopiesFail(dict):
@@ -1433,6 +1464,70 @@ def test_read_only_lists_and_sets_are_shared_too():
     copied = spec.build(Runtime(), object()).extra_settings
 
     assert copied["list"] is frozen_list and copied["set"] is frozen_set
+
+
+class ReadOnlySet(set):
+    """A set whose copies reject every change."""
+
+    frozen = False
+
+    def __copy__(self):
+        twin = ReadOnlySet(self)
+        twin.frozen = True
+        return twin
+
+    def _check(self) -> None:
+        if self.frozen:
+            raise TypeError("read-only")
+
+    def add(self, item):
+        self._check()
+        super().add(item)
+
+    def discard(self, item):
+        self._check()
+        super().discard(item)
+
+    def clear(self):
+        self._check()
+        super().clear()
+
+    def update(self, *others):
+        self._check()
+        super().update(*others)
+
+
+def test_an_empty_read_only_set_is_copied_without_a_fill_in():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    empty = ReadOnlySet()  # nothing to probe, and nothing to fill in
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"e": empty}})
+    copied = spec.build(Runtime(), object()).extra_settings["e"]
+
+    assert type(copied) is ReadOnlySet and copied == set() and copied is not empty
+
+
+class Tags(list):
+    pass
+
+
+class Labels(set):
+    pass
+
+
+def test_writable_list_and_set_subclasses_are_copied_per_agent():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    tags, labels = Tags(["a"]), Labels({"b"})
+    settings = {"tags": tags, "labels": labels}
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    first, second = (spec.build(Runtime(), object()).extra_settings for _ in range(2))
+
+    assert type(first["tags"]) is Tags and type(first["labels"]) is Labels
+    first["tags"].append("x")
+    first["labels"].add("y")
+    for owner in (second, spec.extra_settings, settings):
+        assert owner["tags"] == ["a"] and owner["labels"] == {"b"}
 
 
 class SelfCopies(dict):

@@ -10,7 +10,6 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import logging
-import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -545,50 +544,31 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
-#: How deep ``extra_settings`` may nest: well below Python's recursion
-#: limit, and less when the caller's stack is already deep.
+#: How deep ``extra_settings`` may nest. The copy is iterative, so this is
+#: a policy, the same on every Python and from any caller's stack.
 _SETTINGS_DEPTH = 500
-#: Frames left free under the recursion limit for what one level calls
-#: (copy.copy, a container's own __copy__ or __setitem__).
-_STACK_MARGIN = 50
 
 
 class _TooDeep(Exception):
-    """``extra_settings`` nested more levels than the copy may enter."""
+    """``extra_settings`` nested more than ``_SETTINGS_DEPTH`` levels."""
 
 
 def _agent_settings(settings: Any, name: str) -> Any:
-    """An agent's ``extra_settings``: {} for None, else its own copy.
-
-    The copy recurses once per level, so it enters at most
-    ``_SETTINGS_DEPTH`` levels, or fewer when the caller's stack leaves
-    less room under Python's recursion limit; deeper settings raise
-    ValueError, never a RecursionError halfway.
-    """
-    room = sys.getrecursionlimit() - _stack_depth() - _STACK_MARGIN
-    levels = max(0, min(_SETTINGS_DEPTH, room))
+    """An agent's ``extra_settings``: {} for None, else its own copy."""
     try:
         if settings is None:
             return {}
         if isinstance(settings, Mapping):
-            return _copy_settings(settings, levels)
-        return _settings_copy(settings, {}, levels + 1)
+            return _copy_settings(settings)
+        return _settings_copy(settings, {}, _SETTINGS_DEPTH + 1)
     except _TooDeep:
         raise ValueError(
             f"Agent '{name}': 'extra_settings' is nested more than "
-            f"{levels} levels deep"
+            f"{_SETTINGS_DEPTH} levels deep"
         ) from None
 
 
-def _stack_depth() -> int:
-    """The number of Python frames on the stack."""
-    frame, depth = sys._getframe(), 0
-    while frame is not None:
-        frame, depth = frame.f_back, depth + 1
-    return depth
-
-
-def _copy_settings(settings: Mapping, levels: int) -> Dict[str, Any]:
+def _copy_settings(settings: Mapping) -> Dict[str, Any]:
     """``extra_settings`` as a dict of its own, through ``_settings_copy``.
 
     The top-level mapping goes through the same memo, so a value that
@@ -598,7 +578,7 @@ def _copy_settings(settings: Mapping, levels: int) -> Dict[str, Any]:
     memo: Dict[int, Any] = {}
     _memoize(memo, settings, copied)
     for key, item in settings.items():
-        copied[key] = _settings_copy(item, memo, levels)
+        copied[key] = _settings_copy(item, memo, _SETTINGS_DEPTH)
     return copied
 
 
@@ -614,40 +594,89 @@ def _memoize(memo: Dict[int, Any], original: Any, copied: Any) -> None:
 def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
     """Copy containers, share everything else.
 
-    Dicts, lists, and sets are copied recursively, subclasses included (a
-    Counter, a defaultdict with its factory), and so are plain tuples and
+    Dicts, lists, and sets are copied all the way down, subclasses included
+    (a Counter, a defaultdict with its factory), and so are plain tuples and
     namedtuples, so each agent can change its own. As in ``deepcopy``, a
     container met twice is copied once, so shared parts stay shared and
     cycles end. Strings, numbers, booleans, and None need no copy. Any
     other object (a lock, a client, a connection, a ``struct_time``), a
     subclass container that cannot be copied, and a read-only one are
-    shared as is, never deep-copied. An empty container counts as
-    writable, having nothing to probe, so an empty read-only one is
-    copied, not shared. ``room`` is how many container levels may still be
-    entered: a container met with none left raises ``_TooDeep``. An error
-    from a child propagates at any depth.
+    shared as is, never deep-copied. A container whose copy is itself is
+    shared, empty or not; an empty one whose copy is a new object counts
+    as writable, having nothing to probe, so it is copied.
+
+    The walk is iterative, with an explicit work stack, so it takes no
+    stack depth and behaves alike under any caller and on any Python. It
+    visits depth first, as a recursive copy would: a dict, list, or set is
+    copied and remembered before its children, a tuple rebuilt after them.
+    ``room`` is how many container levels may still be entered; a
+    container met with none left raises ``_TooDeep``. An error from a
+    child propagates at any depth.
     """
-    if id(value) in memo:
-        return memo[id(value)]
-    if not isinstance(value, (dict, list, set, tuple)):
-        return value
-    if room < 1:
-        raise _TooDeep()
-    if isinstance(value, tuple):
-        make = getattr(value, "_make", None)  # a namedtuple
-        if type(value) is not tuple and make is None:
-            return value  # e.g. a struct_time, whose hidden fields a rebuild loses
-        items = []
-        for item in value:  # a loop: one Python frame per level
-            items.append(_settings_copy(item, memo, room - 1))
-        if id(value) in memo:  # a cycle through the items copied it already
-            return memo[id(value)]
-        result = make(items) if make else tuple(items)
-        _memoize(memo, value, result)
-        return result
+    holder: List[Any] = [None]
+    stack: List[Tuple[Any, ...]] = [("visit", value, room, holder, 0)]
+    while stack:
+        step = stack.pop()
+        if step[0] == "visit":
+            _, value, room, target, key = step
+            if id(value) in memo:
+                target[key] = memo[id(value)]
+            elif not isinstance(value, (dict, list, set, tuple)):
+                target[key] = value
+            elif room < 1:
+                raise _TooDeep()
+            elif isinstance(value, tuple):
+                make = getattr(value, "_make", None)  # a namedtuple
+                if type(value) is not tuple and make is None:
+                    target[key] = value  # a struct_time: a rebuild loses fields
+                else:  # rebuilt once its items are copied
+                    items: List[Any] = [None] * len(value)
+                    stack.append(("tuple", value, make, items, target, key))
+                    _push_children(stack, enumerate(value), room - 1, items)
+            else:
+                result = _container_copy(value, memo)
+                if result is value:  # shared
+                    target[key] = value
+                elif isinstance(value, set):
+                    children = list(value)
+                    items = [None] * len(children)
+                    stack.append(("set", result, items, target, key))
+                    _push_children(stack, enumerate(children), room - 1, items)
+                else:
+                    stack.append(("done", result, target, key))
+                    pairs = value.items() if isinstance(value, dict) else enumerate(value)
+                    _push_children(stack, pairs, room - 1, result)
+        elif step[0] == "done":
+            _, result, target, key = step
+            target[key] = result
+        elif step[0] == "set":
+            _, result, items, target, key = step
+            if items:  # an empty copy is left alone: it may be read-only
+                result.clear()
+                result.update(items)
+            target[key] = result
+        else:  # "tuple"
+            _, value, make, items, target, key = step
+            if id(value) in memo:  # a cycle through its items copied it already
+                target[key] = memo[id(value)]
+            else:
+                result = make(items) if make else tuple(items)
+                _memoize(memo, value, result)
+                target[key] = result
+    return holder[0]
+
+
+def _push_children(stack: list, pairs: Any, room: int, target: Any) -> None:
+    """Queue a container's children for the walk, to be copied in order."""
+    for key, item in reversed(list(pairs)):
+        stack.append(("visit", item, room, target, key))
+
+
+def _container_copy(value: Any, memo: Dict[int, Any]) -> Any:
+    """A fresh copy of a dict, list, or set, remembered before its children
+    are copied, or ``value`` itself, remembered too, when it is shared."""
     if type(value) in (dict, list, set):
-        # Cannot fail or recurse: a RecursionError is a real one, and rises.
-        result = value.copy()
+        result = value.copy()  # cannot fail: an error here is a real one
     else:
         try:
             result = copy.copy(value)  # keeps the type, a defaultdict's factory
@@ -658,26 +687,15 @@ def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
             _memoize(memo, value, value)
             return value
     _memoize(memo, value, result)  # before the children, so cycles end
-    if isinstance(value, dict):
-        for key, item in value.items():
-            result[key] = _settings_copy(item, memo, room - 1)
-    elif isinstance(value, list):
-        for index, item in enumerate(value):
-            result[index] = _settings_copy(item, memo, room - 1)
-    else:
-        items = []
-        for item in value:
-            items.append(_settings_copy(item, memo, room - 1))
-        result.clear()
-        result.update(items)
     return result
 
 
 def _writable(copied: Any) -> bool:
     """Whether a fresh copy of a dict, list, or set takes writes, tried by
     storing one entry back as it is (a dict's first key, a list's first
-    item, or one item of a set), before any child is copied. An empty
-    container counts as writable: there is nothing to probe."""
+    item, or one item of a set), before any child is copied. An empty copy
+    counts as writable, there being nothing to probe; a container whose
+    copy is itself is shared before this is asked, empty or not."""
     try:
         if isinstance(copied, dict):
             for key in copied:
