@@ -132,7 +132,7 @@ def _config_get(config: Any, key: str, default: Any = None) -> Any:
     if isinstance(config, Mapping):
         return config.get(key, default)
     if isinstance(config, BaseModel):
-        return getattr(config, key, default)
+        return _model_config_data(config).get(key, default)
     return default
 
 
@@ -140,10 +140,57 @@ def _config_as_mapping(config: Any, label: str) -> Dict[str, Any]:
     if isinstance(config, Mapping):
         return dict(config)
     if isinstance(config, BaseModel):
-        # By alias: ``global`` is a Python keyword, so a model field for it
-        # needs an alias (``global_: dict = Field(alias="global")``).
-        return config.model_dump(by_alias=True)
+        return _model_config_data(config)
     raise TypeError(f"{label} must be a mapping or Pydantic BaseModel.")
+
+
+def _model_config_data(config: BaseModel) -> Dict[str, Any]:
+    """A Pydantic config as the dict a config file would give.
+
+    Fields are read by name, so aliases (an alias generator's camelCase,
+    say) only shape the input. ``global`` is a Python keyword, so the field
+    aliased ``global`` (its alias, serialization alias, or validation
+    alias) becomes the ``global`` section. A field left unset at None, at
+    any depth, is left out: it means "not given", so ``global`` and the
+    defaults apply, while a None that was set is kept.
+    """
+    data = config.model_dump()
+    _drop_unset_none(config, data)
+    for name, field in type(config).model_fields.items():
+        if name in data and "global" in _field_aliases(field):
+            data["global"] = data.pop(name)
+    return data
+
+
+def _field_aliases(field: Any) -> set:
+    names = {field.alias, field.serialization_alias}
+    validation = field.validation_alias
+    names.update(
+        choice
+        for choice in getattr(validation, "choices", [validation])
+        if isinstance(choice, str)
+    )
+    return names
+
+
+def _drop_unset_none(value: Any, data: Any) -> None:
+    """Remove fields left unset at None from ``data``, ``value``'s dump."""
+    if isinstance(value, BaseModel) and isinstance(data, dict):
+        for name in type(value).model_fields:
+            if name not in data:
+                continue
+            item = getattr(value, name)
+            if item is None and name not in value.model_fields_set:
+                del data[name]
+            else:
+                _drop_unset_none(item, data[name])
+    elif isinstance(value, (list, tuple)) and isinstance(data, (list, tuple)):
+        for item, item_data in zip(value, data):
+            _drop_unset_none(item, item_data)
+    elif isinstance(value, Mapping) and isinstance(data, dict):
+        for key, item in value.items():
+            if key in data:
+                _drop_unset_none(item, data[key])
 
 
 def _task_to_string(task: Any) -> str:

@@ -2,10 +2,10 @@
 
 import base64
 import json
-from typing import Any, Dict, List, Literal
+from typing import Any, Dict, List, Literal, Optional
 
 import pytest
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field
 
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
@@ -374,6 +374,115 @@ def test_pydantic_config_keeps_its_global_section():
     assert (echo.model, echo.max_llm_recall) == ("gpt-4o-mini", 2)
     with ScriptedModel(["hello"]):
         assert tactic("hello") == "hello"
+
+
+GLOBAL = {"model_name": "gpt-4o-mini", "max_llm_recall": 2}
+
+
+def test_a_config_with_an_alias_generator_is_read_by_field_name():
+    from pydantic.alias_generators import to_camel
+
+    camel = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
+    class CamelEntry(BaseModel):
+        model_config = camel
+        name: str
+        system_prompt: str
+
+    class CamelConfig(BaseModel):
+        model_config = camel
+        global_: Dict[str, Any] = Field(default_factory=dict, alias="global")
+        agent_configs: List[CamelEntry]
+
+    config = CamelConfig.model_validate(
+        {
+            "global": GLOBAL,
+            "agentConfigs": [{"name": "echo", "systemPrompt": "You echo."}],
+        }
+    )
+    echo = Echo(config).agents["echo"]
+    assert (echo.model, echo.max_llm_recall, echo.system_prompt.prompt) == (
+        "gpt-4o-mini",
+        2,
+        "You echo.",
+    )
+
+
+@pytest.mark.parametrize(
+    "alias",
+    [{"validation_alias": "global"}, {"validation_alias": AliasChoices("defaults", "global")}],
+    ids=["validation_alias", "alias_choices"],
+)
+def test_the_field_validated_from_global_is_the_global_section(alias):
+    class Config(BaseModel):
+        global_: Dict[str, Any] = Field(default_factory=dict, **alias)
+        agent_configs: List[AgentEntry]
+
+    config = Config.model_validate(
+        {"global": GLOBAL, "agent_configs": [{"name": "echo", "system_prompt": "Hi."}]}
+    )
+    echo = Echo(config).agents["echo"]
+    assert (echo.model, echo.max_llm_recall) == ("gpt-4o-mini", 2)
+
+
+class TrimSettings(BaseModel):
+    type: Optional[str] = "default"
+    max_tokens: Optional[int] = None
+
+
+class TeamEntry(BaseModel):
+    name: str
+    system_prompt: str
+    model_name: Optional[str] = None
+    context_manager: Optional[TrimSettings] = None
+
+
+class TeamConfig(BaseModel):
+    global_: Dict[str, Any] = Field(default_factory=dict, alias="global")
+    agent_configs: List[TeamEntry]
+    max_workers: Optional[int] = None
+
+
+class Team(Tactic):
+    name = "fix_team"
+    agent_group = ["writer", "editor", "archivist"]
+
+
+def test_unset_none_fields_fall_back_to_global_and_set_ones_apply():
+    config = TeamConfig.model_validate(
+        {
+            "global": {
+                "model_name": "gpt-4o-mini",
+                "context_manager": {"max_tokens": 64_000},
+            },
+            "agent_configs": [
+                {"name": "writer", "system_prompt": "You write."},
+                {
+                    "name": "editor",
+                    "system_prompt": "You edit.",
+                    "model_name": "gpt-4o",
+                    "context_manager": {"max_tokens": 9_000},
+                },
+                {
+                    "name": "archivist",
+                    "system_prompt": "You keep everything.",
+                    "context_manager": {"type": None},  # set: no trimming
+                },
+            ],
+        }
+    )
+    team = Team(config)
+    writer, editor, archivist = (
+        team.agents[name] for name in ("writer", "editor", "archivist")
+    )
+
+    assert (writer.model, writer.context_manager.max_tokens) == (
+        "gpt-4o-mini",
+        64_000,
+    )
+    assert (editor.model, editor.context_manager.max_tokens) == ("gpt-4o", 9_000)
+    assert (archivist.model, archivist.context_manager) == ("gpt-4o-mini", None)
+    assert team._max_workers == 4  # unset, so the default
 
 
 # -- 5: ``format=`` validates the reply against the model --------------------

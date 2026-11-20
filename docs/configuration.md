@@ -2,8 +2,9 @@
 
 A tactic's agents are described by a config: the model each agent uses, its
 system prompt, its settings and tools, and how many retries it gets. The
-config is data, a dict or a YAML file, so you can review, diff, and swap the
-shape of a system without touching the program that runs it.
+config is data, a dict or a YAML file (or a
+[Pydantic model](#configs-as-pydantic-models)), so you can review, diff,
+and swap the shape of a system without touching the program that runs it.
 
 ```python title="release_notes.py"
 from lllm import Tactic
@@ -126,6 +127,64 @@ agent_configs:
 Anything else at the top level is yours. The tactic keeps the whole config
 as `self.config`, so `call()` can read a rubric, a word limit, or a list of
 sources from it.
+
+## Configs as Pydantic models
+
+A config can also be a Pydantic model, which checks it before the tactic
+is built. The tactic reads the model as it would read the same dict:
+
+```python title="typed_config.py"
+from typing import Optional
+
+from pydantic import BaseModel, Field
+
+from lllm import Tactic
+
+
+class AgentEntry(BaseModel):
+    name: str
+    system_prompt: str
+    model_name: Optional[str] = None  # (1)!
+
+
+class TeamConfig(BaseModel):
+    global_: dict = Field(default_factory=dict, alias="global")  # (2)!
+    agent_configs: list[AgentEntry]
+
+
+class Team(Tactic):
+    name = "team"
+    agent_group = ["writer", "editor"]
+
+
+config = TeamConfig.model_validate(
+    {
+        "global": {"model_name": "gpt-4o-mini"},
+        "agent_configs": [
+            {"name": "writer", "system_prompt": "You write."},
+            {
+                "name": "editor",
+                "system_prompt": "You edit.",
+                "model_name": "gpt-4o",
+            },
+        ],
+    }
+)
+team = Team(config)
+print({name: agent.model for name, agent in team.agents.items()})
+#> {'writer': 'gpt-4o-mini', 'editor': 'gpt-4o'}
+```
+
+1. A field left unset at `None` counts as not given, at any depth, so the
+   writer gets its model from `global`. A value that was set is used, even
+   `None`: `context_manager={"type": None}` turns trimming off.
+2. `global` is a Python keyword, so the field gets another name and
+   `global` as its alias (a `validation_alias` works too). That field
+   becomes the `global` section.
+
+Every other field is read by its name, so an alias generator such as
+`to_camel` only changes how the input is spelled: `agent_configs` reaches
+the tactic as `agent_configs`. `self.config` is the model itself.
 
 ## Configs in a project
 
