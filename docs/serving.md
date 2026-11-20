@@ -98,7 +98,8 @@ path such as `triage.py:triage` does not import.
 | Attribute | `lllm serve` |
 | --- | --- |
 | A tactic, or a `Tactic` subclass | Serves it; a class is built with no arguments |
-| A function with no parameters | Calls it once at startup and serves the tactic it returns |
+| A FastAPI or Starlette app | Serves the app as it is |
+| A function with no parameters | Calls it once at startup and serves the tactic or app it returns |
 | Any other function, or an object with `run` | Calls it once per request; its annotations become the schemas |
 
 A factory is how you serve a tactic that needs setup, such as loading a
@@ -109,11 +110,13 @@ package and building the tactic from its config, which is what
 `lllm inspect triage:triage` prints the contract without starting
 anything; `--json` adds the schemas and custom endpoints.
 
-A `module:attribute` target must be a tactic, not an app. To serve your
-own app, or to pick the server and its settings yourself, put
-`app = create_tactic_app(triage)` in a module and run it with any ASGI
-server, such as `uvicorn app:app`. The app's title and description come
-from the tactic unless you pass `title=` and `description=`.
+An app target is how you serve your own app, such as
+`app = create_tactic_app(triage)` with middleware or routes you added:
+`lllm serve app:app` runs it unchanged, and `lllm inspect app:app` lists
+its routes. To pick the server and its settings yourself, run the app
+with any ASGI server, such as `uvicorn app:app`. The app's title and
+description come from the tactic unless you pass `title=` and
+`description=`.
 
 ## Endpoints and envelopes
 

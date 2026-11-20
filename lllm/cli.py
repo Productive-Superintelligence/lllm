@@ -147,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
 
     inspect_cmd = subcommands.add_parser(
         "inspect",
-        help="Show tactic metadata, or what serve would launch for a package",
+        help="Show tactic metadata, or what serve would launch for an app or package",
     )
     inspect_cmd.add_argument("target", help="module:attribute entrypoint or package path")
     inspect_cmd.add_argument("--json", action="store_true", help="Emit JSON")
@@ -155,7 +155,7 @@ def main(argv: list[str] | None = None) -> int:
 
     serve_cmd = subcommands.add_parser(
         "serve",
-        help="Serve a tactic entrypoint or one package resource over FastAPI",
+        help="Serve a tactic or app entrypoint, or one package resource",
     )
     serve_cmd.add_argument("target", help="module:attribute entrypoint or package path")
     serve_cmd.add_argument("--host", default="127.0.0.1")
@@ -231,7 +231,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "inspect":
         if _is_package_target(args.target):
             return _inspect_package(parser, args)
-        tactic = _load_cli_tactic(parser, args.target)
+        tactic = _load_cli_entrypoint(parser, args.target)
+        if not isinstance(tactic, Tactic):
+            return _inspect_app(args, tactic)
         resource = tactic_resource(tactic)
         if args.json:
             print(json.dumps(resource, indent=2, sort_keys=True))
@@ -255,7 +257,9 @@ def main(argv: list[str] | None = None) -> int:
             launched = _load_launch_app(parser, args)
             app, port = launched.app, port or launched.port
         else:
-            app = create_tactic_app(_load_cli_tactic(parser, args.target))
+            app = _load_cli_entrypoint(parser, args.target)
+            if isinstance(app, Tactic):
+                app = create_tactic_app(app)
             port = port or DEFAULT_SERVE_PORT
 
         import uvicorn
@@ -391,6 +395,24 @@ def _inspect_package(parser: argparse.ArgumentParser, args: Any) -> int:
             description = status.requirement.description
             detail = f" - {description}" if description else ""
             print(f"  {status.requirement.name}: {marker}{detail}")
+    for route in payload["routes"]:
+        print(route)
+    return 0
+
+
+def _inspect_app(args: Any, app: Any) -> int:
+    payload = {
+        "label": args.target,
+        "kind": "app",
+        "app": type(app).__name__,
+        "port": DEFAULT_SERVE_PORT,
+        "routes": _route_paths(app),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    print(f"{payload['label']} ({payload['app']} app)")
+    print(f"port: {payload['port']}")
     for route in payload["routes"]:
         print(route)
     return 0
@@ -554,8 +576,26 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
     """Load a tactic from ``module:attribute``.
 
     Factories are called with no arguments. Plain callables are wrapped as
-    ``CallableTactic`` unless they already return a ``Tactic``.
+    ``CallableTactic`` unless they already return a ``Tactic``. A FastAPI or
+    Starlette app, or a factory that returns one, raises ``TypeError``.
     """
+
+    target = _load_entrypoint(entrypoint)
+    if not isinstance(target, Tactic):
+        raise TypeError(f"Entrypoint names an ASGI app, not a tactic: {entrypoint}")
+    return target
+
+
+def _load_entrypoint(entrypoint: str) -> Any:
+    """Load ``module:attribute`` as a FastAPI or Starlette app, or a tactic.
+
+    An app, or a factory that returns one, is returned as it is; anything
+    else becomes a tactic as :func:`coerce_tactic` makes one. A factory is
+    called once.
+    """
+
+    from .launch import _is_asgi_app
+    from .runtimes.python import _factory_result_tactic, _is_factory
 
     if (
         not isinstance(entrypoint, str)
@@ -575,16 +615,26 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
     for part in attr_path.split("."):
         value = getattr(value, part)
     try:
-        return coerce_tactic(value)
+        if _is_asgi_app(value):
+            return value
+        if not _is_factory(value):
+            return coerce_tactic(value)
+        produced = value()
+        if _is_asgi_app(produced):
+            return produced
+        tactic = _factory_result_tactic(produced, None)
+        if tactic is None:
+            raise TypeError(f"{entrypoint} returned {type(produced).__name__}")
+        return tactic
     except TypeError as exc:
         raise TypeError(
-            f"Entrypoint did not resolve to a tactic or callable: {entrypoint}"
+            f"Entrypoint did not resolve to a tactic, callable, or app: {entrypoint}"
         ) from exc
 
 
-def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic[Any, Any]:
+def _load_cli_entrypoint(parser: argparse.ArgumentParser, entrypoint: str) -> Any:
     try:
-        return load_tactic_entrypoint(entrypoint)
+        return _load_entrypoint(entrypoint)
     except (AttributeError, ImportError, TypeError, ValueError) as exc:
         parser.error(str(exc))
         raise

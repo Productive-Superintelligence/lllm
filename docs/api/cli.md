@@ -69,6 +69,7 @@ available.
 
 ```bash
 lllm inspect tactics:Shout --json  # name, schemas, capabilities, endpoints
+lllm inspect app:app               # an app's port and routes
 lllm inspect ./briefs              # resource, port, routes, key status
 ```
 
@@ -94,9 +95,10 @@ lllm serve ./briefs --resource services.api
 | `--skip-key-check` | off | Start without checking declared keys |
 
 An entrypoint names a tactic class or instance, a factory, an object with a
-`run` method, or a handler function. A resource that cannot be launched, or a
-service entry that fails to import or build, stops with an error that names
-the cause. See [Serving](../serving.md).
+`run` method, a handler function, or a FastAPI or Starlette app (or a factory
+that returns one), which is served as it is. A resource that cannot be
+launched, or a service entry that fails to import or build, stops with an
+error that names the cause. See [Serving](../serving.md).
 
 ## `lllm hub`
 
