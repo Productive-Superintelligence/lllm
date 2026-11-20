@@ -1267,22 +1267,76 @@ def _reaches(root: Any, target: Any) -> bool:
     return False
 
 
-def test_extra_settings_too_deep_to_copy_raise_a_clear_error():
-    from lllm.runtimes.native import AgentSpec
+def _nested(levels: int, wrap: Any) -> Any:
+    value: Any = ["end"]
+    for _ in range(levels):
+        value = wrap(value)
+    return value
 
-    def nested(levels: int) -> list:
-        value: list = []
-        for _ in range(levels):
-            value = [value]
-        return value
+
+@pytest.mark.parametrize(
+    "wrap", [lambda v: [v], lambda v: (v,)], ids=["lists", "tuples"]
+)
+def test_extra_settings_too_deep_to_copy_raise_a_clear_error(wrap):
+    from lllm.runtimes.native import AgentSpec
 
     message = "Agent 'writer': 'extra_settings' is nested more than 500 levels deep"
     with pytest.raises(ValueError, match=message):  # not shared from some depth
-        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": nested(3_000)}})
-    # Just under the bound it copies, well inside Python's recursion limit.
-    shallow = nested(490)
+        deep = _nested(3_000, wrap)
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": deep}})
+    # Just under the bound it copies, one frame a level, down to the end.
+    shallow = _nested(490, wrap)
     spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"d": shallow}})
-    assert spec.extra_settings["d"] is not shallow
+    original, copied = shallow, spec.extra_settings["d"]
+    for _ in range(490):
+        original, copied = original[0], copied[0]
+    assert copied == ["end"] and copied is not original
+
+
+def test_settings_copied_under_a_deep_caller_raise_the_clear_error():
+    import sys
+
+    from lllm.runtimes.native import AgentSpec
+
+    def frames() -> int:
+        frame, count = sys._getframe(), 0
+        while frame is not None:
+            frame, count = frame.f_back, count + 1
+        return count
+
+    def deep_caller(more: int) -> Any:
+        if more > 0:
+            return deep_caller(more - 1)
+        settings = {"d": _nested(40, lambda v: [v])}
+        return AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+
+    # About 60 frames left: too few to copy 40 levels without running out.
+    more = sys.getrecursionlimit() - 60 - frames()
+    with pytest.raises(ValueError, match=r"is nested more than \d+ levels deep"):
+        deep_caller(more)
+
+
+class CopiesFail(dict):
+    """A container that cannot be copied, counting the attempts."""
+
+    attempts = 0
+
+    def __copy__(self):
+        CopiesFail.attempts += 1
+        raise TypeError("cannot be copied")
+
+
+def test_a_container_that_cannot_be_copied_is_tried_once_per_copy():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    shared = CopiesFail(a=1)
+    settings = {"x": shared, "y": shared, "z": [shared]}
+    CopiesFail.attempts = 0
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    assert CopiesFail.attempts == 1
+    copied = spec.build(Runtime(), object()).extra_settings
+    assert CopiesFail.attempts == 2  # once more, for the agent's own copy
+    assert copied["x"] is shared and copied["z"][0] is shared
 
 
 class Settings(dict):
@@ -1331,6 +1385,54 @@ class FrozenCopies(dict):
         if self.frozen:
             raise TypeError("frozen")
         super().__setitem__(key, value)
+
+
+class FrozenListCopies(list):
+    """A list whose copies are frozen."""
+
+    frozen = False
+
+    def __copy__(self):
+        twin = FrozenListCopies(self)
+        twin.frozen = True
+        return twin
+
+    def __setitem__(self, index, value):
+        if self.frozen:
+            raise TypeError("frozen")
+        super().__setitem__(index, value)
+
+
+class FrozenSetCopies(set):
+    """A set whose copies are frozen (clear and update still work)."""
+
+    frozen = False
+
+    def __copy__(self):
+        twin = FrozenSetCopies(self)
+        twin.frozen = True
+        return twin
+
+    def add(self, item):
+        if self.frozen:
+            raise TypeError("frozen")
+        super().add(item)
+
+    def discard(self, item):
+        if self.frozen:
+            raise TypeError("frozen")
+        super().discard(item)
+
+
+def test_read_only_lists_and_sets_are_shared_too():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    frozen_list, frozen_set = FrozenListCopies([["a"]]), FrozenSetCopies({"b"})
+    settings = {"list": frozen_list, "set": frozen_set}
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    copied = spec.build(Runtime(), object()).extra_settings
+
+    assert copied["list"] is frozen_list and copied["set"] is frozen_set
 
 
 class SelfCopies(dict):
@@ -1387,7 +1489,7 @@ class Unlistable(dict):
 
 
 @pytest.mark.parametrize("depth", [1, 2])
-def test_a_child_that_cannot_be_copied_fails_alike_at_any_depth(depth):
+def test_a_container_whose_items_cannot_be_listed_fails_alike_at_any_depth(depth):
     from lllm.runtimes.native import AgentSpec
 
     value: Any = Unlistable(a=1)

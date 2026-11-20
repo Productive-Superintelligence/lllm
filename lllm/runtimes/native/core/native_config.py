@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import logging
+import sys
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -544,30 +545,50 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
-#: How deep ``extra_settings`` may nest: well below Python's recursion limit.
+#: How deep ``extra_settings`` may nest: well below Python's recursion
+#: limit, and less when the caller's stack is already deep.
 _SETTINGS_DEPTH = 500
+#: Frames left free under the recursion limit for what one level calls
+#: (copy.copy, a container's own __copy__ or __setitem__).
+_STACK_MARGIN = 50
 
 
 class _TooDeep(Exception):
-    """``extra_settings`` nested more than ``_SETTINGS_DEPTH`` levels."""
+    """``extra_settings`` nested more levels than the copy may enter."""
 
 
 def _agent_settings(settings: Any, name: str) -> Any:
-    """An agent's ``extra_settings``: {} for None, else its own copy."""
+    """An agent's ``extra_settings``: {} for None, else its own copy.
+
+    The copy recurses once per level, so it enters at most
+    ``_SETTINGS_DEPTH`` levels, or fewer when the caller's stack leaves
+    less room under Python's recursion limit; deeper settings raise
+    ValueError, never a RecursionError halfway.
+    """
+    room = sys.getrecursionlimit() - _stack_depth() - _STACK_MARGIN
+    levels = max(0, min(_SETTINGS_DEPTH, room))
     try:
         if settings is None:
             return {}
         if isinstance(settings, Mapping):
-            return _copy_settings(settings)
-        return _settings_copy(settings, {}, 0)
+            return _copy_settings(settings, levels)
+        return _settings_copy(settings, {}, levels + 1)
     except _TooDeep:
         raise ValueError(
             f"Agent '{name}': 'extra_settings' is nested more than "
-            f"{_SETTINGS_DEPTH} levels deep"
+            f"{levels} levels deep"
         ) from None
 
 
-def _copy_settings(settings: Mapping) -> Dict[str, Any]:
+def _stack_depth() -> int:
+    """The number of Python frames on the stack."""
+    frame, depth = sys._getframe(), 0
+    while frame is not None:
+        frame, depth = frame.f_back, depth + 1
+    return depth
+
+
+def _copy_settings(settings: Mapping, levels: int) -> Dict[str, Any]:
     """``extra_settings`` as a dict of its own, through ``_settings_copy``.
 
     The top-level mapping goes through the same memo, so a value that
@@ -577,7 +598,7 @@ def _copy_settings(settings: Mapping) -> Dict[str, Any]:
     memo: Dict[int, Any] = {}
     _memoize(memo, settings, copied)
     for key, item in settings.items():
-        copied[key] = _settings_copy(item, memo, 1)
+        copied[key] = _settings_copy(item, memo, levels)
     return copied
 
 
@@ -590,7 +611,7 @@ def _memoize(memo: Dict[int, Any], original: Any, copied: Any) -> None:
     memo.setdefault(id(memo), []).append(original)
 
 
-def _settings_copy(value: Any, memo: Dict[int, Any], depth: int) -> Any:
+def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
     """Copy containers, share everything else.
 
     Dicts, lists, and sets are copied recursively, subclasses included (a
@@ -599,15 +620,18 @@ def _settings_copy(value: Any, memo: Dict[int, Any], depth: int) -> Any:
     container met twice is copied once, so shared parts stay shared and
     cycles end. Strings, numbers, booleans, and None need no copy. Any
     other object (a lock, a client, a connection, a ``struct_time``), a
-    container that cannot be copied, and a read-only one are shared as is,
-    never deep-copied. Containers nested past ``_SETTINGS_DEPTH`` levels
-    raise ``_TooDeep``; an error from a child propagates at any depth.
+    subclass container that cannot be copied, and a read-only one are
+    shared as is, never deep-copied. An empty container counts as
+    writable, having nothing to probe, so an empty read-only one is
+    copied, not shared. ``room`` is how many container levels may still be
+    entered: a container met with none left raises ``_TooDeep``. An error
+    from a child propagates at any depth.
     """
     if id(value) in memo:
         return memo[id(value)]
     if not isinstance(value, (dict, list, set, tuple)):
         return value
-    if depth > _SETTINGS_DEPTH:
+    if room < 1:
         raise _TooDeep()
     if isinstance(value, tuple):
         make = getattr(value, "_make", None)  # a namedtuple
@@ -615,30 +639,35 @@ def _settings_copy(value: Any, memo: Dict[int, Any], depth: int) -> Any:
             return value  # e.g. a struct_time, whose hidden fields a rebuild loses
         items = []
         for item in value:  # a loop: one Python frame per level
-            items.append(_settings_copy(item, memo, depth + 1))
+            items.append(_settings_copy(item, memo, room - 1))
         if id(value) in memo:  # a cycle through the items copied it already
             return memo[id(value)]
         result = make(items) if make else tuple(items)
         _memoize(memo, value, result)
         return result
-    try:
-        result = copy.copy(value)  # keeps the type, and a defaultdict's factory
-    except Exception:  # it cannot be copied (its copy may even recurse)
-        return value
-    if result is value or not _writable(result):  # read-only: share
-        _memoize(memo, value, value)
-        return value
+    if type(value) in (dict, list, set):
+        # Cannot fail or recurse: a RecursionError is a real one, and rises.
+        result = value.copy()
+    else:
+        try:
+            result = copy.copy(value)  # keeps the type, a defaultdict's factory
+        except Exception:  # it cannot be copied (its copy may even recurse)
+            _memoize(memo, value, value)  # tried once, not per reference
+            return value
+        if result is value or not _writable(result):  # read-only: share
+            _memoize(memo, value, value)
+            return value
     _memoize(memo, value, result)  # before the children, so cycles end
     if isinstance(value, dict):
         for key, item in value.items():
-            result[key] = _settings_copy(item, memo, depth + 1)
+            result[key] = _settings_copy(item, memo, room - 1)
     elif isinstance(value, list):
         for index, item in enumerate(value):
-            result[index] = _settings_copy(item, memo, depth + 1)
+            result[index] = _settings_copy(item, memo, room - 1)
     else:
         items = []
         for item in value:
-            items.append(_settings_copy(item, memo, depth + 1))
+            items.append(_settings_copy(item, memo, room - 1))
         result.clear()
         result.update(items)
     return result
@@ -647,7 +676,8 @@ def _settings_copy(value: Any, memo: Dict[int, Any], depth: int) -> Any:
 def _writable(copied: Any) -> bool:
     """Whether a fresh copy of a dict, list, or set takes writes, tried by
     storing one entry back as it is (a dict's first key, a list's first
-    item, or one item of a set), before any child is copied."""
+    item, or one item of a set), before any child is copied. An empty
+    container counts as writable: there is nothing to probe."""
     try:
         if isinstance(copied, dict):
             for key in copied:
