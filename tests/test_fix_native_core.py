@@ -2,6 +2,7 @@
 
 import base64
 import json
+from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any, ClassVar, Dict, List, Literal, Optional
 
@@ -1203,20 +1204,111 @@ def test_extra_settings_cycles_through_tuples_and_at_the_top_close_on_the_copy()
     entry = ("start", history)
     history.append(entry)  # a cycle through a tuple
     when = time.gmtime(0)  # a struct_time: hidden fields, not rebuilt
-    settings: Dict[str, Any] = {"history": history, "entry": entry, "when": when}
+    # The tuple comes first, so the copy meets the cycle through it.
+    settings: Dict[str, Any] = {"entry": entry, "history": history, "when": when}
     settings["self"] = settings  # a cycle at the top
     spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
     copied = spec.build(Runtime(), object()).extra_settings
 
     assert copied["self"] is copied
-    copied_history = copied["history"]
-    assert copied_history is not history
-    assert copied_history[0] is copied["entry"]  # one copy of the tuple
-    assert copied["entry"] == ("start", copied_history)
-    assert copied["entry"][1] is copied_history  # closes on the copy
+    assert copied["history"] is not history
+    assert copied["history"][0] is copied["entry"]  # one copy of the tuple
+    assert copied["entry"][1] is copied["history"]  # closes on the copy
     assert copied["when"] is when
-    copied_history.append("more")
-    assert history == [entry]  # the user's list is untouched
+    assert not _reaches(copied, history) and not _reaches(copied, entry)
+
+
+def _reaches(root: Any, target: Any) -> bool:
+    """Whether ``target`` itself can be reached from ``root``."""
+    seen, stack = set(), [root]
+    while stack:
+        value = stack.pop()
+        if value is target:
+            return True
+        if id(value) not in seen:
+            seen.add(id(value))
+            if isinstance(value, dict):
+                stack.extend(value.values())
+            elif isinstance(value, (list, tuple)):
+                stack.extend(value)
+    return False
+
+
+def test_extra_settings_too_deep_to_copy_raise_recursion_error():
+    from lllm.runtimes.native import AgentSpec
+
+    deep: list = []
+    for _ in range(3_000):
+        deep = [deep]
+    with pytest.raises(RecursionError):  # rather than share it from depth ~995
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"deep": deep}})
+
+
+class Immutable(dict):
+    """Like werkzeug's ImmutableDict: copying it gives it back."""
+
+    def __copy__(self):
+        return self
+
+    def __setitem__(self, key, value):
+        raise TypeError("immutable")
+
+
+class FrozenCopies(dict):
+    """Its copies are frozen, like a frozen python-box Box."""
+
+    frozen = False
+
+    def __copy__(self):
+        twin = FrozenCopies(self)
+        twin.frozen = True
+        return twin
+
+    def __setitem__(self, key, value):
+        if self.frozen:
+            raise TypeError("frozen")
+        super().__setitem__(key, value)
+
+
+def test_read_only_containers_in_extra_settings_are_shared():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    immutable, frozen = Immutable(tags=["a"]), FrozenCopies(tags=["b"])
+    settings = {"immutable": immutable, "frozen": frozen}
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    copied = spec.build(Runtime(), object()).extra_settings
+
+    assert copied["immutable"] is immutable
+    assert copied["frozen"] is frozen
+
+
+def test_values_built_on_access_each_get_their_own_copy(tmp_path):
+    import shelve
+
+    from lllm.runtimes.native import AgentSpec
+
+    expected = {f"k{n}": {"tags": [n], "pair": (n, [n])} for n in range(200)}
+    # A shelf unpickles each value as it is read, and frees it after: the
+    # copy must keep originals alive, or a new one reuses an old address.
+    with shelve.open(str(tmp_path / "settings")) as shelf:
+        shelf.update(expected)
+        spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": shelf})
+
+    assert spec.extra_settings == expected
+
+
+def test_a_spec_made_directly_takes_any_extra_settings():
+    import dataclasses
+
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    spec = AgentSpec.from_config("writer", WRITER)
+    unset = dataclasses.replace(spec, extra_settings=None)
+    assert unset.build(Runtime(), object()).extra_settings == {}
+
+    listed = dataclasses.replace(spec, extra_settings=["a", ["b"]])
+    settings = listed.build(Runtime(), object()).extra_settings
+    assert settings == ["a", ["b"]] and settings[1] is not listed.extra_settings[1]
 
 
 # -- a failed agent call keeps its record ------------------------------------

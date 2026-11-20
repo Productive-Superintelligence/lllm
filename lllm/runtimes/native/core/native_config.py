@@ -544,6 +544,15 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
+def _agent_settings(settings: Any) -> Any:
+    """One agent's ``extra_settings``: {} for None, else its own copy."""
+    if settings is None:
+        return {}
+    if isinstance(settings, Mapping):
+        return _copy_settings(settings)
+    return _settings_copy(settings, {})
+
+
 def _copy_settings(settings: Mapping) -> Dict[str, Any]:
     """``extra_settings`` as a dict of its own, through ``_settings_copy``.
 
@@ -551,10 +560,20 @@ def _copy_settings(settings: Mapping) -> Dict[str, Any]:
     refers back to it closes on the copy.
     """
     copied: Dict[str, Any] = {}
-    memo: Dict[int, Any] = {id(settings): copied}
+    memo: Dict[int, Any] = {}
+    _memoize(memo, settings, copied)
     for key, item in settings.items():
         copied[key] = _settings_copy(item, memo)
     return copied
+
+
+def _memoize(memo: Dict[int, Any], original: Any, copied: Any) -> None:
+    """Remember ``copied`` for ``original``, and keep ``original`` alive
+    until the copy is done, as deepcopy does: a mapping that builds its
+    values as they are read (a shelve.Shelf) frees each after use, and a
+    new value at a reused address would get another value's copy."""
+    memo[id(original)] = copied
+    memo.setdefault(id(memo), []).append(original)
 
 
 def _settings_copy(value: Any, memo: Dict[int, Any]) -> Any:
@@ -581,21 +600,31 @@ def _settings_copy(value: Any, memo: Dict[int, Any]) -> Any:
     elif isinstance(value, (dict, list, set)):
         try:
             result = copy.copy(value)  # keeps the type, and a defaultdict's factory
+        except RecursionError:
+            raise  # too deep: fail rather than share it from here down
         except Exception:
             return value
-        memo[id(value)] = result  # before recursing, so cycles end
-        if isinstance(value, dict):
-            for key, item in value.items():
-                result[key] = _settings_copy(item, memo)
-        elif isinstance(value, list):
-            for index, item in enumerate(value):
-                result[index] = _settings_copy(item, memo)
-        else:
-            result.clear()
-            result.update(_settings_copy(item, memo) for item in value)
+        _memoize(memo, value, result)  # before recursing, so cycles end
+        if result is value:  # a read-only container whose copy is itself
+            return value
+        try:
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    result[key] = _settings_copy(item, memo)
+            elif isinstance(value, list):
+                for index, item in enumerate(value):
+                    result[index] = _settings_copy(item, memo)
+            else:
+                result.clear()
+                result.update(_settings_copy(item, memo) for item in value)
+        except RecursionError:
+            raise
+        except Exception:  # a copy that cannot be filled in (read-only): share
+            memo[id(value)] = value
+            return value
     else:
         return value
-    memo[id(value)] = result
+    _memoize(memo, value, result)
     return result
 
 
@@ -943,7 +972,7 @@ class AgentSpec:
             context_manager=context_manager,
             inference_hints=self.inference_hints,
             # Fresh agents share one spec: each gets its own plain data.
-            extra_settings=_copy_settings(self.extra_settings),
+            extra_settings=_agent_settings(self.extra_settings),
         )
 
 
