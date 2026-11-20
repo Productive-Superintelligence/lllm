@@ -1333,16 +1333,32 @@ class FrozenCopies(dict):
         super().__setitem__(key, value)
 
 
+class SelfCopies(dict):
+    """Its copy is itself, yet it takes writes."""
+
+    def __copy__(self):
+        return self
+
+
 def test_read_only_containers_in_extra_settings_are_shared():
     from lllm.runtimes.native import AgentSpec, Runtime
 
+    tags = ["c"]
     immutable, frozen = Immutable(tags=["a"]), FrozenCopies(tags=["b"])
-    settings = {"immutable": immutable, "frozen": frozen}
+    shared = SelfCopies(tags=tags)
+    settings = {
+        "immutable": immutable,
+        "frozen": frozen,
+        "again": frozen,
+        "shared": shared,
+    }
     spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
     copied = spec.build(Runtime(), object()).extra_settings
 
     assert copied["immutable"] is immutable
-    assert copied["frozen"] is frozen
+    assert copied["frozen"] is frozen and copied["again"] is frozen
+    # Shared, and not filled in: the user's object keeps its own list.
+    assert copied["shared"] is shared and shared["tags"] is tags
 
 
 def test_a_read_only_container_is_shared_before_its_children_are_copied():
@@ -1734,18 +1750,49 @@ model = Loose()
 for n in range(10_000):  # 10,000 ways back to itself
     loop[f"k{n}"] = loop
     model.__pydantic_extra__[f"k{n}"] = model
-for task in (loop, model):
+deep = [{n: n for n in range(10_000)}] * 5_000  # one dict, 5,000 times...
+for _ in range(19):
+    deep = [deep]  # ...at depth 20, where the walk stops
+for task in (loop, model, deep):
     start = time.perf_counter()
     _task_to_string(task)
     print(round(time.perf_counter() - start, 3))
 """
 
 
-def test_self_references_name_their_session_quickly():
+def test_self_references_and_the_depth_bound_name_sessions_quickly():
     result = _run_apart(QUICK_NAMES, timeout=60)
 
     assert result.returncode == 0, result.stderr[-2000:]
-    assert all(float(seconds) < 0.5 for seconds in result.stdout.split())
+    times = [float(seconds) for seconds in result.stdout.split()]
+    assert len(times) == 3 and max(times) < 0.5
+
+
+def test_session_names_hash_on_fips_mode_python(monkeypatch):
+    import hashlib
+
+    real_md5 = hashlib.md5
+
+    def fips_md5(data=b"", *, usedforsecurity=True):
+        if usedforsecurity:  # as FIPS-mode Python refuses md5
+            raise ValueError("[digital envelope routines] unsupported")
+        return real_md5(data, usedforsecurity=False)
+
+    monkeypatch.setattr(hashlib, "md5", fips_md5)
+    names = []
+
+    class Names:
+        def observe_tactic(self, *, session_name, **_):
+            names.append(session_name)
+
+    class Echoes(Tactic):
+        name = "fix_fips"
+
+        def call(self, task):
+            return task
+
+    assert Echoes(observer=Names())({"a": 1}) == {"a": 1}
+    assert names[0].startswith("fix_fips_")
 
 
 def test_session_names_hash_equal_tasks_alike_and_others_apart():
