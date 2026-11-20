@@ -131,7 +131,8 @@ sources from it.
 ## Configs as Pydantic models
 
 A config can also be a Pydantic model, which checks it before the tactic
-is built. The tactic reads the model as it would read the same dict:
+is built. The tactic reads the model's fields like the keys of a dict,
+with one difference for defaults (1):
 
 ```python title="typed_config.py"
 from typing import Optional
@@ -177,14 +178,18 @@ print({name: agent.model for name, agent in team.agents.items()})
 
 1. A field left unset at `None` counts as not given, at any depth, so the
    writer gets its model from `global`. A value that was set is used, even
-   `None`, like a `null` in a dict config.
+   `None`, like a `null` in a dict config. A field with any other default
+   always counts, set or not, and overrides `global`, so declare a field
+   that should inherit as `Optional[...] = None`.
 2. `global` is a Python keyword, so the field gets another name and
    `global` as its alias (a `validation_alias` works too). That field
    becomes the `global` section.
 
 Every other field is read by its name, so an alias generator such as
 `to_camel` only changes how the input is spelled: `agent_configs` reaches
-the tactic as `agent_configs`. `self.config` is the model itself.
+the tactic as `agent_configs`. The top-level keys read one at a time,
+`max_workers` and `tactic_type`, can also be properties or class
+variables. `self.config` is the model itself.
 
 ## Configs in a project
 

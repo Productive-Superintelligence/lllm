@@ -43,7 +43,7 @@ from typing import (
     overload,
 )
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, RootModel, TypeAdapter
 
 from ....protocol.errors import TacticUnsupportedError
 from ....protocol.events import TacticEvent
@@ -132,7 +132,13 @@ def _config_get(config: Any, key: str, default: Any = None) -> Any:
     if isinstance(config, Mapping):
         return config.get(key, default)
     if isinstance(config, BaseModel):
-        return _model_config_data(config).get(key, default)
+        data = _model_config_data(config)
+        if key in data:
+            return data[key]
+        if key in type(config).model_fields:  # a field left unset at None
+            return default
+        # A property or ClassVar (a tactic_type, say), as 0.4.0 read it.
+        return getattr(config, key, default)
     return default
 
 
@@ -154,7 +160,8 @@ def _model_config_data(config: BaseModel) -> Dict[str, Any]:
     any depth, is left out: it means "not given", so ``global`` and the
     defaults apply, while a None that was set is kept.
     """
-    data = config.model_dump()
+    # by_alias=False even for serialize_by_alias models: names, not aliases.
+    data = config.model_dump(by_alias=False)
     _drop_unset_none(config, data)
     for name, field in type(config).model_fields.items():
         if name in data and "global" in _field_aliases(field):
@@ -163,19 +170,27 @@ def _model_config_data(config: BaseModel) -> Dict[str, Any]:
 
 
 def _field_aliases(field: Any) -> set:
+    """A field's alias, serialization alias, and validation aliases.
+
+    A validation alias may be a string, a one-key ``AliasPath``, or
+    ``AliasChoices`` of those.
+    """
     names = {field.alias, field.serialization_alias}
     validation = field.validation_alias
-    names.update(
-        choice
-        for choice in getattr(validation, "choices", [validation])
-        if isinstance(choice, str)
-    )
-    return names
+    for choice in getattr(validation, "choices", [validation]):
+        path = getattr(choice, "path", None)
+        if path is None:
+            names.add(choice)
+        elif len(path) == 1:  # AliasPath("global"): that key, whole
+            names.add(path[0])
+    return {name for name in names if isinstance(name, str)}
 
 
 def _drop_unset_none(value: Any, data: Any) -> None:
     """Remove fields left unset at None from ``data``, ``value``'s dump."""
-    if isinstance(value, BaseModel) and isinstance(data, dict):
+    if isinstance(value, RootModel):  # dumped as its root value
+        _drop_unset_none(value.root, data)
+    elif isinstance(value, BaseModel) and isinstance(data, dict):
         for name in type(value).model_fields:
             if name not in data:
                 continue

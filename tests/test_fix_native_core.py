@@ -3,7 +3,7 @@
 import base64
 import json
 from decimal import Decimal
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, ClassVar, Dict, List, Literal, Optional
 
 import pytest
 from pydantic import (
@@ -489,10 +489,13 @@ def test_pydantic_config_keeps_its_global_section():
 GLOBAL = {"model_name": "gpt-4o-mini", "max_llm_recall": 2}
 
 
-def test_a_config_with_an_alias_generator_is_read_by_field_name():
+@pytest.mark.parametrize("by_alias", [False, True], ids=["dump", "serialize_by_alias"])
+def test_a_config_with_an_alias_generator_is_read_by_field_name(by_alias):
     from pydantic.alias_generators import to_camel
 
-    camel = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    camel = ConfigDict(
+        alias_generator=to_camel, populate_by_name=True, serialize_by_alias=by_alias
+    )
 
     class CamelEntry(BaseModel):
         model_config = camel
@@ -519,17 +522,23 @@ def test_a_config_with_an_alias_generator_is_read_by_field_name():
 
 
 @pytest.mark.parametrize(
-    "alias",
-    [{"validation_alias": "global"}, {"validation_alias": AliasChoices("defaults", "global")}],
-    ids=["validation_alias", "alias_choices"],
+    ("alias", "key"),
+    [
+        ({"validation_alias": "global"}, "global"),
+        ({"validation_alias": AliasChoices("defaults", "global")}, "global"),
+        ({"validation_alias": AliasPath("global")}, "global"),
+        ({"validation_alias": AliasChoices("defaults", AliasPath("global"))}, "global"),
+        ({"serialization_alias": "global"}, "global_"),
+    ],
+    ids=["validation_alias", "alias_choices", "alias_path", "path_choice", "serialization"],
 )
-def test_the_field_validated_from_global_is_the_global_section(alias):
+def test_the_field_aliased_global_is_the_global_section(alias, key):
     class Config(BaseModel):
         global_: Dict[str, Any] = Field(default_factory=dict, **alias)
         agent_configs: List[AgentEntry]
 
     config = Config.model_validate(
-        {"global": GLOBAL, "agent_configs": [{"name": "echo", "system_prompt": "Hi."}]}
+        {key: GLOBAL, "agent_configs": [{"name": "echo", "system_prompt": "Hi."}]}
     )
     echo = Echo(config).agents["echo"]
     assert (echo.model, echo.max_llm_recall) == ("gpt-4o-mini", 2)
@@ -566,7 +575,11 @@ def test_unset_none_fields_fall_back_to_global_and_set_ones_apply():
                 "context_manager": {"max_tokens": 64_000},
             },
             "agent_configs": [
-                {"name": "writer", "system_prompt": "You write."},
+                {
+                    "name": "writer",
+                    "system_prompt": "You write.",
+                    "context_manager": {"type": "default"},  # max_tokens unset
+                },
                 {
                     "name": "editor",
                     "system_prompt": "You edit.",
@@ -593,6 +606,50 @@ def test_unset_none_fields_fall_back_to_global_and_set_ones_apply():
     assert (editor.model, editor.context_manager.max_tokens) == ("gpt-4o", 9_000)
     assert (archivist.model, archivist.context_manager) == ("gpt-4o-mini", None)
     assert team._max_workers == 4  # unset, so the default
+
+
+class TeamEntries(RootModel[List[TeamEntry]]):
+    pass
+
+
+def test_agent_entries_in_a_root_model_fall_back_to_global():
+    class Config(BaseModel):
+        global_: Dict[str, Any] = Field(default_factory=dict, alias="global")
+        agent_configs: TeamEntries
+
+    config = Config.model_validate(
+        {"global": GLOBAL, "agent_configs": [{"name": "echo", "system_prompt": "Hi."}]}
+    )
+    echo = Echo(config).agents["echo"]
+    assert (echo.model, echo.max_llm_recall) == ("gpt-4o-mini", 2)
+
+
+class ByName(BaseModel):
+    tactic_type: ClassVar[str] = "fix_echo"
+    global_: Dict[str, Any] = Field(default_factory=dict, alias="global")
+    agent_configs: List[AgentEntry]
+
+    @property
+    def max_workers(self) -> int:
+        return 2
+
+
+def test_class_vars_and_properties_of_a_config_are_read():
+    from lllm.runtimes.native import Runtime
+    from lllm.runtimes.native.core.tactic_registry import (
+        build_tactic,
+        register_tactic_class,
+    )
+
+    runtime = Runtime()
+    register_tactic_class(Echo, runtime=runtime)
+    config = ByName.model_validate(
+        {"global": GLOBAL, "agent_configs": [{"name": "echo", "system_prompt": "Hi."}]}
+    )
+    tactic = build_tactic(config, runtime=runtime)  # by its tactic_type
+
+    assert isinstance(tactic, Echo)
+    assert tactic._max_workers == 2
 
 
 # -- 5: ``format=`` validates the reply against the model --------------------
