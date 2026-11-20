@@ -12,7 +12,21 @@ logger = logging.getLogger(__name__)
 
 # A ``{name}`` placeholder in an endpoint path, e.g. ``companies/{ticker}``.
 _PLACEHOLDER = re.compile(r"\{([^}/]+)\}")
-_MISSING = object()
+
+
+def _stored_wraps(obj: Any) -> Any:
+    """What a mock wraps (its ``_mock_wraps``), taken from its ``__dict__``
+    only, so a ``__getattr__`` that answers anything is never followed."""
+    own = getattr(obj, "__dict__", None)
+    return own.get("_mock_wraps") if isinstance(own, dict) else None
+
+
+def _made_by_mock(value: Any) -> bool:
+    """Whether ``value`` is a mock, like the child a mock makes up when an
+    attribute it does not have is read (both unittest.mock and the
+    standalone mock package keep ``_mock_children`` in ``__dict__``)."""
+    own = getattr(value, "__dict__", None)
+    return isinstance(own, dict) and "_mock_children" in own
 
 
 def _param_name(documented: str) -> str:
@@ -225,45 +239,39 @@ class BaseProxy:
 
     @staticmethod
     def _callable_attr(method, attr: str, default: Any = None) -> Any:
-        """An endpoint attribute of ``method``.
+        """An endpoint attribute of ``method``, found as ``getattr`` finds
+        it (as in 0.4.0), so type attributes, descriptors, deletions, seal
+        and spec all count, with one rule for spies: when a mock that wraps
+        something (``patch.object(proxy, name, wraps=...)``) answers with a
+        mock it made itself, the attribute is read from what it wraps (and a
+        spy's child reached through some other object gives the value it
+        wraps).
 
-        One set on the object itself (in its ``__dict__``, as Mock keeps its
-        configured attributes) wins. Otherwise a spy, a mock that wraps the
-        method (``patch.object(proxy, name, wraps=...)``), is read through
-        to what it wraps, spies of spies too, unless the spy deleted the
-        attribute (no value then) or its type provides one. Only the names Mock sets
-        itself, like ``_mock_wraps``, are real attributes of a mock (other
-        ``_mock_*`` names are not), so the wrapped object is taken from the
-        mock's ``__dict__``, and an object whose ``__getattr__`` answers
-        anything is never followed.
+        A wrapped object is taken only from a mock's ``__dict__`` (where
+        Mock keeps ``_mock_wraps``), so an object whose ``__getattr__``
+        answers anything is never followed. A cycle of wrapping mocks has
+        no metadata: Mock itself recurses reading one, so it is found first.
         """
+        end = method
         for _ in range(16):  # a bound, for a cycle of wrappers
-            own = getattr(method, "__dict__", None)
-            if not isinstance(own, dict):
+            end = _stored_wraps(end)
+            if end is None:
                 break
-            if attr in own:
-                return own[attr]
-            wrapped = own.get("_mock_wraps")
-            if wrapped is None:
-                break
-            # Before reading through the mock, honor what plain getattr would
-            # on the mock itself: a deleted attribute (del spy.endpoint_info),
-            # or one from its type (a PropertyMock, a subclass's attribute).
-            # getattr_static never calls __getattr__, so made-up ones stay out.
-            from unittest.mock import sentinel  # loaded already: this is a mock
-
-            if (own.get("_mock_children") or {}).get(attr) is sentinel.DELETED:
-                return default
-            if inspect.getattr_static(type(method), attr, _MISSING) is not _MISSING:
-                return getattr(method, attr, default)
-            method = wrapped
-        else:  # a cycle (reading one of its mocks would recurse in Mock)
+        else:
             return default
-        value = getattr(method, attr, None)
-        if value is not None:
-            return value
-        func = getattr(method, "__func__", None)
-        return getattr(func, attr, default)
+        while True:
+            value = getattr(method, attr, None)
+            if value is None:
+                value = getattr(getattr(method, "__func__", None), attr, None)
+            if not _made_by_mock(value):
+                return default if value is None else value
+            wrapped = _stored_wraps(method)
+            if wrapped is None:
+                # Reached some other way (a forwarding wrapper over a spy):
+                # a spy's child keeps what it wraps, the real metadata.
+                inner = _stored_wraps(value)
+                return value if inner is None else inner
+            method = wrapped  # a spy's made-up child: read the wrapped object
 
     @classmethod
     def _tactic_meta(cls, method) -> Optional[Mapping]:

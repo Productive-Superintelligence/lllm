@@ -11,7 +11,7 @@ from array import array
 from collections import deque
 from dataclasses import dataclass
 from types import SimpleNamespace
-from unittest.mock import MagicMock, PropertyMock, patch
+from unittest.mock import MagicMock, PropertyMock, patch, seal
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -490,6 +490,114 @@ def test_deleting_a_spys_endpoint_info_hides_the_endpoint():
     assert listed == ["convert", "history"]
 
 
+_OWN_DELETED = object()  # like the standalone mock package's own sentinel
+
+
+class OwnSentinelMock(MagicMock):
+    """Marks deleted attributes with its own sentinel, as the standalone
+    mock package does (not unittest.mock's)."""
+
+    def __delattr__(self, name):
+        if name in vars(self) or name.startswith("_mock_"):
+            return super().__delattr__(name)
+        self._mock_children[name] = _OWN_DELETED
+
+    def __getattr__(self, name):
+        if vars(self).get("_mock_children", {}).get(name) is _OWN_DELETED:
+            raise AttributeError(name)
+        return super().__getattr__(name)
+
+
+def standalone_mock_class():
+    return pytest.importorskip("mock").MagicMock
+
+
+@pytest.mark.parametrize("make_class", [lambda: OwnSentinelMock, standalone_mock_class], ids=["simulated", "mock"])
+def test_deleting_endpoint_info_on_another_mock_librarys_spy_hides_it(make_class):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", new=make_class()(wraps=proxy.rates)) as spy:
+        del spy.endpoint_info
+        listed = [entry["callable"] for entry in proxy.endpoint_directory()]
+
+    assert listed == ["convert", "history"]
+
+
+def test_a_property_mock_on_a_spys_type_wins_over_a_deletion(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as spy:
+        del spy.endpoint_info
+        type(spy).endpoint_info = PropertyMock(return_value=rates_info("rates/v4"))
+        proxy.call("rates/v4", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/v4"
+
+
+def test_a_property_mock_on_a_spys_type_wins_over_its_own_value(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as spy:
+        spy.endpoint_info = rates_info("rates/own")
+        type(spy).endpoint_info = PropertyMock(return_value=rates_info("rates/v5"))
+        proxy.call("rates/v5", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/v5"
+
+
+@pytest.mark.parametrize("hide", ["seal", "spec"])
+def test_a_sealed_spy_or_one_whose_spec_lacks_endpoint_info_is_hidden(hide):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    options = {"spec": lambda params: params} if hide == "spec" else {}
+
+    with patch.object(proxy, "rates", wraps=proxy.rates, **options) as spy:
+        if hide == "seal":
+            seal(spy)
+        listed = [entry["callable"] for entry in proxy.endpoint_directory()]
+
+    assert listed == ["convert", "history"]  # as in 0.4.0
+
+
+class AnsweringSpy(MagicMock):
+    """A spy class whose own __getattr__ answers endpoint_info."""
+
+    def __getattr__(self, name):
+        if name == "endpoint_info":
+            return rates_info("rates/answered")
+        return super().__getattr__(name)
+
+
+def test_a_spy_class_whose_getattr_answers_endpoint_info_is_honored(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    proxy.answered = AnsweringSpy(wraps=proxy.rates)
+
+    proxy.call("rates/answered", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/answered"
+
+
+def test_an_inner_spys_deletion_hides_the_endpoint_through_an_outer_spy():
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as inner:
+        del inner.endpoint_info
+        with patch.object(proxy, "rates", wraps=proxy.rates):
+            listed = [entry["callable"] for entry in proxy.endpoint_directory()]
+
+    assert listed == ["convert", "history"]
+
+
+def test_an_inner_spys_property_mock_routes_through_an_outer_spy(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", wraps=proxy.rates) as inner:
+        type(inner).endpoint_info = PropertyMock(return_value=rates_info("rates/inner"))
+        with patch.object(proxy, "rates", wraps=proxy.rates):
+            proxy.call("rates/inner", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates/inner"
+
+
 def test_a_wrapping_mock_with_its_own_tactic_metadata_runs_as_a_tactic(http):
     runtime = Runtime()
     runtime.register_tactic("shout", Shout)
@@ -538,6 +646,18 @@ def test_a_forwarding_wrapper_is_read_as_is_not_followed(http):
     proxy.call("mocked", {"base": "AUD"})
 
     assert http[0][1] == "https://api.example.test/v1/mocked"
+
+
+def test_a_forwarding_wrapper_over_a_spy_gives_the_metadata_the_spy_wraps(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    spy = MagicMock(wraps=proxy.rates)
+    proxy.forwarded = Forwarding(spy)  # 0.4.0 listed it, through the spy's child mock
+
+    assert "forwarded" in [entry["callable"] for entry in proxy.endpoint_directory()]
+    proxy.call("forwarded", {"base": "USD"})  # endpoint "rates", the spy's
+
+    spy.assert_called_once()
+    assert http[0][1] == "https://api.example.test/v1/rates"
 
 
 def test_a_cycle_of_wrapping_mocks_is_not_an_endpoint():
