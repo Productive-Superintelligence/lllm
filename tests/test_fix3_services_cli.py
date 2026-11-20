@@ -2405,6 +2405,21 @@ def test_serve_help_says_where_typed_keys_go(monkeypatch, capsys):
     assert "typed keys" not in inspect_help
 
 
+def test_setup_help_says_where_keys_go(monkeypatch, capsys):
+    setup_help = _help("setup", monkeypatch, capsys)
+
+    assert (
+        "--credentials {auto,keyring,env} Where keys are stored: auto (the "
+        "default) picks a usable OS keyring when there is one, and the env file "
+        "otherwise"
+    ) in setup_help
+    assert (
+        "--env-file ENV_FILE Env file to read API keys from; keys are stored "
+        "here with --credentials env, or with auto when no usable keyring is "
+        "available"
+    ) in setup_help
+
+
 def test_status_code_for_error_maps_cross_site_requests_to_403():
     from lllm.services import CrossSiteRequestError
 

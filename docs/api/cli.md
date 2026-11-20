@@ -60,10 +60,10 @@ lllm setup --show-conventions             # common provider key names
 
 Reads `[requirements.api_keys]`, plus the `required_api_keys` metadata of the
 resource `lllm serve` would launch (or the one named with `--resource`), and
-stores missing keys in the OS keyring (`secure` extra) or a local env file. A
-package with nothing to launch, such as a library, is set up from its
-`[requirements.api_keys]` alone. `--credentials auto` uses the keyring when
-available.
+stores missing keys in a usable OS keyring when there is one, and in the env
+file (`--env-file`, default `.env.local`) otherwise; `--credentials keyring`
+or `env` decides instead. A package with nothing to launch, such as a
+library, is set up from its `[requirements.api_keys]` alone.
 
 ## `lllm inspect`
 

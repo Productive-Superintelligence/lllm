@@ -125,12 +125,18 @@ def main(argv: list[str] | None = None) -> int:
         "--credentials",
         choices=("auto", "keyring", "env"),
         default="auto",
-        help="Store entered keys in the OS keyring or a local env file",
+        help=(
+            "Where keys are stored: auto (the default) picks a usable OS keyring "
+            "when there is one, and the env file otherwise"
+        ),
     )
     setup_cmd.add_argument(
         "--env-file",
         default=".env.local",
-        help="Local env file used when --credentials env is selected",
+        help=(
+            "Env file to read API keys from; keys are stored here with "
+            "--credentials env, or with auto when no usable keyring is available"
+        ),
     )
     setup_cmd.add_argument(
         "--set",
