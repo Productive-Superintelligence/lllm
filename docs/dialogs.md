@@ -319,10 +319,12 @@ never fetches anything. Text is counted by LiteLLM, and for Llama 2/3 and
 Replicate models LiteLLM loads a tokenizer from Hugging Face; on a host
 that cannot reach it, recent LiteLLM versions try again on every count,
 and each try can take from about 20 seconds (connection refused) to
-several minutes (connection dropped), because Hugging Face's client
-retries five times. Set `litellm.disable_hf_tokenizer_download = True` to
-count with tiktoken instead; `HF_HUB_OFFLINE=1` also stops the download,
-but LiteLLM then logs a warning on every count.
+about 25 minutes or more (connection dropped), because Hugging Face's
+client retries five times and waits out its timeout on each of
+huggingface.co's addresses. Set
+`litellm.disable_hf_tokenizer_download = True` to count with tiktoken
+instead; `HF_HUB_OFFLINE=1` also stops the download, but LiteLLM then logs
+a warning on every count.
 
 The newest message is always sent whole, with a warning if it alone is
 over the budget, and a tool call is kept or dropped together with its
