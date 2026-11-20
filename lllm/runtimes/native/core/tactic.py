@@ -139,7 +139,9 @@ def _config_as_mapping(config: Any, label: str) -> Dict[str, Any]:
     if isinstance(config, Mapping):
         return dict(config)
     if isinstance(config, BaseModel):
-        return config.model_dump()
+        # By alias: ``global`` is a Python keyword, so a model field for it
+        # needs an alias (``global_: dict = Field(alias="global")``).
+        return config.model_dump(by_alias=True)
     raise TypeError(f"{label} must be a mapping or Pydantic BaseModel.")
 
 

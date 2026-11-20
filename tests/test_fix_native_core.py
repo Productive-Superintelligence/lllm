@@ -1,9 +1,10 @@
 """Regression tests for native runtime fixes found while rewriting the docs."""
 
 import json
+from typing import Any, Dict, List
 
 import pytest
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
@@ -166,3 +167,42 @@ def test_images_are_dropped_not_cut():
         "You help.",
         "What does it show?",
     ]
+
+
+# -- 4: a Pydantic config keeps its aliased ``global`` section ---------------
+
+
+class AgentEntry(BaseModel):
+    name: str
+    system_prompt: str
+
+
+class EchoConfig(BaseModel):
+    global_: Dict[str, Any] = Field(default_factory=dict, alias="global")
+    agent_configs: List[AgentEntry]
+
+
+class Echo(Tactic):
+    name = "fix_echo"
+    agent_group = ["echo"]
+
+    def call(self, text: str) -> str:
+        echo = self.agents["echo"]
+        echo.open("echo")
+        echo.receive(text)
+        return echo.respond().content
+
+
+def test_pydantic_config_keeps_its_global_section():
+    config = EchoConfig.model_validate(
+        {
+            "global": {"model_name": "gpt-4o-mini", "max_llm_recall": 2},
+            "agent_configs": [{"name": "echo", "system_prompt": "You echo."}],
+        }
+    )
+    tactic = Echo(config)
+
+    echo = tactic.agents["echo"]
+    assert (echo.model, echo.max_llm_recall) == ("gpt-4o-mini", 2)
+    with ScriptedModel(["hello"]):
+        assert tactic("hello") == "hello"
