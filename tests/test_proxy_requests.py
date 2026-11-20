@@ -11,6 +11,7 @@ from array import array
 from collections import deque
 from dataclasses import dataclass
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -343,6 +344,36 @@ def test_keyword_params_reach_proxies_with_their_own_call(proxy_cls, lone_value_
 def test_an_unknown_endpoint_with_a_lone_value_and_keywords_says_so():
     with pytest.raises(AttributeError, match="No endpoint 'missing'"):
         tactic_tools()("tools/missing", "lone", times=2)
+
+
+class Delegating:
+    """A proxy that hands every attribute to another one."""
+
+    def __init__(self, inner):
+        self._inner = inner
+
+    def __getattr__(self, name):
+        return getattr(self._inner, name)
+
+
+class InstanceCall:
+    """A proxy whose call is an attribute of the instance."""
+
+    def __init__(self):
+        self.call = lambda path, params=None: (path, params)
+
+
+@pytest.mark.parametrize("kind", ["delegating", "mock", "instance call"])
+def test_a_lone_value_with_keywords_on_other_kinds_of_proxy(kind):
+    proxies = tactic_tools()
+
+    if kind == "delegating":  # its BaseProxy.call names the value
+        proxies.proxies["other"] = Delegating(proxies.proxies["tools"])
+        assert proxies("other/repeat", "ab", times=3) == "ababab"
+    else:
+        proxies.proxies["other"] = MagicMock() if kind == "mock" else InstanceCall()
+        with pytest.raises(TypeError, match="as a dict"):
+            proxies("other/anything", "lone", b=2)
 
 
 def test_more_than_one_positional_param_is_an_error():

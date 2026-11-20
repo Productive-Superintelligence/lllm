@@ -642,7 +642,8 @@ class ProxyManager:
                 def documented() -> Any:
                     # Only a lone value needs the endpoint, to be named, and
                     # only BaseProxy.call serves the endpoints it can list.
-                    if type(proxy).call is not BaseProxy.call:
+                    method = getattr(proxy, "call", None)
+                    if getattr(method, "__func__", None) is not BaseProxy.call:
                         raise TypeError(
                             f"'{endpoint}': pass the params as a dict to add "
                             "keyword params to them."
