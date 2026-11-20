@@ -2653,6 +2653,27 @@ def test_an_entrypoint_runs_when_the_working_folder_cannot_be_searched(
         assert f"cannot read {path}: Permission denied" in capsys.readouterr().err
 
 
+# Round 10: importlib imports each parent package of a dotted name first,
+# recursively, so hundreds of dotted parts run out of stack before the
+# first part is found missing.
+
+
+@pytest.mark.parametrize("command", ["serve", "inspect"])
+def test_an_entrypoint_nested_too_deeply_to_import_is_a_clean_error(
+    served, capsys, command
+):
+    module_name = "a." * 250 + "b"  # longer than a file name, so not a path
+
+    with pytest.raises(SystemExit) as caught:
+        main([command, f"{module_name}:x"])
+
+    assert caught.value.code == 2
+    captured = capsys.readouterr()
+    assert f"cannot import {module_name}: nested too deeply" in captured.err
+    assert "Traceback" not in captured.out + captured.err
+    assert served == []
+
+
 class _FailingOs:
     """``os`` for a module under test, with chosen functions replaced."""
 

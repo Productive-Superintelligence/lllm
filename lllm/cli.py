@@ -682,7 +682,12 @@ def _load_entrypoint(entrypoint: str) -> Any:
     ):
         raise ValueError("Entrypoint must have the form 'module:attribute'.")
     module_name, _, attr_path = entrypoint.partition(":")
-    module = importlib.import_module(module_name)
+    try:
+        module = importlib.import_module(module_name)
+    except RecursionError as exc:
+        # importlib imports each parent package first, recursively, so a
+        # name with hundreds of dotted parts runs out of stack.
+        raise ImportError(f"cannot import {module_name}: nested too deeply") from exc
     value: Any = module
     for part in attr_path.split("."):
         value = getattr(value, part)
