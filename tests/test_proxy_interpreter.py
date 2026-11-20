@@ -214,8 +214,10 @@ def test_a_run_that_leaves_sys_stdout_replaced_puts_it_back():
     interp = interpreter()
 
     assert interp.run("import io, sys\nsys.stdout = io.StringIO()\nprint('lost')\n") == ""
-
     assert sys.stdout is stdout
+    assert interp.run("import sys\ndel sys.stdout\n") == ""
+    assert sys.stdout is stdout
+
     assert interp.run("print('next')") == "next\n"
 
 

@@ -104,8 +104,8 @@ def _capture_stdout(output: _CallOutput):
 
     global _active_captures, _thread_start
     with _lock:
-        if not isinstance(sys.stdout, _ThreadStdout):
-            sys.stdout = _ThreadStdout(sys.stdout)
+        if not isinstance(getattr(sys, "stdout", None), _ThreadStdout):
+            sys.stdout = _ThreadStdout(getattr(sys, "stdout", None))
         stand_in = sys.stdout
         if not _active_captures and threading.Thread.start is not _start_in_call:
             _thread_start = threading.Thread.start
@@ -120,7 +120,7 @@ def _capture_stdout(output: _CallOutput):
         with _lock:
             _active_captures -= 1
             if not _active_captures:
-                while isinstance(sys.stdout, _ThreadStdout):
+                while isinstance(getattr(sys, "stdout", None), _ThreadStdout):
                     sys.stdout = sys.stdout._stream
                 if threading.Thread.start is _start_in_call:
                     threading.Thread.start = _thread_start
@@ -220,7 +220,8 @@ class AgentInterpreter:
                     finally:
                         # Like redirect_stdout, put back a sys.stdout the code
                         # replaced; after a timeout the program has moved on.
-                        replaced = not isinstance(sys.stdout, _ThreadStdout)
+                        current = getattr(sys, "stdout", None)
+                        replaced = not isinstance(current, _ThreadStdout)
                         if replaced and not captured.abandoned:
                             sys.stdout = stand_in
             except Exception as exc:  # noqa: BLE001
