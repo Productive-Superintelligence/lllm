@@ -828,7 +828,10 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
     except UnicodeDecodeError as exc:
         if _media_type(content_type) == "application/octet-stream":
             return raw
-        raise SchemaError("Request body must be JSON or UTF-8 text.") from exc
+        raise SchemaError(
+            "Request body must be JSON or UTF-8 text; send binary data as "
+            "application/octet-stream."
+        ) from exc
     try:
         value = json.loads(text.removeprefix("\ufeff"))
     except (ValueError, RecursionError):

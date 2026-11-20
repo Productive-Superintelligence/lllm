@@ -1550,7 +1550,10 @@ def _assert_bad_body(response) -> None:
     assert response.status_code == 400
     error = response.json()["detail"]["error"]
     assert error["type"] == "SchemaError"
-    assert "JSON or UTF-8 text" in error["message"]
+    assert error["message"] == (
+        "Request body must be JSON or UTF-8 text; send binary data as "
+        "application/octet-stream."
+    )
     assert error["tactic"] == "echo"
 
 
