@@ -2,8 +2,12 @@
 responses, unknown proxy names are reported, POST endpoints send query-param
 keys in the query, and tactic endpoints accept any input."""
 
+import importlib
 import json
 import logging
+import sys
+from dataclasses import dataclass
+from types import SimpleNamespace
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -88,6 +92,59 @@ def test_plain_text_responses_are_returned_and_not_cached(http, tmp_path):
 
     assert response.text == '{"request": 1}'
     assert cache_files(tmp_path) == []
+
+
+@pytest.fixture
+def exa(monkeypatch, tmp_path):
+    """The built-in Exa proxy module, with a fake exa_py client. Its
+    registration goes to a throwaway default runtime."""
+
+    from lllm.runtimes.native.core import runtime as runtime_module
+
+    sent = []
+
+    @dataclass
+    class Result:
+        url: str
+
+    class Exa:
+        def __init__(self, api_key):
+            pass
+
+        def get_contents(self, urls, text):
+            sent.append(urls)
+            return SimpleNamespace(
+                results=[Result(url) for url in urls],
+                autoprompt_string=None,
+                resolved_search_type=None,
+                auto_date=None,
+                cost_dollars=None,
+            )
+
+    name = "lllm.runtimes.native.proxies.builtin.exa_proxy"
+    monkeypatch.setitem(sys.modules, "exa_py", SimpleNamespace(Exa=Exa))
+    monkeypatch.setattr(runtime_module, "_default_runtime", Runtime())
+    monkeypatch.setattr(U, "CACHE_DIR", str(tmp_path))
+    sys.modules.pop(name, None)
+    yield importlib.import_module(name), sent
+    sys.modules.pop(name, None)
+
+
+def test_the_exa_proxy_honors_use_cache(exa, tmp_path):
+    module, sent = exa
+    info = {"endpoint": "contents"}
+    cached = module.ExaProxy(runtime=Runtime())
+    uncached = module.ExaProxy(use_cache=False, runtime=Runtime())
+
+    first = cached._call_api("contents", {"urls": ["https://a.test"]}, info, {})
+    assert cached._call_api("contents", {"urls": ["https://a.test"]}, info, {}) == first
+    assert len(sent) == 1
+    assert len(cache_files(tmp_path)) == 1
+
+    uncached._call_api("contents", {"urls": ["https://a.test"]}, info, {})  # no read
+    uncached._call_api("contents", {"urls": ["https://b.test"]}, info, {})  # no write
+    assert len(sent) == 3
+    assert len(cache_files(tmp_path)) == 1
 
 
 class RatesProxy(BaseProxy):
