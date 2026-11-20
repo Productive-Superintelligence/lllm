@@ -239,6 +239,40 @@ def test_max_tokens_alone_is_an_output_limit_for_other_providers(monkeypatch):
         _forget_window(model)
 
 
+def test_a_model_under_an_unknown_provider_is_found_by_its_whole_name(
+    monkeypatch,
+):
+    import litellm
+
+    model = "fixcore/custom-provider"
+    _forget_window(model)
+    real, found = litellm.get_model_info, []
+
+    def get_model_info(name, *args, **kwargs):
+        info = real(name, *args, **kwargs)
+        found.append((name, kwargs.get("custom_llm_provider")))
+        return info
+
+    monkeypatch.setattr(litellm, "get_model_info", get_model_info)
+    litellm.register_model(
+        {
+            model: {
+                "litellm_provider": "fixcore",
+                "mode": "chat",
+                "max_input_tokens": 2_000,
+                "input_cost_per_token": 0.0,
+                "output_cost_per_token": 0.0,
+            }
+        }
+    )
+    try:
+        assert DefaultContextManager(model).max_tokens == 2_000
+        assert found == [(model, None)]  # the whole-name lookup found it
+    finally:
+        litellm.model_cost.pop(model, None)
+        _forget_window(model)
+
+
 # -- 3: a message that partly fits keeps the part the marker says ----------
 
 
