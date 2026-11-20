@@ -25,7 +25,6 @@ from typing import Any, Callable, NamedTuple
 from .create import create_project
 from .hub import tactic_resource
 from .protocol import Tactic
-from .runtimes import coerce_tactic
 from .services import create_tactic_app
 
 LOG_LEVELS = {"critical", "debug", "error", "info", "trace", "warning"}
@@ -596,7 +595,9 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
 
     target = _load_entrypoint(entrypoint)
     if not isinstance(target, Tactic):
-        raise TypeError(f"Entrypoint names an ASGI app, not a tactic: {entrypoint}")
+        raise TypeError(
+            f"Entrypoint {entrypoint} resolves to a FastAPI or Starlette app, not a tactic"
+        )
     return target
 
 
@@ -608,8 +609,7 @@ def _load_entrypoint(entrypoint: str) -> Any:
     called once.
     """
 
-    from .launch import _is_asgi_app
-    from .runtimes.python import _factory_result_tactic, _is_factory
+    from .launch import _entrypoint_target
 
     if (
         not isinstance(entrypoint, str)
@@ -629,20 +629,11 @@ def _load_entrypoint(entrypoint: str) -> Any:
     for part in attr_path.split("."):
         value = getattr(value, part)
     try:
-        if _is_asgi_app(value):
-            return value
-        if not _is_factory(value):
-            return coerce_tactic(value)
-        produced = value()
-        if _is_asgi_app(produced):
-            return produced
-        tactic = _factory_result_tactic(produced, None)
-        if tactic is None:
-            raise TypeError(f"{entrypoint} returned {type(produced).__name__}")
-        return tactic
+        return _entrypoint_target(value)
     except TypeError as exc:
         raise TypeError(
-            f"Entrypoint did not resolve to a tactic, callable, or app: {entrypoint}"
+            f"Entrypoint {entrypoint} did not resolve to a tactic, callable, or "
+            f"app: {exc}"
         ) from exc
 
 

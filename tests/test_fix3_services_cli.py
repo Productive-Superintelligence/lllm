@@ -71,6 +71,11 @@ starlette_app = Starlette(routes=[Route("/ping", _ping)])
 
 def shout(text: str) -> str:
     return text.upper()
+
+
+def build_number():
+    CALLS.append("build_number")
+    return 42
 """
 
 
@@ -150,9 +155,63 @@ def test_inspect_still_reports_a_tactic_entrypoint(app_module, capsys):
     assert capsys.readouterr().out.splitlines()[0] == "shout (python)"
 
 
-def test_load_tactic_entrypoint_refuses_an_app(app_module):
+@pytest.mark.parametrize("attr", ["app", "create_app", "starlette_app"])
+def test_load_tactic_entrypoint_refuses_an_app(app_module, attr):
     with pytest.raises(TypeError, match="app, not a tactic"):
-        load_tactic_entrypoint(f"{app_module}:app")
+        load_tactic_entrypoint(f"{app_module}:{attr}")
+
+
+@pytest.mark.parametrize("command", ["serve", "inspect"])
+def test_a_factory_that_returns_nothing_usable_is_an_error(
+    app_module, served, capsys, command
+):
+    with pytest.raises(SystemExit) as caught:
+        main([command, f"{app_module}:build_number"])
+
+    assert caught.value.code == 2
+    captured = capsys.readouterr()
+    assert captured.out == "" and served == []
+    assert "fix3_apps:build_number did not resolve" in captured.err
+    assert "the factory returned int" in captured.err  # what it got
+    assert "a FastAPI or Starlette app" in captured.err  # what it accepts
+    assert "Traceback" not in captured.err
+
+
+def test_load_tactic_entrypoint_explains_a_factory_that_returns_nothing_usable(
+    app_module,
+):
+    with pytest.raises(TypeError, match="the factory returned int; it must return"):
+        load_tactic_entrypoint(f"{app_module}:build_number")
+
+
+@pytest.mark.parametrize("entry", ["app", "create_app"])
+def test_a_tactic_entry_that_names_an_app_is_a_launch_error(tmp_path, entry):
+    from lllm.launch import LaunchError, load_launch_app
+
+    package = tmp_path / "web"
+    _write(
+        package / "lllm.toml",
+        f"""
+[package]
+org = "demo"
+name = "web"
+
+[tactics.web]
+entry = "fix3_web.app:{entry}"
+
+[tactics.number]
+entry = "fix3_web.app:build_number"
+""",
+    )
+    _write(package / "fix3_web" / "__init__.py", "")
+    _write(package / "fix3_web" / "app.py", APP_MODULE)
+
+    with pytest.raises(LaunchError, match="is a FastAPI or Starlette app, not a tactic"):
+        load_launch_app(package, resource="tactics.web")
+    with pytest.raises(LaunchError, match=r"\[services\.NAME\]"):
+        load_launch_app(package, resource="tactics.web")
+    with pytest.raises(LaunchError, match="the factory returned int"):
+        load_launch_app(package, resource="tactics.number")
 
 
 # 2: a result that fails the tactic's output schema is a bug in the tactic,

@@ -13,7 +13,7 @@ from .hub import import_entrypoint, load_manifest
 from .hub.ports import DEFAULT_PORT, resource_metadata, serve_port
 from .protocol import Tactic
 from .runtimes import coerce_tactic
-from .runtimes.python import _is_factory
+from .runtimes.python import _factory_result_tactic, _is_factory
 from .services import create_tactic_app
 
 _LAUNCHABLE_SECTIONS = ("services", "tactics", "channels", "runs")
@@ -203,8 +203,49 @@ def _service_app(manifest: Any, name: str, service: Any, base_dir: Path) -> Any:
 
 def _tactic_app(entry: str, *, base_dir: Path, name: str) -> Any:
     value = import_entrypoint(entry, base_dir=base_dir, keep_loaded=True)
-    tactic = _coerce_tactic(value, name=name)
-    return create_tactic_app(tactic)
+    try:
+        target = _entrypoint_target(value, name=name)
+    except TypeError as exc:
+        raise LaunchError(
+            f"tactic {name} entry {entry} did not resolve to a tactic: {exc}"
+        ) from exc
+    if _is_asgi_app(target):
+        raise LaunchError(
+            f"tactic {name} entry {entry} is a FastAPI or Starlette app, not a "
+            "tactic; serve an app from a [services.NAME] entry"
+        )
+    return create_tactic_app(target)
+
+
+#: What a factory named by an entrypoint may return.
+FACTORY_RESULTS = (
+    "a tactic or Tactic subclass, an object with run(), a callable, "
+    "or a FastAPI or Starlette app"
+)
+
+
+def _entrypoint_target(value: Any, *, name: str | None = None) -> Any:
+    """A FastAPI or Starlette app, or the app a factory returns, as it is;
+    otherwise the tactic :func:`coerce_tactic` makes of ``value``.
+
+    A factory is called once. One that returns none of
+    :data:`FACTORY_RESULTS` raises ``TypeError``.
+    """
+
+    if _is_asgi_app(value):
+        return value
+    if (isinstance(value, type) and issubclass(value, Tactic)) or not _is_factory(value):
+        return coerce_tactic(value, name=name)
+    produced = value()
+    if _is_asgi_app(produced):
+        return produced
+    tactic = _factory_result_tactic(produced, name)
+    if tactic is None:
+        raise TypeError(
+            f"the factory returned {type(produced).__name__}; it must return "
+            f"{FACTORY_RESULTS}"
+        )
+    return tactic
 
 
 def _channel_app(manifest: Any, *, store: str | Path | None) -> Any:
