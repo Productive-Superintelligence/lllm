@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import functools
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 from typing import Literal
@@ -1650,6 +1652,119 @@ def test_an_error_message_with_a_lone_surrogate_keeps_the_json_envelope():
     assert error["type"] == "ValueError"
     assert error["message"] == "bad \\ud800 value"
     assert error["request_id"] == "r-9"
+
+
+# Round 5, 1: a body nested more than 500 arrays and objects deep is a 400,
+# as in AAAX, before it is parsed. A deep value could otherwise crash the
+# server when code walks it recursively on a small thread stack.
+
+TOO_DEEP = "Request body is nested more than 500 levels deep."
+
+
+class Ok(ProtocolTactic):
+    name = "ok"
+
+    def _run(self, value, **kwargs):
+        return "ok"
+
+
+def _nested(depth: int) -> bytes:
+    return ("[" * depth + "]" * depth).encode()
+
+
+@pytest.mark.parametrize("path", BODY_ROUTES)
+def test_a_body_nested_501_levels_is_a_400(path):
+    client = TestClient(create_tactic_app(Echo()), raise_server_exceptions=False)
+
+    response = client.post(path, content=_nested(501), headers={"content-type": "application/json"})
+
+    assert response.status_code == 400
+    error = response.json()["detail"]["error"]
+    assert (error["type"], error["message"]) == ("SchemaError", TOO_DEEP)
+
+
+@pytest.mark.parametrize("path", ["/run", "/tactics/ok/run"])
+def test_a_body_nested_500_levels_passes(path):
+    client = TestClient(create_tactic_app(Ok()))
+
+    response = client.post(path, content=_nested(500), headers={"content-type": "application/json"})
+
+    assert response.json()["output"] == "ok"
+
+
+def test_brackets_inside_strings_do_not_count():
+    client = TestClient(create_tactic_app(Echo()))
+    text = 'a\\"' + "[{" * 600  # an escaped quote does not end the string
+    body = json.dumps({"input": json.loads(f'"{text}"')})
+
+    response = client.post("/run", content=body, headers={"content-type": "application/json"})
+
+    assert response.json()["output"] == json.loads(f'"{text}"')
+
+
+def test_unbalanced_brackets_that_are_not_json_are_a_400_too():
+    client = TestClient(create_tactic_app(Echo()), raise_server_exceptions=False)
+
+    response = client.post("/run", content=b"[" * 20000, headers={"content-type": "text/plain"})
+
+    assert response.status_code == 400
+    assert response.json()["detail"]["error"]["message"] == TOO_DEEP
+
+
+def test_a_recursion_error_while_parsing_is_the_same_400(monkeypatch):
+    import types
+
+    import lllm.services.fastapi as service
+
+    def too_deep(text):
+        raise RecursionError("maximum recursion depth exceeded")
+
+    monkeypatch.setattr(service, "json", types.SimpleNamespace(loads=too_deep))
+
+    with pytest.raises(SchemaError, match=TOO_DEEP):
+        service._body_value(b"[1]", "application/json")
+
+
+DEEP_BODY_SCRIPT = """
+import threading
+
+threading.stack_size(1 << 20)  # 1 MiB thread stacks, as python:alpine builds use
+
+from fastapi.testclient import TestClient
+
+from lllm import Tactic, create_tactic_app
+
+
+class Deep(Tactic):
+    name = "deep"
+
+    def call(self, task: dict) -> str:
+        return "ok"
+
+
+client = TestClient(create_tactic_app(Deep()), raise_server_exceptions=False)
+for depth in (4500, 6000):
+    body = '{"a": ' * depth + "1" + "}" * depth  # a bare body, not an envelope
+    response = client.post("/run", content=body, headers={"content-type": "application/json"})
+    print(depth, response.status_code, flush=True)
+print("alive", client.post("/run", json={"input": {"a": 1}}).json()["output"], flush=True)
+"""
+
+
+def test_a_deep_body_cannot_crash_a_server_with_small_thread_stacks(tmp_path):
+    import lllm
+
+    script = tmp_path / "deep.py"
+    script.write_text(DEEP_BODY_SCRIPT, encoding="utf-8")
+    root = str(Path(lllm.__file__).resolve().parents[1])
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join([root, os.environ.get("PYTHONPATH", "")])}
+
+    result = subprocess.run(
+        [sys.executable, str(script)], capture_output=True, text=True, env=env, timeout=120
+    )
+
+    assert result.returncode == 0, (result.returncode, result.stderr[-1500:])
+    assert result.stdout.split("\n")[:3] == ["4500 400", "6000 400", "alive ok"]
 
 
 def test_an_octet_stream_body_that_is_not_utf8_reaches_the_tactic_as_bytes():

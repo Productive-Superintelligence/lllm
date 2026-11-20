@@ -186,7 +186,7 @@ print(sorted(error))
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is not UTF-8 (and not `application/octet-stream`) |
+| 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is not UTF-8 (and not `application/octet-stream`), holds an escaped lone surrogate, or is nested more than 500 levels deep |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A cross-site browser `POST` that is not JSON, or a cross-site `GET` to a custom endpoint ([Requests from browsers](#requests-from-browsers)) |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
@@ -196,10 +196,11 @@ print(sorted(error))
 For clients you cannot change, a body that is not an envelope, JSON or
 UTF-8 text, is taken as the input itself, and `task` works in place of
 `input`; only the envelope carries a context. A body that is not UTF-8 is
-a 400 `SchemaError`, except an `application/octet-stream` body, which the
-tactic gets as bytes, and so is a lone surrogate, as raw bytes or as an
-unpaired `\ud800` escape in JSON. The
-[Service API](api/service-api.md) reference has the exact shapes.
+a 400 `SchemaError` unless it is `application/octet-stream`, which the
+tactic gets as bytes. A lone surrogate written as a JSON escape (`\ud800`)
+is also a 400, and so is a body nested more than 500 arrays and objects
+deep. The [Service API](api/service-api.md) reference has the exact
+shapes.
 
 ## Streaming
 

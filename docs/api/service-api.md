@@ -32,10 +32,11 @@ envelope:
 A body is decoded strictly as UTF-8 and is an envelope when it is a JSON
 object with `input` or `task` and no keys besides `input`, `task`, and
 `context`. Any other body, JSON or UTF-8 text, is the input itself. A body
-that is not UTF-8 is a `SchemaError`, except an `application/octet-stream`
-body, which the tactic gets as bytes. A lone surrogate is a `SchemaError`
-however it is encoded: as raw bytes, or as an unpaired `\ud800` escape in
-the JSON.
+that is not UTF-8 is a 400 `SchemaError` unless it is
+`application/octet-stream`, which the tactic gets as bytes. A lone
+surrogate written as a JSON escape (`\ud800`) is also a 400, and so is a
+body nested more than 500 arrays and objects deep, which is refused before
+it is parsed.
 
 | `context` key | Meaning |
 | --- | --- |
@@ -112,7 +113,7 @@ Error envelopes are stable across protocol and runtime failures.
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | Invalid input, a body that is not UTF-8 (other than `application/octet-stream`), or a malformed envelope or context |
+| 400 | `SchemaError` | Invalid input; a body that is not UTF-8 (other than `application/octet-stream`), holds an escaped lone surrogate, or is nested more than 500 levels deep; or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A cross-site `POST` to a tactic route that is not JSON, or a cross-site `GET` or `HEAD` to a custom endpoint ([below](#cross-site-requests)) |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |

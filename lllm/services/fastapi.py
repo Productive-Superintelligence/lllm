@@ -815,10 +815,11 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
 
     The body is decoded strictly as UTF-8 and is then the JSON it parses as,
     or else the text; an empty body is None. A body that is not UTF-8 is a
-    ``SchemaError``, except an ``application/octet-stream`` body, which the
-    tactic gets as bytes. A lone surrogate is a ``SchemaError`` however it
-    is encoded: as raw bytes it fails the decode, and as a JSON escape
-    (``\\ud800``) it is found in the parsed value.
+    ``SchemaError`` unless it is ``application/octet-stream``, which the
+    tactic gets as bytes. A lone surrogate written as a JSON escape
+    (``\\ud800``) is also a ``SchemaError``, and so is a body nested
+    more than 500 arrays and objects deep, which is refused before it is
+    parsed.
     """
 
     if not raw:
@@ -832,15 +833,63 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
             "Request body must be JSON or UTF-8 text; send binary data as "
             "application/octet-stream."
         ) from exc
+    if _nested_too_deep(text):
+        raise _too_deep_error()
     try:
         value = json.loads(text.removeprefix("\ufeff"))
-    except (ValueError, RecursionError):
+    except RecursionError as exc:
+        raise _too_deep_error() from exc
+    except ValueError:
         return text
     if "\\u" in text and _has_lone_surrogate(value):
         raise SchemaError(
             "Request body holds a lone surrogate, which is not valid Unicode."
         )
     return value
+
+
+# How deep a body may nest arrays and objects, as in AAAX. Deeper ones are
+# refused before they are parsed: code that walks such a value recursively,
+# as a native tactic's repr() of its task does in a worker thread, can
+# overflow a small thread stack and crash the process.
+_MAX_JSON_DEPTH = 500
+_JSON_STRUCTURE = re.compile(r'[\[\]{}"\\]')
+
+
+def _nested_too_deep(text: str) -> bool:
+    """Whether ``text`` nests arrays and objects more than ``_MAX_JSON_DEPTH`` deep.
+
+    The brackets outside strings are counted, one at a time, so a body that
+    is not JSON counts too, and the check itself never recurses.
+    """
+
+    if text.count("[") + text.count("{") <= _MAX_JSON_DEPTH:
+        return False
+    depth = 0
+    in_string = False
+    escaped_at = -1  # the position of a character a backslash escapes
+    for match in _JSON_STRUCTURE.finditer(text):
+        position, char = match.start(), match.group()
+        if position == escaped_at:
+            continue
+        if in_string:
+            if char == "\\":
+                escaped_at = position + 1
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char in "[{":
+            depth += 1
+            if depth > _MAX_JSON_DEPTH:
+                return True
+        elif char in "]}":
+            depth -= 1
+    return False
+
+
+def _too_deep_error() -> SchemaError:
+    return SchemaError(f"Request body is nested more than {_MAX_JSON_DEPTH} levels deep.")
 
 
 _LONE_SURROGATE = re.compile(f"[{chr(0xD800)}-{chr(0xDFFF)}]")
