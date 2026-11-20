@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import errno
 import getpass
 import json
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Literal
@@ -201,13 +203,15 @@ def configure_missing_api_keys(
 ) -> str:
     """Prompt for missing keys and persist them through the selected backend.
 
-    The backend is chosen before any key is asked for, so a key is never
-    typed for a backend that cannot store it.
+    The backend is chosen, and an env file checked to be writable, before
+    any key is asked for, so a key is never typed only to be lost.
     """
 
     provided_values = _validated_secret_values(provided or {})
     requirements = dedupe_requirements(requirements)
     credentials = choose_credential_backend(credentials)
+    if credentials == "env":
+        check_env_file_writable(env_file)
     values: dict[str, str] = {}
     for requirement in requirements:
         if requirement.name in provided_values:
@@ -245,10 +249,52 @@ def read_env_file(path: str | Path | None) -> dict[str, str]:
     return values
 
 
-def write_env_file(path: str | Path, values: dict[str, str]) -> None:
+def check_env_file_writable(path: str | Path) -> None:
+    """Raise ``CredentialError`` unless keys can be written to the env file.
+
+    Checked before keys are asked for, so they are never typed only to be
+    lost: an existing file must be a writable regular file, and otherwise
+    its folder must exist, or be creatable, and be writable.
+    """
+
     env_path = Path(path).expanduser()
     if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
         raise CredentialError("env file must be a regular file")
+    if env_path.exists():
+        if not os.access(env_path, os.W_OK):
+            raise CredentialError(f"cannot write env file {env_path}: permission denied")
+        return
+    folder = env_path.parent
+    while not folder.exists() and folder != folder.parent:
+        folder = folder.parent  # the nearest folder that exists, to create in
+    if not folder.is_dir():
+        raise CredentialError(f"cannot write env file {env_path}: {folder} is not a folder")
+    if not os.access(folder, os.W_OK | os.X_OK):
+        raise CredentialError(f"cannot write env file {env_path}: {folder} is not writable")
+
+
+def write_env_file(path: str | Path, values: dict[str, str]) -> None:
+    """Write ``values`` into the env file, keeping its other lines.
+
+    The file is opened without following a symlink, checked to be a regular
+    file once open, and made readable only by its owner. Any failure is a
+    ``CredentialError`` naming the file and the reason.
+    """
+
+    env_path = Path(path).expanduser()
+    if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
+        raise CredentialError("env file must be a regular file")
+    try:
+        _write_env_file(env_path, values)
+    except CredentialError:
+        raise
+    except OSError as exc:
+        raise CredentialError(
+            f"cannot write env file {env_path}: {exc.strerror or exc}"
+        ) from exc
+
+
+def _write_env_file(env_path: Path, values: dict[str, str]) -> None:
     env_path.parent.mkdir(parents=True, exist_ok=True)
     existing_lines = (
         env_path.read_text(encoding="utf-8").splitlines()
@@ -271,13 +317,26 @@ def write_env_file(path: str | Path, values: dict[str, str]) -> None:
         rendered.append("")
     for key, value in sorted(pending.items()):
         rendered.append(f"{key}={_quote_env_value(value)}")
-    fd = os.open(str(env_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(rendered).rstrip() + "\n")
+    # O_NOFOLLOW: a symlink put in place after the check above is refused
+    # rather than written through.
+    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
     try:
-        env_path.chmod(0o600)
-    except OSError:
-        pass
+        fd = os.open(str(env_path), flags, 0o600)
+    except OSError as exc:
+        if exc.errno in _SYMLINK_ERRNOS:
+            raise CredentialError("env file must be a regular file") from exc
+        raise
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            raise CredentialError("env file must be a regular file")
+        fchmod = getattr(os, "fchmod", None)
+        if fchmod is not None:
+            fchmod(fd, 0o600)  # the open file, never a link's target
+        handle.write("\n".join(rendered).rstrip() + "\n")
+
+
+# What open() with O_NOFOLLOW reports for a symlink: ELOOP, or EMLINK on BSD.
+_SYMLINK_ERRNOS = frozenset({errno.ELOOP, getattr(errno, "EMLINK", errno.ELOOP)})
 
 
 def keyring_available() -> bool:

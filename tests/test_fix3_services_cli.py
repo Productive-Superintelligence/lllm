@@ -2082,13 +2082,20 @@ def _symlinked_env_file(tmp_path: Path, kind: str) -> tuple[Path, Path | None]:
 @pytest.mark.parametrize("kind", ["dangling", "looping"])
 @pytest.mark.parametrize("command", ["serve", "setup"])
 def test_an_env_file_that_is_a_symlink_is_refused(
-    keyed_package, served, tmp_path, capsys, kind, command
+    keyed_package, served, tmp_path, monkeypatch, capsys, kind, command
 ):
+    import lllm.credentials
+
     package, stored = keyed_package
     env_file, target = _symlinked_env_file(tmp_path, kind)
     args = [command, str(package), "--credentials", "env", "--env-file", str(env_file)]
     if command == "setup":
         args += ["--set", "FIX3_TEST_KEY=sk-set"]
+
+    def asked(*args, **kwargs):
+        raise AssertionError("asked for keys before refusing")
+
+    monkeypatch.setattr(lllm.credentials, "configure_missing_api_keys", asked)
 
     with pytest.raises(SystemExit) as caught:
         main(args)
@@ -2098,6 +2105,152 @@ def test_an_env_file_that_is_a_symlink_is_refused(
     assert env_file.is_symlink()
     assert target is None or not target.exists()
     assert served == [] and stored == {}
+
+
+@pytest.mark.parametrize("kind", ["dangling", "looping"])
+def test_the_env_file_helpers_refuse_a_symlink(tmp_path, kind):
+    from lllm.credentials import CredentialError, read_env_file, write_env_file
+
+    env_file, target = _symlinked_env_file(tmp_path, kind)
+
+    with pytest.raises(CredentialError, match="env file must be a regular file"):
+        read_env_file(env_file)
+    with pytest.raises(CredentialError, match="env file must be a regular file"):
+        write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+    assert target is None or not target.exists()
+
+
+# Round 5, 3: an env file that cannot be written is a clean error, found
+# before keys are asked for when possible, and written without following a
+# symlink swapped in after the check.
+
+
+def _unwritable_env_file(tmp_path: Path, kind: str) -> Path:
+    if kind == "read-only-folder":
+        folder = tmp_path / "read-only"
+        folder.mkdir()
+        folder.chmod(0o500)
+        return folder / "keys.env"
+    blocker = tmp_path / "blocker"  # a file where a folder should be
+    blocker.write_text("not a folder\n", encoding="utf-8")
+    return blocker / "keys.env"
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root writes anywhere")
+@pytest.mark.parametrize("kind", ["read-only-folder", "parent-is-a-file"])
+@pytest.mark.parametrize("command", ["serve", "setup"])
+def test_an_unwritable_env_file_stops_before_asking(
+    key_package, served, tmp_path, monkeypatch, capsys, kind, command
+):
+    _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
+    env_file = _unwritable_env_file(tmp_path, kind)
+    args = [command, str(key_package), "--credentials", "env", "--env-file", str(env_file)]
+    try:
+        with pytest.raises(SystemExit) as caught:
+            main(args)
+    finally:
+        if kind == "read-only-folder":
+            env_file.parent.chmod(0o700)
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert f"cannot write env file {env_file}" in err
+    assert "Traceback" not in err
+    assert served == [] and not env_file.exists()
+
+
+class _FailingOs:
+    """``os`` for lllm.credentials, with chosen functions replaced."""
+
+    def __init__(self, **replacements):
+        self._replacements = replacements
+
+    def __getattr__(self, name):
+        return self._replacements.get(name) or getattr(os, name)
+
+
+def test_a_failed_write_is_a_clean_error_after_keys_are_typed(
+    key_package, served, tmp_path, monkeypatch, capsys
+):
+    import errno
+
+    import lllm.credentials
+
+    def no_space(*args, **kwargs):
+        raise OSError(errno.ENOSPC, "No space left on device")
+
+    _type_keys(monkeypatch, "sk-typed")
+    monkeypatch.setattr(lllm.credentials, "os", _FailingOs(open=no_space))
+    env_file = tmp_path / "keys.env"
+
+    with pytest.raises(SystemExit) as caught:
+        main(["serve", str(key_package), "--credentials", "env", "--env-file", str(env_file)])
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert f"cannot write env file {env_file}: No space left on device" in err
+    assert served == []
+
+
+def test_write_env_file_opens_without_following_links(tmp_path, monkeypatch):
+    import lllm.credentials
+    from lllm.credentials import write_env_file
+
+    flags_seen = []
+
+    def recording_open(path, flags, mode=0o777):
+        flags_seen.append(flags)
+        return os.open(path, flags, mode)
+
+    def no_chmod(self, mode):
+        raise AssertionError("Path.chmod follows links; use os.fchmod")
+
+    monkeypatch.setattr(lllm.credentials, "os", _FailingOs(open=recording_open))
+    monkeypatch.setattr(Path, "chmod", no_chmod)
+    env_file = tmp_path / "keys.env"
+
+    write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+
+    assert flags_seen and flags_seen[0] & getattr(os, "O_NOFOLLOW", 0)
+    assert env_file.stat().st_mode & 0o777 == 0o600
+    assert 'FIX3_TEST_KEY="sk"' in env_file.read_text(encoding="utf-8")
+
+
+def test_write_env_file_refuses_a_symlink_swapped_in_after_the_check(
+    tmp_path, monkeypatch
+):
+    from lllm.credentials import CredentialError, write_env_file
+
+    target = tmp_path / "elsewhere.env"
+    target.write_text("KEEP=1\n", encoding="utf-8")
+    env_file = tmp_path / "keys.env"
+    env_file.symlink_to(target)
+    # The pre-check sees no symlink, as if the link appeared just after it.
+    monkeypatch.setattr(Path, "is_symlink", lambda self: False)
+
+    with pytest.raises(CredentialError, match="env file must be a regular file"):
+        write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+
+    assert target.read_text(encoding="utf-8") == "KEEP=1\n"
+
+
+def test_write_env_file_refuses_a_file_that_is_not_regular_once_open(
+    tmp_path, monkeypatch
+):
+    import stat as stat_module
+
+    import lllm.credentials
+    from lllm.credentials import CredentialError, write_env_file
+
+    def fifo_stat(fd):
+        real = os.fstat(fd)
+        mode = stat_module.S_IFIFO | (real.st_mode & 0o777)
+        return os.stat_result((mode, *tuple(real)[1:]))
+
+    monkeypatch.setattr(lllm.credentials, "os", _FailingOs(fstat=fifo_stat))
+
+    with pytest.raises(CredentialError, match="env file must be a regular file"):
+        write_env_file(tmp_path / "keys.env", {"FIX3_TEST_KEY": "sk"})
 
 
 def _help(command: str, monkeypatch, capsys) -> str:
