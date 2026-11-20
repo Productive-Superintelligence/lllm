@@ -171,8 +171,9 @@ def main(argv: list[str] | None = None) -> int:
         choices=("auto", "keyring", "env"),
         default="auto",
         help=(
-            "Where interactive setup should store missing keys "
-            "(--no-keyring overrides auto: they go to --env-file)"
+            "Where interactive setup stores the keys you type: auto (the default) "
+            "picks the OS keyring when one is available and the env file "
+            "otherwise; --no-keyring makes it the env file"
         ),
     )
     serve_cmd.add_argument(
@@ -371,7 +372,8 @@ def _add_package_options(
         "--env-file",
         default=".env.local",
         help=(
-            "Env file to read API keys from and store typed keys in"
+            "Env file to read API keys from; typed keys are stored here with "
+            "--credentials env, with --no-keyring, or when no keyring is available"
             if serving
             else "Env file to read API keys from"
         ),

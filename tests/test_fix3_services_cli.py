@@ -1157,13 +1157,10 @@ def test_inspecting_a_channel_package_creates_nothing(
 
 
 def test_inspect_help_hides_store_but_inspect_still_accepts_it(
-    channel_package, fake_sssn, tmp_path, capsys
+    channel_package, fake_sssn, tmp_path, monkeypatch, capsys
 ):
     for command, listed in (("inspect", False), ("serve", True)):
-        with pytest.raises(SystemExit) as caught:
-            main([command, "--help"])
-        assert caught.value.code == 0
-        assert ("--store" in capsys.readouterr().out) is listed
+        assert ("--store" in _help(command, monkeypatch, capsys)) is listed
 
     args = ["inspect", str(channel_package), "--store", str(tmp_path / "s")]
     assert main(args) == 0
@@ -1815,22 +1812,36 @@ def test_serve_still_stores_prompted_keys_through_credentials(
     assert len(served) == 1
 
 
-def test_serve_help_says_where_typed_keys_go(capsys):
+def _help(command: str, monkeypatch, capsys) -> str:
+    """``lllm COMMAND --help`` on one line: argparse wraps to the terminal
+    width and breaks at hyphens, so the width is pinned first."""
+
+    monkeypatch.setenv("COLUMNS", "1000")
     with pytest.raises(SystemExit):
-        main(["serve", "--help"])
-    serve_help = " ".join(capsys.readouterr().out.split()).lower()
-    with pytest.raises(SystemExit):
-        main(["inspect", "--help"])
-    inspect_help = " ".join(capsys.readouterr().out.split()).lower()
+        main([command, "--help"])
+    return " ".join(capsys.readouterr().out.split())
+
+
+def test_serve_help_says_where_typed_keys_go(monkeypatch, capsys):
+    serve_help = _help("serve", monkeypatch, capsys)
+    inspect_help = _help("inspect", monkeypatch, capsys)
 
     assert (
-        "neither read api keys from the os keyring nor store typed keys there; "
-        "they go to --env-file"
+        "--env-file ENV_FILE Env file to read API keys from; typed keys are stored "
+        "here with --credentials env, with --no-keyring, or when no keyring is "
+        "available"
     ) in serve_help
-    assert "env file to read api keys from and store typed keys in" in serve_help
-    assert "--no-keyring overrides auto" in serve_help
-    assert "store typed keys" not in inspect_help
-    assert "do not read api keys from the os keyring" in inspect_help
+    assert (
+        "--no-keyring Neither read API keys from the OS keyring nor store typed "
+        "keys there; they go to --env-file"
+    ) in serve_help
+    assert (
+        "auto (the default) picks the OS keyring when one is available and the "
+        "env file otherwise; --no-keyring makes it the env file"
+    ) in serve_help
+    assert "--env-file ENV_FILE Env file to read API keys from" in inspect_help
+    assert "--no-keyring Do not read API keys from the OS keyring" in inspect_help
+    assert "typed keys" not in inspect_help
 
 
 def test_status_code_for_error_maps_cross_site_requests_to_403():
