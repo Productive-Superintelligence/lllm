@@ -222,6 +222,22 @@ def test_a_lone_value_for_several_required_params_is_a_clear_error():
         proxies("tools/join", "ab")
 
 
+def test_keyword_params_join_the_positional_ones():
+    proxies = tactic_tools()
+
+    assert proxies("tools/repeat", "ab", times=3) == "ababab"
+    assert proxies("tools/repeat", {"text": "ab"}, times=3) == "ababab"
+    assert proxies("tools/repeat", params={"text": "ab"}, times=3) == "ababab"
+    assert proxies("tools/repeat", text="ab", times=3) == "ababab"
+
+
+def test_more_than_one_positional_param_is_an_error():
+    proxies = tactic_tools()
+
+    with pytest.raises(TypeError, match="one positional params value"):
+        proxies("tools/repeat", "ab", 3)
+
+
 def test_an_http_endpoint_with_one_param_takes_a_lone_value_too(http):
     proxy = UncachedRatesProxy(runtime=Runtime())
 

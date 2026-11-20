@@ -136,7 +136,8 @@ print(fx("fx/rates/USD", {"quote": "JPY"}))  # (4)!
    and `query_api_doc("fx")` returns the same section.
 4. The path as listed (`fx/rates/USD`), the template with the value in the
    params (`fx/rates/{base}`), and the method name (`fx.rate`) all reach
-   this endpoint. Parameters can also be keyword arguments.
+   this endpoint. Parameters can also be keyword arguments, alone or next
+   to the dict.
 
 The other arguments of `@BaseProxy.endpoint` are `method` (`"GET"`, or
 `"POST"` to send a JSON body), `remove_keys` (keys to drop from each item of

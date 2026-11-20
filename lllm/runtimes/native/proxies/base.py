@@ -599,17 +599,28 @@ class ProxyManager:
         return path_parts[0], "/".join(path_parts[1:])
 
     def __call__(self, endpoint: str, *args, **kwargs):
-        """Call ``"<proxy>/<endpoint path>"`` with a params dict, e.g. ``CALL_API``."""
+        """Call ``"<proxy>/<endpoint path>"`` with its params, e.g. ``CALL_API``.
+
+        The params come as one positional value (or ``params=``), as keyword
+        arguments, or both; keywords are merged into the positional params.
+        """
 
         proxy_name, path = self._resolve(endpoint)
         if proxy_name not in self.proxies:
             raise KeyError(
                 f"Proxy '{proxy_name}' not registered. Available: {list(self.proxies.keys())}"
             )
+        if len(args) > 1:
+            raise TypeError(
+                f"'{endpoint}' takes one positional params value, got "
+                f"{len(args)}; pass the other params by name."
+            )
+        proxy = self.proxies[proxy_name]
         params = args[0] if args else kwargs.pop("params", None)
-        if params is None and kwargs:
-            params, kwargs = kwargs, {}
-        return self.proxies[proxy_name].call(path, params)
+        if kwargs:
+            _method, info, _path_params = proxy.resolve_endpoint(path)
+            params = {**proxy._params_dict(path, info, params), **kwargs}
+        return proxy.call(path, params)
 
 
 def ProxyRegistrator(
