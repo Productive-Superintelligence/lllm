@@ -6,6 +6,7 @@ import asyncio
 import functools
 import json
 import os
+import re
 import subprocess
 import sys
 from pathlib import Path
@@ -1900,17 +1901,35 @@ def test_the_boundary_copies_keep_their_semantics():
         copy_boundary_value,
     )
 
+    class Items(list):
+        pass
+
     Pair = namedtuple("Pair", "a b")
     shared = [1]
     leaf = object()
     value = OrderedDict(
-        a=[shared, shared], b=(1, Pair(2, 3)), c={4}, d=frozenset({5}), e=leaf
+        a=[shared, shared],
+        b=(1, Pair(2, 3)),
+        c={4},
+        d=frozenset({5}),
+        e=leaf,
+        f=Items([6, Items([7])]),
     )
 
     copied = copy_boundary_value(value)
 
-    assert copied == {"a": [[1], [1]], "b": (1, (2, 3)), "c": {4}, "d": frozenset({5}), "e": copied["e"]}
+    assert copied == {
+        "a": [[1], [1]],
+        "b": (1, (2, 3)),
+        "c": {4},
+        "d": frozenset({5}),
+        "e": copied["e"],
+        "f": [6, [7]],
+    }
     assert type(copied) is dict and type(copied["b"][1]) is tuple
+    # {4} == frozenset({4}) and Items() == [], so equality cannot tell.
+    assert type(copied["c"]) is set and type(copied["d"]) is frozenset
+    assert type(copied["f"]) is list and type(copied["f"][1]) is list
     assert copied["a"][0] is not shared and copied["a"][0] is not copied["a"][1]
     assert copied["e"] is not leaf  # deep-copied
     for copy in (_copy_string_keyed_value, _copy_metadata_value):
@@ -2560,7 +2579,11 @@ def test_the_launch_api_refuses_a_target_it_cannot_expand():
     ],
     ids=["init", "hub-root"],
 )
-def test_init_and_the_hub_refuse_a_path_they_cannot_expand(capsys, args, path):
+def test_init_and_the_hub_refuse_a_path_they_cannot_expand(
+    tmp_path, monkeypatch, capsys, args, path
+):
+    monkeypatch.chdir(tmp_path)  # a path taken as it is lands here, not in the checkout
+
     with pytest.raises(SystemExit) as caught:
         main(args)
 
@@ -2568,6 +2591,7 @@ def test_init_and_the_hub_refuse_a_path_they_cannot_expand(capsys, args, path):
     err = capsys.readouterr().err
     assert f"cannot expand {path}: Could not determine home directory" in err
     assert "Traceback" not in err
+    assert list(tmp_path.iterdir()) == []
 
 
 @pytest.mark.parametrize("command", ["serve", "inspect"])
@@ -2682,7 +2706,28 @@ def test_a_failed_fchmod_keeps_every_key_in_the_env_file(tmp_path, monkeypatch):
     assert 'FIX3_TEST_KEY="sk"' in text
 
 
-def test_any_os_error_from_the_env_file_helpers_is_a_credential_error(tmp_path):
+@pytest.fixture
+def pathlib_hides_os_errors(monkeypatch):
+    """pathlib's probes as on Python 3.14, which return False for any OSError.
+
+    Earlier Pythons raise for EACCES or a name that is too long, so on them
+    an env-file helper that probed with pathlib would pass these tests too.
+    """
+
+    for name in ("exists", "is_symlink", "is_file", "is_dir"):
+
+        def hiding(self, *args, _probe=getattr(Path, name), **kwargs):
+            try:
+                return _probe(self, *args, **kwargs)
+            except OSError:
+                return False
+
+        monkeypatch.setattr(Path, name, hiding)
+
+
+def test_any_os_error_from_the_env_file_helpers_is_a_credential_error(
+    tmp_path, pathlib_hides_os_errors
+):
     from lllm.credentials import CredentialError, check_env_file_writable, write_env_file
 
     too_long = tmp_path / ("x" * 300)  # longer than a file name may be
@@ -2694,7 +2739,9 @@ def test_any_os_error_from_the_env_file_helpers_is_a_credential_error(tmp_path):
 
 
 @pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root reads anywhere")
-def test_an_unreadable_env_file_folder_is_a_credential_error_everywhere(tmp_path):
+def test_an_unreadable_env_file_folder_is_a_credential_error_everywhere(
+    tmp_path, pathlib_hides_os_errors
+):
     # On Python 3.14 pathlib's exists() and is_symlink() return False for
     # EACCES instead of raising, so the helpers probe with os.lstat.
     from lllm.credentials import (
@@ -2728,9 +2775,9 @@ def test_an_env_file_that_is_not_utf8_is_a_credential_error(
     env_file.write_bytes(b'OTHER="caf\xe9"\n')  # Latin-1, not UTF-8
     message = f"env file {env_file} is not UTF-8 text"
 
-    with pytest.raises(CredentialError, match=message):
+    with pytest.raises(CredentialError, match=re.escape(message)):
         read_env_file(env_file)
-    with pytest.raises(CredentialError, match=message):
+    with pytest.raises(CredentialError, match=re.escape(message)):
         write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
     _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
     with pytest.raises(SystemExit) as caught:
