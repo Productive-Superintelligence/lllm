@@ -97,8 +97,10 @@ any model call. To use another template language, give the prompt a
 
 Give a prompt a Pydantic model as `format`, and the model is asked for JSON
 matching it (OpenAI-style structured output where the provider supports
-it). The reply is validated against the model, and `parsed` holds the
-model's fields. A reply that is not valid JSON or does not fit the model
+it). The reply is validated against the model, and `parsed` is the reply's
+JSON object with only the keys the model reads (its field names and
+aliases, or every key if it allows extra fields), so it validates back
+into the model. A reply that is not valid JSON or does not fit the model
 (a missing field, a wrong type, a failed validator) is repaired like any
 parse error:
 

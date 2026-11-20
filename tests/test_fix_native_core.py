@@ -2,10 +2,11 @@
 
 import base64
 import json
+from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional
 
 import pytest
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field
 
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
@@ -524,33 +525,73 @@ def test_format_lists_every_problem_with_its_location():
 
     with pytest.raises(ParseError, match=r"Triage: Input should be an object$"):
         TRIAGE.parse("[1, 2]")
-    with pytest.raises(json.JSONDecodeError):  # invalid JSON, as before
+    # Invalid JSON: a ParseError with the decoder's message, as before.
+    with pytest.raises(ParseError) as info:
         TRIAGE.parse("billing")
+    assert str(info.value) == "Expecting value: line 1 column 1 (char 0)"
+    assert isinstance(info.value.__cause__, json.JSONDecodeError)
 
 
 def test_format_with_a_json_schema_needs_a_json_object():
     ask = Prompt(path="fix/schema", prompt="Answer.", format={"type": "object"})
 
     assert ask.parse('{"answer": 42}') == {"answer": 42}
-    with pytest.raises(ParseError, match="JSON object"):
+    with pytest.raises(ParseError) as info:
         ask.parse("[42]")
+    assert str(info.value) == "The reply must be a JSON object"  # no "."
 
 
 # -- 6: ``parsed`` holds exactly what ``format=`` or the parser produced ----
 
 
-class Ticket(BaseModel):
-    team: str
-    urgent: bool = False
-    is_global: bool = Field(default=False, alias="global")
+class Invoice(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    vendor: str
+    amount: Decimal
+    note: str = Field(default="", exclude=True)
+    paid_by: str = Field(alias="paidBy")
+    reference: str = Field(validation_alias=AliasChoices("reference", "ref"))
+
+    @computed_field
+    @property
+    def label(self) -> str:
+        return f"{self.vendor} {self.amount}"
 
 
-def test_format_results_hold_exactly_the_model_fields():
-    ask = Prompt(path="fix/ticket", prompt="Route: {ticket}", format=Ticket)
-    parsed = ask.parse('{"team": "bugs", "global": true, "confidence": 0.9}')
+def test_parsed_is_the_reply_json_and_validates_back_into_the_model():
+    ask = Prompt(path="fix/invoice", prompt="Extract: {text}", format=Invoice)
+    reply = (
+        '{"vendor": "ACME", "amount": 1250.10, "note": "rush",'
+        ' "paidBy": "card", "ref": "INV-7"}'
+    )
+    parsed = ask.parse(reply)
 
-    assert parsed == {"team": "bugs", "urgent": False, "global": True}
-    assert Ticket.model_validate(parsed).is_global is True
+    assert parsed == json.loads(reply)  # a number stays a number
+    invoice = Invoice.model_validate(parsed)  # no computed "label" in it
+    assert (invoice.amount, invoice.note, invoice.label) == (
+        Decimal("1250.1"),
+        "rush",
+        "ACME 1250.1",
+    )
+
+
+def test_parsed_keeps_the_declared_keys_or_all_when_extra_is_allowed():
+    class Plain(BaseModel):
+        team: str
+        urgent: bool = False
+        is_global: bool = Field(default=False, alias="global")
+
+    class Loose(Plain):
+        model_config = ConfigDict(extra="allow")
+
+    reply = '{"team": "bugs", "global": true, "confidence": 0.9}'
+    plain = Prompt(path="fix/plain", prompt="?", format=Plain).parse(reply)
+    loose = Prompt(path="fix/loose", prompt="?", format=Loose).parse(reply)
+
+    assert plain == {"team": "bugs", "global": True}  # no defaults added
+    assert Plain.model_validate(plain).is_global is True
+    assert loose == {"team": "bugs", "global": True, "confidence": 0.9}
 
 
 class StrictTriage(BaseModel):
