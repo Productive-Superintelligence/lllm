@@ -359,7 +359,7 @@ print(load_prompt("glossary:assistant/system").path)
 
 | Function | Does |
 | --- | --- |
-| `install_package(zip, *, alias=None, scope="user", load=True)` | Installs and loads a package; `alias` renames it, and an installed name raises `FileExistsError` |
+| `install_package(zip, *, alias=None, scope="user", load=True)` | Installs and loads a package; `alias` renames it (lowercase letters, numbers, `-`, and `_`, as in `team_glossary`), and an installed name raises `FileExistsError` |
 | `export_package(name, path, *, bundle_deps=False)` | Zips a loaded package; `bundle_deps=True` adds its dependencies |
 | `list_packages(scope=None)` | Name, version, scope, and path of each package |
 | `remove_package(name, *, scope=None)` | Deletes an installed package |

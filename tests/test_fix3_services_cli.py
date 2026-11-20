@@ -694,3 +694,55 @@ def test_config_template_ports_match_the_ports_lllm_serve_uses(tmp_path):
         "services.multi": 8000,
         "services.bundle": 9300,
     }
+
+
+# 6: install_package accepts the underscored names `lllm create` produces.
+
+
+@pytest.fixture
+def glossary_zip(tmp_path, monkeypatch):
+    """A zip of a package made by `lllm create`, and a project to install into."""
+
+    import shutil
+
+    from lllm import create_project
+    from lllm.hub import init_package
+
+    monkeypatch.delenv("LLLM_CONFIG", raising=False)
+    result = create_project("minimal", "my-glossary", directory=tmp_path / "made")
+    assert result.package_name == "my_glossary"
+    archive = shutil.make_archive(str(tmp_path / "glossary"), "zip", result.path)
+    project = tmp_path / "project"
+    init_package(project, name="project")
+    monkeypatch.chdir(project)
+    return Path(archive)
+
+
+@pytest.mark.parametrize("alias", ["team_glossary", "glossary_v2", "g"])
+def test_install_package_accepts_an_underscored_alias(glossary_zip, alias):
+    from lllm import Runtime, install_package
+
+    runtime = Runtime()
+    path = install_package(glossary_zip, alias=alias, scope="project", runtime=runtime)
+
+    assert path == Path.cwd() / "lllm_packages" / alias
+    assert f'name = "{alias}"' in (path / "lllm.toml").read_text(encoding="utf-8")
+    assert f"{alias}.prompts:assistant/system" in runtime.keys()
+
+
+def test_install_package_keeps_the_created_name_without_an_alias(glossary_zip):
+    from lllm import install_package
+
+    path = install_package(glossary_zip, scope="project", load=False)
+
+    assert path.name == "my_glossary"
+
+
+@pytest.mark.parametrize(
+    "alias", ["Team", "team glossary", "team.glossary", "_team", "team_", "-x", "a/b"]
+)
+def test_install_package_still_rejects_invalid_aliases(glossary_zip, alias):
+    from lllm import install_package
+
+    with pytest.raises(ValueError, match="not a valid package name"):
+        install_package(glossary_zip, alias=alias, scope="project", load=False)
