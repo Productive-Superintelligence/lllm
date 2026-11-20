@@ -97,11 +97,11 @@ An `InvokeResult` keeps the `message` the model returned, the exact
 and the provider's `raw_response`. A `respond()` that raised is recorded
 too, with `state="failure"` and no `delivery`, so `agent_sessions`,
 `agent_call_count`, and `total_cost` include failed calls. Tactics called
-inside a tactic record
-their sessions into the caller's, so the cost of a whole program adds up in
-one place; [Tactics](tactics.md#sessions) lists the session's fields. A
-plain agent outside a tactic has no tactic session, but
-`agent.respond(return_session=True)` returns the same `AgentCallSession`.
+inside a tactic record their sessions into the caller's, so the cost of a
+whole program adds up in one place; [Tactics](tactics.md#sessions) lists
+the session's fields. A plain agent outside a tactic has no tactic
+session, but `agent.respond(return_session=True)` returns the same
+`AgentCallSession`.
 
 ## Cost and token usage
 
