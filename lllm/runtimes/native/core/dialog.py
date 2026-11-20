@@ -43,6 +43,44 @@ def _is_pil_image(obj: Any) -> bool:
         return False
 
 
+def _media_type(data: bytes) -> Optional[str]:
+    """The media type of PNG, JPEG, WebP, or GIF data, from its first bytes."""
+    if data.startswith(b"\x89PNG"):
+        return "image/png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return "image/jpeg"
+    if data.startswith(b"GIF8"):
+        return "image/gif"
+    if data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "image/webp"
+    return None
+
+
+def _image_media_type(image_base64: str) -> Optional[str]:
+    """The media type of base64 image data, decoding only its first bytes."""
+    head = "".join(image_base64[:32].split())
+    try:
+        return _media_type(base64.b64decode(head[: len(head) // 4 * 4]))
+    except ValueError:  # not base64
+        return None
+
+
+def _image_placeholder(message: "Message") -> str:
+    """``<image/png, 2.0 KB> caption``: an image message without its data."""
+    content = message.content if isinstance(message.content, str) else ""
+    data = "".join(content.split())
+    size = len(data) * 3 // 4 - data[-2:].count("=")
+    if size < 1024:
+        shown = f"{size} B"
+    elif size < 1024 * 1024:
+        shown = f"{size / 1024:.1f} KB"
+    else:
+        shown = f"{size / (1024 * 1024):.1f} MB"
+    placeholder = f"<{_image_media_type(content) or 'image'}, {shown}>"
+    caption = message.metadata.get("caption")
+    return f"{placeholder} {caption}" if caption else placeholder
+
+
 class TokenLogprob(BaseModel):
     token: Optional[StrictStr] = None
     logprob: Optional[float] = None
@@ -542,17 +580,11 @@ class Dialog:
             image_base64 = base64.b64encode(buf.getvalue()).decode("utf-8")
         elif isinstance(image, str):
             # Validate that the base64 string decodes to a known image format
-            _IMAGE_MAGIC = (
-                b"\x89PNG",  # PNG
-                b"\xff\xd8\xff",  # JPEG
-                b"RIFF",  # WebP (RIFF....WEBP)
-                b"GIF8",  # GIF
-            )
             try:
                 raw = base64.b64decode(image)
             except Exception:
                 raise ValueError("Invalid base64 encoded image string")
-            if not any(raw.startswith(m) for m in _IMAGE_MAGIC):
+            if _media_type(raw) is None:
                 raise ValueError(
                     f"Base64 string does not appear to be a supported image "
                     f"(PNG/JPEG/WebP/GIF); got header {raw[:8]!r}"
@@ -714,10 +746,13 @@ class Dialog:
         for idx, message in enumerate(self.messages):
             if remove_tail and idx == len(self.messages) - 1:
                 break
-            content_preview = (
-                str(message.content)[:max_length] + "..."
-                if len(str(message.content)) > max_length
+            text = (
+                _image_placeholder(message)
+                if message.modality == Modalities.IMAGE
                 else str(message.content)
+            )
+            content_preview = (
+                text[:max_length] + "..." if len(text) > max_length else text
             )
             _overview += f"[{idx}. {message.name} ({message.role.msg_value})]: {content_preview}\n\n"
 

@@ -34,7 +34,9 @@ print(agent.current_dialog.overview())
 
 Each entry shows the message's index, the sender's name, and its role. The
 system prompt is sent with the `developer` role, so that is what it shows.
-`overview()` cuts long messages at `max_length` characters (100 by default).
+`overview()` cuts long messages at `max_length` characters (100 by default)
+and shows an image by its type, size, and caption, such as
+`<image/png, 2.0 KB> Revenue by quarter`, instead of its data.
 
 ## Messages
 
@@ -251,9 +253,9 @@ print(agent.respond().content)
 1. Any image works; this one draws a small bar chart so the example runs on
    its own. Pillow comes with `lllm-core[native]`.
 
-The model receives the caption as text followed by the image. URLs and raw
-bytes are not accepted (`ValueError`), and the model must support image
-input. An image does not change which prompt drives the turn, so after
+The model receives the caption as text followed by the image, labeled with
+its format (`image/png` here). URLs and raw bytes are not accepted
+(`ValueError`), and the model must support image input. An image does not change which prompt drives the turn, so after
 `receive_prompt()`, that prompt's parser and tools still apply.
 
 ## Long conversations

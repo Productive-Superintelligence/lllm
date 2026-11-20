@@ -1,5 +1,6 @@
 """Regression tests for native runtime fixes found while rewriting the docs."""
 
+import base64
 import json
 from typing import Any, Dict, List, Literal
 
@@ -332,3 +333,53 @@ def test_parser_results_are_used_as_returned():
         "label": "bug"
     }
     assert Prompt(path="fix/plain", prompt="?").parse("hello") == {}
+
+
+# -- 7: images keep their media type; overview() shows a placeholder --------
+
+
+def _b64(data: bytes) -> str:
+    return base64.b64encode(data).decode()
+
+
+PNG = b"\x89PNG\r\n\x1a\n" + bytes(2040)
+IMAGES = {
+    "image/png": PNG,
+    "image/jpeg": b"\xff\xd8\xff\xe0" + bytes(60),
+    "image/webp": b"RIFF\x24\x00\x00\x00WEBPVP8 " + bytes(60),
+    "image/gif": b"GIF89a" + bytes(60),
+}
+
+
+@pytest.mark.parametrize("media_type", sorted(IMAGES))
+def test_images_are_sent_with_their_media_type(media_type):
+    from lllm.runtimes.native.invokers.litellm import LiteLLMInvoker
+
+    dialog = Dialog(owner="agent")
+    dialog.put_image(_b64(IMAGES[media_type]), caption="A picture")
+    (message,) = LiteLLMInvoker({})._convert_dialog(dialog)
+
+    caption, image = message["content"]
+    assert caption == {"type": "text", "text": "A picture"}
+    url = image["image_url"]["url"]
+    assert url == f"data:{media_type};base64,{_b64(IMAGES[media_type])}"
+
+
+def test_put_image_rejects_riff_data_that_is_not_webp():
+    wav = b"RIFF\x24\x00\x00\x00WAVEfmt " + bytes(60)
+    with pytest.raises(ValueError, match="PNG/JPEG/WebP/GIF"):
+        Dialog(owner="agent").put_image(_b64(wav))
+
+
+def test_overview_shows_an_image_as_type_size_and_caption():
+    dialog = _dialog()
+    dialog.put_image(_b64(PNG), caption="Revenue by quarter")
+    dialog.put_image(_b64(IMAGES["image/gif"]))
+    dialog.put_text("What is the trend?")
+
+    assert dialog.overview().split("\n\n") == [
+        "[0. system (developer)]: You help.",
+        "[1. user (user)]: <image/png, 2.0 KB> Revenue by quarter",
+        "[2. user (user)]: <image/gif, 66 B>",
+        "[3. user (user)]: What is the trend?",
+    ]
