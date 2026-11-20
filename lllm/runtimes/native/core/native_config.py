@@ -7,6 +7,7 @@ inheritance stay in :mod:`lllm.core.config`.
 
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import logging
 from collections.abc import Mapping
@@ -543,20 +544,45 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
-def _settings_copy(value: Any) -> Any:
-    """Copy plain data, share everything else.
+def _settings_copy(value: Any, memo: Optional[Dict[int, Any]] = None) -> Any:
+    """Copy containers, share everything else.
 
-    Dicts, lists, tuples, and sets are copied, recursively, so each agent
-    can change its own; strings, numbers, booleans, and None need no copy.
-    Any other object (a lock, a client, a connection) is shared as is,
-    without trying to deep-copy it.
+    Dicts, lists, tuples, and sets are copied recursively, subclasses
+    included (a Counter, a defaultdict with its factory, a namedtuple), so
+    each agent can change its own. As in ``deepcopy``, a container met
+    twice is copied once, so shared parts stay shared and cycles end.
+    Strings, numbers, booleans, and None need no copy. Any other object (a
+    lock, a client, a connection), and a container that cannot be copied,
+    is shared as is, without trying to deep-copy it.
     """
-    kind = type(value)
-    if kind is dict:
-        return {key: _settings_copy(item) for key, item in value.items()}
-    if kind in (list, tuple, set, frozenset):
-        return kind(_settings_copy(item) for item in value)
-    return value
+    if memo is None:
+        memo = {}
+    if id(value) in memo:
+        return memo[id(value)]
+    if not isinstance(value, (dict, list, tuple, set)):
+        return value
+    try:
+        if isinstance(value, tuple):
+            memo[id(value)] = value  # until rebuilt: a cycle back here shares it
+            items = [_settings_copy(item, memo) for item in value]
+            make = getattr(value, "_make", None)  # a namedtuple
+            result = make(items) if make else type(value)(items)
+        else:
+            result = copy.copy(value)  # keeps the type, and a defaultdict's factory
+            memo[id(value)] = result  # before recursing, so cycles end
+            if isinstance(value, dict):
+                for key, item in value.items():
+                    result[key] = _settings_copy(item, memo)
+            elif isinstance(value, list):
+                for index, item in enumerate(value):
+                    result[index] = _settings_copy(item, memo)
+            else:
+                result.clear()
+                result.update(_settings_copy(item, memo) for item in value)
+    except Exception:
+        result = value
+    memo[id(value)] = result
+    return result
 
 
 def _copy_prompt_with_update(prompt, update: Dict[str, Any]):

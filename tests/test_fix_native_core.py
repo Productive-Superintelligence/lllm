@@ -1029,6 +1029,37 @@ def test_an_sdk_client_in_extra_settings_is_shared_cleanly():
     assert all(agent.extra_settings["client"] is client for agent in agents)
 
 
+def test_extra_settings_copies_keep_cycles_sharing_and_container_types():
+    from collections import Counter, defaultdict, namedtuple
+
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    Point = namedtuple("Point", "x y")
+    loop = ["a"]
+    loop.append(loop)  # a list that contains itself
+    shared = [1, 2]
+    settings = {
+        "loop": loop,
+        "first": shared,
+        "second": shared,
+        "counts": Counter(a=2),
+        "groups": defaultdict(list, {"k": [1]}),
+        "point": Point(x=[1], y=2),
+    }
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    copied = spec.build(Runtime(), object()).extra_settings
+
+    assert copied["loop"][1] is copied["loop"] is not loop
+    assert copied["first"] is copied["second"] is not shared  # still shared
+    counts, groups, point = copied["counts"], copied["groups"], copied["point"]
+    assert type(counts) is Counter and counts == Counter(a=2)
+    assert counts is not settings["counts"]
+    assert type(groups) is defaultdict and groups.default_factory is list
+    assert groups == {"k": [1]} and groups["k"] is not settings["groups"]["k"]
+    assert type(point) is Point and point == Point(x=[1], y=2)
+    assert point.x is not settings["point"].x
+
+
 # -- a failed agent call keeps its record ------------------------------------
 
 
