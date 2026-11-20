@@ -37,8 +37,9 @@ that is not UTF-8 is a 400 `SchemaError` unless it is
 surrogate written as a JSON escape (`\ud800`) is also a 400, and so is a
 body whose first value is an array or object nested more than 500 levels
 deep (brackets in strings aside), which is refused before it is parsed.
-Bodies are read off the event loop, so a big one does not hold up other
-requests.
+Bodies are decoded, depth-checked, parsed and validated in a worker thread,
+not on the event loop; parsing a very large body still briefly delays other
+requests, so cap request size at your proxy for a public service.
 
 | `context` key | Meaning |
 | --- | --- |

@@ -794,28 +794,34 @@ async def _input_and_context_from_request(
 ) -> tuple[Any, CallContext]:
     from starlette.concurrency import run_in_threadpool
 
-    # In a worker thread: decoding, scanning, and parsing a big body take a
-    # while, and the event loop serves other requests meanwhile.
-    body = await run_in_threadpool(
-        _body_value, await request.body(), request.headers.get("content-type")
+    # In a worker thread: decoding, depth-checking, parsing, and validating
+    # (an envelope deep-copies its input) a big body take a while, and the
+    # event loop serves other requests meanwhile.
+    value, context_data = await run_in_threadpool(
+        _request_body, await request.body(), request.headers.get("content-type")
     )
-
-    value = body
-    context_data: Mapping[str, Any] | None = None
-    if isinstance(body, Mapping) and _is_protocol_envelope(body):
-        try:
-            request_model = RunRequest.model_validate(body)
-        except Exception as exc:
-            raise SchemaError(f"Invalid request envelope: {exc}") from exc
-        value = request_model.value
-        context_data = request_model.context
-
     context = call_context_from_data(
         context_data,
         tactic=tactic,
         endpoint=endpoint,
     )
     return value, context
+
+
+def _request_body(
+    raw: bytes,
+    content_type: str | None,
+) -> tuple[Any, Mapping[str, Any] | None]:
+    """The input a request body holds, and the context data of an envelope."""
+
+    body = _body_value(raw, content_type)
+    if isinstance(body, Mapping) and _is_protocol_envelope(body):
+        try:
+            request_model = RunRequest.model_validate(body)
+        except Exception as exc:
+            raise SchemaError(f"Invalid request envelope: {exc}") from exc
+        return request_model.value, request_model.context
+    return body, None
 
 
 def _body_value(raw: bytes, content_type: str | None) -> Any:
@@ -827,8 +833,12 @@ def _body_value(raw: bytes, content_type: str | None) -> Any:
     tactic gets as bytes. A lone surrogate written as a JSON escape
     (``\\ud800``) is also a ``SchemaError``, and so is a body whose first
     value is an array or object nested more than 500 levels deep (brackets
-    in strings aside), which is refused before it is parsed. Routes run
-    this in a worker thread, so a big body does not block the event loop.
+    in strings aside), which is refused before it is parsed.
+
+    Routes run this, and the validation of an envelope, in a worker thread,
+    not on the event loop; parsing a very large body still briefly delays
+    other requests (json.loads holds the GIL), so cap request size at your
+    proxy for a public service.
     """
 
     if not raw:

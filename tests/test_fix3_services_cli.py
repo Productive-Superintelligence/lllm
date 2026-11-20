@@ -1686,9 +1686,10 @@ def test_an_unknown_tactic_name_the_envelope_can_carry_keeps_it():
     assert (error["type"], error["tactic"]) == ("TacticNotFound", "nope")
 
 
-# Round 5, 1: a body nested more than 500 arrays and objects deep is a 400,
-# as in AAAX, before it is parsed. A deep value could otherwise crash the
-# server when code walks it recursively on a small thread stack.
+# Round 5, 1: a body whose first value is an array or object nested more
+# than 500 levels deep (brackets in strings aside) is a 400, as in AAAX,
+# before it is parsed. A deep value could otherwise crash the server when
+# code walks it recursively on a small thread stack.
 
 TOO_DEEP = "Request body is nested more than 500 levels deep."
 
@@ -1809,9 +1810,18 @@ def test_bodies_the_scan_accepts_pass():
         assert response.json()["output"] == "ok", body[:30]
 
 
-def test_a_big_body_is_read_off_the_event_loop():
+@pytest.mark.parametrize(
+    "big",
+    [
+        "[" + "[]" * 5_000_000 + "]",  # 10 MB, scanned to the end
+        # 10 MB in an envelope, as RemoteTactic sends, which is also
+        # validated and deep-copied.
+        '{"input": [' + "[]," * 3_333_333 + "[]]}",
+    ],
+    ids=["bare", "envelope"],
+)
+def test_a_big_body_is_read_off_the_event_loop(big):
     app = create_tactic_app(Ok())
-    big = "[" + "[]" * 5_000_000 + "]"  # 10 MB, scanned to the end
 
     async def scenario():
         transport = httpx.ASGITransport(app=app)
@@ -1838,6 +1848,32 @@ def test_a_big_body_is_read_off_the_event_loop():
 
     assert done == ["health", "big"]
     assert big_response.status_code == health.status_code == 200
+
+
+@pytest.mark.parametrize("path", ["/run", "/tactics/ok/run"])
+def test_the_envelope_is_validated_off_the_event_loop(path, monkeypatch):
+    # Validating an envelope deep-copies its input, about 2 s for 10 MB, so
+    # it runs in the worker thread with the parse. A timing test cannot see
+    # it: the parse before it lets a concurrent request through.
+    import lllm.services.fastapi as service
+
+    where: list[str] = []
+    validate = service.RunRequest.model_validate
+
+    def recording(*args, **kwargs):
+        try:
+            asyncio.get_running_loop()
+            where.append("event loop")
+        except RuntimeError:
+            where.append("worker thread")
+        return validate(*args, **kwargs)
+
+    monkeypatch.setattr(service.RunRequest, "model_validate", recording)
+
+    response = TestClient(create_tactic_app(Ok())).post(path, json={"input": [[], []]})
+
+    assert response.json()["output"] == "ok"
+    assert where == ["worker thread"]
 
 
 DEEP_BODY_SCRIPT = """
