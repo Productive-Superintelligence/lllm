@@ -1482,25 +1482,32 @@ def test_an_empty_set_whose_copy_seeds_defaults_comes_back_empty(kind):
 
 
 class CopiesToDict(set):
-    """Its copy is a dict."""
+    """Its copy is a dict that arrives holding a key."""
 
     def __copy__(self):
-        return {}
+        return {"seeded": True}
 
 
-@pytest.mark.parametrize(
-    "make, kind",
-    [(CopiesToDict, dict), (lambda: MagicMock(spec=set), MagicMock)],
-    ids=["copies to a dict", "spec mock"],
-)
-def test_a_set_whose_copy_is_not_a_real_set_is_copied_as_ever(make, kind):
+def test_a_set_whose_copy_is_a_dict_is_filled_in_as_ever():
     from lllm.runtimes.native import AgentSpec
 
-    original = make()
+    original = CopiesToDict()
     spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": original}})
     copied = spec.extra_settings["s"]
 
-    assert isinstance(copied, kind) and copied is not original  # as 68ef9fd
+    assert type(copied) is dict and copied == {}  # cleared, as 68ef9fd
+
+
+def test_a_spec_mock_set_is_filled_in_as_ever():
+    from lllm.runtimes.native import AgentSpec
+
+    original = MagicMock(spec=set)
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": original}})
+    copied = spec.extra_settings["s"]
+
+    assert isinstance(copied, MagicMock) and copied is not original
+    copied.clear.assert_called_once_with()  # as 68ef9fd
+    copied.update.assert_called_once_with([])
 
 
 class CopiesFail(dict):
