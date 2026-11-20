@@ -110,11 +110,18 @@ def _known(stream: Any) -> bool:
     """Whether ``stream`` has been seen calling back into the router, i.e.
     it wraps the router (a tee, rich's file proxy, a codecs writer...).
 
-    A known false positive: rich's Console looks up ``sys.stdout`` when it
-    prints, and during a call that is the router, so a ``FileProxy`` that
-    was in ``sys.stdout`` before any call (rich's Progress or Live) is marked
-    once the program prints through it during a call. Afterwards, writes
-    through held router references skip it (see :func:`_program_stream`).
+    Two known false positives:
+
+    - rich's Console looks up ``sys.stdout`` when it prints, and during a
+      call that is the router, so a ``FileProxy`` that was in ``sys.stdout``
+      before any call (rich's Progress or Live) is marked once the program
+      prints through it during a call. Afterwards, writes through held
+      router references skip it (see :func:`_program_stream`).
+    - Code that prints on the same thread while an operation on a plain
+      program stream P is in progress (a signal handler, a ``__del__``
+      finalizer, a generator that ``P.writelines`` reads) marks P, and that
+      print goes to the stream saved before P, or to ``sys.__stdout__``,
+      instead of into P.
     """
 
     return stream is not None and any(stream is wrapper for wrapper in _wrappers)

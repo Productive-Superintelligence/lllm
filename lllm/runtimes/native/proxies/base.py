@@ -643,12 +643,16 @@ class ProxyManager:
                     # Only a lone value needs the endpoint, to be named, and
                     # only BaseProxy.call serves the endpoints it can list.
                     method = getattr(proxy, "call", None)
-                    if getattr(method, "__func__", None) is not BaseProxy.call:
+                    if getattr(method, "__func__", None) is BaseProxy.call:
+                        owner = method.__self__  # perhaps another object's call
+                    elif getattr(type(proxy), "call", None) is BaseProxy.call:
+                        owner = proxy  # e.g. its call wrapped by a spy
+                    else:
                         raise TypeError(
                             f"'{endpoint}': pass the params as a dict to add "
                             "keyword params to them."
                         )
-                    return proxy.resolve_endpoint(path)[1].get("params")  # "No endpoint ..." as is
+                    return owner.resolve_endpoint(path)[1].get("params")  # "No endpoint ..." as is
 
                 params = {**_params_dict(params, path, documented), **kwargs}
         return proxy.call(path, params)

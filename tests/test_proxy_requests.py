@@ -11,7 +11,7 @@ from array import array
 from collections import deque
 from dataclasses import dataclass
 from types import SimpleNamespace
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
@@ -363,16 +363,23 @@ class InstanceCall:
         self.call = lambda path, params=None: (path, params)
 
 
-@pytest.mark.parametrize("kind", ["delegating", "mock", "instance call"])
+@pytest.mark.parametrize(
+    "kind", ["delegating", "bound elsewhere", "spied", "mock", "instance call"]
+)
 def test_a_lone_value_with_keywords_on_other_kinds_of_proxy(kind):
     proxies = tactic_tools()
+    tools = proxies.proxies["tools"]
 
-    if kind == "delegating":  # its BaseProxy.call names the value
-        proxies.proxies["other"] = Delegating(proxies.proxies["tools"])
+    if kind == "spied":  # mock.patch.object(..., wraps=...), mocker.spy
+        with patch.object(tools, "call", wraps=tools.call):
+            assert proxies("tools/repeat", "ab", times=3) == "ababab"
+    elif kind in ("delegating", "bound elsewhere"):  # BaseProxy.call names the value
+        other = Delegating(tools) if kind == "delegating" else SimpleNamespace(call=tools.call)
+        proxies.proxies["other"] = other
         assert proxies("other/repeat", "ab", times=3) == "ababab"
     else:
         proxies.proxies["other"] = MagicMock() if kind == "mock" else InstanceCall()
-        with pytest.raises(TypeError, match="as a dict"):
+        with pytest.raises(TypeError, match=r"'other/anything': pass the params as a dict"):
             proxies("other/anything", "lone", b=2)
 
 

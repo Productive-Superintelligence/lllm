@@ -542,12 +542,14 @@ WRAPPERS = {"tee": make_tee, "rich": make_rich, "codecs": make_codecs}
 
 
 class ProgramStream(io.StringIO):
-    """The program's real stream P: it counts flushes and has a file number."""
+    """The program's real stream P: it counts flushes and isatty calls, and
+    has a file number."""
 
     def __init__(self, fileno):
         super().__init__()
         self._fileno = fileno
         self.flushes = 0
+        self.isattys = 0
 
     def flush(self):
         self.flushes += 1
@@ -557,6 +559,7 @@ class ProgramStream(io.StringIO):
         return self._fileno
 
     def isatty(self):
+        self.isattys += 1
         return False
 
 
@@ -572,7 +575,9 @@ def operate(operation, labels, program):
             sys.stdout.flush()
             assert program.flushes > flushes, "the flush did not reach the program's stream"
         elif operation == "isatty":
+            isattys = program.isattys
             assert sys.stdout.isatty() is False
+            assert program.isattys > isattys, "isatty did not reach the program's stream"
         else:
             assert sys.stdout.fileno() == program.fileno()  # P's, not sys.__stdout__'s
 
@@ -735,12 +740,13 @@ def test_marks_of_wrappers_the_program_left_behind_are_dropped(monkeypatch):
     terminal = io.StringIO()
     monkeypatch.setattr(sys, "__stdout__", terminal)
     stdout = sys.stdout
-    program = io.StringIO()
+    program, copies = io.StringIO(), []
     sys.stdout = program
     try:
         with stuck(BLOCK):
             for n in range(4):  # e.g. a new rich Progress for each step
-                sys.stdout = ForwardingTee(sys.stdout, io.StringIO())
+                copies.append(io.StringIO())
+                sys.stdout = ForwardingTee(sys.stdout, copies[-1])
                 during_a_call(lambda: print(n))
             marks = list(interpreter_module._wrappers)
             current = (interpreter_module._original, interpreter_module._earlier)
@@ -749,8 +755,54 @@ def test_marks_of_wrappers_the_program_left_behind_are_dropped(monkeypatch):
 
     assert 0 < len(marks) <= 2
     assert all(any(mark is stream for stream in current) for mark in marks)
-    # Beneath each later tee is the one before, itself a wrapper of the router.
+    # Beneath each later tee is the one before, itself a known wrapper of the
+    # router, so each line goes into its own tee only, then to __stdout__.
+    assert [copy.getvalue() for copy in copies] == ["0\n", "1\n", "2\n", "3\n"]
     assert (program.getvalue(), terminal.getvalue()) == ("0\n", "1\n2\n3\n")
+
+
+def test_a_quiet_call_keeps_the_mark_of_the_programs_tee(monkeypatch):
+    terminal = io.StringIO()
+    monkeypatch.setattr(sys, "__stdout__", terminal)
+    stdout = sys.stdout
+    program, copy = io.StringIO(), io.StringIO()
+    sys.stdout = program
+    try:
+        with stuck(BLOCK) as call:
+            tee = ForwardingTee(sys.stdout, copy)
+            sys.stdout = tee
+            during_a_call(lambda: print("one"))  # marks the tee
+            call.finish()  # the tee stays the program's stream
+            assert sys.stdout is tee
+            assert interpreter().run("x = 1") == ""  # a quiet call
+            print("after")
+    finally:
+        sys.stdout = stdout
+
+    assert program.getvalue() == copy.getvalue() == "one\nafter\n"
+    assert terminal.getvalue() == ""
+
+
+def test_a_print_inside_an_operation_on_the_programs_stream_is_taken_for_a_call_back(monkeypatch):
+    # A known false positive, pinned: code that prints on the same thread
+    # while an operation on a plain program stream is in progress (here a
+    # generator its writelines reads; a signal handler or a finalizer too)
+    # marks that stream as a wrapper of the router, and that print goes to
+    # the stream saved before it, here to sys.__stdout__.
+    terminal = io.StringIO()
+    monkeypatch.setattr(sys, "__stdout__", terminal)
+    program = io.StringIO()
+    monkeypatch.setattr(sys, "stdout", program)
+
+    def lines():
+        print("nested")
+        yield "outer\n"
+
+    during_a_call(lambda: sys.stdout.writelines(lines()))
+
+    assert program.getvalue() == "outer\n"
+    assert terminal.getvalue() == "nested\n"
+    assert interpreter_module._known(program)
 
 
 @pytest.mark.parametrize("first_printed", [True, False])
