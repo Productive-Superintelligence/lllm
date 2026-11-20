@@ -347,11 +347,21 @@ def tactic_as_tool(
     name: str | None = None,
     description: str | None = None,
     parameter_mode: Literal["task", "kwargs"] = "task",
+    asynchronous: bool = False,
 ) -> Callable[..., Any]:
-    """Expose any LLLM tactic as a plain callable for runtime-owned tool APIs."""
+    """Expose any LLLM tactic as a plain callable for runtime-owned tool APIs.
+
+    The function calls ``tactic.run()``. With ``asynchronous=True`` it is an
+    ``async def`` function that awaits ``tactic.arun()``, for runtimes that
+    await their tools; a Pydantic AI agent needs one to call a tactic that
+    runs another Pydantic AI agent, since ``run_sync()`` is not allowed
+    inside a synchronous tool.
+    """
 
     if parameter_mode not in {"task", "kwargs"}:
         raise ValueError("parameter_mode must be 'task' or 'kwargs'.")
+    if not isinstance(asynchronous, bool):
+        raise TypeError("asynchronous must be a boolean.")
     if name is not None and (
         not isinstance(name, str) or not name or name != name.strip()
     ):
@@ -359,11 +369,18 @@ def tactic_as_tool(
     tool_name = _safe_name(name if name is not None else tactic.tactic_name)
     input_schema = getattr(tactic, "input_type", None)
     output_schema = getattr(tactic, "output_type", None)
+    tool: Callable[..., Any]
 
     if parameter_mode == "kwargs":
+        if asynchronous:
 
-        def tool(**kwargs: Any) -> Any:
-            return tactic.run(_kwargs_to_task(input_schema, kwargs))
+            async def tool(**kwargs: Any) -> Any:
+                return await tactic.arun(_kwargs_to_task(input_schema, kwargs))
+
+        else:
+
+            def tool(**kwargs: Any) -> Any:
+                return tactic.run(_kwargs_to_task(input_schema, kwargs))
 
         if _is_basemodel_type(input_schema):
             signature = _signature_from_model(input_schema, output_schema)
@@ -375,9 +392,15 @@ def tactic_as_tool(
                 return_annotation=output_schema or Any,
             )
     else:
+        if asynchronous:
 
-        def tool(task: Any) -> Any:
-            return tactic.run(task)
+            async def tool(task: Any) -> Any:
+                return await tactic.arun(task)
+
+        else:
+
+            def tool(task: Any) -> Any:
+                return tactic.run(task)
 
         signature = inspect.Signature(
             parameters=[

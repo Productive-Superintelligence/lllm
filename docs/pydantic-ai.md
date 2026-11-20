@@ -347,17 +347,44 @@ works: a native program, a function wrapped with `as_tactic()`, or a
 
 The function is synchronous and calls `tactic.run()`. Pydantic AI does not
 allow `Agent.run_sync()` inside a synchronous tool, so to give one Pydantic
-AI agent another one wrapped as a tactic, write an async tool that awaits
-`arun()`:
+AI agent another one wrapped as a tactic, pass `asynchronous=True`. The
+tool is then an `async def` function that awaits `arun()`, and
+`as_tool(asynchronous=True)` makes the same:
 
-```python test="skip" reason="fragment; changelog and PullRequest are from above"
-async def write_entry(pull: PullRequest) -> Entry:
-    """Write a changelog entry for a pull request."""
-    return await changelog.arun(pull)
+```python title="agent_tools.py"
+from pydantic_ai import Agent
+from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
+from pydantic_ai.models.function import FunctionModel
+from pydantic_ai.models.test import TestModel
+
+from lllm import PydanticAITactic, tactic_as_tool
+
+writer = Agent(
+    TestModel(custom_output_text="Fixed: uploads retry after a timeout."),
+    name="changelog",
+)
+changelog = PydanticAITactic(writer, input_type=str)
+tool = tactic_as_tool(changelog, asynchronous=True)  # (1)!
 
 
-planner = Agent("openai:gpt-4o-mini", tools=[write_entry])
+def model(messages, info):  # (2)!
+    if len(messages) == 1:
+        args = {"task": "Retry uploads after a timeout"}
+        return ModelResponse(parts=[ToolCallPart("changelog", args)])
+    entry = messages[-1].parts[0].content
+    return ModelResponse(parts=[TextPart(f"Release notes: {entry}")])
+
+
+planner = Agent(FunctionModel(model), tools=[tool])
+print(planner.run_sync("Write the release notes for #812.").output)
+#> Release notes: Fixed: uploads retry after a timeout.
 ```
+
+1. The tool awaits `changelog.arun()`, so the changelog agent runs with
+   `agent.run()` inside the planner's run. A synchronous tool would call
+   `agent.run_sync()` there, and Pydantic AI raises `UserError`.
+2. As above, a `FunctionModel` plays the planner's model: it calls the
+   tool, then answers with the entry the tool returned.
 
 ## Serving and packaging
 

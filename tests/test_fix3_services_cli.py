@@ -487,3 +487,105 @@ def test_local_types_and_a_given_contract_win_over_nothing():
     assert info.output_schema == {"type": "integer"}
     with pytest.raises(TypeError, match="contract"):
         RemoteTactic("http://svc:8000", contract="triage")
+
+
+# 4: tactic_as_tool(..., asynchronous=True) and Tactic.as_tool(...) make an
+# async tool that awaits arun(), so a wrapped Pydantic AI agent can be a
+# tool of another Pydantic AI agent.
+
+
+def _planner_model(tool_name: str, args: dict):
+    from pydantic_ai.messages import ModelResponse, TextPart, ToolCallPart
+
+    def model(messages, info):
+        if len(messages) == 1:
+            return ModelResponse(parts=[ToolCallPart(tool_name, args)])
+        return ModelResponse(parts=[TextPart(f"got: {messages[-1].parts[0].content}")])
+
+    return model
+
+
+def _changelog_tactic():
+    from pydantic_ai import Agent
+    from pydantic_ai.models.test import TestModel
+
+    from lllm import PydanticAITactic
+
+    agent = Agent(TestModel(custom_output_text="Fixed: uploads retry."), name="changelog")
+    return PydanticAITactic(agent, input_type=str)
+
+
+def test_an_async_tool_lets_one_pydantic_ai_agent_call_another():
+    import inspect
+
+    from pydantic_ai import Agent
+    from pydantic_ai.exceptions import UserError
+    from pydantic_ai.models.function import FunctionModel
+
+    from lllm import tactic_as_tool
+
+    changelog = _changelog_tactic()
+    model = FunctionModel(_planner_model("changelog", {"task": "Retry uploads"}))
+
+    tool = tactic_as_tool(changelog, asynchronous=True)
+    assert inspect.iscoroutinefunction(tool)
+    assert tool.__name__ == "changelog"
+    assert str(inspect.signature(tool)) == "(task: str) -> str"
+    planner = Agent(model, tools=[tool])
+    assert planner.run_sync("Write the entry").output == "got: Fixed: uploads retry."
+
+    sync_planner = Agent(model, tools=[tactic_as_tool(changelog)])
+    with pytest.raises(UserError, match="synchronous tool"):
+        sync_planner.run_sync("Write the entry")
+
+
+def test_async_tools_await_arun_in_both_parameter_modes():
+    import inspect
+
+    from lllm import tactic_as_tool
+
+    calls = []
+
+    class Shout(ProtocolTactic):
+        name = "shout"
+        input_type = Ticket
+        output_type = str
+
+        def _run(self, ticket, **kwargs):
+            raise AssertionError("an async tool must not call run()")
+
+        async def _arun(self, ticket, **kwargs):
+            calls.append(ticket)
+            return ticket.text.upper()
+
+    task_tool = tactic_as_tool(Shout(), asynchronous=True)
+    kwargs_tool = tactic_as_tool(Shout(), asynchronous=True, parameter_mode="kwargs")
+
+    assert inspect.iscoroutinefunction(kwargs_tool)
+    assert "(*, text: str, priority: int = 3) -> str" == str(inspect.signature(kwargs_tool))
+    assert asyncio.run(task_tool({"text": "hi"})) == "HI"
+    assert asyncio.run(kwargs_tool(text="yo")) == "YO"
+    assert calls == [Ticket(text="hi"), Ticket(text="yo")]
+    with pytest.raises(TypeError, match="asynchronous"):
+        tactic_as_tool(Shout(), asynchronous="yes")
+
+
+def test_native_as_tool_makes_an_async_tool_too():
+    import inspect
+
+    class Upper(NativeTactic):
+        """Upper-case a text."""
+
+        name = "upper"
+        input_type = str
+        output_type = str
+
+        def call(self, text: str) -> str:
+            return text.upper()
+
+    tool = Upper().as_tool(asynchronous=True)
+
+    assert inspect.iscoroutinefunction(tool)
+    assert tool.__doc__ == "Upper-case a text."
+    assert asyncio.run(tool("hi")) == "HI"
+    assert not inspect.iscoroutinefunction(Upper().as_tool())
