@@ -101,6 +101,7 @@ run it yourself, or set `autorun_sessions`.
 | `run_all_cells(stop_on_error=True)` | Run the notebook; returns the index of the first failed cell, or `None` |
 | `cells`, `get_cells(indices)`, `n_cells` | The notebook's cells, read from the file, with their outputs |
 | `insert_cell`, `overwrite_cell`, `delete_cells` | Edit the notebook |
+| `launch_server(timeout=20)` | Open the notebook in Jupyter's web UI (needs `pip install notebook`); returns its URL, or `None` if none appears in time |
 | `shutdown_kernel()`, `shutdown()` | Stop the kernel (and everything the session started) |
 
 A cell's outputs are `stream` outputs (`name`, `text`), `execute_result` and

@@ -4,6 +4,7 @@ import os
 import queue  # For non-blocking message retrieval
 import re
 import subprocess
+import threading
 import time
 import uuid
 from dataclasses import dataclass, field
@@ -20,6 +21,29 @@ from jupyter_client.manager import KernelManager  # For starting and managing a 
 from .. import utils as U
 
 logger = logging.getLogger(__name__)
+
+# The address a Jupyter server prints: http://127.0.0.1:8888/?token=...
+# (Notebook 6) or http://127.0.0.1:8888/tree?token=... (Notebook 7).
+_SERVER_URL = re.compile(
+    r"http://(127\.0\.0\.1|localhost):(\d+)(/[^\s?]*)(?:\?token=(\w+))?"
+)
+
+
+def _read_server_log(stream, lines: "queue.Queue", done: threading.Event) -> None:
+    """Read a server's stderr on its own thread, so waiting for a line can
+    time out. Lines go to ``lines`` until ``done`` is set and are dropped
+    after, so the pipe never fills up and blocks the server; ``None`` marks
+    the end of the output."""
+
+    try:
+        for line in stream:
+            if not done.is_set():
+                lines.put(line)
+    except (OSError, ValueError):  # the pipe was closed
+        pass
+    finally:
+        lines.put(None)
+        stream.close()
 
 
 class JupyterCellType(str, Enum):
@@ -276,7 +300,12 @@ CALL_API = proxy.__call__"""
         logger.debug("Deleted cells at indices %s from %s", index, self.notebook_file)
 
     # --- Jupyter Server (Web UI) Methods ---
-    def launch_server(self, specific_port: Optional[int] = None) -> Optional[str]:
+    def launch_server(
+        self, specific_port: Optional[int] = None, timeout: float = 20
+    ) -> Optional[str]:
+        """Start Jupyter's web UI on the session folder and return the URL of
+        the session's notebook, or None if no URL appears within *timeout*
+        seconds."""
         if self.server_process and self.server_process.poll() is None:
             logger.debug(
                 "Server for session '%s' already running at %s",
@@ -304,58 +333,46 @@ CALL_API = proxy.__call__"""
         try:
             self.server_process = subprocess.Popen(
                 command,
-                stdout=subprocess.PIPE,
+                stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
                 text=True,
                 encoding="utf-8",
+                errors="replace",
                 bufsize=1,
             )
-            url_pattern = re.compile(
-                r"(http://(127\.0\.0\.1|localhost):(\d+)/\?token=\w+)"
+            lines: queue.Queue = queue.Queue()
+            done = threading.Event()
+            threading.Thread(
+                target=_read_server_log,
+                args=(self.server_process.stderr, lines, done),
+                daemon=True,
+            ).start()
+            try:
+                match = self._wait_for_server_url(lines, timeout)
+            finally:
+                done.set()
+            if match is None:
+                self.shutdown_server()
+                return None
+
+            host, port, path, token = match.groups()
+            self.server_port = int(port)
+            self.server_url = match.group(0)
+            if self.notebook_file and U.pexists(self.notebook_file):
+                # Both versions open a notebook at <root>/notebooks/<file>;
+                # Notebook 7 prints its tree, <root>/tree, as the URL.
+                root = re.sub(r"tree/?$", "", path).rstrip("/") + "/"
+                nb_filename = requests.utils.quote(os.path.basename(self.notebook_file))
+                query = f"?token={token}" if token else ""
+                self.server_url = (
+                    f"http://{host}:{port}{root}notebooks/{nb_filename}{query}"
+                )
+            logger.info(
+                "Jupyter server started: %s (PID %s)",
+                self.server_url,
+                self.server_process.pid,
             )
-            start_time = time.time()
-            timeout_seconds = 20
-
-            stderr_output = ""
-            while time.time() - start_time < timeout_seconds:
-                if self.server_process.stderr:
-                    line = self.server_process.stderr.readline()
-                    if line:
-                        stderr_output += line
-                        # print(f"[JupyterServer stderr] {line.strip()}") # Can be very verbose
-                        match = url_pattern.search(line)
-                        if match:
-                            self.server_url = match.group(1)
-                            if self.notebook_file and U.pexists(self.notebook_file):
-                                nb_filename = os.path.basename(self.notebook_file)
-                                encoded_nb_filename = requests.utils.quote(nb_filename)
-                                self.server_url = f"{self.server_url.split('?')[0]}notebooks/{encoded_nb_filename}?{self.server_url.split('?')[1]}"
-
-                            port_match = re.search(r":(\d+)/", self.server_url)
-                            if port_match:
-                                self.server_port = int(port_match.group(1))
-                            logger.info(
-                                "Jupyter server started: %s (PID %s)",
-                                self.server_url,
-                                self.server_process.pid,
-                            )
-                            return self.server_url
-                    elif self.server_process.poll() is not None:
-                        logger.error(
-                            "Jupyter server process terminated unexpectedly (exit code %s)",
-                            self.server_process.poll(),
-                        )
-                        break
-                    time.sleep(0.1)
-                else:
-                    time.sleep(0.2)
-
-            logger.error(
-                "Could not find Jupyter server URL in stderr within %ds",
-                timeout_seconds,
-            )
-            self.shutdown_server()
-            return None
+            return self.server_url
         except FileNotFoundError:
             logger.error("'jupyter' command not found for server")
             self.server_process = None
@@ -367,6 +384,31 @@ CALL_API = proxy.__call__"""
             if self.server_process:
                 self.shutdown_server()
             return None
+
+    def _wait_for_server_url(self, lines: queue.Queue, timeout: float):
+        """The match of the first server log line with the server URL, or
+        None when the server exits or *timeout* seconds pass first."""
+        deadline = time.monotonic() + timeout
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                logger.error(
+                    "Could not find Jupyter server URL in stderr within %gs", timeout
+                )
+                return None
+            try:
+                line = lines.get(timeout=min(remaining, 0.5))
+            except queue.Empty:
+                line = "" if self.server_process.poll() is None else None
+            if line is None:  # the server has exited
+                logger.error(
+                    "Jupyter server process terminated unexpectedly (exit code %s)",
+                    self.server_process.poll(),
+                )
+                return None
+            match = _SERVER_URL.search(line)
+            if match:
+                return match
 
     def shutdown_server(self):
         if self.server_process and self.server_process.poll() is None:
@@ -381,11 +423,7 @@ CALL_API = proxy.__call__"""
             except subprocess.TimeoutExpired:
                 self.server_process.kill()
                 self.server_process.wait()
-            finally:
-                if self.server_process.stdout:
-                    self.server_process.stdout.close()
-                if self.server_process.stderr:
-                    self.server_process.stderr.close()
+            # The thread reading the server's stderr closes it at the end.
             logger.debug("Jupyter server shut down")
         self.server_process, self.server_url, self.server_port = None, None, None
 
