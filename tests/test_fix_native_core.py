@@ -427,6 +427,17 @@ def test_tool_call_arguments_are_counted():
     assert _tokens(manager, dialog.messages[2]) > 400  # the content is short
 
 
+def test_a_dialog_that_fits_by_one_count_is_not_trimmed():
+    dialog = _dialog(*(f"ok {n}" for n in range(60)))
+    manager = DefaultContextManager("gpt-4o-mini")
+    raws = [manager._to_raw(m) for m in dialog.messages]
+    batch = manager._count(raws)  # one call, as the request is sent
+    # Each count adds 3 reply-priming tokens, so the per-message sum is more.
+    assert sum(manager._tokens(raw) for raw in raws) > batch
+
+    assert Exact("gpt-4o-mini", max_tokens=batch)(dialog) is dialog
+
+
 def test_the_newest_message_is_sent_whole_even_over_budget(caplog):
     long = "word " * 500
     dialog = _dialog("An older note.", long)

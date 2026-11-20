@@ -1260,8 +1260,12 @@ class DefaultContextManager(ContextManager):
         plus ``IMAGE_TOKENS`` for each part that is not text.
         """
         text, parts = _text_and_parts(raw)
+        return self._message_tokens(text, parts, sum(map(self._part_tokens, parts)))
+
+    def _message_tokens(self, text: dict, parts: list, sized: int) -> int:
+        """``_tokens`` for a message already split, its parts sized."""
         try:
-            return self._count([text]) + sum(map(self._part_tokens, parts))
+            return self._count([text]) + sized
         except Exception:
             content = str(text.get("content") or "")
             try:
@@ -1314,10 +1318,20 @@ class DefaultContextManager(ContextManager):
         if max_tokens is None:  # unknown window: nothing to trim against
             return dialog
         limit = max_tokens - self._safety_buffer(max_tokens)
-        # Each message counted once, images sized once; never raises.
-        counts = [self._tokens(self._to_raw(m)) for m in messages]
-        if sum(counts) <= limit:
+        split = [_text_and_parts(self._to_raw(m)) for m in messages]
+        sized = [sum(map(self._part_tokens, parts)) for _, parts in split]  # once
+        counts: Optional[List[int]] = None
+        try:
+            # One call over the text, as the request is sent: each call adds
+            # its reply priming, so a sum of per-message counts is too high.
+            total = self._count([text for text, _ in split]) + sum(sized)
+        except Exception:
+            counts = [self._message_tokens(*s, n) for s, n in zip(split, sized)]
+            total = sum(counts)
+        if total <= limit:
             return dialog
+        if counts is None:  # per-message counts, only to trim
+            counts = [self._message_tokens(*s, n) for s, n in zip(split, sized)]
 
         logger.debug(
             "DefaultContextManager: dialog %s exceeds token limit, truncating",
