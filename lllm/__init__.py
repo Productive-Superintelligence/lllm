@@ -53,7 +53,7 @@ from .services import (
     endpoint,
 )
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 # The native vocabulary, as in the original ``lllm`` API. Resolved lazily so
 # ``import lllm`` stays light; ``lllm.runtimes.native`` holds the same objects.
