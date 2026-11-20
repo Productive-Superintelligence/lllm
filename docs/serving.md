@@ -290,7 +290,8 @@ when the app is built.
 
 `create_tactic_app` returns a plain FastAPI app, so you secure it the
 FastAPI way: middleware, dependencies, or a gateway in front of it. This
-middleware requires a bearer token on every route except `/health`:
+middleware requires a bearer token on every route except `/health`, and a
+`RemoteTactic` caller sends one:
 
 ```python title="auth.py"
 import asyncio
@@ -450,8 +451,8 @@ and `detail`.
 A `RemoteTactic` built from a URL alone knows nothing else about the
 service: its `info()` has no description or schemas, so a
 [tool](tools.md#tactics-as-tools) made from it takes one string `task` and
-says only "Run triage.". `RemoteTactic.from_service()` reads `/info` once
-and adopts the service's own contract:
+is described only as `Run <name>.`. `RemoteTactic.from_service()` reads
+`/info` once and adopts the service's own contract:
 
 ```python title="contract.py"
 import asyncio
@@ -501,10 +502,11 @@ asyncio.run(main())
 1. `afrom_service()` is the async form of `from_service()`. Both take the
    constructor's options and use them for the `/info` request too.
 
-The tactic takes the service's name unless you pass `name=`, and `info()`
-reports the service's description, schemas, examples, and capabilities
-wherever the tactic has none of its own, so `input_type` and `output_type`
-still win. A contract you already have can be passed as `contract=`.
+The contract arrives as the constructor's `contract=` option, which also
+takes a `TacticInfo` you already have. With one, the tactic takes the
+service's name unless you pass `name=`, and `info()` reports the service's
+description, schemas, examples, and capabilities wherever the tactic has
+none of its own, so `input_type` and `output_type` still win.
 
 Because it is a tactic, a `RemoteTactic` works wherever a tactic does:
 inside another tactic's `call()`, as a [tool](tools.md#tactics-as-tools),

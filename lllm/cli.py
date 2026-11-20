@@ -232,10 +232,10 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "inspect":
         if _is_package_target(args.target):
             return _inspect_package(parser, args)
-        tactic = _load_cli_entrypoint(parser, args.target)
-        if not isinstance(tactic, Tactic):
-            return _inspect_app(args, tactic)
-        resource = tactic_resource(tactic)
+        target = _load_cli_entrypoint(parser, args.target)
+        if not isinstance(target, Tactic):
+            return _inspect_app(args, target)
+        resource = tactic_resource(target)
         if args.json:
             print(json.dumps(resource, indent=2, sort_keys=True))
         else:

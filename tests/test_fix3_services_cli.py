@@ -472,7 +472,7 @@ def test_afrom_service_adopts_the_contract_of_a_running_service():
     assert remote.info().input_schema["required"] == ["text"]
 
 
-def test_local_types_and_a_given_contract_win_over_nothing():
+def test_a_given_contract_is_adopted_where_the_tactic_has_nothing_of_its_own():
     contract = Triage().info()
     remote = RemoteTactic(
         "http://triage.internal:8000",
@@ -481,7 +481,7 @@ def test_local_types_and_a_given_contract_win_over_nothing():
     )
 
     info = remote.info()
-    assert remote.tactic_name == "triage.internal-8000"
+    assert remote.tactic_name == "triage"
     assert info.description == contract.description
     assert info.input_schema == contract.input_schema
     assert info.output_schema == {"type": "integer"}

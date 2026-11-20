@@ -67,7 +67,8 @@ class RemoteTactic(Tactic[Any, Any]):
     streams, and info fetches. Headers passed to one call are added to them.
 
     ``contract`` is the ``TacticInfo`` the service advertises on ``/info``;
-    :meth:`from_service` fetches it. With one, ``info()`` reports the
+    :meth:`from_service` fetches it. With one, the tactic takes the
+    service's name unless ``name`` is given, and ``info()`` reports the
     service's description, schemas, examples, and capabilities wherever the
     tactic has none of its own (``input_type`` and ``output_type`` win).
     """
@@ -103,53 +104,27 @@ class RemoteTactic(Tactic[Any, Any]):
         self.output_type = output_type
         metadata_value = _metadata_mapping(metadata)
         metadata_value["url"] = self.url
-        super().__init__(
-            name=name if name is not None else _name_from_url(url),
-            service_ref=url,
-            metadata=metadata_value,
-        )
+        if name is None:
+            contract_name = self.contract.name if self.contract is not None else None
+            name = contract_name or _name_from_url(url)
+        super().__init__(name=name, service_ref=url, metadata=metadata_value)
 
     @classmethod
-    def from_service(
-        cls,
-        url: str,
-        *,
-        name: str | None = None,
-        **options: Any,
-    ) -> "RemoteTactic":
+    def from_service(cls, url: str, **options: Any) -> "RemoteTactic":
         """Build a remote tactic that adopts the contract the service advertises.
 
         Fetches ``{url}/info`` once, with the same ``options`` (``headers``,
         ``auth``, ``transport``, ...) every later request uses, and passes it
-        as ``contract``. The tactic takes the service's name unless ``name``
-        is given.
+        as ``contract``.
         """
 
-        contract = cls(url, name=name, **options).fetch_info()
-        return cls(
-            url,
-            name=contract.name if name is None else name,
-            contract=contract,
-            **options,
-        )
+        return cls(url, contract=cls(url, **options).fetch_info(), **options)
 
     @classmethod
-    async def afrom_service(
-        cls,
-        url: str,
-        *,
-        name: str | None = None,
-        **options: Any,
-    ) -> "RemoteTactic":
+    async def afrom_service(cls, url: str, **options: Any) -> "RemoteTactic":
         """Like :meth:`from_service`, fetching ``/info`` asynchronously."""
 
-        contract = await cls(url, name=name, **options).afetch_info()
-        return cls(
-            url,
-            name=contract.name if name is None else name,
-            contract=contract,
-            **options,
-        )
+        return cls(url, contract=await cls(url, **options).afetch_info(), **options)
 
     def info(self) -> TacticInfo:
         info = super().info()

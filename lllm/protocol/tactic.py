@@ -226,8 +226,7 @@ class Tactic(Generic[InputT, OutputT]):
         try:
             return validate_with_schema(value, self.output_type)
         except SchemaError as exc:
-            # Chained to the cause of the SchemaError (Pydantic's error), as
-            # a SchemaError from validate_input is.
+            # Pydantic's error stays the cause, as for an input SchemaError.
             raise OutputSchemaError(
                 f"The output of tactic {self.tactic_name!r} failed validation: {exc}"
             ) from exc.__cause__
