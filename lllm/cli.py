@@ -151,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     inspect_cmd.add_argument("target", help="module:attribute entrypoint or package path")
     inspect_cmd.add_argument("--json", action="store_true", help="Emit JSON")
-    _add_package_options(inspect_cmd)
+    _add_package_options(inspect_cmd, store=False)
 
     serve_cmd = subcommands.add_parser(
         "serve",
@@ -347,9 +347,17 @@ def _import_from_working_directory() -> None:
         sys.path.insert(0, cwd)
 
 
-def _add_package_options(command: argparse.ArgumentParser) -> None:
+def _add_package_options(
+    command: argparse.ArgumentParser,
+    *,
+    store: bool = True,
+) -> None:
     command.add_argument("--resource", help="Package resource, e.g. services.api")
-    command.add_argument("--store", help="Channel store root for channel resources")
+    # inspect accepts --store but ignores it: it never opens a channel store.
+    command.add_argument(
+        "--store",
+        help="Channel store root for channel resources" if store else argparse.SUPPRESS,
+    )
     command.add_argument(
         "--env-file",
         default=".env.local",

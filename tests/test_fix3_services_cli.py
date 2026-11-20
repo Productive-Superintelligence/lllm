@@ -1072,6 +1072,20 @@ def test_inspecting_a_channel_package_creates_nothing(
     assert fake_sssn and not any(root.exists() for root in fake_sssn)
 
 
+def test_inspect_help_hides_store_but_inspect_still_accepts_it(
+    channel_package, fake_sssn, tmp_path, capsys
+):
+    for command, listed in (("inspect", False), ("serve", True)):
+        with pytest.raises(SystemExit) as caught:
+            main([command, "--help"])
+        assert caught.value.code == 0
+        assert ("--store" in capsys.readouterr().out) is listed
+
+    args = ["inspect", str(channel_package), "--store", str(tmp_path / "s")]
+    assert main(args) == 0
+    assert not (tmp_path / "s").exists()
+
+
 def test_inspecting_a_channel_package_creates_nothing_with_real_sssn(
     channel_package, capsys
 ):

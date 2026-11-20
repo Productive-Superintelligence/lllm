@@ -134,10 +134,12 @@ such as `[tactics.NAME]`, gets a [ref](#refs) and accepts
 | `[card]` | `summary`, `tags`, `safety`, `latency`, `suggested_commands` |
 
 An `entry` is `module:attribute`, imported from the package folder. A
-tactic entry is loaded like a target of `lllm serve module:attribute`
-([Serving](serving.md#serve-from-the-command-line)): a class or a function
-without parameters is called once, and any other function answers each
-input. `lllm hub validate` checks all of this before you share the package
+tactic entry is loaded like a tactic target of `lllm serve
+module:attribute` ([Serving](serving.md#serve-from-the-command-line)): a
+class or a function without parameters is called once, and any other
+function answers each input. An app belongs in a `[services.NAME]` entry;
+a tactic entry that names one stops `lllm serve` with an error. `lllm hub
+validate` checks all of this before you share the package
 ([The hub](publishing.md#validate-a-package)).
 
 ## How resources are named

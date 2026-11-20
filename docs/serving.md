@@ -552,7 +552,10 @@ lllm serve ./triage     # serve tactics.triage on port 8100
   served; only those kinds can be. A run must list exactly one service.
   Channels need [SSSN](https://sssn.one/): a channel resource serves the
   package's whole channel store, in `<package>/.lllm/network` unless
-  `--store` says otherwise. `lllm inspect` creates no store.
+  `--store` says otherwise. `lllm inspect` shows a channel resource
+  without creating its store.
+- `lllm inspect` imports the package's entries and calls its factories, as
+  `lllm serve` does, so inspect and serve only packages you trust.
 - The port is `--port`, else the resource's `metadata.port` or a `port`
   written in its table (a tactic without one takes the port of the first
   service that serves it, through `tactic` or `tactics`, and declares one),

@@ -8,7 +8,7 @@ lllm create   NAME [--template T]  new project
 lllm init     [PATH]               write lllm.toml
 lllm setup    [TARGET]             store the API keys a package declares
 lllm inspect  TARGET               tactic metadata, or what serve launches
-lllm serve    TARGET               serve a tactic or a package resource
+lllm serve    TARGET               serve a tactic, app, or package resource
 lllm hub      ...                  validate, publish, read, index packages
 lllm network  ...                  SSSN channel stores (pip install sssn)
 lllm shell    ...                  AAAX strategies (pip install aaax)
@@ -74,8 +74,10 @@ lllm inspect ./briefs              # resource, port, routes, key status
 ```
 
 Package options: `--resource section.name`, `--env-file`, `--no-keyring`.
-Inspecting creates nothing: a channel package's routes come from a
-throwaway store, so `--store` changes nothing here.
+For a channel resource, `lllm inspect` lists the routes of an app built
+over a throwaway store, so it creates no store, and `--store` has no
+effect. Like `lllm serve`, it imports the package's entries and calls its
+factories, so inspect only packages you trust.
 
 ## `lllm serve`
 
