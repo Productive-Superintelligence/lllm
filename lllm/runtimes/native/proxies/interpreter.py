@@ -9,18 +9,25 @@ This design is intentionally simple and suitable for trusted LLM-generated
 code whose primary job is to call HTTP APIs and process their responses.
 For stronger isolation, swap the ``exec`` backend with RestrictedPython.
 
-How output is captured: while any call's code is running, ``sys.stdout`` is
-one process-wide router (:class:`_ThreadStdout`) that sends each write by
-thread. The exec thread of a call writes into that call. A thread started
-while a call ran belongs to it (a ``Thread.start`` hook records the call):
-it writes into the call while the call runs, nowhere while the call is timed
-out but its code still runs, and, once the call has returned, into the
-interpreter's newest running call (a reused pool worker) or else to the
-program. Every other thread writes to the program's own stream, which is put
-back in ``sys.stdout`` when the last call's code ends. Only calls that have
-not timed out own ``sys.stdout``: the code's redirects are left alone while
-such a call runs, and a stream set while just timed-out code runs counts as
-the program's.
+How output is captured: while any call's code runs, ``sys.stdout`` is one
+process-wide router (:class:`_ThreadStdout`) that sends each write by thread.
+The exec thread of a call writes into that call. Only threads started by a
+call's code belong to it; a ``Thread.start`` hook, installed by the first call
+and kept for the life of the process, records them. Such a thread writes into
+its call while the call runs; nowhere while the call is timed out, until its
+code ends; and once the call has returned or its timed-out code has ended,
+into the interpreter's newest running call (a reused pool worker), or else to
+the program. Every other thread writes to the program's stream, saved when
+the first call starts and put back in ``sys.stdout`` when the last call's code
+ends.
+
+Only calls that have not timed out own ``sys.stdout``. While one runs, a
+redirect, the code's own or the program's, is left alone and captures what
+every thread prints; when the last call ends, the program's saved stream
+replaces it. A stream set after a timeout, while only timed-out code runs, is
+kept, whether the program or the timed-out code set it: until another call
+starts, the timed-out code and its threads print into it, and the next call
+saves it as the program's.
 """
 from __future__ import annotations
 
@@ -29,22 +36,26 @@ import io
 import sys
 import threading
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 _lock = threading.Lock()
 _flights: set = set()  # calls whose code is running, timed-out ones included
-_original: Any = None  # the program's sys.stdout, saved when the first call starts
+_original: Any = None  # the program's stream, saved when it gets the router
+_earlier: Any = None  # the program's stream saved before _original, if any
 _router: Optional["_ThreadStdout"] = None  # the one stand-in, made on first use
-_original_start: Any = None  # Thread.start before the hook, saved once
+_start_raw: Any = None  # threading.Thread.__dict__["start"] before the hook
 _capture = threading.local()  # .call: the call whose code runs on this thread
+_nesting = threading.local()  # .depth: router writes in progress on this thread
 
 
 class _CallOutput:
     """What one ``run()`` call captures, and its state.
 
-    Threads started by the call's code keep a reference to this record, so
-    it holds only flags and the text buffer, which is released once
-    ``run()`` has read it or the call has timed out.
+    Threads started by the call's code keep a reference to this record. It
+    holds the interpreter's list of running calls (``running``), the text
+    buffer, which is released once ``run()`` has read it or the call has
+    timed out, a few flags, and ``sys.stdout`` as it was at the timeout
+    (``stdout_at_timeout``) until the timed-out code ends.
     """
 
     __slots__ = ("running", "buffer", "returned", "abandoned", "finished", "stdout_at_timeout")
@@ -53,13 +64,13 @@ class _CallOutput:
         self.running = running  # the interpreter's running calls, newest last
         self.buffer: Optional[io.StringIO] = io.StringIO()
         self.returned = False  # run() has returned its output
-        self.abandoned = False  # the call timed out
+        self.abandoned = False  # the call timed out (or run() was interrupted)
         self.finished = False  # its code has ended
         self.stdout_at_timeout: Any = None
 
 
 class _Null(io.TextIOBase):
-    """Where a timed-out call's output goes: nowhere."""
+    """Where a timed-out call's output goes, until its code ends: nowhere."""
 
     def writable(self) -> bool:
         return True
@@ -80,56 +91,105 @@ def _owner() -> Optional[_CallOutput]:
     call = getattr(threading.current_thread(), "_lllm_call", None)
     if call is None:
         return None
-    if call.abandoned:  # timed out: its threads write nowhere, then to the program
-        return None if call.finished else call
-    if call.returned:  # a reused worker: the interpreter's newest running call
+    if call.abandoned and not call.finished:
+        return call  # timed out, code still running: dropped
+    if call.abandoned or call.returned:  # e.g. a reused pool worker
         try:
-            return call.running[-1]
+            return call.running[-1]  # the interpreter's newest running call
         except IndexError:
             return None
     return call
 
 
-def _route() -> Any:
-    """Where the current thread's writes to ``sys.stdout`` go."""
+def _program_stream(depth: int) -> Any:
+    """The program's stream for a write that reached the router ``depth``
+    times on this thread. The router reached again from inside the stream it
+    forwarded to (a wrapper of the router, such as a tee or rich's file
+    proxy, saved as the program's stream) means the stream saved before it.
+    """
+
+    if _earlier is not None and getattr(sys, "stdout", None) is not _router:
+        depth += 1  # out of sys.stdout, the router is reached from inside a wrapper
+    streams = (_original, _earlier)
+    stream = streams[depth] if depth < len(streams) else None
+    if stream is None or stream is _router:
+        stream = sys.__stdout__
+    return _NULL if stream is None else stream
+
+
+def _route(depth: int = 0) -> Any:
+    """Where the current thread's write to ``sys.stdout`` goes."""
 
     call = _owner()
     if call is None:
-        return _NULL if _original is None else _original
+        return _program_stream(depth)
     buffer = call.buffer
     return _NULL if buffer is None else buffer
 
 
-def _start_hook(self: threading.Thread) -> None:
-    """``Thread.start``, installed once: a thread started while a call runs
-    belongs to the call its starter writes for."""
+def _make_start_hook(original: Callable[[threading.Thread], None]) -> Callable:
+    """``Thread.start`` with the hook: a thread started by a call's code
+    belongs to that call. The hook keeps its own reference to the original,
+    so it survives a reload of this module."""
 
-    if _flights:
-        call = _owner()
-        if call is not None:
-            self._lllm_call = call
-    _original_start(self)
+    def start(self: threading.Thread) -> None:
+        if _flights:
+            call = _owner()
+            if call is not None:
+                self._lllm_call = call
+        original(self)
+
+    start.__name__ = "start"
+    start.__qualname__ = "Thread.start"
+    start.__doc__ = getattr(original, "__doc__", None)
+    start._lllm_start_hook = True  # type: ignore[attr-defined]
+    return start
+
+
+def _install_start_hook() -> None:
+    """Install the hook once per process (callers hold ``_lock``)."""
+
+    global _start_raw
+    raw = vars(threading.Thread).get("start")
+    if getattr(raw, "_lllm_start_hook", False) is True:
+        return  # in place, maybe from an earlier load of this module
+    if _start_raw is None:
+        _start_raw = raw
+    if raw is _start_raw:  # the first use, or someone put the original back
+        threading.Thread.start = _make_start_hook(threading.Thread.start)
 
 
 class _ThreadStdout:
     """``sys.stdout`` while calls' code runs: one router per process.
 
     Each write goes where :func:`_route` sends the writing thread: into the
-    call it belongs to, nowhere for a timed-out call's threads, or to the
-    program's own stream. The code's own redirects replace this router in
-    ``sys.stdout`` and are process-wide while they last.
+    call it belongs to, nowhere for a timed-out call's threads until its
+    code ends, or to the program's stream. A write that comes back to the
+    router while it forwards one on the same thread (the program's stream
+    wraps the router) goes to the stream saved before the program's current
+    one, or to ``sys.__stdout__``, instead of being routed again. The code's
+    own redirects replace this router in ``sys.stdout`` and are process-wide
+    while they last.
     """
 
+    def _forward(self, use: Callable[[Any], Any]) -> Any:
+        depth = getattr(_nesting, "depth", 0)
+        _nesting.depth = depth + 1
+        try:
+            return use(_route(depth))
+        finally:
+            _nesting.depth = depth
+
     def write(self, text: str) -> int:
-        return _route().write(text)
+        return self._forward(lambda stream: stream.write(text))
 
     def flush(self) -> None:
-        _route().flush()
+        self._forward(lambda stream: stream.flush())
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("__"):  # e.g. while copying
             raise AttributeError(name)
-        return getattr(_route(), name)
+        return self._forward(lambda stream: getattr(stream, name))
 
 
 def _owned() -> bool:
@@ -143,24 +203,26 @@ def _enter(call: _CallOutput) -> None:
     """A call's code starts: install the router unless another running
     call owns ``sys.stdout`` (whatever is there then is left alone)."""
 
-    global _router, _original, _original_start
+    global _router, _original, _earlier
     with _lock:
         if _router is None:
             _router = _ThreadStdout()
-        if _original_start is None:
-            _original_start = threading.Thread.start
-        if threading.Thread.start is _original_start:  # first use, or put back
-            threading.Thread.start = _start_hook
+        _install_start_hook()
         current = getattr(sys, "stdout", None)
         if not _owned() and current is not _router:
             # The first call, or the program set its own stream while only
             # timed-out code ran: save it. A stream timed-out code set before
             # its timeout is not the program's, so the saved one stays.
             if not any(current is c.stdout_at_timeout for c in _flights):
+                if _flights:
+                    _earlier = _original
+                elif current is not _original:
+                    _earlier = None
                 _original = current
             sys.stdout = _router
         _flights.add(call)
-        call.running.append(call)
+        if not call.abandoned:  # the timeout can fire before the code starts
+            call.running.append(call)
     _capture.call = call
 
 
@@ -174,7 +236,7 @@ def _exit(call: _CallOutput) -> None:
         _flights.discard(call)
         current = getattr(sys, "stdout", None)
         at_timeout, call.stdout_at_timeout = call.stdout_at_timeout, None
-        if call.abandoned and current is not at_timeout:
+        if call.abandoned and current is not at_timeout and current is not _router:
             return  # set after the timeout, when the program had moved on: keep it
         if current is not _router and not _owned():
             sys.stdout = current = _router  # the code left it replaced
@@ -206,23 +268,29 @@ class AgentInterpreter:
     - Output is captured from stdout; the caller receives a plain string.
       A call captures what its code prints, including code ``CALL_API`` runs
       and threads the code starts; calls may run at the same time (for
-      example under ``bcall``). A thread started in an earlier call, such as
-      a pool worker kept in a variable, prints into the interpreter's newest
-      running call; outside calls, threads print to the program.
+      example under ``bcall``). Only threads started by a call's code belong
+      to it: once that call has returned, such a thread (a pool worker kept
+      in a variable, say) prints into the interpreter's newest running call,
+      or to the program when none runs. Other threads print to the program.
+      The first call installs a ``threading.Thread.start`` hook that stays
+      for the life of the process.
     - The code's own redirects (``redirect_stdout``, assigning
       ``sys.stdout``, doctest) work, but are process-wide while they last:
       other running calls' output, and the program's, goes into them too.
-      When the last call's code ends, the program's ``sys.stdout`` is
-      restored.
+      Likewise a redirect the program makes while a call runs captures the
+      call's output. When the last call's code ends, the program's stream
+      saved when calls began is put back in ``sys.stdout``.
     - Long output keeps its first and last ``max_output_chars / 2``
       characters, with the truncation indicator between them, so the end of
       a traceback survives.
     - Execution is run in a daemon thread; if it does not complete within
       ``timeout`` seconds a ``TimeoutError`` is raised.  The namespace is NOT
-      rolled back on timeout — partial side-effects may have occurred.  While
-      the code keeps running, what it and its threads print is dropped; once
-      it ends, its threads print to the program, and ``sys.stdout`` is
-      restored then unless the program set its own stream after the timeout.
+      rolled back on timeout — partial side-effects may have occurred.  Until
+      the code ends, what it and its threads print is dropped; then its
+      threads print like a returned call's.  A stream set after the timeout,
+      by the program or by the timed-out code, is kept: the timed-out code
+      and its threads print into it until another call starts, and the next
+      call saves it as the program's.
 
     Parameters
     ----------
@@ -272,7 +340,8 @@ class AgentInterpreter:
 
         If execution exceeds ``self.timeout`` seconds, a ``TimeoutError`` is
         raised (not caught here — the tool framework will surface it as an
-        error result to the agent).
+        error result to the agent).  If ``run()`` itself is interrupted (for
+        example by Ctrl-C), the call is given up the same way.
 
         Parameters
         ----------
@@ -299,24 +368,27 @@ class AgentInterpreter:
                 exc_holder.append(exc)
 
         thread = threading.Thread(target=_run, daemon=True)
-        thread.start()
-        thread.join(self.timeout)
-
-        if thread.is_alive():
-            _stop(call, timed_out=True)
-            raise TimeoutError(
-                f"Code execution timed out after {self.timeout:.0f}s. "
-                "Check for infinite loops or overly long-running operations."
-            )
-
-        if exc_holder:
-            exc = exc_holder[0]
-            output = "".join(
-                traceback.format_exception(type(exc), exc, exc.__traceback__)
-            )
-        else:
-            output = call.buffer.getvalue()
-        _stop(call, timed_out=False)
+        # Whatever ends run() early, a timeout or an interrupt such as
+        # KeyboardInterrupt (not an Exception), gives the call up.
+        given_up = True
+        try:
+            thread.start()
+            thread.join(self.timeout)
+            if thread.is_alive():
+                raise TimeoutError(
+                    f"Code execution timed out after {self.timeout:.0f}s. "
+                    "Check for infinite loops or overly long-running operations."
+                )
+            given_up = False
+            if exc_holder:
+                exc = exc_holder[0]
+                output = "".join(
+                    traceback.format_exception(type(exc), exc, exc.__traceback__)
+                )
+            else:
+                output = call.buffer.getvalue()
+        finally:
+            _stop(call, timed_out=given_up)
 
         return self._maybe_truncate(output)
 

@@ -294,9 +294,10 @@ print(python.run("print(squares)"))  # (2)!
 1. Variables persist between calls, and only what the code prints comes
    back; the last expression is not echoed. Agents can run code at the
    same time, as under `bcall`: each call captures what its code prints,
-   including the endpoint methods `CALL_API` runs and the threads the code
-   starts. A thread kept from an earlier call, such as a pool worker in a
-   variable, prints into the agent's newest running call; outside calls,
+   including the endpoint methods `CALL_API` runs. Only threads the code
+   starts belong to its call; once the call has returned, such a thread (a
+   pool worker kept in a variable, say) prints into the agent's newest
+   running call, or to your program when none runs. Your program's other
    threads print to your program.
 2. Longer output loses its middle: the first and the last 20 characters
    (half of `max_output_chars` each) are kept, so the end of a traceback,
@@ -307,16 +308,22 @@ An exception comes back as its traceback, so the agent can fix the code and
 try again with its variables intact. The code's own redirects
 (`redirect_stdout`, assigning `sys.stdout`, doctest) work, but `sys.stdout`
 is one per process: while a redirect lasts, other running calls and your
-program print into it too. When the last call ends, your program's
-`sys.stdout` is put back.
+program print into it too. The same goes for a redirect your program makes
+while a call runs: it captures the call's output, and when the last call
+ends, your program's stream from before the calls replaces it, so make
+redirects before or after calls. The first `run_python` call installs a
+`threading.Thread.start` hook, which records the threads each call's code
+starts and stays for the life of the process.
 
 A call that runs past `timeout` returns
 `Error: Code execution timed out after 60s...` to the model, but the code is
-not stopped: it keeps running in a background thread, what it changes stays
-in the namespace, and what it and its threads print is dropped. Once that
-code ends, its threads print to your program, and `sys.stdout` is put back
-unless your program has set its own since the timeout. `reset()` clears
-every variable except `CALL_API`.
+not stopped: it keeps running in a background thread, and what it changes
+stays in the namespace. What it and its threads print goes nowhere until
+that code ends; then its threads print like a returned call's. A stream set
+after the timeout, by your program or by the timed-out code, is kept: the
+timed-out code and its threads print into it until another call starts,
+and the next call saves it as your program's. `reset()` clears every
+variable except `CALL_API`.
 
 !!! warning "Not a security boundary"
     The interpreter runs `exec()` inside your process, with your files,
