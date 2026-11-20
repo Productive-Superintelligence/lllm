@@ -2,11 +2,9 @@ import datetime as dt
 import inspect
 import re
 import logging
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any, Callable, Dict, List, Optional
 from urllib.parse import quote, urlencode, urlsplit
-
-from pydantic import BaseModel
 
 from ..core.runtime import Registry, Runtime, _select_runtime
 
@@ -31,27 +29,33 @@ def _params_dict(params: Any, path: str, documented: Callable[[], Any]) -> dict:
 
     if params is None:
         return {}
-    if isinstance(params, (Mapping, BaseModel)):
-        return dict(params)
-    if isinstance(params, Iterable) and not isinstance(params, (str, bytes, bytearray)):
-        items = params if isinstance(params, (list, tuple)) else list(params)
-        if not items:
-            return {}
-        if all(isinstance(item, (list, tuple)) and len(item) == 2 for item in items):
-            return dict(items)
-        params = items  # a lone value
+    passed = params
+    if not isinstance(params, (str, bytes, bytearray)):
+        if isinstance(params, Iterator):  # one-shot: read it once
+            params = list(params)
+        try:  # 0.4.0's conversion: mappings, models, keys() objects, pairs
+            return dict(params)
+        except (TypeError, ValueError):
+            pass  # a lone value, passed on as it is
     names = [str(name) for name in documented() or {}]
     required = [name for name in names if name.endswith("*")]
     for candidates in (names, required):
         if len(candidates) == 1:
             return {_param_name(candidates[0]): params}
-    if not params:  # a falsy lone value the endpoint does not take, as in 0.4.0
+    if _falsy(params):  # a falsy lone value the endpoint does not take, as in 0.4.0
         return {}
     listed = ", ".join(_param_name(name) for name in names)
     raise TypeError(
         f"Endpoint '{path}' takes its params as a dict"
-        f"{f' ({listed})' if listed else ''}, not {type(params).__name__}."
+        f"{f' ({listed})' if listed else ''}, not {type(passed).__name__}."
     )
+
+
+def _falsy(value: Any) -> bool:
+    try:
+        return not value
+    except Exception:  # no truth value, e.g. an array of several items
+        return False
 
 
 class BaseProxy:
@@ -317,13 +321,15 @@ class BaseProxy:
         params, each value URL-encoded as a single path segment. A missing
         value, ``.`` or ``..`` raises ``ValueError``.
 
-        Params are a dict, a Pydantic model (its fields), or any other
-        iterable of ``(name, value)`` pairs; ``None`` and empty containers
-        mean no params. Any other value, such as a tactic endpoint's text
-        input, is a lone value: the value of the endpoint's only parameter,
-        or of its only required one. Where the endpoint takes no lone value,
-        a falsy one (``0``, ``0.0``, ``False``, ``""``) means no params, as
-        in 0.4.0, and any other raises ``TypeError``.
+        Params are anything ``dict()`` takes, as in 0.4.0: a mapping, a
+        Pydantic model, an object with ``keys()`` (``sqlite3.Row``,
+        ``pandas.Series``), or ``(name, value)`` pairs; ``None`` and empty
+        containers mean no params. A one-shot iterator is read once first.
+        Any other value, such as a tactic endpoint's text input, is a lone
+        value, passed on as it is: the value of the endpoint's only
+        parameter, or of its only required one. Where the endpoint takes no
+        lone value, a falsy one (``0``, ``0.0``, ``False``, ``""``) means no
+        params, as in 0.4.0, and any other raises ``TypeError``.
         """
 
         method, info, path_params = self.resolve_endpoint(path)
@@ -634,13 +640,13 @@ class ProxyManager:
 
                 def documented() -> Any:
                     # Only a lone value needs the endpoint, to be named.
-                    try:
-                        return proxy.resolve_endpoint(path)[1].get("params")
-                    except AttributeError as exc:  # not a BaseProxy endpoint
+                    resolve = getattr(proxy, "resolve_endpoint", None)
+                    if resolve is None:  # not a BaseProxy
                         raise TypeError(
                             f"'{endpoint}': pass the params as a dict to add "
                             "keyword params to them."
-                        ) from exc
+                        )
+                    return resolve(path)[1].get("params")  # "No endpoint ..." as is
 
                 params = {**_params_dict(params, path, documented), **kwargs}
         return proxy.call(path, params)

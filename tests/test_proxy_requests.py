@@ -5,7 +5,9 @@ keys in the query, and tactic endpoints accept any input."""
 import importlib
 import json
 import logging
+import sqlite3
 import sys
+from array import array
 from collections import deque
 from dataclasses import dataclass
 from types import SimpleNamespace
@@ -321,8 +323,11 @@ class OwnCallProxy(BaseProxy):
         return path, params
 
 
-@pytest.mark.parametrize("proxy_cls", [PlainProxy, OwnCallProxy])
-def test_keyword_params_reach_proxies_with_their_own_call(proxy_cls):
+@pytest.mark.parametrize(
+    ("proxy_cls", "lone_value_error"),
+    [(PlainProxy, (TypeError, "as a dict")), (OwnCallProxy, (AttributeError, "No endpoint 'anything'"))],
+)
+def test_keyword_params_reach_proxies_with_their_own_call(proxy_cls, lone_value_error):
     proxies = ProxyManager(runtime=Runtime())
     proxies.register("own", proxy_cls)
 
@@ -330,8 +335,14 @@ def test_keyword_params_reach_proxies_with_their_own_call(proxy_cls):
     assert proxies("own/anything", params={"a": 1}, b=2) == ("anything", {"a": 1, "b": 2})
     assert proxies("own/anything", b=2) == ("anything", {"b": 2})
     assert proxies("own/anything", [("a", 1)], b=2) == ("anything", {"a": 1, "b": 2})
-    with pytest.raises(TypeError, match="as a dict"):
-        proxies("own/anything", "lone", b=2)  # no endpoint to name it after
+    error, match = lone_value_error  # a lone value needs an endpoint to name it after
+    with pytest.raises(error, match=match):
+        proxies("own/anything", "lone", b=2)
+
+
+def test_an_unknown_endpoint_with_a_lone_value_and_keywords_says_so():
+    with pytest.raises(AttributeError, match="No endpoint 'missing'"):
+        tactic_tools()("tools/missing", "lone", times=2)
 
 
 def test_more_than_one_positional_param_is_an_error():
@@ -387,16 +398,35 @@ def test_models_and_any_iterable_of_pairs_are_params(http):
     assert tactic_tools()("tools/shout", Text(text="hi")) == "HI"
 
 
-def test_other_iterables_are_a_lone_value(http):
+def test_what_dict_takes_is_params_as_in_0_4_0(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    connection = sqlite3.connect(":memory:")
+    connection.row_factory = sqlite3.Row
+
+    proxy.call("rates", connection.execute("select 'JPY' as base").fetchone())  # keys()
+    proxy.call("rates", ["ab", "cd"])  # two-letter strings are pairs to dict()
+
+    assert sent_params(http) == [{"base": "JPY"}, {"a": "b", "c": "d"}]
+
+
+def test_anything_else_reaches_the_endpoint_as_it_is(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    values = ({"USD", "EUR"}, range(3), array("i", [1, 2]), ("USD", "EUR"))
+
+    for value in values:
+        proxy.call("rates", value)
+    proxy.call("rates", iter(["USD", "EUR"]))  # a one-shot iterator: read once
+
+    sent = [params["base"] for params in sent_params(http)]
+    assert all(got is value for got, value in zip(sent, values))
+    assert sent[-1] == ["USD", "EUR"]
+
+
+def test_a_lone_value_error_names_the_type_the_caller_passed(http):
     proxy = UncachedRatesProxy(runtime=Runtime())
 
-    proxy.call("rates", ("USD", "EUR"))  # kept as it is
-    proxy.call("rates", iter(["USD", "EUR"]))  # read once, into a list
-    proxy.call("rates", ["ab", "cd"])  # two-letter strings are not pairs
-
-    assert [sent["base"] for sent in sent_params(http)] == [
-        ("USD", "EUR"), ["USD", "EUR"], ["ab", "cd"],
-    ]
+    with pytest.raises(TypeError, match=r"\(start, end\), not list_iterator\."):
+        proxy.call("history", iter(["2024"]))
 
 
 def test_none_and_empty_containers_mean_no_params(http):
