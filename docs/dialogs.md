@@ -315,10 +315,13 @@ high-detail rate: 765 tokens for a 1024×768 photo, however long its data.
 Everything else that is not text counts as 1,500 tokens (`IMAGE_TOKENS`):
 an image whose size cannot be read (HEIC, data that does not decode, or
 any image without Pillow), an image URL, or audio. Sizing these parts
-never fetches anything. Text is counted by LiteLLM, which for some models
-(Llama 2 and 3, Replicate, Cohere Command R) downloads a tokenizer from
-Hugging Face the first time; to prevent that, set
-`litellm.disable_hf_tokenizer_download = True` or `HF_HUB_OFFLINE=1`.
+never fetches anything. Text is counted by LiteLLM, and for Llama 2/3 and
+Replicate models LiteLLM loads a tokenizer from Hugging Face; on a host
+that cannot reach it, recent LiteLLM versions try again on every count,
+and each try can take 20 seconds or more. Set
+`litellm.disable_hf_tokenizer_download = True` to count with tiktoken
+instead; `HF_HUB_OFFLINE=1` also stops the download, but LiteLLM then logs
+a warning on every count.
 
 The newest message is always sent whole, with a warning if it alone is
 over the budget, and a tool call is kept or dropped together with its

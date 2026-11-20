@@ -2,7 +2,6 @@
 
 import base64
 import json
-from collections.abc import Mapping
 from decimal import Decimal
 from typing import Any, ClassVar, Dict, List, Literal, Optional
 
