@@ -46,9 +46,10 @@ class ExaProxy(BaseProxy):
         self, url: str, params: dict, endpoint_info: dict, headers: dict
     ) -> dict:
         cache_key = U.create_cache_key(endpoint_info["endpoint"], params)
-        cached_response = U.load_cache_by_key(self.cache_name, cache_key)
-        if cached_response is not None and self.use_cache:
-            return cached_response
+        if self.use_cache:
+            cached_response = U.load_cache_by_key(self.cache_name, cache_key)
+            if cached_response is not None:
+                return cached_response
 
         if self.cutoff_date is not None:
             for keyword in ["CrawlDate", "PublishedDate"]:
@@ -121,7 +122,8 @@ class ExaProxy(BaseProxy):
             asdict(response.cost_dollars) if response.cost_dollars else None
         )
 
-        U.save_cache_by_key(self.cache_name, cache_key, response_json)
+        if self.use_cache:
+            U.save_cache_by_key(self.cache_name, cache_key, response_json)
         return response_json
 
     ########################################

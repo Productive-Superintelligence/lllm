@@ -231,13 +231,16 @@ def test_one_agent_call_per_comment():
 
 ## Good to know
 
-- The fake models patch LiteLLM's completion call for the whole process,
-  so they also answer calls from other threads, such as `bcall` workers.
-  Do not run tests with different fake models in parallel threads.
-- They answer chat-completion calls, the default. An agent configured with
-  `api_type: response` still calls the provider.
-- LiteLLM builds the responses, so the model name must be one it can route:
-  any real name, or a provider prefix such as `openai/my-model`.
+- The fake models patch LiteLLM's completion and responses calls for the
+  whole process, so they also answer calls from other threads, such as
+  `bcall` workers. Do not run tests with different fake models in parallel
+  threads.
+- They answer chat-completion calls, the default, and the Responses API
+  calls of agents configured with `api_type: response`. Replies, tool
+  calls, and streaming work the same way for both.
+- LiteLLM builds the chat-completion responses, so the model name must be
+  one it can route: any real name, or a provider prefix such as
+  `openai/my-model`.
 - Token counts are LiteLLM's placeholder usage, the same for every call, so
   costs in tests are stable but not realistic.
 - Plain-Python tactics need no fake model at all, and

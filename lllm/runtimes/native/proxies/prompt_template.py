@@ -61,9 +61,10 @@ session. Fetch data in one call, process it in the next.
 - **Print your results**: output is captured from stdout. Use `print()` to \
 surface anything you need. The last expression is **not** auto-returned like \
 a REPL — you must print it explicitly.
-- **Output truncation**: output longer than {max_output_chars} characters is \
-cut off and `"{truncation_indicator}"` is appended. Print the most critical \
-information first, or break large results across multiple calls.
+- **Output truncation**: output longer than {max_output_chars} characters \
+loses its middle: the start and the end are kept, with \
+`"{truncation_indicator}"` where the text was cut. Print only what you need, \
+or break large results across multiple calls.
 - **Full Python available**: the standard library is at your disposal. Use it \
 for data wrangling, aggregation, formatting, numerical computation, string \
 processing — anything a Python script can do. `CALL_API` + Python together \
@@ -141,7 +142,8 @@ def render_proxy_prompt(
         Truncation threshold; embedded in the interpreter-mode template.
         Passed through for all modes (unused by the no-python template).
     truncation_indicator:
-        Truncation suffix; embedded in the interpreter-mode template.
+        Marker put where long output was cut, between its kept start and
+        end; embedded in the interpreter-mode template.
         Passed through for all modes (unused by the no-python template).
     exec_env:
         Controls which default template is selected when ``custom_template``

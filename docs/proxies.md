@@ -136,7 +136,13 @@ print(fx("fx/rates/USD", {"quote": "JPY"}))  # (4)!
    and `query_api_doc("fx")` returns the same section.
 4. The path as listed (`fx/rates/USD`), the template with the value in the
    params (`fx/rates/{base}`), and the method name (`fx.rate`) all reach
-   this endpoint. Parameters can also be keyword arguments.
+   this endpoint. The params can be anything `dict()` takes, such as
+   `(name, value)` pairs or a `sqlite3.Row`, and keyword arguments, alone
+   or next to them. An endpoint with one parameter, or one required
+   parameter, also takes its value alone, passed on as it is. `None` and
+   empty containers mean no params; a falsy value (`0`, `False`, `""`) is
+   the lone value where the endpoint takes one, and means no params
+   otherwise.
 
 The other arguments of `@BaseProxy.endpoint` are `method` (`"GET"`, or
 `"POST"` to send a JSON body), `remove_keys` (keys to drop from each item of
@@ -200,9 +206,10 @@ print(github.call("repos/{owner}/{repo}/issues", odd))  # (5)!
 
 1. The key goes in a query parameter named `api_key_name`, or in a header
    when the name starts with `*`.
-2. Responses are cached on disk by default (under `~/.lllm/.cache`, or
-   `$TMP_DIR/.cache`), keyed by URL and parameters, with no expiry. Turn the
-   cache off for data that changes.
+2. GET responses are cached on disk by default (under `~/.lllm/.cache`, or
+   `$TMP_DIR/.cache`), keyed by URL and parameters, with no expiry.
+   `use_cache=False` turns the cache off, both reads and writes, for data
+   that changes. POST responses are never cached.
 3. The endpoint method is the place for defaults, renames, and checks.
 4. `_call_api(url, params, endpoint_info, headers)` sends the request.
    Override it for APIs that answer in plain text or need an SDK, or, as
@@ -239,8 +246,8 @@ agent_configs:
 | `activate_proxies` | `[]` | Proxies to load, by key (`fx`) or package ref; empty loads every registered proxy |
 | `exec_env` | `interpreter` | `interpreter` adds `run_python`; any other value (`jupyter`, `null`) adds only `query_api_doc`, and your tactic runs the code ([Sandbox](sandbox.md)) |
 | `timeout` | `60.0` | Seconds per `run_python` call |
-| `max_output_chars` | `5000` | `run_python` output is cut here; `0` turns this off |
-| `truncation_indicator` | `... (truncated)` | Appended to cut output |
+| `max_output_chars` | `5000` | Longer `run_python` output loses its middle; `0` turns this off |
+| `truncation_indicator` | `... (truncated)` | Marks where output was cut |
 | `cutoff_date` | `null` | ISO date given to each proxy, for proxies that limit data by date |
 | `deploy_mode` | `false` | Given to each proxy; LLLM itself does not read it |
 | `prompt_template` | `null` | Replaces the instructions added to the system prompt |
@@ -280,20 +287,44 @@ print(python.run("print(len(squares))"))  # (1)!
 100
 """
 print(python.run("print(squares)"))  # (2)!
-#> [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100... (truncated)
+"""
+[0, 1, 4, 9, 16, 25,... (truncated), 9409, 9604, 9801]
+"""
 ```
 
 1. Variables persist between calls, and only what the code prints comes
-   back; the last expression is not echoed.
-2. Output keeps its first `max_output_chars` characters. The instructions
-   in the system prompt tell the agent to print summaries, most important
-   part first.
+   back; the last expression is not echoed. Agents can run code at the
+   same time, as under `bcall`: each call captures what its code prints,
+   including the endpoint methods `CALL_API` runs. Only threads the code
+   starts belong to its call; once the call has returned, such a thread (a
+   pool worker kept in a variable, say) prints into the agent's newest
+   running call, or to your program when none runs. Your program's other
+   threads print to your program.
+2. Longer output loses its middle: the first and the last 20 characters
+   (half of `max_output_chars` each) are kept, so the end of a traceback,
+   where the exception is, survives. The instructions in the system prompt
+   tell the agent to print only what it needs.
 
 An exception comes back as its traceback, so the agent can fix the code and
-try again with its variables intact. A call that runs past `timeout` returns
+try again with its variables intact. The code's own redirects
+(`redirect_stdout`, assigning `sys.stdout`, doctest) work, but `sys.stdout`
+is one per process: while a redirect lasts, other running calls and your
+program print into it too. The same goes for a redirect your program makes
+while a call runs: it captures the call's output, and when the last call
+ends, your program's stream from before the calls replaces it, so make
+redirects before or after calls. The first `run_python` call installs a
+`threading.Thread.start` hook, which records the threads each call's code
+starts and stays for the life of the process.
+
+A call that runs past `timeout` returns
 `Error: Code execution timed out after 60s...` to the model, but the code is
 not stopped: it keeps running in a background thread, and what it changes
-stays in the namespace. `reset()` clears every variable except `CALL_API`.
+stays in the namespace. What it and its threads print goes nowhere until
+that code ends; then its threads print like a returned call's. A stream set
+after the timeout while no other call runs, by your program or by the
+timed-out code, is kept: the timed-out code and its threads print into it
+until another call starts, and the next call saves it as your program's.
+`reset()` clears every variable except `CALL_API`.
 
 !!! warning "Not a security boundary"
     The interpreter runs `exec()` inside your process, with your files,
@@ -306,10 +337,10 @@ stays in the namespace. `reset()` clears every variable except `CALL_API`.
 LLLM ships proxies for research data. Each reads its API key from the
 environment. Call `load_builtin_proxies()` (from
 `lllm.runtimes.native.proxies`) before you build a tactic that activates
-them: a name in `activate_proxies` that nothing registered is skipped
-without an error. It returns `(loaded, errors)`, and a module that cannot
-be imported, such as `exa` without `exa_py`, lands in `errors` instead of
-raising.
+them: a name in `activate_proxies` that nothing registered is skipped,
+with a warning in the log. It returns `(loaded, errors)`, and a module
+that cannot be imported, such as `exa` without `exa_py`, lands in `errors`
+instead of raising.
 
 | Key | API | Key variable |
 | --- | --- | --- |
@@ -344,6 +375,8 @@ a project with a sample proxy, a config that attaches it to an agent, and
 An endpoint can also run a whole tactic:
 `BaseProxy.tactic_endpoint("my_pkg.tactics:summarize", config=...)` takes
 its parameters from the tactic's input and returns the tactic's result.
+When the tactic has one required parameter, its value alone works in
+place of the params dict, as in `CALL_API("tools/summarize", text)`.
 
 !!! note "`ProxyTactic` is something else"
     `lllm.proxy_tactic()` wraps a whole tactic at its typed boundary with

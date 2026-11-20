@@ -2,8 +2,9 @@ import datetime as dt
 import inspect
 import re
 import logging
-from typing import Any, Dict, List, Optional
-from urllib.parse import quote
+from collections.abc import Iterator, Mapping
+from typing import Any, Callable, Dict, List, Optional
+from urllib.parse import quote, urlencode, urlsplit
 
 from ..core.runtime import Registry, Runtime, _select_runtime
 
@@ -11,6 +12,65 @@ logger = logging.getLogger(__name__)
 
 # A ``{name}`` placeholder in an endpoint path, e.g. ``companies/{ticker}``.
 _PLACEHOLDER = re.compile(r"\{([^}/]+)\}")
+
+
+def _stored_wraps(obj: Any) -> Any:
+    """What a mock wraps (its ``_mock_wraps``), taken from its ``__dict__``
+    only, so a ``__getattr__`` that answers anything is never followed."""
+    own = getattr(obj, "__dict__", None)
+    return own.get("_mock_wraps") if isinstance(own, dict) else None
+
+
+def _made_by_mock(value: Any) -> bool:
+    """Whether ``value`` is a mock, like the child a mock makes up when an
+    attribute it does not have is read (both unittest.mock and the
+    standalone mock package keep ``_mock_children`` in ``__dict__``)."""
+    own = getattr(value, "__dict__", None)
+    return isinstance(own, dict) and "_mock_children" in own
+
+
+def _param_name(documented: str) -> str:
+    """A parameter's name without its marks: ``"$ticker*"`` -> ``"ticker"``
+    (``$`` marks a path value, ``#`` a POST body item, ``*`` a required one)."""
+    return documented.lstrip("$#").rstrip("*")
+
+
+def _params_dict(params: Any, path: str, documented: Callable[[], Any]) -> dict:
+    """The params of a call as a dict (the rules are in ``BaseProxy.call``).
+
+    ``documented`` returns the endpoint's documented params; it is called
+    only when a lone value needs a name.
+    """
+
+    if params is None:
+        return {}
+    passed = params
+    if not isinstance(params, (str, bytes, bytearray)):
+        if isinstance(params, Iterator):  # one-shot: read it once
+            params = list(params)
+        try:  # 0.4.0's conversion: mappings, models, keys() objects, pairs
+            return dict(params)
+        except (TypeError, ValueError):
+            pass  # a lone value, passed on as it is
+    names = [str(name) for name in documented() or {}]
+    required = [name for name in names if name.endswith("*")]
+    for candidates in (names, required):
+        if len(candidates) == 1:
+            return {_param_name(candidates[0]): params}
+    if _falsy(params):  # a falsy lone value the endpoint does not take, as in 0.4.0
+        return {}
+    listed = ", ".join(_param_name(name) for name in names)
+    raise TypeError(
+        f"Endpoint '{path}' takes its params as a dict"
+        f"{f' ({listed})' if listed else ''}, not {type(passed).__name__}."
+    )
+
+
+def _falsy(value: Any) -> bool:
+    try:
+        return not value
+    except Exception:  # no truth value, e.g. an array of several items
+        return False
 
 
 class BaseProxy:
@@ -179,17 +239,57 @@ class BaseProxy:
 
     @staticmethod
     def _callable_attr(method, attr: str, default: Any = None) -> Any:
-        value = getattr(method, attr, None)
-        if value is not None:
-            return value
-        func = getattr(method, "__func__", None)
-        return getattr(func, attr, default)
+        """An endpoint attribute of ``method``, found as ``getattr`` finds
+        it (as in 0.4.0), so type attributes, descriptors, deletions, seal
+        and spec all count, with one rule for spies: when a mock that wraps
+        something (``patch.object(proxy, name, wraps=...)``) answers with a
+        mock it made itself, the attribute is read from what it wraps (and a
+        spy's child reached through some other object gives the value it
+        wraps).
+
+        A wrapped object is taken only from a mock's ``__dict__`` (where
+        Mock keeps ``_mock_wraps``), so an object whose ``__getattr__``
+        answers anything is never followed. A cycle of wrapping mocks has
+        no metadata: Mock itself recurses reading one, so it is found first.
+        """
+        end = method
+        for _ in range(16):  # a bound, for a cycle of wrappers
+            end = _stored_wraps(end)
+            if end is None:
+                break
+        else:
+            return default
+        while True:
+            value = getattr(method, attr, None)
+            if value is None:
+                value = getattr(getattr(method, "__func__", None), attr, None)
+            if not _made_by_mock(value):
+                return default if value is None else value
+            wrapped = _stored_wraps(method)
+            if wrapped is None:
+                # Reached some other way (a forwarding wrapper over a spy):
+                # a spy's child keeps what it wraps, the real metadata, and
+                # over a spy of a spy, that is the inner spy's child.
+                for _ in range(16):
+                    inner = _stored_wraps(value)
+                    if inner is None or not _made_by_mock(value):
+                        break
+                    value = inner
+                return value
+            method = wrapped  # a spy's made-up child: read the wrapped object
+
+    @classmethod
+    def _tactic_meta(cls, method) -> Optional[Mapping]:
+        """A tactic endpoint's metadata, or None (also for the attribute a
+        mock makes up for any name)."""
+        meta = cls._callable_attr(method, "_lllm_tactic_endpoint")
+        return meta if isinstance(meta, Mapping) else None
 
     def _materialize_endpoint_info(
         self, attr_name: str, method, info: Dict[str, Any]
     ) -> Dict[str, Any]:
-        tactic_meta = self._callable_attr(method, "_lllm_tactic_endpoint")
-        if not tactic_meta:
+        tactic_meta = self._tactic_meta(method)
+        if tactic_meta is None:
             return info
 
         from ..core.tactic_tool import build_tactic_endpoint_info
@@ -213,7 +313,9 @@ class BaseProxy:
         """
         for name, method in inspect.getmembers(self, predicate=callable):
             info = self._callable_attr(method, "endpoint_info")
-            if info:
+            # Only real metadata: a mock in place of a method (say a patched
+            # call) makes up truthy attributes for any name.
+            if isinstance(info, Mapping) and info:
                 info = self._materialize_endpoint_info(name, method, dict(info))
                 yield name, method, info
 
@@ -258,13 +360,15 @@ class BaseProxy:
             + ", ".join(sorted(endpoint for endpoint, *_ in routes))
         )
 
-    def call(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
+    def call(self, path: str, params: Any = None) -> Any:
         """Call an endpoint: shape the params, then make the HTTP request.
 
         The endpoint method receives the params and returns the (possibly
         adjusted) params to send. Proxies that declare a ``base_url`` then
         call ``_call_api`` with the full URL, adding the API key as a query
-        parameter (``api_key_name``) or a header (``"*header-name"``).
+        parameter (``api_key_name``) or a header (``"*header-name"``). A
+        POST endpoint sends its params as the JSON body, so a query-parameter
+        key goes in the URL.
         Proxies that send requests themselves (an overridden ``_call_api``
         without ``base_url``, e.g. an SDK client) receive the endpoint path.
         Proxies with neither, and tactic endpoints, return the method's result
@@ -273,11 +377,25 @@ class BaseProxy:
         ``{name}`` placeholders in the endpoint path are filled from the
         params, each value URL-encoded as a single path segment. A missing
         value, ``.`` or ``..`` raises ``ValueError``.
+
+        Params are anything ``dict()`` takes (0.4.0 also needed a truth
+        value): a mapping, a Pydantic model, an object with ``keys()``
+        (``sqlite3.Row``, ``pandas.Series``), or ``(name, value)`` pairs;
+        ``None`` and empty containers mean no params. A one-shot iterator is
+        read once first.
+        Any other value, such as a tactic endpoint's text input, is a lone
+        value, passed on as it is: the value of the endpoint's only
+        parameter, or of its only required one. Where the endpoint takes no
+        lone value, a falsy one (``0``, ``0.0``, ``False``, ``""``) means no
+        params, as in 0.4.0, and any other raises ``TypeError``.
         """
 
         method, info, path_params = self.resolve_endpoint(path)
-        params = {**path_params, **dict(params or {})}
-        if self._callable_attr(method, "_lllm_tactic_endpoint"):
+        params = {
+            **path_params,
+            **_params_dict(params, path, lambda: info.get("params")),
+        }
+        if self._tactic_meta(method) is not None:
             return method(params)
         prepared = method(params)
         base_url = getattr(self, "base_url", None)
@@ -308,6 +426,11 @@ class BaseProxy:
         if key_name and key:
             if key_name.startswith("*"):
                 headers[key_name[1:]] = key
+            elif (info.get("method") or "GET").upper() == "POST":
+                # A POST sends the params as its JSON body, so the key goes
+                # in the URL's query string.
+                separator = "&" if urlsplit(url).query else "?"
+                url = f"{url}{separator}{urlencode({key_name: key})}"
             else:
                 prepared[key_name] = key
         return self._call_api(url, prepared, info, headers)
@@ -406,18 +529,17 @@ class ProxyManager:
         self._load_registered_proxies()
 
     def _load_registered_proxies(self):
+        registered, activated = [], set()
         for qk, node in self._runtime.iter_items("proxy"):
             proxy_cls = node.value
+            registered.append(node.key)
             if self.activate_proxies:
                 # Match against qualified key, bare key, or _proxy_path
-                matched = any(
-                    act == qk
-                    or act == node.key
-                    or act == getattr(proxy_cls, "_proxy_path", None)
-                    for act in self.activate_proxies
-                )
+                names = {qk, node.key, getattr(proxy_cls, "_proxy_path", None)}
+                matched = names.intersection(self.activate_proxies)
                 if not matched:
                     continue
+                activated.update(matched)
             try:
                 instance = proxy_cls(
                     cutoff_date=self.cutoff_date,
@@ -432,6 +554,15 @@ class ProxyManager:
             instance._resource_namespace = node.namespace
             # Store under the bare key (what existing code expects for dispatch)
             self.proxies[node.key] = instance
+        for name in self.activate_proxies:
+            if name not in activated:
+                logger.warning(
+                    "No proxy is registered as %r, so activate_proxies skips "
+                    "it. Registered proxies: %s. Built-in proxies need "
+                    "load_builtin_proxies() first.",
+                    name,
+                    sorted(registered),
+                )
 
     def register(self, name: str, proxy_cls: Any):
         """Register (or override) a proxy implementation at runtime."""
@@ -542,17 +673,46 @@ class ProxyManager:
         return path_parts[0], "/".join(path_parts[1:])
 
     def __call__(self, endpoint: str, *args, **kwargs):
-        """Call ``"<proxy>/<endpoint path>"`` with a params dict, e.g. ``CALL_API``."""
+        """Call ``"<proxy>/<endpoint path>"`` with its params, e.g. ``CALL_API``.
+
+        The params come as one positional value (or ``params=``), as keyword
+        arguments, or both; keywords are merged into the positional params.
+        """
 
         proxy_name, path = self._resolve(endpoint)
         if proxy_name not in self.proxies:
             raise KeyError(
                 f"Proxy '{proxy_name}' not registered. Available: {list(self.proxies.keys())}"
             )
+        if len(args) > 1:
+            raise TypeError(
+                f"'{endpoint}' takes one positional params value, got "
+                f"{len(args)}; pass the other params by name."
+            )
+        proxy = self.proxies[proxy_name]
         params = args[0] if args else kwargs.pop("params", None)
-        if params is None and kwargs:
-            params, kwargs = kwargs, {}
-        return self.proxies[proxy_name].call(path, params)
+        if kwargs:
+            if params is None or isinstance(params, Mapping):
+                params = {**(params or {}), **kwargs}
+            else:
+
+                def documented() -> Any:
+                    # Only a lone value needs the endpoint, to be named, and
+                    # only BaseProxy.call serves the endpoints it can list.
+                    method = getattr(proxy, "call", None)
+                    if getattr(method, "__func__", None) is BaseProxy.call:
+                        owner = method.__self__  # perhaps another object's call
+                    elif getattr(type(proxy), "call", None) is BaseProxy.call:
+                        owner = proxy  # e.g. its call wrapped by a spy
+                    else:
+                        raise TypeError(
+                            f"'{endpoint}': pass the params as a dict to add "
+                            "keyword params to them."
+                        )
+                    return owner.resolve_endpoint(path)[1].get("params")  # "No endpoint ..." as is
+
+                params = {**_params_dict(params, path, documented), **kwargs}
+        return proxy.call(path, params)
 
 
 def ProxyRegistrator(

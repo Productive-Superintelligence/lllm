@@ -21,6 +21,7 @@ from __future__ import annotations
 
 import json
 import threading
+import time
 import uuid
 from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Sequence, Union
@@ -91,7 +92,9 @@ class FunctionModel:
 
     The function receives a :class:`ModelRequest` and returns the reply
     text, a :class:`ToolCall`, or a list of tool calls. Every request is kept
-    in ``requests``, so tests can check what the model was asked.
+    in ``requests``, so tests can check what the model was asked. Calls to
+    chat completions (the default) and to OpenAI's Responses API (agents
+    with ``api_type="response"``) are both answered.
     """
 
     _lock = threading.RLock()
@@ -106,8 +109,9 @@ class FunctionModel:
         from lllm.runtimes.native.invokers import litellm as invoker_module
 
         with FunctionModel._lock:
-            self._saved = invoker_module.completion_api
+            self._saved = (invoker_module.completion_api, invoker_module.responses_api)
             invoker_module.completion_api = self._complete
+            invoker_module.responses_api = self._respond
             FunctionModel._active.append(self)
         return self
 
@@ -115,20 +119,23 @@ class FunctionModel:
         from lllm.runtimes.native.invokers import litellm as invoker_module
 
         with FunctionModel._lock:
-            invoker_module.completion_api = self._saved
+            invoker_module.completion_api, invoker_module.responses_api = self._saved
             FunctionModel._active.remove(self)
 
-    def _complete(self, *, model: str, messages: list[dict[str, Any]], tools: Any = None, **kwargs: Any) -> Any:
-        import litellm
-
+    def _ask(self, model: str, messages: list[dict[str, Any]], tools: Any, response_format: Any = None) -> Reply:
         request = ModelRequest(
             model=model,
             messages=messages,
             tools=[tool["function"]["name"] for tool in tools or [] if "function" in tool],
-            response_format=kwargs.get("response_format"),
+            response_format=response_format,
         )
         self.requests.append(request)
-        reply = self.function(request)
+        return self.function(request)
+
+    def _complete(self, *, model: str, messages: list[dict[str, Any]], tools: Any = None, **kwargs: Any) -> Any:
+        import litellm
+
+        reply = self._ask(model, messages, tools, kwargs.get("response_format"))
         calls = _tool_calls(reply)
         stream = bool(kwargs.get("stream"))
         if calls is None:
@@ -151,6 +158,14 @@ class FunctionModel:
         response = litellm.completion(model=model, messages=messages, mock_tool_calls=tool_calls)
         response.choices[0].finish_reason = "tool_calls"
         return response
+
+    def _respond(self, *, model: str, input: Any, tools: Any = None, **kwargs: Any) -> Any:
+        """Answer a Responses API call (an agent with ``api_type="response"``)."""
+
+        messages = [{"role": "user", "content": input}] if isinstance(input, str) else list(input)
+        reply = self._ask(model, messages, tools)
+        response = _responses_api_response(model, reply)
+        return _responses_api_stream(response) if kwargs.get("stream") else response
 
 
 class ScriptedModel(FunctionModel):
@@ -190,6 +205,73 @@ def _tool_call_stream(model: str, tool_calls: list[dict[str, Any]]) -> Any:
     yield ModelResponseStream(model=model, choices=[StreamingChoices(index=0, delta=first)])
     done = StreamingChoices(index=0, delta=Delta(), finish_reason="tool_calls")
     yield ModelResponseStream(model=model, choices=[done])
+
+
+def _responses_api_response(model: str, reply: Reply) -> Any:
+    """A Responses API response, with the same placeholder usage and cost
+    as LiteLLM's mock chat completions."""
+
+    import litellm
+    from litellm.types.llms.openai import ResponsesAPIResponse
+
+    calls = _tool_calls(reply)
+    if calls is None:
+        output = [
+            {
+                "type": "message",
+                "id": f"msg_{uuid.uuid4().hex[:12]}",
+                "status": "completed",
+                "role": "assistant",
+                "content": [{"type": "output_text", "text": str(reply), "annotations": []}],
+            }
+        ]
+    else:
+        output = [
+            {
+                "type": "function_call",
+                "id": f"fc_{uuid.uuid4().hex[:12]}",
+                "call_id": f"call_{uuid.uuid4().hex[:12]}",
+                "name": call.name,
+                "arguments": json.dumps(call.arguments),
+                "status": "completed",
+            }
+            for call in calls
+        ]
+    response = ResponsesAPIResponse.model_validate(
+        {
+            "id": f"resp_{uuid.uuid4().hex[:12]}",
+            "object": "response",
+            "created_at": int(time.time()),
+            "status": "completed",
+            "model": model,
+            "output": output,
+            "usage": {"input_tokens": 10, "output_tokens": 20, "total_tokens": 30},
+        }
+    )
+    try:
+        cost = litellm.cost_per_token(model=model, prompt_tokens=10, completion_tokens=20)
+        response._hidden_params["response_cost"] = sum(cost)
+    except Exception:  # a model LiteLLM has no price for
+        pass
+    return response
+
+
+def _responses_api_stream(response: Any) -> Any:
+    """The stream events of a Responses API reply: its text, then the response."""
+
+    from litellm.types.llms.openai import OutputTextDeltaEvent, ResponseCompletedEvent
+
+    for index, item in enumerate(response.output):
+        if item.type == "message":
+            for part, content in enumerate(item.content):
+                yield OutputTextDeltaEvent(
+                    type="response.output_text.delta",
+                    item_id=item.id,
+                    output_index=index,
+                    content_index=part,
+                    delta=content.text,
+                )
+    yield ResponseCompletedEvent(type="response.completed", response=response)
 
 
 def _tool_calls(reply: Reply) -> list[ToolCall] | None:

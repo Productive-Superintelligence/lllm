@@ -75,7 +75,8 @@ def make_run_python_tool(interpreter: "AgentInterpreter") -> Function:
             "you can fetch data in one call and process it in the next. "
             "Always use print() to surface results: output is captured from "
             "stdout only. "
-            "Long outputs are truncated; print the most important data first. "
+            "Long outputs lose their middle (the start and the end are kept); "
+            "print only the data you need. "
             "Exceptions are returned as tracebacks so you can diagnose and fix them."
         ),
         prop_desc={
