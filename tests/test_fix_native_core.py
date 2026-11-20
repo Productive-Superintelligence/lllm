@@ -274,14 +274,56 @@ def _photo(size: int) -> str:
     return base64.b64encode(data).decode()
 
 
-def test_images_count_as_images_not_as_their_data():
+def _tokens(manager: DefaultContextManager, message: Any) -> int:
+    return manager._tokens(message, manager._to_raw(message))
+
+
+def test_images_count_at_high_detail_not_as_their_data():
+    pytest.importorskip("PIL")
+    import io
+
+    from PIL import Image
+
+    photo = io.BytesIO()
+    Image.new("RGB", (1024, 768), "white").save(photo, format="PNG")
     dialog = _dialog()
     dialog.put_image(_photo(360_000), caption="A photo")  # 480,000 characters
-    dialog.put_text("What is in it?")
-
-    assert DefaultContextManager("gpt-4o-mini")(dialog) is dialog
+    dialog.put_image(base64.b64encode(photo.getvalue()).decode())
+    dialog.put_text("What is in them?")
     manager = DefaultContextManager("gpt-4o-mini")
-    assert manager._count([manager._to_raw(dialog.messages[1])]) < 200
+
+    assert manager(dialog) is dialog
+    for message in dialog.messages[1:3]:  # OpenAI: 765 tokens at 1024x768
+        assert 765 <= _tokens(manager, message) < 1_200
+
+
+def test_an_image_litellm_cannot_size_counts_as_image_tokens():
+    from lllm.runtimes.native import Message
+
+    dialog = _dialog("What is in it?")
+    dialog.append(
+        Message(
+            role=Role.USER,
+            name="user",
+            content="!!not base64!!",
+            modality=Modalities.IMAGE,
+            metadata={"caption": "A photo"},
+        )
+    )
+    manager = DefaultContextManager("gpt-4o-mini")
+    tokens = _tokens(manager, dialog.messages[-1])
+
+    assert manager.IMAGE_TOKENS <= tokens < manager.IMAGE_TOKENS + 50
+    assert manager(dialog) is dialog  # counting the dialog does not fail
+
+
+def test_tool_call_arguments_are_counted():
+    dialog = _dialog("Find notes about LLLM.")
+    _tool_round(dialog, "Found 3 notes.")
+    dialog.messages[2].function_calls[0].arguments = {"query": "lllm " * 400}
+    manager = DefaultContextManager("gpt-4o-mini")
+
+    assert _tokens(manager, dialog.messages[2]) > 400  # the content is short
 
 
 def test_the_newest_message_is_sent_whole_even_over_budget(caplog):
@@ -306,8 +348,9 @@ def test_a_dropped_image_is_dropped_whole_and_logged(caplog):
     dialog = _dialog()
     dialog.put_image(_photo(1_000), caption="Q3 revenue")
     dialog.put_text("word " * 50)
+    # Over 50 tokens are left at the image, enough to cut a text message.
     with caplog.at_level("WARNING", logger=CM_LOGGER):
-        trimmed = Exact("gpt-4o-mini", max_tokens=80)(dialog)
+        trimmed = Exact("gpt-4o-mini", max_tokens=130)(dialog)
 
     assert [m.modality for m in trimmed.messages] == [Modalities.TEXT] * 2
     assert "dropped 1 image" in caplog.text

@@ -275,7 +275,7 @@ agent = Tactic.quick(
     system_prompt="You track standup notes.", model="gpt-4o-mini"
 )
 agent.context_manager = DefaultContextManager(  # (1)!
-    "gpt-4o-mini", max_tokens=140
+    "gpt-4o-mini", max_tokens=160
 )
 agent.open("standups")
 notes = {
@@ -298,7 +298,7 @@ print(len(agent.current_dialog.messages))
 
 1. `max_tokens` is the budget for what is sent, minus a margin kept free
    for the reply: 5,000 tokens, or a quarter of a budget under 20,000. This
-   tiny budget leaves 105 tokens: room for the last few notes.
+   tiny budget leaves 120 tokens: room for the last few notes.
 2. The model saw the system prompt and the six most recent messages; the
    dialog still holds all 13.
 
@@ -309,10 +309,12 @@ or register the model with `litellm.register_model`, giving its
 `max_input_tokens`: without either, nothing is trimmed, and a warning says
 so.
 
-Messages are counted the way they are sent, so an image counts as an image
-(about a hundred tokens for a photo), not as the length of its data. The
-newest message is always sent whole, with a warning if it alone is over
-the budget, and a tool call is kept or dropped together with its results.
+Messages are counted the way they are sent, tool calls included. An image
+counts at high detail, by its size (765 tokens for a 1024×768 photo with
+OpenAI's counting), not by the length of its data, and as 1,500 tokens
+(`IMAGE_TOKENS`) when its size cannot be read. The newest message is
+always sent whole, with a warning if it alone is over the budget, and a
+tool call is kept or dropped together with its results.
 An older message that only partly fits keeps its end, after an
 `[...earlier content truncated...]` marker; an image that does not fit is
 dropped whole, with a warning.

@@ -4,6 +4,7 @@ import base64
 import copy
 import datetime as dt
 import io
+import json
 import logging
 import re
 import uuid
@@ -73,6 +74,57 @@ def _image_parts(message: "Message") -> List[Dict[str, Any]]:
     url = f"data:{media_type};base64,{message.content}"
     parts.append({"type": "image_url", "image_url": {"url": url}})
     return parts
+
+
+#: Sender names the chat format leaves out of a message's ``name``.
+_GENERIC_NAMES = ("assistant", "user", "system", "internal")
+
+
+def _chat_message(message: "Message") -> Dict[str, Any]:
+    """A message in the Chat Completions format the LiteLLM invoker sends."""
+    if message.role in (Roles.ASSISTANT, Roles.TOOL_CALL):
+        entry: Dict[str, Any] = {"role": "assistant", "content": message.content}
+        if message.name and message.name not in _GENERIC_NAMES:
+            entry["name"] = message.sanitized_name
+        if message.function_calls:
+            entry["tool_calls"] = [
+                {
+                    "id": call.id,
+                    "type": "function",
+                    "function": {
+                        "name": call.name,
+                        "arguments": json.dumps(call.arguments),
+                    },
+                }
+                for call in message.function_calls
+            ]
+        return entry
+    if message.role == Roles.TOOL:
+        tool_call_id = message.metadata.get("tool_call_id")
+        if not tool_call_id:
+            raise ValueError(
+                "Tool call id is not found in the message metadata for tool message: "
+                f"{message}"
+            )
+        entry = {
+            "role": "tool",
+            "content": message.content,
+            "tool_call_id": tool_call_id,
+        }
+        if message.name and message.name not in _GENERIC_NAMES:
+            entry["name"] = message.sanitized_name
+        return entry
+    if message.modality == Modalities.IMAGE:
+        content: Any = _image_parts(message)
+    elif message.modality == Modalities.TEXT:
+        content = message.content
+    else:
+        raise ValueError(f"Unsupported modality: {message.modality}")
+    return {
+        "role": message.role.msg_value,
+        "content": content,
+        "name": message.sanitized_name,
+    }
 
 
 def _image_placeholder(message: "Message") -> str:
@@ -1014,8 +1066,9 @@ class DefaultContextManager(ContextManager):
 
     **Truncation strategy**
 
-    Messages are counted as they are sent: an image as its caption and an
-    ``image_url`` part (about a hundred tokens for a photo), not as its data.
+    Messages are counted as they are sent, tool calls included. An image is
+    counted at high detail, sized from its data by LiteLLM (765 tokens for a
+    1024x768 photo), or as ``IMAGE_TOKENS`` when its size cannot be read.
 
     1. The first message (system / developer prompt) is always preserved.
     2. The newest message is always sent whole, with a warning if it alone
@@ -1065,6 +1118,9 @@ class DefaultContextManager(ContextManager):
 
     name: ClassVar[str] = "default"
     SAFETY_BUFFER: int = 5000
+    #: Tokens counted for an image whose size cannot be read. A photo at
+    #: high detail costs 765 to 1,105 tokens on OpenAI, about 1,600 on Claude.
+    IMAGE_TOKENS: int = 1500
 
     def __init__(self, model_name: str, max_tokens: Optional[int] = None):
         """
@@ -1093,24 +1149,40 @@ class DefaultContextManager(ContextManager):
         return _context_window(self.model_name)
 
     def _to_raw(self, m: Message) -> dict:
-        """A message as litellm's token_counter should see it: as it is sent.
+        """A message for litellm's token_counter: as the invoker sends it.
 
-        An image is its caption and an ``image_url`` part, as the invoker
-        sends it, so it counts as an image (about a hundred tokens for a
-        photo), not as its base64 text.
+        Tool calls are included, and an image is counted at high detail,
+        sized from its data (OpenAI: 765 tokens for a 1024x768 photo), not
+        as its base64 text.
         """
-        if m.modality == Modalities.IMAGE and isinstance(m.content, str):
-            content: Any = _image_parts(m)
-        elif isinstance(m.content, str):
-            content = m.content
-        else:
-            content = str(m.content)
-        return {"role": m.role.value, "content": content}
+        try:
+            raw = _chat_message(m)
+        except ValueError:  # e.g. a tool result without its tool_call_id
+            return {"role": m.role.value, "content": str(m.content)}
+        if isinstance(raw["content"], list):
+            raw["content"] = [
+                {**part, "image_url": {**part["image_url"], "detail": "high"}}
+                if part.get("type") == "image_url"
+                else part
+                for part in raw["content"]
+            ]
+        return raw
 
     def _count(self, raw_msgs: list) -> int:
         from litellm import token_counter
 
         return token_counter(model=self.model_name, messages=raw_msgs)
+
+    def _tokens(self, message: Message, raw: dict) -> int:
+        """One message's tokens; an image LiteLLM cannot size (its data does
+        not decode) counts as ``IMAGE_TOKENS`` beside its caption."""
+        try:
+            return self._count([raw])
+        except Exception:
+            if message.modality != Modalities.IMAGE:
+                raise
+            caption = {"role": raw["role"], "content": message.metadata.get("caption") or ""}
+            return self._count([caption]) + self.IMAGE_TOKENS
 
     @staticmethod
     def _cut(message: Message, budget: int, tokens: int) -> Optional[Message]:
@@ -1145,8 +1217,11 @@ class DefaultContextManager(ContextManager):
         # Room for the reply: SAFETY_BUFFER, or a quarter of a small budget.
         limit = max_tokens - min(self.SAFETY_BUFFER, max_tokens // 4)
         raw_all = [self._to_raw(m) for m in messages]
-
-        if self._count(raw_all) <= limit:
+        try:
+            total = self._count(raw_all)
+        except Exception:  # an image LiteLLM cannot size
+            total = sum(self._tokens(m, raw) for m, raw in zip(messages, raw_all))
+        if total <= limit:
             return dialog
 
         logger.debug(
@@ -1155,7 +1230,7 @@ class DefaultContextManager(ContextManager):
         )
 
         # Always keep the first (system) message
-        head_tokens = self._count([raw_all[0]])
+        head_tokens = self._tokens(messages[0], raw_all[0])
         budget = limit - head_tokens
 
         # Walk from the tail inward; collect messages that fit within budget.
@@ -1163,7 +1238,7 @@ class DefaultContextManager(ContextManager):
         kept: List[Message] = []
         kept_indexes = set()
         for position, unit in enumerate(_trim_units(messages)):
-            t = sum(self._count([raw_all[index]]) for index in unit)
+            t = sum(self._tokens(messages[index], raw_all[index]) for index in unit)
             if t <= budget or position == 0:
                 if t > budget:
                     logger.warning(

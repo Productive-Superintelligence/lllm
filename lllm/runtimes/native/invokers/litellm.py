@@ -13,8 +13,8 @@ from litellm import (
     stream_chunk_builder,
 )
 
-from ..core.const import APITypes, InvokeResult, Invokers, Modalities, Roles
-from ..core.dialog import Dialog, Message, TokenLogprob, _image_parts
+from ..core.const import APITypes, InvokeResult, Invokers, Roles
+from ..core.dialog import Dialog, Message, TokenLogprob, _chat_message
 from ..core.prompt import FunctionCall, Prompt
 from .base import BaseInvoker, BaseStreamHandler
 
@@ -87,82 +87,13 @@ _RESPONSES_USAGE_KEYS = {
 
 
 class LiteLLMInvoker(BaseInvoker):
-    def _convert_dialog(self, dialog: Dialog) -> List[Dict[str, str]]:
-        """Convert internal Dialog state into OpenAI-compatible messages."""
-        messages: List[Dict[str, str]] = []
-        for message in dialog.messages:
-            if message.role in (Roles.ASSISTANT, Roles.TOOL_CALL):
-                assistant_entry: Dict[str, str] = {
-                    "role": "assistant",
-                    "content": message.content,
-                }
-                if message.name and message.name not in (
-                    "assistant",
-                    "user",
-                    "system",
-                    "internal",
-                ):
-                    assistant_entry["name"] = message.sanitized_name
-                if message.function_calls:
-                    assistant_entry["tool_calls"] = [
-                        {
-                            "id": fc.id,
-                            "type": "function",
-                            "function": {
-                                "name": fc.name,
-                                "arguments": json.dumps(fc.arguments),
-                            },
-                        }
-                        for fc in message.function_calls
-                    ]
-                messages.append(assistant_entry)
-                continue
+    def _convert_dialog(self, dialog: Dialog) -> List[Dict[str, Any]]:
+        """Convert internal Dialog state into OpenAI-compatible messages.
 
-            if message.role == Roles.TOOL:
-                tool_call_id = message.metadata.get("tool_call_id")
-                if not tool_call_id:
-                    raise ValueError(
-                        "Tool call id is not found in the message metadata for tool message: "
-                        f"{message}"
-                    )
-                tool_entry = {
-                    "role": "tool",
-                    "content": message.content,
-                    "tool_call_id": tool_call_id,
-                }
-                if message.name and message.name not in (
-                    "assistant",
-                    "user",
-                    "system",
-                    "internal",
-                ):
-                    tool_entry["name"] = message.sanitized_name
-                messages.append(tool_entry)
-                continue
-
-            if message.modality == Modalities.IMAGE:
-                messages.append(
-                    {
-                        "role": message.role.msg_value,
-                        "content": _image_parts(message),
-                        "name": message.sanitized_name,
-                    }
-                )
-                continue
-
-            if message.modality == Modalities.TEXT:
-                messages.append(
-                    {
-                        "role": message.role.msg_value,
-                        "content": message.content,
-                        "name": message.sanitized_name,
-                    }
-                )
-                continue
-
-            raise ValueError(f"Unsupported modality: {message.modality}")
-
-        return messages
+        The per-message format lives in ``core.dialog`` so that
+        ``DefaultContextManager`` counts messages as they are sent here.
+        """
+        return [_chat_message(message) for message in dialog.messages]
 
     def _build_tools(self, prompt: Prompt) -> List[Dict[str, Any]]:
         tools: List[Dict[str, Any]] = []
