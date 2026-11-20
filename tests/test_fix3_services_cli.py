@@ -589,3 +589,108 @@ def test_native_as_tool_makes_an_async_tool_too():
     assert tool.__doc__ == "Upper-case a text."
     assert asyncio.run(tool("hi")) == "HI"
     assert not inspect.iscoroutinefunction(Upper().as_tool())
+
+
+# 5: the config template's URLs use the ports `lllm serve` listens on.
+
+PORTS_MANIFEST = """
+[package]
+org = "demo"
+name = "ports"
+version = "0.1.0"
+
+[tactics.alpha]
+entry = "fix3_ports.tactics:Echo"
+metadata = {port = 8100}
+
+[tactics.beta]
+entry = "fix3_ports.tactics:Echo"
+
+[tactics.gamma]
+entry = "fix3_ports.tactics:Echo"
+
+[services.api]
+tactic = "alpha"
+metadata = {port = 9000}
+
+[services.plain]
+tactic = "alpha"
+
+[services.multi]
+entry = "fix3_ports.app:create_app"
+tactics = ["gamma", "beta"]
+
+[services.bundle]
+entry = "fix3_ports.app:create_app"
+tactics = ["beta"]
+metadata = {port = 9300}
+"""
+
+
+def _ports_package(tmp_path: Path) -> Path:
+    package = tmp_path / "ports"
+    _write(package / "lllm.toml", PORTS_MANIFEST)
+    _write(package / "fix3_ports" / "__init__.py", "")
+    _write(
+        package / "fix3_ports" / "tactics.py",
+        """
+class Echo:
+    def run(self, value, *, context=None):
+        return value
+""",
+    )
+    _write(
+        package / "fix3_ports" / "app.py",
+        """
+from fastapi import FastAPI
+
+
+def create_app():
+    return FastAPI()
+""",
+    )
+    return package
+
+
+def _template_ports(package: Path) -> dict[str, int]:
+    from urllib.parse import urlsplit
+
+    try:
+        import tomllib
+    except ImportError:  # Python 3.10
+        import tomli as tomllib
+
+    from lllm.hub import load_manifest, record_from_manifest, render_config_template
+
+    record = record_from_manifest(load_manifest(package))
+    config = tomllib.loads(render_config_template(record))
+    ports = {}
+    for ref, binding in config["refs"].items():
+        section, name = ref.rsplit("/", 2)[-2:]
+        ports[f"{section}.{name}"] = urlsplit(binding["url"]).port
+    for name, settings in config["services"].items():
+        assert settings["port"] == ports[f"services.{name}"]
+    return ports
+
+
+def test_config_template_ports_match_the_ports_lllm_serve_uses(tmp_path):
+    from lllm.launch import load_launch_app
+
+    package = _ports_package(tmp_path)
+
+    ports = _template_ports(package)
+    served = {
+        resource: load_launch_app(package, resource=resource).port
+        for resource in ports
+    }
+
+    assert ports == served
+    assert ports == {
+        "tactics.alpha": 8100,  # its own port, though services.api serves it
+        "tactics.beta": 9300,  # the first serving service with a port
+        "tactics.gamma": 8000,  # served only by a service without one
+        "services.api": 9000,
+        "services.plain": 8000,
+        "services.multi": 8000,
+        "services.bundle": 9300,
+    }

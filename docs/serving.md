@@ -546,7 +546,9 @@ lllm serve ./triage     # serve tactics.triage on port 8100
   tactic, channel, or run is served; only those kinds can be. A run must
   list exactly one service, and channels need [SSSN](https://sssn.one/).
 - The port is `--port`, else the resource's `metadata.port` (a tactic
-  without one takes the port of a service that serves it), else 8000.
+  without one takes the port of the first service that serves it, through
+  `tactic` or `tactics`, and declares one), else 8000. The hub's config
+  template binds refs to the same ports.
 - Before starting, `lllm serve` checks the API keys the package declares
   ([API keys](packages.md#api-keys)). In a terminal it asks for missing
   ones; otherwise it stops and lists them. `--skip-key-check` skips this.

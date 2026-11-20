@@ -184,8 +184,9 @@ runtime = "python"
 that will use the package: how to set it up and serve it, every ref with
 its entry, and the config template. `lllm hub config-template acme/triage`
 prints only the template, a starting `.lllm/config.toml` that binds each
-tactic and service ref to a URL on `127.0.0.1`; edit the URLs to match
-where you serve them
+tactic and service ref to a URL on `127.0.0.1`, at the port `lllm serve`
+uses for it ([Serving a package](serving.md#serving-a-package)); edit the
+URLs to match where you serve them
 ([Local configuration](packages.md#local-configuration)). In Python, they
 are `hub.card(id)`, `hub.agent_card(id)`, and `hub.config_template(id)`,
 each with an optional `version=`.

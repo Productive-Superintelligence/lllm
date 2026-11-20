@@ -10,6 +10,7 @@ from typing import Any
 
 from .credentials import ApiKeyRequirement, collect_manifest_api_key_requirements
 from .hub import import_entrypoint, load_manifest
+from .hub.ports import DEFAULT_PORT, serve_port
 from .protocol import Tactic
 from .runtimes import coerce_tactic
 from .runtimes.python import _is_factory
@@ -29,7 +30,7 @@ class LaunchApp:
     app: Any
     label: str
     kind: str
-    port: int = 8000
+    port: int = DEFAULT_PORT
 
 
 def load_launch_app(
@@ -317,29 +318,20 @@ def _can_call_without_args(value: Any) -> bool:
 
 
 def _resource_port(manifest: Any, section: str, name: str) -> int:
+    """The resource's port, by the rule the hub's config template uses too."""
+
     resource = getattr(manifest, section, {}).get(name)
     metadata = getattr(resource, "metadata", {}) if resource is not None else {}
-    port = metadata.get("port") if isinstance(metadata, dict) else None
-    if isinstance(port, int) and not isinstance(port, bool) and 1 <= port <= 65535:
-        return port
-    if section == "services":
-        return 8000
-    if section == "tactics":
-        for service in manifest.services.values():
-            if service.tactic == name:
-                service_port = _metadata_port(service.metadata)
-                if service_port is not None:
-                    return service_port
-    return 8000
-
-
-def _metadata_port(metadata: Any) -> int | None:
-    if not isinstance(metadata, dict):
-        return None
-    port = metadata.get("port")
-    if isinstance(port, int) and not isinstance(port, bool) and 1 <= port <= 65535:
-        return port
-    return None
+    serving = (
+        [
+            service.metadata
+            for service in manifest.services.values()
+            if service.tactic == name or name in service.tactics
+        ]
+        if section == "tactics"
+        else []
+    )
+    return serve_port(metadata, serving)
 
 
 def _target_text(target: str | Path) -> str:
