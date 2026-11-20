@@ -545,8 +545,12 @@ _KNOWN_AGENT_KEYS = frozenset(
 
 
 #: How deep ``extra_settings`` may nest. The copy is iterative, so this is
-#: a policy, the same on every Python and from any caller's stack.
+#: a fixed policy, not a measure of the stack left.
 _SETTINGS_DEPTH = 500
+#: What a frame's children give once they are used up.
+_END = object()
+#: What ``_visit`` gives when it opened a frame instead of copying.
+_OPENED = object()
 
 
 class _TooDeep(Exception):
@@ -605,71 +609,108 @@ def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
     shared, empty or not; an empty one whose copy is a new object counts
     as writable, having nothing to probe, so it is copied.
 
-    The walk is iterative, with an explicit work stack, so it takes no
-    stack depth and behaves alike under any caller and on any Python. It
-    visits depth first, as a recursive copy would: a dict, list, or set is
-    copied and remembered before its children, a tuple rebuilt after them.
-    ``room`` is how many container levels may still be entered; a
-    container met with none left raises ``_TooDeep``. An error from a
-    child propagates at any depth.
+    The walk is iterative: one frame per open container reads its children
+    lazily, one at a time, so the walk uses a small, constant stack depth;
+    a caller already at the recursion limit may get a subclass container
+    shared, or a RecursionError. It visits depth first, as a recursive
+    copy would: a dict, list, or set is copied and remembered before its
+    children, a tuple rebuilt after them. A dict or set changed while it
+    is read raises, as iterating one does. ``room`` is how many container
+    levels may still be entered; a container met with none left raises
+    ``_TooDeep``. An error from a child propagates at any depth.
     """
-    holder: List[Any] = [None]
-    stack: List[Tuple[Any, ...]] = [("visit", value, room, holder, 0)]
-    while stack:
-        step = stack.pop()
-        if step[0] == "visit":
-            _, value, room, target, key = step
-            if id(value) in memo:
-                target[key] = memo[id(value)]
-            elif not isinstance(value, (dict, list, set, tuple)):
-                target[key] = value
-            elif room < 1:
-                raise _TooDeep()
-            elif isinstance(value, tuple):
-                make = getattr(value, "_make", None)  # a namedtuple
-                if type(value) is not tuple and make is None:
-                    target[key] = value  # a struct_time: a rebuild loses fields
-                else:  # rebuilt once its items are copied
-                    items: List[Any] = [None] * len(value)
-                    stack.append(("tuple", value, make, items, target, key))
-                    _push_children(stack, enumerate(value), room - 1, items)
-            else:
-                result = _container_copy(value, memo)
-                if result is value:  # shared
-                    target[key] = value
-                elif isinstance(value, set):
-                    children = list(value)
-                    items = [None] * len(children)
-                    stack.append(("set", result, items, target, key))
-                    _push_children(stack, enumerate(children), room - 1, items)
-                else:
-                    stack.append(("done", result, target, key))
-                    pairs = value.items() if isinstance(value, dict) else enumerate(value)
-                    _push_children(stack, pairs, room - 1, result)
-        elif step[0] == "done":
-            _, result, target, key = step
-            target[key] = result
-        elif step[0] == "set":
-            _, result, items, target, key = step
-            if items:  # an empty copy is left alone: it may be read-only
-                result.clear()
-                result.update(items)
-            target[key] = result
-        else:  # "tuple"
-            _, value, make, items, target, key = step
-            if id(value) in memo:  # a cycle through its items copied it already
-                target[key] = memo[id(value)]
-            else:
-                result = make(items) if make else tuple(items)
-                _memoize(memo, value, result)
-                target[key] = result
-    return holder[0]
+    frames: List[_Frame] = []
+    copied = _visit(value, memo, room, frames)
+    while frames:
+        frame = frames[-1]
+        child = next(frame.children, _END)
+        if child is _END:  # all its children are copied
+            frames.pop()
+            copied = frame.finish(memo)
+            if frames:
+                frames[-1].put(copied)
+            continue
+        if frame.keyed:  # a dict's or list's child comes with its key
+            frame.key, child = child
+        copied = _visit(child, memo, frame.room, frames)
+        if copied is not _OPENED:
+            frame.put(copied)
+    return copied
 
 
-def _push_children(stack: list, pairs: Any, room: int, target: Any) -> None:
-    """Queue a container's children for the walk, to be copied in order."""
-    for key, item in reversed(list(pairs)):
-        stack.append(("visit", item, room, target, key))
+def _visit(value: Any, memo: Dict[int, Any], room: int, frames: List[_Frame]) -> Any:
+    """``value``'s copy, or ``_OPENED`` when its children must be copied
+    first: then a frame for it is on ``frames``."""
+    if id(value) in memo:
+        return memo[id(value)]
+    if not isinstance(value, (dict, list, set, tuple)):
+        return value
+    if room < 1:
+        raise _TooDeep()
+    if isinstance(value, tuple):
+        make = getattr(value, "_make", None)  # a namedtuple
+        if type(value) is not tuple and make is None:
+            return value  # a struct_time: a rebuild loses fields
+        frames.append(_Frame(value, None, iter(value), room - 1, make))
+        return _OPENED
+    result = _container_copy(value, memo)
+    if result is value:  # shared
+        return value
+    if isinstance(value, dict):
+        children = iter(value.items())
+    elif isinstance(value, list):
+        children = enumerate(value)
+    else:
+        children = iter(value)
+    frames.append(_Frame(value, result, children, room - 1))
+    return _OPENED
+
+
+class _Frame:
+    """A container open in the walk, read one child at a time.
+
+    Each child's copy goes into a dict's or list's copy at once, and onto
+    ``items`` for a set or tuple, which are filled in or rebuilt once the
+    last child is copied.
+    """
+
+    __slots__ = ("children", "items", "key", "keyed", "make", "result", "room", "value")
+
+    def __init__(
+        self, value: Any, result: Any, children: Any, room: int, make: Any = None
+    ) -> None:
+        self.value = value
+        self.result = result  # the copy; a tuple's is made at the end
+        self.children = children  # an iterator over the original
+        self.room = room  # the levels its children may still enter
+        self.keyed = isinstance(value, (dict, list))
+        self.key: Any = None  # where the child being copied goes
+        self.items: List[Any] = []
+        self.make = make  # a namedtuple's _make
+
+    def put(self, copied: Any) -> None:
+        """Take the copy of the child read last."""
+        if self.keyed:
+            self.result[self.key] = copied
+        else:
+            self.items.append(copied)
+
+    def finish(self, memo: Dict[int, Any]) -> Any:
+        """The container's copy, once all its children are copied."""
+        if self.keyed:
+            return self.result
+        if isinstance(self.value, set):
+            # Only an empty copy of an empty set is left alone, as it may
+            # be read-only; one that seeded defaults is emptied.
+            if self.items or self.result:
+                self.result.clear()
+                self.result.update(self.items)
+            return self.result
+        if id(self.value) in memo:  # a cycle through its items copied it
+            return memo[id(self.value)]
+        result = self.make(self.items) if self.make else tuple(self.items)
+        _memoize(memo, self.value, result)
+        return result
 
 
 def _container_copy(value: Any, memo: Dict[int, Any]) -> Any:

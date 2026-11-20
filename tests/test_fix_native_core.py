@@ -2,6 +2,7 @@
 
 import base64
 import json
+from collections import namedtuple
 from decimal import Decimal
 from typing import Any, ClassVar, Dict, List, Literal, Optional
 
@@ -1198,7 +1199,7 @@ def test_an_sdk_client_in_extra_settings_is_shared_cleanly():
 
 
 def test_extra_settings_copies_keep_cycles_sharing_and_container_types():
-    from collections import Counter, defaultdict, namedtuple
+    from collections import Counter, defaultdict
 
     from lllm.runtimes.native import AgentSpec, Runtime
 
@@ -1331,20 +1332,77 @@ def test_settings_copy_fully_under_a_deep_caller_stack():
             if more:
                 Deep(more - 1, out)
             else:
-                settings = {"d": mixed(200)}
+                settings = {"d": mixed(400)}
                 config = {**WRITER, "extra_settings": settings}
                 out.append((settings, AgentSpec.from_config("writer", config)))
 
     out: list = []
-    Deep(_levels_that_fit() - 60, out)  # a few dozen levels left: no room
-    (settings, spec), = out  # for a recursive copy of 200 levels
+    # 150 levels short of the limit (the estimate can be ~70 levels high on
+    # CPython 3.14): plenty for the copy, far too few for a recursive copy
+    # of the 400 levels below, within the 500-level policy.
+    Deep(_levels_that_fit() - 150, out)
+    (settings, spec), = out
 
     original, copied = settings["d"], spec.extra_settings["d"]
-    for level in reversed(range(200)):  # nothing below is shared
+    for level in reversed(range(400)):  # nothing below is shared
         assert copied is not original and type(copied) is type(original)
         index = "v" if level % 2 else 0
         original, copied = original[index], copied[index]
     assert copied == ["end"] and copied is not original
+
+
+class Short(namedtuple("Short", "a b")):
+    """A namedtuple whose iteration yields fewer items than its length."""
+
+    def __iter__(self):
+        return iter(tuple.__getitem__(self, slice(0, 1)))
+
+
+def test_a_namedtuple_that_iterates_short_fails_rather_than_pads():
+    from lllm.runtimes.native import AgentSpec
+
+    with pytest.raises(TypeError):  # as copying it always did; never padded
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": Short(1, 2)}})
+
+
+class Meddler(dict):
+    """Copying it adds a key to the dict that holds it."""
+
+    def __init__(self, holder: Dict[str, Any], **items: Any) -> None:
+        super().__init__(**items)
+        self.holder = holder
+
+    def __copy__(self):
+        self.holder["late"] = 0  # the holder is still being read
+        return Meddler(self.holder, **self)
+
+
+def test_a_container_changed_during_the_copy_is_not_ignored():
+    from lllm.runtimes.native import AgentSpec
+
+    holder: Dict[str, Any] = {}
+    holder["a"] = Meddler(holder, x=1)
+    holder["b"] = 2
+    with pytest.raises(RuntimeError, match="changed size during iteration"):
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"h": holder}})
+
+
+class Stopwords(set):
+    """Seeds defaults when it is made from nothing."""
+
+    def __init__(self, words=()):
+        super().__init__(words or {"a", "an", "the"})
+
+
+def test_an_empty_set_whose_copy_seeds_defaults_comes_back_empty():
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    empty = Stopwords()
+    empty.clear()  # the user's set is empty
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": empty}})
+    copied = spec.build(Runtime(), object()).extra_settings["s"]
+
+    assert type(copied) is Stopwords and copied == set()
 
 
 class CopiesFail(dict):
