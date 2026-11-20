@@ -17,28 +17,68 @@ import io
 import sys
 import threading
 import traceback
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-# The output buffer of the ``run()`` call executing on this thread, if any.
+# The output of the ``run()`` call executing on this thread, if any. A thread
+# that a call's code starts carries that call's output as ``_lllm_output``.
 _capture = threading.local()
-_stdout_lock = threading.Lock()
+_lock = threading.Lock()
 _active_captures = 0
+_thread_start = threading.Thread.start
+
+
+class _CallOutput(io.StringIO):
+    """One ``run()`` call's output.
+
+    Once the call has timed out, what is written to it is dropped, so the
+    abandoned code and its threads print nowhere.
+    """
+
+    returned = False  # the call returned its output
+    abandoned = False  # the call timed out
+
+    def write(self, text: str) -> int:
+        if self.abandoned:
+            return len(text)
+        return super().write(text)
+
+
+def _current_output() -> Optional[_CallOutput]:
+    """The output of the call this thread belongs to: the call it runs, or
+    the call whose code started it (or started the thread that started it).
+    A started thread writes to the program's stdout again once its call has
+    returned."""
+    output = getattr(_capture, "output", None)
+    if output is None:
+        output = getattr(threading.current_thread(), "_lllm_output", None)
+        if output is not None and output.returned:
+            return None
+    return output
+
+
+def _start_in_call(self: threading.Thread) -> None:
+    """``Thread.start`` while calls are in flight: a thread started by a
+    call's code belongs to that call."""
+    output = _current_output()
+    if output is not None:
+        self._lllm_output = output
+    _thread_start(self)
 
 
 class _ThreadStdout:
     """Stands in for ``sys.stdout`` while ``run()`` calls are in flight.
 
-    A thread executing an agent's code writes to its own call's buffer;
-    every other thread writes to the stream this object replaced, so the
-    program's own output is neither captured nor lost.
+    A thread that belongs to a call writes to the call's output; every other
+    thread writes to the stream this object replaced, so the program's own
+    output is neither captured nor lost.
     """
 
     def __init__(self, stream: Any) -> None:
         self._stream = stream
 
     def _target(self) -> Any:
-        buffer = getattr(_capture, "buffer", None)
-        return self._stream if buffer is None else buffer
+        output = _current_output()
+        return self._stream if output is None else output
 
     def write(self, text: str) -> int:
         target = self._target()
@@ -58,24 +98,32 @@ class _ThreadStdout:
 
 
 @contextlib.contextmanager
-def _capture_stdout(buffer: io.StringIO):
-    """Send what this thread writes to ``sys.stdout`` into *buffer*."""
+def _capture_stdout(output: _CallOutput):
+    """Send what this thread, and the threads it starts, write to
+    ``sys.stdout`` into *output*. Yields the ``sys.stdout`` stand-in."""
 
-    global _active_captures
-    with _stdout_lock:
+    global _active_captures, _thread_start
+    with _lock:
         if not isinstance(sys.stdout, _ThreadStdout):
             sys.stdout = _ThreadStdout(sys.stdout)
+        stand_in = sys.stdout
+        if not _active_captures and threading.Thread.start is not _start_in_call:
+            _thread_start = threading.Thread.start
+            threading.Thread.start = _start_in_call
         _active_captures += 1
-    previous = getattr(_capture, "buffer", None)
-    _capture.buffer = buffer
+    previous = getattr(_capture, "output", None)
+    _capture.output = output
     try:
-        yield
+        yield stand_in
     finally:
-        _capture.buffer = previous
-        with _stdout_lock:
+        _capture.output = previous
+        with _lock:
             _active_captures -= 1
-            if not _active_captures and isinstance(sys.stdout, _ThreadStdout):
-                sys.stdout = sys.stdout._stream
+            if not _active_captures:
+                while isinstance(sys.stdout, _ThreadStdout):
+                    sys.stdout = sys.stdout._stream
+                if threading.Thread.start is _start_in_call:
+                    threading.Thread.start = _thread_start
 
 
 class AgentInterpreter:
@@ -85,15 +133,22 @@ class AgentInterpreter:
     - ``CALL_API`` is pre-injected, ready to use on the first call.
     - Variables assigned in one ``run()`` call are available in subsequent calls.
     - Output is captured from stdout; the caller receives a plain string.
-      Each call captures only its own output, so calls may run at the same
-      time (for example under ``bcall``) and the program's own prints are
-      never captured.
+      A call captures what its code writes to stdout, also from threads it
+      starts and from code ``CALL_API`` runs (endpoint methods, ``_call_api``
+      overrides, tactic endpoints), and never output from the program's
+      other threads, so calls may run at the same time (for example under
+      ``bcall``). A thread the code started writes to the program's stdout
+      again once its call has returned.
+    - The code's own redirections of ``sys.stdout`` (``redirect_stdout``,
+      doctest) are honored, and a ``sys.stdout`` it leaves replaced is put
+      back when the call ends.
     - Long output keeps its first and last ``max_output_chars / 2``
       characters, with the truncation indicator between them, so the end of
       a traceback survives.
     - Execution is run in a daemon thread; if it does not complete within
       ``timeout`` seconds a ``TimeoutError`` is raised.  The namespace is NOT
-      rolled back on timeout — partial side-effects may have occurred.
+      rolled back on timeout — partial side-effects may have occurred — and
+      what the code and its threads print from then on is dropped.
 
     Parameters
     ----------
@@ -120,12 +175,10 @@ class AgentInterpreter:
         self.max_output_chars = max_output_chars
         self.truncation_indicator = truncation_indicator
         self.timeout = timeout
-        # Output buffers of this interpreter's run() calls in flight.
-        self._outputs: List[io.StringIO] = []
 
         # Persistent namespace — survives across run() calls within a session.
         self.namespace: Dict[str, Any] = {
-            "__builtins__": self._builtins(),
+            "__builtins__": vars(builtins),
             "CALL_API": proxy_manager.__call__,
         }
 
@@ -156,24 +209,29 @@ class AgentInterpreter:
             Captured stdout, or a formatted traceback on exception, possibly
             truncated to ``max_output_chars``.
         """
-        captured = io.StringIO()
+        captured = _CallOutput()
         exc_holder: list = []
 
         def _run() -> None:
-            self._outputs.append(captured)
             try:
-                with _capture_stdout(captured):
-                    exec(code, self.namespace)  # noqa: S102
+                with _capture_stdout(captured) as stand_in:
+                    try:
+                        exec(code, self.namespace)  # noqa: S102
+                    finally:
+                        # Like redirect_stdout, put back a sys.stdout the code
+                        # replaced; after a timeout the program has moved on.
+                        replaced = not isinstance(sys.stdout, _ThreadStdout)
+                        if replaced and not captured.abandoned:
+                            sys.stdout = stand_in
             except Exception as exc:  # noqa: BLE001
                 exc_holder.append(exc)
-            finally:
-                self._outputs.remove(captured)
 
         thread = threading.Thread(target=_run, daemon=True)
         thread.start()
         thread.join(self.timeout)
 
         if thread.is_alive():
+            captured.abandoned = True
             raise TimeoutError(
                 f"Code execution timed out after {self.timeout:.0f}s. "
                 "Check for infinite loops or overly long-running operations."
@@ -186,6 +244,7 @@ class AgentInterpreter:
             )
         else:
             output = captured.getvalue()
+        captured.returned = True
 
         return self._maybe_truncate(output)
 
@@ -198,41 +257,13 @@ class AgentInterpreter:
         """
         call_api = self.namespace.get("CALL_API")
         self.namespace.clear()
-        self.namespace["__builtins__"] = self._builtins()
+        self.namespace["__builtins__"] = vars(builtins)
         if call_api is not None:
             self.namespace["CALL_API"] = call_api
 
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
-
-    def _builtins(self) -> Dict[str, Any]:
-        # The agent's code gets a print() that writes to its own call's output.
-        return {**vars(builtins), "print": self._print}
-
-    def _print(
-        self,
-        *args: Any,
-        sep: Optional[str] = " ",
-        end: Optional[str] = "\n",
-        file: Any = None,
-        flush: bool = False,
-    ) -> None:
-        """print() for the agent's code: writes to its run() call's output."""
-        if file is None:
-            file = self._output()
-        print(*args, sep=sep, end=end, file=file, flush=flush)
-
-    def _output(self) -> Any:
-        """The run() call on this thread, else this interpreter's latest call
-        (for threads the agent's code starts), else ``sys.stdout``."""
-        buffer = getattr(_capture, "buffer", None)
-        if buffer is not None:
-            return buffer
-        try:
-            return self._outputs[-1]
-        except IndexError:
-            return sys.stdout
 
     def _maybe_truncate(self, text: str) -> str:
         limit = self.max_output_chars

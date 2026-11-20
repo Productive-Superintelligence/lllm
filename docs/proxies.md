@@ -287,9 +287,10 @@ print(python.run("print(squares)"))  # (2)!
 ```
 
 1. Variables persist between calls, and only what the code prints comes
-   back; the last expression is not echoed. Each call captures only its
-   own output, so agents can run code at the same time, as under `bcall`,
-   and your program's own prints are never captured.
+   back; the last expression is not echoed. A call captures what its code
+   prints, also from threads it starts and from the endpoint methods
+   `CALL_API` runs, but nothing from your program's other threads, so
+   agents can run code at the same time, as under `bcall`.
 2. Longer output loses its middle: the first and the last 20 characters
    (half of `max_output_chars` each) are kept, so the end of a traceback,
    where the exception is, survives. The instructions in the system prompt
@@ -299,8 +300,8 @@ An exception comes back as its traceback, so the agent can fix the code and
 try again with its variables intact. A call that runs past `timeout` returns
 `Error: Code execution timed out after 60s...` to the model, but the code is
 not stopped: it keeps running in a background thread, what it changes stays
-in the namespace, and what it prints is discarded. `reset()` clears every
-variable except `CALL_API`.
+in the namespace, and what it or the threads it started print is
+discarded. `reset()` clears every variable except `CALL_API`.
 
 !!! warning "Not a security boundary"
     The interpreter runs `exec()` inside your process, with your files,
