@@ -10,6 +10,19 @@ import pytest
 os.environ.setdefault("LITELLM_LOCAL_MODEL_COST_MAP", "True")
 
 
+@pytest.fixture(autouse=True)
+def _plain_text_output(monkeypatch):
+    """Keep output that tests parse, such as ``--help``, plain text.
+
+    Python 3.14's argparse colors option names under FORCE_COLOR even when
+    the output is captured; PYTHON_COLORS=0 and NO_COLOR turn that off.
+    """
+
+    monkeypatch.setenv("PYTHON_COLORS", "0")
+    monkeypatch.setenv("NO_COLOR", "1")
+    monkeypatch.delenv("FORCE_COLOR", raising=False)
+
+
 class _Uninstalled(importlib.abc.MetaPathFinder):
     """Import hook that makes packages look uninstalled."""
 
