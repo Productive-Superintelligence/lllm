@@ -160,9 +160,10 @@ for each kind of failure ([The agent loop](agents.md#the-agent-loop)):
 
 When a provider budget runs out, `respond()` raises the provider's
 exception; when repairs run out, it raises `AgentException`. Either way,
-the exception's `agent_session` holds the call's record, every reply and
-retry included, and a tactic's session keeps it too. Here the first
-request drops its connection:
+the exception's `agent_session` holds the call's record (every reply,
+repair, and provider-error retry; rate-limit waits are not recorded), and
+a tactic's session keeps it too. Here the first request drops its
+connection:
 
 ```python title="recall.py"
 from lllm import Tactic

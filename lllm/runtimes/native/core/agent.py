@@ -401,7 +401,8 @@ class Agent:
         Raises:
             ValueError: If the agent fails to produce a valid response after retries.
             Whatever the call raises carries the call's ``AgentCallSession``
-            (its replies, repairs, and retries) as ``agent_session``.
+            as ``agent_session``: every reply, repair, and provider-error
+            retry (rate-limit waits are not recorded).
         """
         session = AgentCallSession(
             agent_name=self.name,

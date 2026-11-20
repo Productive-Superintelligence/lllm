@@ -83,7 +83,7 @@ Cost Breakdown: Prompt: $0.000005, Completion: $0.000036 | Total Cost: $0.000040
 TacticCallSession                  one tactic call
 ├── state, delivery, error, error_traceback
 ├── agent_sessions[agent]          one AgentCallSession per respond()
-│   ├── state, delivery            the final Message
+│   ├── state, delivery            the final Message (None if it failed)
 │   ├── invoke_traces[step]        one InvokeResult per model call
 │   ├── exception_retries[step]    parse errors that caused repairs
 │   ├── interrupts[step]           tool calls (tool_calls lists them all)
@@ -94,7 +94,10 @@ TacticCallSession                  one tactic call
 
 An `InvokeResult` keeps the `message` the model returned, the exact
 `model_args` sent, any `execution_errors` (such as the parse error above),
-and the provider's `raw_response`. Tactics called inside a tactic record
+and the provider's `raw_response`. A `respond()` that raised is recorded
+too, with `state="failure"` and no `delivery`, so `agent_sessions`,
+`agent_call_count`, and `total_cost` include failed calls. Tactics called
+inside a tactic record
 their sessions into the caller's, so the cost of a whole program adds up in
 one place; [Tactics](tactics.md#sessions) lists the session's fields. A
 plain agent outside a tactic has no tactic session, but
