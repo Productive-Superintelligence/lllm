@@ -199,10 +199,15 @@ def configure_missing_api_keys(
     input_func: Callable[[str], str] = input,
     secret_func: Callable[[str], str] = getpass.getpass,
 ) -> str:
-    """Prompt for missing keys and persist them through the selected backend."""
+    """Prompt for missing keys and persist them through the selected backend.
+
+    The backend is chosen before any key is asked for, so a key is never
+    typed for a backend that cannot store it.
+    """
 
     provided_values = _validated_secret_values(provided or {})
     requirements = dedupe_requirements(requirements)
+    credentials = choose_credential_backend(credentials)
     values: dict[str, str] = {}
     for requirement in requirements:
         if requirement.name in provided_values:
@@ -276,15 +281,32 @@ def write_env_file(path: str | Path, values: dict[str, str]) -> None:
 
 
 def keyring_available() -> bool:
+    """Whether a usable OS keyring is available.
+
+    The keyring package alone is not enough: on headless hosts, in CI, and
+    in containers its backend is ``keyring.backends.fail.Keyring``, or one
+    with a priority of 0 or less (such as a chainer with nothing to chain),
+    and none of them can store a key.
+    """
+
     try:
-        import keyring  # noqa: F401
+        import keyring
+        from keyring.backends import fail
+
+        backend = keyring.get_keyring()
+        if isinstance(backend, fail.Keyring):
+            return False
+        return float(backend.priority) > 0
     except Exception:
         return False
-    return True
 
 
 def keyring_get(name: str) -> str | None:
+    """A key from the OS keyring, or None, also when no usable keyring exists."""
+
     _validate_env_name(name)
+    if not keyring_available():
+        return None
     try:
         import keyring
 
@@ -311,7 +333,15 @@ def keyring_set(name: str, value: str) -> None:
 
 
 def choose_credential_backend(credentials: CredentialBackend) -> Literal["keyring", "env"]:
+    """Where keys are stored: ``auto`` is the keyring only when a usable one
+    is available; an explicit ``keyring`` without one is a ``CredentialError``."""
+
     if credentials == "keyring":
+        if not keyring_available():
+            raise CredentialError(
+                "no usable OS keyring is available; use --credentials env to "
+                "write a local env file"
+            )
         return "keyring"
     if credentials == "env":
         return "env"

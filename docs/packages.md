@@ -390,9 +390,12 @@ lllm setup --show-conventions      # common provider key names
 
 A key counts as available when it is in the environment, in the env file
 (`--env-file`, default `.env.local` in the current folder), or in the OS
-keyring. `lllm setup` stores missing keys in the keyring when the `secure`
-extra is installed and in the env file otherwise (`--credentials keyring`
-or `env` decides), and writes the file readable only by you.
+keyring. `lllm setup` and `lllm serve` store the keys you type in the OS
+keyring when a usable one is available and in the env file otherwise. The
+`secure` extra installs the keyring package, but headless hosts, CI, and
+containers often have no usable keyring behind it. `--credentials keyring`
+or `env` decides instead; `keyring` without a usable keyring stops before
+asking for anything. The env file is written readable only by you.
 `--set NAME=value` stores a key without asking; without a terminal, a
 missing key is an error. `lllm inspect ./support` shows each key as
 `ready` or `missing`, never its value. Only the `lllm` command reads the

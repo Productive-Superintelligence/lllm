@@ -1888,10 +1888,10 @@ def test_a_custom_endpoint_result_that_cannot_be_encoded_is_a_500_in_the_envelop
 
 
 @pytest.fixture
-def keyed_package(tmp_path, monkeypatch):
-    import types
+def key_package(tmp_path, monkeypatch):
+    """A package that needs FIX3_TEST_KEY, served from a fake terminal."""
 
-    import lllm.credentials
+    import types
 
     package = tmp_path / "keyed"
     _write(
@@ -1915,18 +1915,99 @@ entry = "fix3_keyed:Echo"
     )
     monkeypatch.delenv("FIX3_TEST_KEY", raising=False)
     monkeypatch.setattr(sys, "stdin", types.SimpleNamespace(isatty=lambda: True))
+    return package
+
+
+def _type_keys(monkeypatch, answer) -> None:
+    """Answer key prompts with ``answer``, or raise it if it is an exception."""
+
+    import lllm.credentials
+
+    def secret(prompt):
+        if isinstance(answer, BaseException):
+            raise answer
+        return answer
+
+    typed = functools.partial(
+        lllm.credentials.configure_missing_api_keys, secret_func=secret
+    )
+    monkeypatch.setattr(lllm.credentials, "configure_missing_api_keys", typed)
+
+
+@pytest.fixture
+def keyed_package(key_package, monkeypatch):
+    import lllm.credentials
+
     # A fake keyring: it looks available, and keeps what is stored in it here
     # instead of in the OS keyring.
     monkeypatch.setattr(lllm.credentials, "keyring_available", lambda: True)
     stored: dict[str, str] = {}
     monkeypatch.setattr(lllm.credentials, "keyring_set", stored.__setitem__)
     monkeypatch.setattr(lllm.credentials, "keyring_get", stored.get)
-    typed = functools.partial(
-        lllm.credentials.configure_missing_api_keys,
-        secret_func=lambda prompt: "sk-typed",
-    )
-    monkeypatch.setattr(lllm.credentials, "configure_missing_api_keys", typed)
-    return package, stored
+    _type_keys(monkeypatch, "sk-typed")
+    return key_package, stored
+
+
+@pytest.fixture
+def fail_keyring():
+    """The real keyring module with its fail backend, as on headless hosts."""
+
+    keyring = pytest.importorskip("keyring")
+    from keyring.backends import fail
+
+    previous = keyring.get_keyring()
+    keyring.set_keyring(fail.Keyring())
+    yield
+    keyring.set_keyring(previous)
+
+
+def test_keyring_available_needs_a_usable_backend(fail_keyring, monkeypatch):
+    import types
+
+    import keyring
+    import keyring.backend
+    from keyring.backends import chainer
+
+    from lllm import credentials
+
+    assert not credentials.keyring_available()  # the fail backend
+    assert credentials.keyring_get("FIX3_TEST_KEY") is None  # not an error
+    for priority, usable in ((5, True), (0, False), (-1, False)):
+        backend = types.SimpleNamespace(priority=priority)
+        monkeypatch.setattr(keyring, "get_keyring", lambda backend=backend: backend)
+        assert credentials.keyring_available() is usable
+    # A chainer with nothing to chain, as get_keyring() may return.
+    monkeypatch.setattr(keyring.backend, "get_all_keyring", lambda: [])
+    monkeypatch.setattr(keyring, "get_keyring", chainer.ChainerBackend)
+    assert not credentials.keyring_available()
+
+
+def test_auto_falls_back_to_the_env_file_without_a_usable_keyring(
+    key_package, fail_keyring, served, tmp_path, monkeypatch, capsys
+):
+    _type_keys(monkeypatch, "sk-typed")
+    env_file = tmp_path / "keys.env"
+
+    assert main(["serve", str(key_package), "--env-file", str(env_file)]) == 0
+
+    assert 'FIX3_TEST_KEY="sk-typed"' in env_file.read_text(encoding="utf-8")
+    assert f"via {env_file}" in capsys.readouterr().out
+    assert len(served) == 1
+
+
+@pytest.mark.parametrize("command", ["serve", "setup"])
+def test_keyring_credentials_without_a_usable_keyring_stop_before_asking(
+    key_package, fail_keyring, served, tmp_path, monkeypatch, capsys, command
+):
+    _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
+    env_file = tmp_path / "keys.env"
+
+    with pytest.raises(SystemExit) as caught:
+        main([command, str(key_package), "--credentials", "keyring", "--env-file", str(env_file)])
+
+    assert caught.value.code == 2
+    assert "no usable OS keyring" in capsys.readouterr().err
+    assert not env_file.exists() and served == []
 
 
 def test_serve_no_keyring_stores_prompted_keys_in_the_env_file(
@@ -2035,16 +2116,17 @@ def test_serve_help_says_where_typed_keys_go(monkeypatch, capsys):
 
     assert (
         "--env-file ENV_FILE Env file to read API keys from; typed keys are stored "
-        "here with --credentials env, with --no-keyring, or when no keyring is "
-        "available"
+        "here with --credentials env, with --no-keyring, or with auto when no "
+        "usable keyring is available"
     ) in serve_help
     assert (
         "--no-keyring Neither read API keys from the OS keyring nor store typed "
         "keys there; they go to --env-file"
     ) in serve_help
     assert (
-        "auto (the default) picks the OS keyring when one is available and the "
-        "env file otherwise; --no-keyring makes it the env file"
+        "auto (the default) picks the OS keyring when a usable one is available "
+        "and the env file otherwise; --no-keyring makes it the env file, and "
+        "refuses --credentials keyring"
     ) in serve_help
     assert "--env-file ENV_FILE Env file to read API keys from" in inspect_help
     assert "--no-keyring Do not read API keys from the OS keyring" in inspect_help
