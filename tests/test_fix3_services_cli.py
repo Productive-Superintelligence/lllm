@@ -2203,6 +2203,89 @@ def test_a_failed_write_is_a_clean_error_after_keys_are_typed(
     assert served == []
 
 
+def test_a_failed_fchmod_keeps_every_key_in_the_env_file(tmp_path, monkeypatch):
+    import errno
+
+    import lllm.credentials
+    from lllm.credentials import write_env_file
+
+    def not_the_owner(fd, mode):  # a group-writable file, or a FAT/CIFS mount
+        raise OSError(errno.EPERM, "Operation not permitted")
+
+    env_file = tmp_path / ".env.local"
+    env_file.write_text('OTHER_KEY="keep-me"\n', encoding="utf-8")
+    monkeypatch.setattr(lllm.credentials, "os", _FailingOs(fchmod=not_the_owner))
+
+    write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+
+    text = env_file.read_text(encoding="utf-8")
+    assert 'OTHER_KEY="keep-me"' in text
+    assert 'FIX3_TEST_KEY="sk"' in text
+
+
+def test_an_existing_env_file_is_made_private_and_keeps_its_keys(tmp_path):
+    from lllm.credentials import write_env_file
+
+    env_file = tmp_path / ".env.local"
+    env_file.write_text("OTHER=1\n", encoding="utf-8")
+    env_file.chmod(0o644)
+
+    write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
+
+    assert env_file.stat().st_mode & 0o777 == 0o600
+    assert env_file.read_text(encoding="utf-8") == 'OTHER=1\n\nFIX3_TEST_KEY="sk"\n'
+
+
+@pytest.mark.skipif(hasattr(os, "geteuid") and os.geteuid() == 0, reason="root writes anywhere")
+def test_a_read_only_env_file_stops_before_asking(
+    key_package, served, tmp_path, monkeypatch, capsys
+):
+    _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
+    env_file = tmp_path / ".env.local"
+    env_file.write_text("OTHER=1\n", encoding="utf-8")
+    env_file.chmod(0o400)
+
+    try:
+        with pytest.raises(SystemExit) as caught:
+            main(["serve", str(key_package), "--credentials", "env", "--env-file", str(env_file)])
+    finally:
+        env_file.chmod(0o600)
+
+    assert caught.value.code == 2
+    assert f"cannot write env file {env_file}" in capsys.readouterr().err
+    assert env_file.read_text(encoding="utf-8") == "OTHER=1\n" and served == []
+
+
+def test_an_env_file_in_missing_folders_is_created_private(
+    key_package, served, tmp_path, monkeypatch
+):
+    _type_keys(monkeypatch, "sk-typed")
+    env_file = tmp_path / "new" / "sub" / "keys.env"
+
+    assert main(["serve", str(key_package), "--credentials", "env", "--env-file", str(env_file)]) == 0
+
+    assert env_file.read_text(encoding="utf-8") == 'FIX3_TEST_KEY="sk-typed"\n'
+    assert env_file.stat().st_mode & 0o777 == 0o600
+    assert len(served) == 1
+
+
+@pytest.mark.parametrize("kind", ["dangling", "looping"])
+def test_an_env_file_under_a_broken_folder_link_stops_before_asking(
+    key_package, served, tmp_path, monkeypatch, capsys, kind
+):
+    _type_keys(monkeypatch, AssertionError("asked for keys before refusing"))
+    folder = tmp_path / "linked"
+    folder.symlink_to(tmp_path / "missing" if kind == "dangling" else folder)
+    env_file = folder / "keys.env"
+
+    with pytest.raises(SystemExit) as caught:
+        main(["serve", str(key_package), "--credentials", "env", "--env-file", str(env_file)])
+
+    assert caught.value.code == 2
+    assert f"cannot write env file {env_file}: {folder} is not a folder" in capsys.readouterr().err
+    assert served == [] and not (tmp_path / "missing").exists()
+
+
 def test_write_env_file_opens_without_following_links(tmp_path, monkeypatch):
     import lllm.credentials
     from lllm.credentials import write_env_file
@@ -2223,6 +2306,7 @@ def test_write_env_file_opens_without_following_links(tmp_path, monkeypatch):
     write_env_file(env_file, {"FIX3_TEST_KEY": "sk"})
 
     assert flags_seen and flags_seen[0] & getattr(os, "O_NOFOLLOW", 0)
+    assert not flags_seen[0] & os.O_TRUNC  # emptied only once the checks pass
     assert env_file.stat().st_mode & 0o777 == 0o600
     assert 'FIX3_TEST_KEY="sk"' in env_file.read_text(encoding="utf-8")
 

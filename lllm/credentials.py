@@ -269,6 +269,10 @@ def check_env_file_writable(path: str | Path) -> None:
         return
     folder = env_path.parent
     while not folder.exists() and folder != folder.parent:
+        if folder.is_symlink():  # a dangling or looping link, not a folder
+            raise CredentialError(
+                f"cannot write env file {env_path}: {folder} is not a folder"
+            )
         folder = folder.parent  # the nearest folder that exists, to create in
     if not folder.is_dir():
         raise CredentialError(f"cannot write env file {env_path}: {folder} is not a folder")
@@ -320,9 +324,12 @@ def _write_env_file(env_path: Path, values: dict[str, str]) -> None:
         rendered.append("")
     for key, value in sorted(pending.items()):
         rendered.append(f"{key}={_quote_env_value(value)}")
+    content = "\n".join(rendered).rstrip() + "\n"
     # O_NOFOLLOW: a symlink put in place after the check above is refused
-    # rather than written through.
-    flags = os.O_WRONLY | os.O_CREAT | os.O_TRUNC | getattr(os, "O_NOFOLLOW", 0)
+    # rather than written through. No O_TRUNC: nothing is emptied until the
+    # checks below pass, and the file is rewritten in place, so a shared
+    # file keeps its owner.
+    flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
     try:
         fd = os.open(str(env_path), flags, 0o600)
     except OSError as exc:
@@ -334,8 +341,12 @@ def _write_env_file(env_path: Path, values: dict[str, str]) -> None:
             raise CredentialError("env file must be a regular file")
         fchmod = getattr(os, "fchmod", None)
         if fchmod is not None:
-            fchmod(fd, 0o600)  # the open file, never a link's target
-        handle.write("\n".join(rendered).rstrip() + "\n")
+            try:
+                fchmod(fd, 0o600)  # the open file, never a link's target
+            except OSError:
+                pass  # a file you can write but do not own, as 0.4.0 allowed
+        os.ftruncate(fd, 0)
+        handle.write(content)
 
 
 # What open() with O_NOFOLLOW reports for a symlink: ELOOP, or EMLINK on BSD.
