@@ -10,7 +10,7 @@ from typing import Any
 
 from .credentials import ApiKeyRequirement, collect_manifest_api_key_requirements
 from .hub import import_entrypoint, load_manifest
-from .hub.ports import DEFAULT_PORT, serve_port
+from .hub.ports import DEFAULT_PORT, resource_metadata, serve_port
 from .protocol import Tactic
 from .runtimes import coerce_tactic
 from .runtimes.python import _is_factory
@@ -334,17 +334,16 @@ def _resource_port(manifest: Any, section: str, name: str) -> int:
     """The resource's port, by the rule the hub's config template uses too."""
 
     resource = getattr(manifest, section, {}).get(name)
-    metadata = getattr(resource, "metadata", {}) if resource is not None else {}
     serving = (
         [
-            service.metadata
+            resource_metadata(service)
             for service in manifest.services.values()
             if service.tactic == name or name in service.tactics
         ]
         if section == "tactics"
         else []
     )
-    return serve_port(metadata, serving)
+    return serve_port(resource_metadata(resource), serving)
 
 
 def _target_text(target: str | Path) -> str:

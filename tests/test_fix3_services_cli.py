@@ -610,6 +610,13 @@ entry = "fix3_ports.tactics:Echo"
 [tactics.gamma]
 entry = "fix3_ports.tactics:Echo"
 
+[tactics.delta]
+entry = "fix3_ports.tactics:Echo"
+
+[tactics.epsilon]
+entry = "fix3_ports.tactics:Echo"
+port = 8200
+
 [services.api]
 tactic = "alpha"
 metadata = {port = 9000}
@@ -625,6 +632,19 @@ tactics = ["gamma", "beta"]
 entry = "fix3_ports.app:create_app"
 tactics = ["beta"]
 metadata = {port = 9300}
+
+[services.second]
+tactic = "delta"
+metadata = {port = 9500}
+
+[services.third]
+entry = "fix3_ports.app:create_app"
+tactics = ["delta"]
+metadata = {port = 9700}
+
+[services.direct]
+entry = "fix3_ports.app:create_app"
+port = 9600
 """
 
 
@@ -690,10 +710,15 @@ def test_config_template_ports_match_the_ports_lllm_serve_uses(tmp_path):
         "tactics.alpha": 8100,  # its own port, though services.api serves it
         "tactics.beta": 9300,  # the first serving service with a port
         "tactics.gamma": 8000,  # served only by a service without one
+        "tactics.delta": 9500,  # two serving services have ports: the first
+        "tactics.epsilon": 8200,  # a port written in the table itself
         "services.api": 9000,
         "services.plain": 8000,
         "services.multi": 8000,
         "services.bundle": 9300,
+        "services.second": 9500,
+        "services.third": 9700,
+        "services.direct": 9600,  # a port written in the table itself
     }
 
 

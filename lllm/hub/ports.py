@@ -1,7 +1,8 @@
 """The port ``lllm serve`` listens on for a package resource.
 
-``lllm serve`` and the hub's config template both use :func:`serve_port`, so
-the template's URLs point where the resources are served.
+``lllm serve`` and the hub's config template both read ports from
+:func:`resource_metadata` with :func:`serve_port`, so the template's URLs
+point where the resources are served.
 """
 
 from __future__ import annotations
@@ -10,6 +11,20 @@ from collections.abc import Iterable
 from typing import Any
 
 DEFAULT_PORT = 8000
+
+
+def resource_metadata(resource: Any) -> dict[str, Any]:
+    """A manifest resource's metadata, as its hub record holds it.
+
+    Keys written directly in the resource's table, such as ``port = 8100``
+    in ``[services.api]``, come first, and its ``metadata`` table overrides
+    them.
+    """
+
+    return {
+        **dict(getattr(resource, "model_extra", None) or {}),
+        **dict(getattr(resource, "metadata", None) or {}),
+    }
 
 
 def declared_port(metadata: Any) -> int | None:

@@ -15,6 +15,7 @@ from .cards import render_agent_card, render_config_template, render_package_car
 from .files import has_symlink_component, invalid_portable_file_path, is_relative_to
 from .manifest import load_manifest, manifest_path, require_path_value
 from .models import HubResource, PackageManifest, PackageRecord, ValidationReport
+from .ports import resource_metadata
 from .validator import validate_package
 
 
@@ -430,17 +431,7 @@ def record_from_manifest(
 
 
 def _resource_metadata(resource: Any, **canonical: Any) -> dict[str, Any]:
-    return _public_resource_metadata(
-        {
-            **_resource_extra(resource),
-            **getattr(resource, "metadata", {}),
-            **canonical,
-        }
-    )
-
-
-def _resource_extra(resource: Any) -> dict[str, Any]:
-    return dict(getattr(resource, "model_extra", None) or {})
+    return _public_resource_metadata({**resource_metadata(resource), **canonical})
 
 
 def _record_file_path(manifest: PackageManifest, path: str, label: str) -> str:
