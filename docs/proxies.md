@@ -313,10 +313,10 @@ variable except `CALL_API`.
 LLLM ships proxies for research data. Each reads its API key from the
 environment. Call `load_builtin_proxies()` (from
 `lllm.runtimes.native.proxies`) before you build a tactic that activates
-them: a name in `activate_proxies` that nothing registered is skipped
-without an error. It returns `(loaded, errors)`, and a module that cannot
-be imported, such as `exa` without `exa_py`, lands in `errors` instead of
-raising.
+them: a name in `activate_proxies` that nothing registered is skipped,
+with a warning in the log. It returns `(loaded, errors)`, and a module
+that cannot be imported, such as `exa` without `exa_py`, lands in `errors`
+instead of raising.
 
 | Key | API | Key variable |
 | --- | --- | --- |

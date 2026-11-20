@@ -129,3 +129,17 @@ def test_a_proxy_with_use_cache_false_sends_every_request(http, tmp_path):
     assert proxy.call("rates", {"base": "USD"}) == {"request": 1}
     assert proxy.call("rates", {"base": "USD"}) == {"request": 2}
     assert cache_files(tmp_path) == []
+
+
+def test_names_in_activate_proxies_that_nothing_registered_are_reported(caplog):
+    runtime = Runtime()
+    runtime.register_proxy("rates", RatesProxy)
+
+    with caplog.at_level(logging.WARNING, logger="lllm"):
+        proxies = ProxyManager(activate_proxies=["rates", "weather"], runtime=runtime)
+
+    assert proxies.available() == ["rates"]
+    (record,) = caplog.records
+    assert record.levelno == logging.WARNING
+    assert "'weather'" in record.getMessage()
+    assert "rates" in record.getMessage()  # the proxies that are registered

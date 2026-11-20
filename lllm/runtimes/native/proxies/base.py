@@ -406,18 +406,17 @@ class ProxyManager:
         self._load_registered_proxies()
 
     def _load_registered_proxies(self):
+        registered, activated = [], set()
         for qk, node in self._runtime.iter_items("proxy"):
             proxy_cls = node.value
+            registered.append(node.key)
             if self.activate_proxies:
                 # Match against qualified key, bare key, or _proxy_path
-                matched = any(
-                    act == qk
-                    or act == node.key
-                    or act == getattr(proxy_cls, "_proxy_path", None)
-                    for act in self.activate_proxies
-                )
+                names = {qk, node.key, getattr(proxy_cls, "_proxy_path", None)}
+                matched = names.intersection(self.activate_proxies)
                 if not matched:
                     continue
+                activated.update(matched)
             try:
                 instance = proxy_cls(
                     cutoff_date=self.cutoff_date,
@@ -432,6 +431,15 @@ class ProxyManager:
             instance._resource_namespace = node.namespace
             # Store under the bare key (what existing code expects for dispatch)
             self.proxies[node.key] = instance
+        for name in self.activate_proxies:
+            if name not in activated:
+                logger.warning(
+                    "No proxy is registered as %r, so activate_proxies skips "
+                    "it. Registered proxies: %s. Built-in proxies need "
+                    "load_builtin_proxies() first.",
+                    name,
+                    sorted(registered),
+                )
 
     def register(self, name: str, proxy_cls: Any):
         """Register (or override) a proxy implementation at runtime."""
