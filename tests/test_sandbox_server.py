@@ -28,18 +28,19 @@ NOTEBOOK_6 = [
 @pytest.fixture
 def fake_jupyter(monkeypatch, tmp_path):
     """Replace the `jupyter notebook` process with a script that prints the
-    given lines to stderr and then stays up without printing anything."""
+    given lines to stderr, runs `then`, and stays up without printing."""
 
     started = []
     real_popen = subprocess.Popen
 
-    def install(lines, *, exit_code=None):
+    def install(lines, *, exit_code=None, then=""):
         script = tmp_path / "fake_jupyter.py"
         tail = f"sys.exit({exit_code})" if exit_code is not None else "time.sleep(60)"
         script.write_text(
             "import sys, time\n"
             f"for line in {lines!r}:\n"
             "    print(line, file=sys.stderr, flush=True)\n"
+            f"{then}\n"
             f"{tail}\n"
         )
 
@@ -105,6 +106,40 @@ def test_finds_the_url_notebook_6_prints(fake_jupyter, tmp_path):
     url, _ = launch(sess)
 
     assert url == f"http://127.0.0.1:8888/notebooks/first.ipynb?token={TOKEN}"
+    sess.shutdown_server()
+
+
+def test_finds_a_url_without_a_token(fake_jupyter, tmp_path):
+    fake_jupyter([NOTEBOOK_7[0], "[I 2026-11-20 10:00:00.000 ServerApp] http://127.0.0.1:8899/tree"])
+    sess = session(tmp_path)
+
+    url, _ = launch(sess)
+
+    assert url == "http://127.0.0.1:8899/notebooks/first.ipynb"
+    sess.shutdown_server()
+
+
+def test_keeps_reading_the_server_log_after_the_url(fake_jupyter, tmp_path):
+    marker = tmp_path / "all_logged"
+    # About 2 MB after the URL: far more than a pipe holds, so the server
+    # only gets to the marker if launch_server keeps draining its stderr.
+    fake_jupyter(
+        NOTEBOOK_6,
+        then=(
+            "for n in range(20000):\n"
+            "    print('[I ServerApp] request', n, 'x' * 80, file=sys.stderr)\n"
+            f"open({str(marker)!r}, 'w').close()"
+        ),
+    )
+    sess = session(tmp_path)
+
+    url, _ = launch(sess)
+    deadline = time.monotonic() + 20
+    while not marker.exists() and time.monotonic() < deadline:
+        time.sleep(0.05)
+
+    assert url is not None
+    assert marker.exists()
     sess.shutdown_server()
 
 
