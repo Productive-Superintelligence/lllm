@@ -395,7 +395,9 @@ keyring when a usable one is available and in the env file otherwise. The
 `secure` extra installs the keyring package, but headless hosts, CI, and
 containers often have no usable keyring behind it. `--credentials keyring`
 or `env` decides instead; `keyring` without a usable keyring stops before
-asking for anything. The env file is written readable only by you.
+asking for anything. A new env file is created readable only by you, and
+one you own is made so; a shared file you can write but do not own keeps
+its owner and permissions.
 `--set NAME=value` stores a key without asking; without a terminal, a
 missing key is an error. `lllm inspect ./support` shows each key as
 `ready` or `missing`, never its value. Only the `lllm` command reads the

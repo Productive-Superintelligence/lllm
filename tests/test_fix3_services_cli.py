@@ -2359,6 +2359,17 @@ def test_a_failed_fchmod_keeps_every_key_in_the_env_file(tmp_path, monkeypatch):
     assert 'FIX3_TEST_KEY="sk"' in text
 
 
+def test_any_os_error_from_the_env_file_helpers_is_a_credential_error(tmp_path):
+    from lllm.credentials import CredentialError, check_env_file_writable, write_env_file
+
+    too_long = tmp_path / ("x" * 300)  # longer than a file name may be
+
+    with pytest.raises(CredentialError, match="cannot write env file .*: File name too long"):
+        write_env_file(too_long, {"FIX3_TEST_KEY": "sk"})
+    with pytest.raises(CredentialError, match="cannot write env file .*: File name too long"):
+        check_env_file_writable(too_long)
+
+
 def test_an_existing_env_file_is_made_private_and_keeps_its_keys(tmp_path):
     from lllm.credentials import write_env_file
 

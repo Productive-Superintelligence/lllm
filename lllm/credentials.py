@@ -275,6 +275,17 @@ def check_env_file_writable(path: str | Path) -> None:
     """
 
     env_path = _env_file_path(path)
+    try:
+        _check_env_file_writable(env_path)
+    except CredentialError:
+        raise
+    except OSError as exc:  # e.g. EACCES, or a name that is too long
+        raise CredentialError(
+            f"cannot write env file {env_path}: {exc.strerror or exc}"
+        ) from exc
+
+
+def _check_env_file_writable(env_path: Path) -> None:
     if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
         raise CredentialError("env file must be a regular file")
     if env_path.exists():
@@ -297,15 +308,18 @@ def check_env_file_writable(path: str | Path) -> None:
 def write_env_file(path: str | Path, values: dict[str, str]) -> None:
     """Write ``values`` into the env file, keeping its other lines.
 
-    The file is opened without following a symlink, checked to be a regular
-    file once open, and made readable only by its owner. Any failure is a
-    ``CredentialError`` naming the file and the reason.
+    The file is opened without following a symlink and checked to be a
+    regular file once open. A new env file is created readable only by its
+    owner, and one the caller owns is made so; a shared file the caller can
+    write but does not own keeps its owner and permissions. Any failure,
+    the first checks included, is a ``CredentialError`` naming the file and
+    the reason.
     """
 
     env_path = _env_file_path(path)
-    if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
-        raise CredentialError("env file must be a regular file")
     try:
+        if env_path.is_symlink() or (env_path.exists() and not env_path.is_file()):
+            raise CredentialError("env file must be a regular file")
         _write_env_file(env_path, values)
     except CredentialError:
         raise
