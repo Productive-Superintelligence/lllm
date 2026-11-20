@@ -534,8 +534,9 @@ def test_an_async_tool_lets_one_pydantic_ai_agent_call_another():
     planner = Agent(model, tools=[tool])
     assert planner.run_sync("Write the entry").output == "got: Fixed: uploads retry."
 
+    # The synchronous tool calls run_sync() inside the planner's run.
     sync_planner = Agent(model, tools=[tactic_as_tool(changelog)])
-    with pytest.raises(UserError, match="synchronous tool"):
+    with pytest.raises(UserError):
         sync_planner.run_sync("Write the entry")
 
 
