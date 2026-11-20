@@ -8,6 +8,7 @@ import json
 import logging
 import sqlite3
 import sys
+import threading
 import unittest.mock
 from array import array
 from collections import deque
@@ -675,9 +676,13 @@ def test_a_forwarding_wrapper_over_a_spy_gives_the_metadata_the_spy_wraps(http):
     assert http[0][1] == "https://api.example.test/v1/rates"
 
 
-def test_a_forwarding_wrapper_over_a_spy_of_a_spy_gives_the_metadata_they_wrap(http):
+@pytest.mark.parametrize("depth", [2, 3])
+def test_a_forwarding_wrapper_over_a_spy_of_a_spy_gives_the_metadata_they_wrap(http, depth):
     proxy = UncachedRatesProxy(runtime=Runtime())
-    proxy.forwarded = Forwarding(MagicMock(wraps=MagicMock(wraps=proxy.rates)))
+    spied = proxy.rates
+    for _ in range(depth):  # a spy of a spy (of a spy)
+        spied = MagicMock(wraps=spied)
+    proxy.forwarded = Forwarding(spied)
 
     assert "forwarded" in [entry["callable"] for entry in proxy.endpoint_directory()]
     proxy.call("forwarded", {"base": "USD"})
@@ -707,6 +712,27 @@ def test_a_cycle_of_wrapping_mocks_is_not_an_endpoint():
     assert [entry["callable"] for entry in proxy.endpoint_directory()] == [
         "convert", "history", "rates",
     ]
+
+
+def test_a_child_that_wraps_itself_behind_a_forwarding_wrapper_is_not_an_endpoint():
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    spy = MagicMock(wraps=proxy.rates)
+    child = spy.endpoint_info
+    child._mock_wraps = child  # a plain assignment: it lands in __dict__
+    proxy.looped = Forwarding(spy)
+    listed = []
+
+    # Unwrapping the child would never end without its bound: run it on a
+    # thread, so that this test fails instead of hanging.
+    worker = threading.Thread(
+        target=lambda: listed.extend(entry["callable"] for entry in proxy.endpoint_directory()),
+        daemon=True,
+    )
+    worker.start()
+    worker.join(10)
+
+    assert not worker.is_alive(), "reading the looped child did not finish"
+    assert listed == ["convert", "history", "rates"]
 
 
 class MixedProxy(UncachedRatesProxy):
