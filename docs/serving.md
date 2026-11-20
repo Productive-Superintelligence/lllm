@@ -293,13 +293,14 @@ FastAPI way: middleware, dependencies, or a gateway in front of it. This
 middleware requires a bearer token on every route except `/health`:
 
 ```python title="auth.py"
+import asyncio
 import secrets
 
+import httpx
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
 
-from lllm import Tactic, create_tactic_app
+from lllm import RemoteTactic, RemoteTacticError, Tactic, create_tactic_app
 
 
 class Triage(Tactic):
@@ -324,18 +325,39 @@ async def require_token(request: Request, call_next):
     return await call_next(request)
 
 
-client = TestClient(app)
-print(client.post("/run", json={"input": "Outage"}).status_code)
-#> 401
-headers = {"authorization": f"Bearer {TOKEN}"}
-response = client.post("/run", json={"input": "Outage"}, headers=headers)
-print(response.json()["output"])
-#> oncall
+async def main():
+    url = "http://triage.internal:8000"
+    transport = httpx.ASGITransport(app=app)  # (1)!
+    try:
+        await RemoteTactic(url, async_transport=transport).arun("Outage")
+    except RemoteTacticError as error:
+        print(error.status_code, error.message)  # (2)!
+        #> 401 Invalid token.
+    triage = RemoteTactic(
+        url,
+        headers={"authorization": f"Bearer {TOKEN}"},  # (3)!
+        async_transport=transport,
+    )
+    print(await triage.arun("Outage"))
+    #> oncall
+
+
+asyncio.run(main())
 ```
 
-A `RemoteTactic` caller sends the header per call: extra keyword arguments
-to `run()`, `arun()`, and the stream methods go to httpx, as in
-`remote.run(text, headers=headers)`.
+1. Only for this example: the transport sends requests to the app in this
+   process, as in
+   [Calling a served tactic from Python](#calling-a-served-tactic-from-python).
+2. A body that is not the service's error envelope, such as FastAPI's
+   `{"detail": "Invalid token."}`, gives its `detail` text as the message.
+3. `headers=` go with every request the tactic sends: `run()`, `arun()`,
+   the stream methods, and `fetch_info()`. `auth=` takes any httpx
+   authentication the same way, such as `("user", "password")` for basic
+   auth.
+
+Keyword arguments to one call still go to httpx, so
+`triage.run(text, headers={"x-request-id": "r-1"})` adds a header to that
+request only. `lllm serve auth:app` serves the secured app as it is.
 
 In a package, build the secured app in a service entry and make the
 service the package's `primary` (or pass `--resource services.api`), so
@@ -420,8 +442,69 @@ the service base or one tactic of a multi-tactic app
 after the URL's last path segment, or else its host and port. Pass
 `input_type` and `output_type` to validate before sending and to get typed
 results back; without them, JSON is returned as is. The `timeout` is 30
-seconds by default. `RemoteTacticError` carries `status_code`,
-`error_type`, `message`, `tactic`, `endpoint`, `request_id`, and `detail`.
+seconds by default, and `headers=` and `auth=` go with every request
+([Authentication](#authentication)). `RemoteTacticError` carries
+`status_code`, `error_type`, `message`, `tactic`, `endpoint`, `request_id`,
+and `detail`.
+
+A `RemoteTactic` built from a URL alone knows nothing else about the
+service: its `info()` has no description or schemas, so a
+[tool](tools.md#tactics-as-tools) made from it takes one string `task` and
+says only "Run triage.". `RemoteTactic.from_service()` reads `/info` once
+and adopts the service's own contract:
+
+```python title="contract.py"
+import asyncio
+
+import httpx
+from pydantic import BaseModel
+
+from lllm import RemoteTactic, Tactic, create_tactic_app
+from lllm.runtimes.native import tactic_as_function
+
+
+class Ticket(BaseModel):
+    text: str
+    priority: int = 3
+
+
+class Triage(Tactic):
+    """Route a support ticket to a queue."""
+
+    name = "triage"
+    input_model = Ticket
+
+    def call(self, ticket: Ticket) -> str:
+        return "oncall" if "outage" in ticket.text.lower() else "support"
+
+
+app = create_tactic_app(Triage())  # running on another machine
+
+
+async def main():
+    triage = await RemoteTactic.afrom_service(  # (1)!
+        "http://triage.internal:8000",
+        async_transport=httpx.ASGITransport(app=app),
+    )
+    print(triage.tactic_name, "|", triage.info().description)
+    #> triage | Route a support ticket to a queue.
+    tool = tactic_as_function(triage, parameter_mode="kwargs")
+    print(tool.name, sorted(tool.properties), tool.required)
+    #> triage ['priority', 'text'] ['text']
+    print(await triage.arun({"text": "Total outage"}))
+    #> oncall
+
+
+asyncio.run(main())
+```
+
+1. `afrom_service()` is the async form of `from_service()`. Both take the
+   constructor's options and use them for the `/info` request too.
+
+The tactic takes the service's name unless you pass `name=`, and `info()`
+reports the service's description, schemas, examples, and capabilities
+wherever the tactic has none of its own, so `input_type` and `output_type`
+still win. A contract you already have can be passed as `contract=`.
 
 Because it is a tactic, a `RemoteTactic` works wherever a tactic does:
 inside another tactic's `call()`, as a [tool](tools.md#tactics-as-tools),

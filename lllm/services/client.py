@@ -61,6 +61,15 @@ class RemoteTactic(Tactic[Any, Any]):
     When ``name`` is omitted it is derived from ``url``: the last path segment
     (ignoring a trailing ``/run``, ``/stream`` or ``/info``), or else the host
     and port, so ``http://127.0.0.1:8000`` becomes ``127.0.0.1-8000``.
+
+    ``headers`` and ``auth`` (any httpx authentication, such as a
+    ``(user, password)`` tuple for basic auth) go with every request: runs,
+    streams, and info fetches. Headers passed to one call are added to them.
+
+    ``contract`` is the ``TacticInfo`` the service advertises on ``/info``;
+    :meth:`from_service` fetches it. With one, ``info()`` reports the
+    service's description, schemas, examples, and capabilities wherever the
+    tactic has none of its own (``input_type`` and ``output_type`` win).
     """
 
     runtime_kind = "http"
@@ -76,6 +85,9 @@ class RemoteTactic(Tactic[Any, Any]):
         transport: Any = None,
         async_transport: Any = None,
         metadata: dict[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        auth: Any = None,
+        contract: TacticInfo | Mapping[str, Any] | None = None,
     ) -> None:
         url = _service_url(url)
         self.url = _run_url(url)
@@ -84,6 +96,9 @@ class RemoteTactic(Tactic[Any, Any]):
         self.timeout = _timeout_value(timeout)
         self.transport = transport
         self.async_transport = async_transport
+        self.headers = _headers_value(headers)
+        self.auth = auth
+        self.contract = _contract_value(contract)
         self.input_type = input_type
         self.output_type = output_type
         metadata_value = _metadata_mapping(metadata)
@@ -92,6 +107,86 @@ class RemoteTactic(Tactic[Any, Any]):
             name=name if name is not None else _name_from_url(url),
             service_ref=url,
             metadata=metadata_value,
+        )
+
+    @classmethod
+    def from_service(
+        cls,
+        url: str,
+        *,
+        name: str | None = None,
+        **options: Any,
+    ) -> "RemoteTactic":
+        """Build a remote tactic that adopts the contract the service advertises.
+
+        Fetches ``{url}/info`` once, with the same ``options`` (``headers``,
+        ``auth``, ``transport``, ...) every later request uses, and passes it
+        as ``contract``. The tactic takes the service's name unless ``name``
+        is given.
+        """
+
+        contract = cls(url, name=name, **options).fetch_info()
+        return cls(
+            url,
+            name=contract.name if name is None else name,
+            contract=contract,
+            **options,
+        )
+
+    @classmethod
+    async def afrom_service(
+        cls,
+        url: str,
+        *,
+        name: str | None = None,
+        **options: Any,
+    ) -> "RemoteTactic":
+        """Like :meth:`from_service`, fetching ``/info`` asynchronously."""
+
+        contract = await cls(url, name=name, **options).afetch_info()
+        return cls(
+            url,
+            name=contract.name if name is None else name,
+            contract=contract,
+            **options,
+        )
+
+    def info(self) -> TacticInfo:
+        info = super().info()
+        contract = self.contract
+        if contract is None:
+            return info
+        return info.model_copy(
+            update={
+                "description": info.description or contract.description,
+                "input_schema": _own_or_adopted(info.input_schema, contract.input_schema),
+                "output_schema": _own_or_adopted(
+                    info.output_schema, contract.output_schema
+                ),
+                "examples": info.examples or copy_boundary_value(contract.examples),
+            }
+        )
+
+    def capabilities(self) -> set[str]:
+        supported = super().capabilities()
+        if self.contract is None:
+            return supported
+        return supported & set(self.contract.capabilities)
+
+    def _client(self, httpx: Any) -> Any:
+        return httpx.Client(
+            transport=self.transport,
+            timeout=self.timeout,
+            headers=self.headers,
+            auth=self.auth,
+        )
+
+    def _async_client(self, httpx: Any) -> Any:
+        return httpx.AsyncClient(
+            transport=self.async_transport,
+            timeout=self.timeout,
+            headers=self.headers,
+            auth=self.auth,
         )
 
     def fetch_info(self, **kwargs: Any) -> TacticInfo:
@@ -104,7 +199,7 @@ class RemoteTactic(Tactic[Any, Any]):
                 "Install httpx or lllm-core[client] to inspect remote tactics."
             ) from exc
 
-        with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
+        with self._client(httpx) as client:
             response = client.get(self.info_url, **kwargs)
         return _response_info(response)
 
@@ -118,10 +213,7 @@ class RemoteTactic(Tactic[Any, Any]):
                 "Install httpx or lllm-core[client] to inspect remote tactics."
             ) from exc
 
-        async with httpx.AsyncClient(
-            transport=self.async_transport,
-            timeout=self.timeout,
-        ) as client:
+        async with self._async_client(httpx) as client:
             response = await client.get(self.info_url, **kwargs)
         return _response_info(response)
 
@@ -138,7 +230,7 @@ class RemoteTactic(Tactic[Any, Any]):
             raise RuntimeError("Install httpx or lllm-core[client] to call remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
-        with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
+        with self._client(httpx) as client:
             response = client.post(self.url, json=envelope, **kwargs)
         return _response_output(response)
 
@@ -155,7 +247,7 @@ class RemoteTactic(Tactic[Any, Any]):
             raise RuntimeError("Install httpx or lllm-core[client] to stream remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
-        with httpx.Client(transport=self.transport, timeout=self.timeout) as client:
+        with self._client(httpx) as client:
             with client.stream("POST", self.stream_url, json=envelope, **kwargs) as response:
                 if response.status_code >= 400:
                     response.read()
@@ -187,10 +279,7 @@ class RemoteTactic(Tactic[Any, Any]):
             raise RuntimeError("Install httpx or lllm-core[client] to stream remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
-        async with httpx.AsyncClient(
-            transport=self.async_transport,
-            timeout=self.timeout,
-        ) as client:
+        async with self._async_client(httpx) as client:
             async with client.stream(
                 "POST",
                 self.stream_url,
@@ -216,10 +305,7 @@ class RemoteTactic(Tactic[Any, Any]):
             raise RuntimeError("Install httpx or lllm-core[client] to call remote tactics.") from exc
 
         envelope = _request_envelope(input_value, context)
-        async with httpx.AsyncClient(
-            transport=self.async_transport,
-            timeout=self.timeout,
-        ) as client:
+        async with self._async_client(httpx) as client:
             response = await client.post(self.url, json=envelope, **kwargs)
         return _response_output(response)
 
@@ -246,6 +332,28 @@ def _call_context(value: Any) -> CallContext:
 
 def _metadata_mapping(value: Any) -> dict[str, Any]:
     return optional_metadata_mapping_value("metadata", value)
+
+
+def _headers_value(value: Any) -> dict[str, str] | None:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise TypeError("headers must be a mapping of header names to values.")
+    return dict(value)
+
+
+def _contract_value(value: Any) -> TacticInfo | None:
+    if value is None:
+        return None
+    if isinstance(value, TacticInfo):
+        return value.model_copy(deep=True)
+    if isinstance(value, Mapping):
+        return TacticInfo.model_validate(dict(value))
+    raise TypeError("contract must be a TacticInfo or a mapping of its fields.")
+
+
+def _own_or_adopted(own: Any, adopted: Any) -> Any:
+    return own if own is not None else copy_boundary_value(adopted)
 
 
 def _response_output(response: Any) -> Any:
@@ -324,6 +432,10 @@ def _detail_message(detail: Any) -> str | None:
         error = _error_detail(detail)
         if isinstance(error, dict) and isinstance(error.get("message"), str):
             return error["message"]
+        # FastAPI's own error body, as an HTTPException or middleware sends:
+        # {"detail": "Invalid token."}
+        if isinstance(detail.get("detail"), str):
+            return detail["detail"]
     return None
 
 

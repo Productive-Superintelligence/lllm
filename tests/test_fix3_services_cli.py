@@ -243,3 +243,247 @@ def test_a_remote_caller_sees_the_500():
     assert caught.value.status_code == 500
     assert caught.value.error_type == "OutputSchemaError"
     assert "failed validation" in caught.value.message
+
+
+# 3: RemoteTactic sends headers and auth on every request, reads FastAPI's
+# {"detail": "..."} error bodies, and can adopt the service's own contract.
+
+TOKEN = "change-me"
+
+
+class Ticket(BaseModel):
+    text: str
+    priority: int = 3
+
+
+class Triage(ProtocolTactic):
+    """Route a support ticket to a queue."""
+
+    name = "triage"
+    input_type = Ticket
+    output_type = str
+
+    def _run(self, ticket, *, context=None, **kwargs):
+        return "oncall" if "outage" in ticket.text.lower() else "support"
+
+
+def _secured_app():
+    from fastapi import Request
+    from fastapi.responses import JSONResponse
+
+    app = create_tactic_app(Triage())
+
+    @app.middleware("http")
+    async def require_token(request: Request, call_next):
+        if request.headers.get("authorization") != f"Bearer {TOKEN}":
+            return JSONResponse({"detail": "Invalid token."}, status_code=401)
+        return await call_next(request)
+
+    return app
+
+
+def _recording_transport(seen: list) -> httpx.MockTransport:
+    """Answer every endpoint, recording the headers each request carried."""
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        seen.append((request.url.path, dict(request.headers)))
+        if request.url.path.endswith("/info"):
+            return httpx.Response(200, json=Triage().info().model_dump(mode="json"))
+        if request.url.path.endswith("/stream"):
+            return httpx.Response(
+                200,
+                text='data: "oncall"\n\n',
+                headers={"content-type": "text/event-stream"},
+            )
+        return httpx.Response(
+            200, json={"output": "oncall", "request_id": "r-1", "tactic": "triage"}
+        )
+
+    return httpx.MockTransport(handle)
+
+
+async def _collect(items):
+    return [item async for item in items]
+
+
+def _call_every_endpoint(remote: RemoteTactic) -> None:
+    remote.run({"text": "Outage"})
+    asyncio.run(remote.arun({"text": "Outage"}))
+    list(remote.stream({"text": "Outage"}))
+    asyncio.run(_collect(remote.astream({"text": "Outage"})))
+    asyncio.run(_collect(remote.aevents({"text": "Outage"})))
+    remote.fetch_info()
+    asyncio.run(remote.afetch_info())
+
+
+def test_remote_tactic_headers_go_with_every_request():
+    seen: list = []
+    transport = _recording_transport(seen)
+    remote = RemoteTactic(
+        "http://triage.internal:8000",
+        headers={"authorization": f"Bearer {TOKEN}"},
+        transport=transport,
+        async_transport=transport,
+    )
+
+    _call_every_endpoint(remote)
+
+    assert [path for path, _headers in seen] == [
+        "/run", "/run", "/stream", "/stream", "/stream", "/info", "/info"
+    ]
+    assert all(h["authorization"] == f"Bearer {TOKEN}" for _p, h in seen)
+    assert "authorization" not in json.dumps(remote.info().model_dump(mode="json"))
+
+
+def test_remote_tactic_per_call_headers_add_to_the_constructor_headers():
+    seen: list = []
+    transport = _recording_transport(seen)
+    remote = RemoteTactic(
+        "http://triage.internal:8000",
+        headers={"authorization": f"Bearer {TOKEN}"},
+        transport=transport,
+    )
+
+    remote.run({"text": "Outage"}, headers={"x-request-id": "r-9"})
+
+    [(_path, headers)] = seen
+    assert headers["authorization"] == f"Bearer {TOKEN}"
+    assert headers["x-request-id"] == "r-9"
+
+
+def test_remote_tactic_auth_goes_with_every_request():
+    seen: list = []
+    transport = _recording_transport(seen)
+    remote = RemoteTactic(
+        "http://triage.internal:8000",
+        auth=("ada", "secret"),
+        transport=transport,
+        async_transport=transport,
+    )
+
+    _call_every_endpoint(remote)
+
+    expected = httpx.BasicAuth("ada", "secret")._auth_header
+    assert len(seen) == 7
+    assert all(h["authorization"] == expected for _p, h in seen)
+
+
+def test_remote_tactic_rejects_headers_that_are_not_a_mapping():
+    with pytest.raises(TypeError, match="headers"):
+        RemoteTactic("http://svc:8000", headers=[("authorization", "x")])
+
+
+def test_remote_tactic_reaches_a_secured_service():
+    app = _secured_app()
+    remote = RemoteTactic(
+        "http://triage.internal:8000",
+        headers={"authorization": f"Bearer {TOKEN}"},
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    assert asyncio.run(remote.arun({"text": "Outage"})) == "oncall"
+    assert asyncio.run(remote.afetch_info()).name == "triage"
+    # Past the middleware (not a 401): Triage does not stream.
+    with pytest.raises(RemoteTacticError) as caught:
+        asyncio.run(_collect(remote.aevents({"text": "Outage"})))
+    assert caught.value.status_code == 400
+    assert caught.value.error_type == "TacticUnsupportedError"
+
+
+def test_a_fastapi_detail_string_becomes_the_error_message():
+    app = _secured_app()
+    remote = RemoteTactic(
+        "http://triage.internal:8000",
+        async_transport=httpx.ASGITransport(app=app),
+    )
+
+    for call in (
+        lambda: remote.arun({"text": "Outage"}),
+        lambda: remote.afetch_info(),
+        lambda: _collect(remote.aevents({"text": "Outage"})),
+    ):
+        with pytest.raises(RemoteTacticError) as caught:
+            asyncio.run(call())
+        assert caught.value.status_code == 401
+        assert caught.value.message == "Invalid token."
+        assert caught.value.error_type is None
+        assert str(caught.value) == "Remote tactic returned HTTP 401: Invalid token."
+    error = RemoteTacticError(403, detail={"detail": "Forbidden."})
+    assert error.message == "Forbidden."
+
+
+def test_from_service_adopts_the_service_contract():
+    from lllm.runtimes.native import tactic_as_function
+    from lllm.runtimes.pydantic_ai import tactic_as_tool
+
+    seen: list = []
+    remote = RemoteTactic.from_service(
+        "http://triage.internal:8000",
+        headers={"authorization": f"Bearer {TOKEN}"},
+        transport=_recording_transport(seen),
+    )
+    expected = Triage().info()
+
+    info = remote.info()
+    assert [path for path, _headers in seen] == ["/info"]
+    assert seen[0][1]["authorization"] == f"Bearer {TOKEN}"
+    assert remote.tactic_name == "triage"
+    assert info.description == "Route a support ticket to a queue."
+    assert info.input_schema == expected.input_schema
+    assert info.output_schema == expected.output_schema
+    assert info.runtime_kind == "http"
+    assert info.service_ref == "http://triage.internal:8000"
+    assert remote.capabilities() == {"run", "arun"}
+    assert not remote.supports("stream")
+
+    tool = tactic_as_function(remote, parameter_mode="kwargs")
+    assert tool.name == "triage"
+    assert tool.description == "Route a support ticket to a queue."
+    assert sorted(tool.properties) == ["priority", "text"]
+    assert tool.required == ["text"]
+    task_tool = tactic_as_function(remote)
+    assert task_tool.properties["task"]["required"] == ["text"]
+    assert tactic_as_tool(remote).__doc__ == "Route a support ticket to a queue."
+
+    named = RemoteTactic.from_service(
+        "http://triage.internal:8000",
+        name="router",
+        transport=_recording_transport(seen),
+    )
+    assert named.tactic_name == "router"
+    assert named.info().description == "Route a support ticket to a queue."
+
+
+def test_afrom_service_adopts_the_contract_of_a_running_service():
+    app = _secured_app()
+
+    async def main():
+        remote = await RemoteTactic.afrom_service(
+            "http://triage.internal:8000",
+            headers={"authorization": f"Bearer {TOKEN}"},
+            async_transport=httpx.ASGITransport(app=app),
+        )
+        return remote, await remote.arun({"text": "Total outage"})
+
+    remote, output = asyncio.run(main())
+
+    assert output == "oncall"
+    assert remote.tactic_name == "triage"
+    assert remote.info().input_schema["required"] == ["text"]
+
+
+def test_local_types_and_a_given_contract_win_over_nothing():
+    contract = Triage().info()
+    remote = RemoteTactic(
+        "http://triage.internal:8000",
+        output_type=int,
+        contract=contract.model_dump(mode="json"),
+    )
+
+    info = remote.info()
+    assert remote.tactic_name == "triage.internal-8000"
+    assert info.description == contract.description
+    assert info.input_schema == contract.input_schema
+    assert info.output_schema == {"type": "integer"}
+    with pytest.raises(TypeError, match="contract"):
+        RemoteTactic("http://svc:8000", contract="triage")
