@@ -2,6 +2,7 @@ import datetime as dt
 import inspect
 import re
 import logging
+from collections.abc import Mapping
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote, urlencode, urlsplit
 
@@ -275,9 +276,15 @@ class BaseProxy:
         ``{name}`` placeholders in the endpoint path are filled from the
         params, each value URL-encoded as a single path segment. A missing
         value, ``.`` or ``..`` raises ``ValueError``.
+
+        Params that are not a dict, such as a tactic endpoint's text input,
+        are the value of the endpoint's only parameter, or of its only
+        required one; otherwise they raise ``TypeError``.
         """
 
         method, info, path_params = self.resolve_endpoint(path)
+        if params is not None and not isinstance(params, Mapping):
+            params = self._lone_value_params(path, info, params)
         params = {**path_params, **dict(params or {})}
         if self._callable_attr(method, "_lllm_tactic_endpoint"):
             return method(params)
@@ -318,6 +325,23 @@ class BaseProxy:
             else:
                 prepared[key_name] = key
         return self._call_api(url, prepared, info, headers)
+
+    @staticmethod
+    def _lone_value_params(path: str, info: Dict[str, Any], value: Any) -> dict:
+        """Name a value passed instead of a params dict after the endpoint's
+        only parameter, or its only required one (e.g. a tactic's input)."""
+
+        documented = [str(name) for name in info.get("params") or {}]
+        required = [name for name in documented if name.endswith("*")]
+        names = [name.rstrip("*") for name in documented]
+        for candidates in (documented, required):
+            if len(candidates) == 1:
+                return {candidates[0].rstrip("*"): value}
+        expected = f" ({', '.join(names)})" if names else ""
+        raise TypeError(
+            f"Endpoint '{path}' takes its params as a dict{expected}, "
+            f"not {type(value).__name__}."
+        )
 
     def _call_api(
         self, url: str, params: dict, endpoint_info: dict, headers: dict

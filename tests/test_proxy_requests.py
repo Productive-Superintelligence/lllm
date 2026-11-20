@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 
+from lllm import Tactic
 from lllm.runtimes.native import Runtime
 from lllm.runtimes.native import utils as U
 from lllm.runtimes.native.proxies import BaseProxy, ProxyManager
@@ -165,3 +166,64 @@ def test_get_endpoints_send_a_query_param_key_with_the_params(http):
     assert http == [
         ("GET", "https://api.example.test/v1/rates", {"base": "USD", "apikey": "secret"})
     ]
+
+
+class Shout(Tactic):
+    name = "shout"
+
+    def call(self, text: str) -> str:
+        return text.upper()
+
+
+class Repeat(Tactic):
+    name = "repeat"
+
+    def call(self, text: str, times: int = 2) -> str:
+        return text * times
+
+
+class Join(Tactic):
+    name = "join"
+
+    def call(self, first: str, second: str) -> str:
+        return first + second
+
+
+class TacticTools(BaseProxy):
+    shout = BaseProxy.tactic_endpoint("shout", config={})
+    repeat = BaseProxy.tactic_endpoint("repeat", config={})
+    join = BaseProxy.tactic_endpoint("join", config={})
+
+
+def tactic_tools():
+    runtime = Runtime()
+    for tactic in (Shout, Repeat, Join):
+        runtime.register_tactic(tactic.name, tactic)
+    proxies = ProxyManager(runtime=runtime)
+    proxies.register("tools", TacticTools)
+    return proxies
+
+
+def test_a_tactic_endpoint_takes_a_lone_value_as_its_input():
+    proxies = tactic_tools()
+
+    assert proxies("tools/shout", "hi") == "HI"
+    assert proxies("tools/shout", {"text": "hi"}) == "HI"
+    assert proxies("tools/shout", text="hi") == "HI"
+    assert proxies("tools/repeat", "ab") == "abab"  # the only required one
+
+
+def test_a_lone_value_for_several_required_params_is_a_clear_error():
+    proxies = tactic_tools()
+
+    assert proxies("tools/join", {"first": "a", "second": "b"}) == "ab"
+    with pytest.raises(TypeError, match=r"takes its params as a dict \(first, second\), not str"):
+        proxies("tools/join", "ab")
+
+
+def test_an_http_endpoint_with_one_param_takes_a_lone_value_too(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    proxy.call("rates", "EUR")
+
+    assert http[0][2] == {"base": "EUR", "apikey": "secret"}

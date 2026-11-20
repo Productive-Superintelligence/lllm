@@ -351,6 +351,8 @@ a project with a sample proxy, a config that attaches it to an agent, and
 An endpoint can also run a whole tactic:
 `BaseProxy.tactic_endpoint("my_pkg.tactics:summarize", config=...)` takes
 its parameters from the tactic's input and returns the tactic's result.
+When the tactic has one required parameter, its value alone works in
+place of the params dict, as in `CALL_API("tools/summarize", text)`.
 
 !!! note "`ProxyTactic` is something else"
     `lllm.proxy_tactic()` wraps a whole tactic at its typed boundary with
