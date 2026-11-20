@@ -4,7 +4,9 @@ import base64
 import json
 from collections import namedtuple
 from decimal import Decimal
+from operator import itemgetter
 from typing import Any, ClassVar, Dict, List, Literal, Optional
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic import (
@@ -1417,15 +1419,20 @@ def test_copying_a_wide_list_takes_about_its_own_size_in_memory():
 
     AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"w": [1]}})
     settings = {"w": list(range(200_000))}  # its copy takes 1.6 MB
-    tracemalloc.start()
+    ours = not tracemalloc.is_tracing()  # else leave the user's tracing on
+    if ours:
+        tracemalloc.start()
     try:
+        tracemalloc.reset_peak()
+        before, _ = tracemalloc.get_traced_memory()
         AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
         _, peak = tracemalloc.get_traced_memory()
     finally:
-        tracemalloc.stop()
+        if ours:
+            tracemalloc.stop()
 
     # Listing the children up front, an entry each, peaked at 36 MiB.
-    assert peak < 4 * 2**20
+    assert peak - before < 4 * 2**20
 
 
 class Stopwords(set):
@@ -1449,7 +1456,20 @@ class TouchyStopwords(Stopwords):
         raise TypeError("ambiguous")
 
 
-@pytest.mark.parametrize("kind", [Stopwords, QuietStopwords, TouchyStopwords])
+class GivenStopwords(Stopwords):
+    """Counts only the words it was given, not the defaults it seeded."""
+
+    def __init__(self, words=()):
+        super().__init__(words)
+        self.given = len(set(words))
+
+    def __len__(self) -> int:
+        return self.given
+
+
+@pytest.mark.parametrize(
+    "kind", [Stopwords, QuietStopwords, TouchyStopwords, GivenStopwords]
+)
 def test_an_empty_set_whose_copy_seeds_defaults_comes_back_empty(kind):
     from lllm.runtimes.native import AgentSpec, Runtime
 
@@ -1459,6 +1479,28 @@ def test_an_empty_set_whose_copy_seeds_defaults_comes_back_empty(kind):
     copied = spec.build(Runtime(), object()).extra_settings["s"]
 
     assert type(copied) is kind and copied == set()
+
+
+class CopiesToDict(set):
+    """Its copy is a dict."""
+
+    def __copy__(self):
+        return {}
+
+
+@pytest.mark.parametrize(
+    "make, kind",
+    [(CopiesToDict, dict), (lambda: MagicMock(spec=set), MagicMock)],
+    ids=["copies to a dict", "spec mock"],
+)
+def test_a_set_whose_copy_is_not_a_real_set_is_copied_as_ever(make, kind):
+    from lllm.runtimes.native import AgentSpec
+
+    original = make()
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": original}})
+    copied = spec.extra_settings["s"]
+
+    assert isinstance(copied, kind) and copied is not original  # as 68ef9fd
 
 
 class CopiesFail(dict):
@@ -1708,16 +1750,24 @@ def test_a_container_whose_items_cannot_be_listed_fails_alike_at_any_depth(depth
         AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"v": value}})
 
 
+def _released(log: List[str], name: str, items: Any) -> Any:
+    """Yield ``items``, and log ``name`` once released, used up or not."""
+    try:
+        yield from items
+    finally:
+        log.append(name)
+
+
 class Streamed(dict):
     """Lists its items from a generator that holds a resource until it is
-    closed; its copies refuse the key "refused"."""
+    released; its copies refuse the key "refused"."""
 
-    def __init__(self, log: List[str], **items: Any) -> None:
+    def __init__(self, log: List[str], name: str, **items: Any) -> None:
         super().__init__(**items)
-        self.log = log
+        self.log, self.name = log, name
 
     def __copy__(self):
-        return Streamed(self.log, **self)
+        return type(self)(self.log, self.name, **self)
 
     def __setitem__(self, key, value):
         if key == "refused":
@@ -1725,34 +1775,84 @@ class Streamed(dict):
         super().__setitem__(key, value)
 
     def items(self):
-        try:
-            yield from dict.items(self)
-        finally:
-            self.log.append("released")
+        return _released(self.log, self.name, dict.items(self))
 
 
-@pytest.mark.parametrize(
-    "items",
-    [
-        lambda: {"a": Short(1, 2)},  # a child fails to rebuild
-        lambda: {"a": Unlistable(a=1)},  # a child's items cannot be listed
-        lambda: {"a": _nested(600, lambda v: [v])},  # a child is too deep
-        lambda: {"a": 1, "refused": 2},  # the copy refuses a child
-    ],
-    ids=["rebuild", "listing", "depth", "storing"],
-)
-def test_a_failed_copy_closes_open_iterators_before_the_caller_sees_it(items):
+class Zipped(Streamed):
+    """Lists its items through zip, which stops when the keys run out: the
+    generator of values stays open, though zip is used up."""
+
+    def items(self):
+        values = _released(self.log, self.name, dict.values(self))
+        return zip(dict.keys(self), values)
+
+
+class Unbuildable(namedtuple("Unbuildable", "a b")):
+    """Reads its items through zip, as Zipped does, and cannot be rebuilt."""
+
+    def __new__(cls, log: List[str], a: Any, b: Any):
+        pair = super().__new__(cls, a, b)
+        pair.log = log
+        return pair
+
+    def __iter__(self):
+        values = _released(self.log, "pair", tuple.__iter__(self))
+        return map(itemgetter(1), zip(range(2), values))
+
+    @classmethod
+    def _make(cls, iterable):
+        raise TypeError("cannot be rebuilt")
+
+
+class Interrupted(dict):
+    """Its copy is cut short, as by Ctrl-C."""
+
+    def __copy__(self):
+        raise KeyboardInterrupt
+
+
+def _three_deep(log: List[str]) -> Any:
+    inner = Streamed(log, "inner", a=Short(1, 2))
+    return Streamed(log, "outer", m=Streamed(log, "middle", x=[inner]))
+
+
+def _refused_when_done(log: List[str]) -> Any:
+    # "a" first, so that the read-only probe passes and the copy goes on.
+    return Streamed(log, "parent", a=1, refused=Zipped(log, "zipped", a=1))
+
+
+#: Each case's settings value, and what it releases, in order.
+RELEASES = {
+    # A child fails to rebuild, cannot be listed, is too deep, is refused
+    # by the copy, or has its copy interrupted (a BaseException).
+    "rebuild": (lambda log: Streamed(log, "s", a=Short(1, 2)), ["s"]),
+    "listing": (lambda log: Streamed(log, "s", a=Unlistable(a=1)), ["s"]),
+    "depth": (lambda log: Streamed(log, "s", a=_nested(600, lambda v: [v])), ["s"]),
+    "storing": (lambda log: Streamed(log, "s", a=1, refused=2), ["s"]),
+    "interrupt": (lambda log: Streamed(log, "s", a=Interrupted()), ["s"]),
+    "nested": (_three_deep, ["inner", "middle", "outer"]),
+    # A used-up iterator can hold a generator open too: a finished child
+    # its parent refuses, and a tuple whose rebuild fails.
+    "used-up child": (_refused_when_done, ["zipped", "parent"]),
+    "used-up tuple": (lambda log: Unbuildable(log, 1, 2), ["pair"]),
+}
+
+
+@pytest.mark.parametrize("case", RELEASES)
+def test_a_failed_copy_releases_its_iterators_before_the_caller_sees_it(case):
     from lllm.runtimes.native import AgentSpec
 
+    build, released = RELEASES[case]
     log: List[str] = []
-    streamed = Streamed(log, **items())
+    value = build(log)
     try:
-        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": streamed}})
-    except (TypeError, RuntimeError, ValueError):
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"v": value}})
+    except (TypeError, RuntimeError, ValueError, KeyboardInterrupt):
         log.append("caught")
 
-    # As a recursive copy's unwinding does, not once the error is dropped.
-    assert log == ["released", "caught"]
+    # Innermost first, as a recursive copy's unwinding releases them, and
+    # not once the caller drops the error.
+    assert log == [*released, "caught"]
 
 
 def test_values_built_on_access_each_get_their_own_copy(tmp_path):

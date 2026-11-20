@@ -628,6 +628,9 @@ def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
             child = next(frame.children, _END)
             if child is _END:  # all its children are copied
                 frames.pop()
+                # Used up, it may still hold a source open (zip, map): let
+                # it go now, as a for loop does, before anything can fail.
+                frame.children = None
                 copied = frame.finish(memo)
                 if frames:
                     frames[-1].put(copied)
@@ -712,8 +715,14 @@ class _Frame:
         if isinstance(self.value, set):
             # Only an empty copy of an empty set is left alone, as it may
             # be read-only; one that seeded defaults is emptied. Its size
-            # is read as a set's, whatever its own __bool__ or __len__ say.
-            if self.items or set.__len__(self.result):
+            # is read as a set's, whatever its own __bool__ or __len__ say;
+            # a copy that is no real set by type (isinstance passes proxies
+            # and spec mocks) is filled in, as it always was.
+            if (
+                self.items
+                or not issubclass(type(self.result), set)
+                or set.__len__(self.result)
+            ):
                 self.result.clear()
                 self.result.update(self.items)
             return self.result
