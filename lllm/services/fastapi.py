@@ -9,6 +9,7 @@ import re
 import threading
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
+from urllib.parse import urlsplit
 
 from pydantic import (
     BaseModel,
@@ -21,6 +22,7 @@ from pydantic import (
 
 from ..protocol import (
     CallContext,
+    LLLMError,
     OutputSchemaError,
     SchemaError,
     Tactic,
@@ -47,6 +49,18 @@ logger = logging.getLogger(__name__)
 
 _JSON_SCHEMA_DEFS_REF = "#/$defs/"
 _OPENAPI_SCHEMAS_REF = "#/components/schemas/"
+
+
+class CrossSiteRequestError(LLLMError):
+    """Raised when a browser sends a tactic route a cross-site request that is not JSON.
+
+    A web page can make a visitor's browser send a form, text, or a body
+    without a content type to any address, a local service included, without
+    asking the server first. Such a request names another site in its
+    ``Origin`` header or in ``Sec-Fetch-Site``, and services refuse it with
+    status 403. Browsers ask before sending JSON to another site (a CORS
+    preflight), so the app's own CORS settings decide those requests.
+    """
 
 
 class RunRequest(BaseModel):
@@ -184,6 +198,7 @@ def create_service_app(
         tactic = _get_tactic(name, tactic_map)
         context = _error_context(tactic, "run")
         try:
+            _refuse_cross_site_request(request)
             input_value, context = await _input_and_context_from_request(
                 request,
                 tactic=tactic,
@@ -203,6 +218,7 @@ def create_service_app(
         tactic = _get_tactic(name, tactic_map)
         context = _error_context(tactic, "stream")
         try:
+            _refuse_cross_site_request(request)
             input_value, context = await _input_and_context_from_request(
                 request,
                 tactic=tactic,
@@ -236,6 +252,7 @@ def create_service_app(
         async def single_run(request: Request) -> RunResponse:
             context = _error_context(only, "run")
             try:
+                _refuse_cross_site_request(request)
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=only,
@@ -254,6 +271,7 @@ def create_service_app(
         async def single_stream(request: Request):
             context = _error_context(only, "stream")
             try:
+                _refuse_cross_site_request(request)
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=only,
@@ -416,6 +434,7 @@ def _make_custom_route(
     async def route(request: Request):
         context = _error_context(tactic, spec.name)
         try:
+            _refuse_cross_site_request(request)
             if endpoint_requires_body(spec) or await request.body():
                 input_value, context = await _input_and_context_from_request(
                     request,
@@ -658,6 +677,58 @@ def _openapi_ref(ref: str, names: Mapping[str, str]) -> str:
         return ref
     name = ref.removeprefix(_JSON_SCHEMA_DEFS_REF)
     return _OPENAPI_SCHEMAS_REF + names.get(name, name)
+
+
+def _refuse_cross_site_request(request: Any) -> None:
+    """Raise ``CrossSiteRequestError`` for a cross-site browser request that
+    is not JSON.
+
+    The request is cross-site when its ``Origin`` names another host and
+    port than its ``Host`` header, or when ``Sec-Fetch-Site`` says so (a
+    browser sends that header where it leaves out ``Origin``, such as on a
+    no-cors GET). Clients that are not browsers send neither.
+    """
+
+    headers = request.headers
+    if _is_json_media_type(headers.get("content-type")):
+        return
+    if headers.get("sec-fetch-site") == "cross-site" or _is_cross_origin(
+        headers.get("origin"), headers.get("host")
+    ):
+        raise CrossSiteRequestError(
+            "Refused a cross-site browser request that is not JSON: any website "
+            "can make a browser send forms and text here. Send the request as "
+            "JSON (Content-Type: application/json)."
+        )
+
+
+def _is_json_media_type(content_type: str | None) -> bool:
+    media_type = (content_type or "").split(";", 1)[0].strip().lower()
+    return media_type == "application/json" or media_type.endswith("+json")
+
+
+def _is_cross_origin(origin: str | None, host: str | None) -> bool:
+    if origin is None:
+        return False
+    try:
+        source = urlsplit(origin)
+        target = urlsplit(f"//{host}") if host else None
+        if (
+            source.scheme not in {"http", "https"}
+            or not source.hostname
+            or target is None
+            or not target.hostname
+        ):
+            return True  # Origin "null", or nothing to compare it with
+        # A missing port is the default port of the scheme the page used,
+        # which a proxy that terminates TLS hides from the app.
+        default = 443 if source.scheme == "https" else 80
+        return (source.hostname, source.port or default) != (
+            target.hostname,
+            target.port or default,
+        )
+    except ValueError:  # a malformed host or port
+        return True
 
 
 async def _input_and_context_from_request(
@@ -924,8 +995,11 @@ def status_code_for_error(exc: Exception) -> int:
     ``SchemaError`` and ``TacticUnsupportedError`` are 400, except
     ``OutputSchemaError``: a result that fails the tactic's output schema is
     a bug in the tactic, so it is 500, like anything else the tactic raises.
+    ``CrossSiteRequestError`` is 403.
     """
 
+    if isinstance(exc, CrossSiteRequestError):
+        return 403
     if isinstance(exc, OutputSchemaError):
         return 500
     if isinstance(exc, (SchemaError, TacticUnsupportedError)):

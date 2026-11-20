@@ -188,6 +188,7 @@ print(sorted(error))
 | --- | --- | --- |
 | 400 | `SchemaError` | The input, the envelope, or the context does not validate |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
+| 403 | `CrossSiteRequestError` | A browser sent a cross-site request that is not JSON ([Authentication](#authentication)) |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
 | 500 | `OutputSchemaError` | The tactic's result does not match its output schema, a bug in the tactic rather than the request |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
@@ -359,6 +360,17 @@ asyncio.run(main())
 Keyword arguments to one call still go to httpx, so
 `triage.run(text, headers={"x-request-id": "r-1"})` adds a header to that
 request only. `lllm serve auth:app` serves the secured app as it is.
+
+Browsers add a risk of their own, even on `127.0.0.1`: any web page can
+make its visitor's browser send a form, plain text, or a body without a
+content type to any address, without asking the server first. So the
+routes that run a tactic (`/run`, `/stream`, their `/tactics/{name}/`
+forms, and custom endpoints) refuse a cross-site request that is not JSON
+with 403 `CrossSiteRequestError`. A request is cross-site when its
+`Origin` names another host and port than its `Host`, or when its
+`Sec-Fetch-Site` is `cross-site`. Browsers ask before sending JSON to
+another site (a CORS preflight), so cross-site JSON is up to your app's
+CORS settings, and clients that are not browsers send no `Origin`.
 
 In a package, build the secured app in a service entry and make the
 service the package's `primary` (or pass `--resource services.api`), so

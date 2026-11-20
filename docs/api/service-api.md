@@ -110,6 +110,7 @@ Error envelopes are stable across protocol and runtime failures.
 | --- | --- | --- |
 | 400 | `SchemaError` | Invalid input, or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
+| 403 | `CrossSiteRequestError` | A tactic route got a browser request that is not JSON and whose `Origin` names another host and port, or whose `Sec-Fetch-Site` is `cross-site` |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |
 | 500 | `OutputSchemaError` | The tactic's result does not match its output schema; `message` starts with `The output of tactic '<name>' failed validation:` |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |

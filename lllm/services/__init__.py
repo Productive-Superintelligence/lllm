@@ -3,6 +3,7 @@
 from .client import RemoteTactic, RemoteTacticError
 from .endpoints import EndpointSpec, endpoint
 from .fastapi import (
+    CrossSiteRequestError,
     ErrorDetail,
     ErrorResponse,
     RunRequest,
@@ -15,6 +16,7 @@ from .fastapi import (
 from .resolver import TacticResolver
 
 __all__ = [
+    "CrossSiteRequestError",
     "EndpointSpec",
     "ErrorDetail",
     "ErrorResponse",

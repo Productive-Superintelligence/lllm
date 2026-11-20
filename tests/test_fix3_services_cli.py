@@ -13,7 +13,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import BaseModel, ValidationError
 
-from lllm import RemoteTactic, RemoteTacticError, SchemaError
+from lllm import RemoteTactic, RemoteTacticError, SchemaError, endpoint
 from lllm import Tactic as NativeTactic
 from lllm.cli import load_tactic_entrypoint, main
 from lllm.protocol import OutputSchemaError
@@ -1084,6 +1084,155 @@ def test_inspect_help_hides_store_but_inspect_still_accepts_it(
     args = ["inspect", str(channel_package), "--store", str(tmp_path / "s")]
     assert main(args) == 0
     assert not (tmp_path / "s").exists()
+
+
+# Review 6: a web page cannot make a visitor's browser run a served tactic.
+
+EVIL = "https://evil.example"
+
+
+class Echo(ProtocolTactic):
+    name = "echo"
+
+    def _run(self, value, *, context=None, **kwargs):
+        return value
+
+    def stream(self, value, **kwargs):
+        yield value
+
+    @endpoint.post("/echo/shout")
+    def shout(self, value):
+        return str(value).upper()
+
+    @endpoint.get("/echo/status")
+    def status(self, value):
+        return {"query": value}
+
+
+def _local_client(app=None) -> TestClient:
+    return TestClient(app or create_tactic_app(Echo()), base_url="http://127.0.0.1:8000")
+
+
+def _assert_refused(response, endpoint_name: str) -> None:
+    assert response.status_code == 403
+    error = response.json()["detail"]["error"]
+    assert error["type"] == "CrossSiteRequestError"
+    assert error["tactic"] == "echo"
+    assert error["endpoint"] == endpoint_name
+    assert error["request_id"]
+    assert "JSON" in error["message"]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [
+        {"content": "hi", "headers": {"content-type": "text/plain"}},
+        {"data": {"input": "hi"}},  # application/x-www-form-urlencoded
+        {"files": {"input": ("hi.txt", b"hi")}},  # multipart/form-data
+        {"content": b"hi"},  # no content type
+    ],
+    ids=["text", "form", "multipart", "no-content-type"],
+)
+@pytest.mark.parametrize(
+    "browser",
+    [
+        {"origin": EVIL},
+        {"origin": "http://127.0.0.1:3000"},  # another port on this host
+        {"origin": "null"},  # a sandboxed page or a file
+        {"sec-fetch-site": "cross-site"},  # no Origin, as for a no-cors GET
+    ],
+    ids=["other-site", "other-port", "null", "sec-fetch-site"],
+)
+def test_a_cross_site_browser_request_that_is_not_json_is_refused(body, browser):
+    client = _local_client()
+    headers = {**body.pop("headers", {}), **browser}
+
+    response = client.post("/run", headers=headers, **body)
+
+    _assert_refused(response, "run")
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/run", "/stream", "/tactics/echo/run", "/tactics/echo/stream", "/echo/shout"],
+)
+def test_every_tactic_route_refuses_cross_site_text(path):
+    client = _local_client()
+
+    response = client.post(
+        path, content="hi", headers={"content-type": "text/plain", "origin": EVIL}
+    )
+
+    endpoint_name = path.rsplit("/", 1)[-1]
+    _assert_refused(response, endpoint_name)
+
+
+def test_a_custom_get_endpoint_refuses_a_cross_site_browser_request():
+    client = _local_client()
+
+    refused = client.get("/echo/status?q=1", headers={"sec-fetch-site": "cross-site"})
+    allowed = client.get("/echo/status?q=1", headers={"sec-fetch-site": "same-origin"})
+
+    _assert_refused(refused, "status")
+    assert allowed.json() == {"query": {"q": "1"}}
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [
+        {"content-type": "application/json", "origin": EVIL},  # preflighted
+        {"content-type": "application/vnd.api+json", "origin": EVIL},
+        {"content-type": "application/json; charset=utf-8", "sec-fetch-site": "cross-site"},
+        {"content-type": "text/plain"},  # not a browser: no Origin
+        {"content-type": "text/plain", "origin": "http://127.0.0.1:8000"},  # same origin
+        {"content-type": "text/plain", "sec-fetch-site": "same-origin"},
+    ],
+    ids=["json", "plus-json", "json-charset", "no-origin", "same-origin", "sec-same-origin"],
+)
+def test_json_non_browser_and_same_origin_requests_still_run(headers):
+    client = _local_client()
+    content = '"hi"' if "json" in headers["content-type"] else "hi"
+
+    response = client.post("/run", content=content, headers=headers)
+
+    assert response.status_code == 200
+    assert response.json()["output"] == "hi"
+
+
+@pytest.mark.parametrize(
+    ("origin", "host"),
+    [
+        ("http://localhost", "localhost"),  # default ports on both sides
+        ("http://localhost", "localhost:80"),
+        ("https://api.example.com", "api.example.com"),  # behind a TLS proxy
+        ("https://API.example.com:443", "api.example.com"),
+        ("http://[::1]:8000", "[::1]:8000"),
+    ],
+)
+def test_the_same_origin_spelled_differently_is_not_cross_site(origin, host):
+    client = TestClient(create_tactic_app(Echo()))
+
+    response = client.post(
+        "/run",
+        content="hi",
+        headers={"content-type": "text/plain", "origin": origin, "host": host},
+    )
+
+    assert response.status_code == 200
+
+
+def test_read_only_routes_answer_cross_site_requests():
+    client = _local_client()
+    headers = {"origin": EVIL, "sec-fetch-site": "cross-site"}
+
+    assert client.get("/info", headers=headers).status_code == 200
+    assert client.get("/health", headers=headers).status_code == 200
+
+
+def test_status_code_for_error_maps_cross_site_requests_to_403():
+    from lllm.services import CrossSiteRequestError
+
+    assert status_code_for_error(CrossSiteRequestError("refused")) == 403
 
 
 def test_inspecting_a_channel_package_creates_nothing_with_real_sssn(
