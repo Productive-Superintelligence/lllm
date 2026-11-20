@@ -204,11 +204,11 @@ def create_service_app(
                 tactic=tactic,
                 endpoint="run",
             )
-            output = await tactic.arun(input_value, context=context)
+            output = jsonable_encoder(await tactic.arun(input_value, context=context))
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint="run", context=context) from exc
         return RunResponse(
-            output=jsonable_encoder(output),
+            output=output,
             request_id=context.request_id,
             tactic=tactic.tactic_name,
         )
@@ -258,11 +258,11 @@ def create_service_app(
                     tactic=only,
                     endpoint="run",
                 )
-                output = await only.arun(input_value, context=context)
+                output = jsonable_encoder(await only.arun(input_value, context=context))
             except Exception as exc:
                 raise _http_error(exc, tactic=only, endpoint="run", context=context) from exc
             return RunResponse(
-                output=jsonable_encoder(output),
+                output=output,
                 request_id=context.request_id,
                 tactic=only.tactic_name,
             )
@@ -740,8 +740,7 @@ async def _input_and_context_from_request(
     try:
         body = await request.json()
     except Exception:
-        raw = await request.body()
-        body = _body_from_raw(raw, request.headers.get("content-type", ""))
+        body = _body_from_raw(await request.body())
 
     value = body
     context_data: Mapping[str, Any] | None = None
@@ -761,22 +760,19 @@ async def _input_and_context_from_request(
     return value, context
 
 
-def _body_from_raw(raw: bytes, content_type: str) -> Any:
+def _body_from_raw(raw: bytes) -> Any:
+    """The input a body that is not JSON gives: its text, or None when empty.
+
+    Bytes that are not UTF-8 are a ``SchemaError``: a tactic gets JSON or
+    text, and its response could not encode them.
+    """
+
     if not raw:
         return None
-    normalized = content_type.split(";", 1)[0].strip().lower()
-    if normalized.startswith("text/") or normalized in {
-        "application/x-ndjson",
-        "application/octet-stream",
-    }:
-        try:
-            return raw.decode("utf-8")
-        except UnicodeDecodeError:
-            return raw
     try:
         return raw.decode("utf-8")
-    except UnicodeDecodeError:
-        return raw
+    except UnicodeDecodeError as exc:
+        raise SchemaError("Request body must be JSON or UTF-8 text.") from exc
 
 
 def _query_input(query_params: Any) -> dict[str, Any] | None:

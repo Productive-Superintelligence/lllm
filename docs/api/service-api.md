@@ -31,7 +31,7 @@ envelope:
 
 A body is an envelope when it is a JSON object with `input` or `task` and
 no keys besides `input`, `task`, and `context`. Any other body, JSON or
-text, is the input itself.
+UTF-8 text, is the input itself; other bytes are a `SchemaError`.
 
 | `context` key | Meaning |
 | --- | --- |
@@ -108,7 +108,7 @@ Error envelopes are stable across protocol and runtime failures.
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | Invalid input, or a malformed envelope or context |
+| 400 | `SchemaError` | Invalid input, a body that is neither JSON nor UTF-8 text, or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A tactic route got a browser request that is not JSON and whose `Origin` names another host and port, or whose `Sec-Fetch-Site` is `cross-site` |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |

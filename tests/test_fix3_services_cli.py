@@ -1229,6 +1229,52 @@ def test_read_only_routes_answer_cross_site_requests():
     assert client.get("/health", headers=headers).status_code == 200
 
 
+# Review 7: a body that is neither JSON nor UTF-8 text is a 400, not a
+# bare 500 from encoding the bytes into the response.
+
+
+@pytest.mark.parametrize("path", ["/run", "/stream", "/tactics/echo/run", "/echo/shout"])
+@pytest.mark.parametrize("content_type", ["application/octet-stream", "text/plain", None])
+def test_a_body_that_is_neither_json_nor_utf8_text_is_a_400(path, content_type):
+    client = TestClient(create_tactic_app(Echo()), raise_server_exceptions=False)
+    headers = {"content-type": content_type} if content_type else {}
+
+    response = client.post(path, content=b"\xff\xfe binary", headers=headers)
+
+    assert response.status_code == 400
+    error = response.json()["detail"]["error"]
+    assert error["type"] == "SchemaError"
+    assert "JSON or UTF-8 text" in error["message"]
+    assert error["tactic"] == "echo"
+
+
+def test_utf8_text_bodies_still_reach_the_tactic():
+    client = TestClient(create_tactic_app(Echo()))
+
+    response = client.post(
+        "/run", content="héllo".encode(), headers={"content-type": "text/plain"}
+    )
+
+    assert response.json()["output"] == "héllo"
+
+
+def test_a_result_that_cannot_be_encoded_is_a_500_in_the_envelope():
+    class Bytes(ProtocolTactic):
+        name = "bytes"
+
+        def _run(self, value, **kwargs):
+            return b"\xff"
+
+    client = TestClient(create_tactic_app(Bytes()), raise_server_exceptions=False)
+
+    response = client.post("/run", json={"input": "x", "context": {"request_id": "r-7"}})
+
+    assert response.status_code == 500
+    error = response.json()["detail"]["error"]
+    assert error["type"] == "UnicodeDecodeError"
+    assert error["request_id"] == "r-7"
+
+
 def test_status_code_for_error_maps_cross_site_requests_to_403():
     from lllm.services import CrossSiteRequestError
 

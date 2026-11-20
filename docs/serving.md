@@ -186,15 +186,16 @@ print(sorted(error))
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | The input, the envelope, or the context does not validate |
+| 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is neither JSON nor UTF-8 text |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 403 | `CrossSiteRequestError` | A browser sent a cross-site request that is not JSON ([Authentication](#authentication)) |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
 | 500 | `OutputSchemaError` | The tactic's result does not match its output schema, a bug in the tactic rather than the request |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
 
-For clients you cannot change, a body that is not an envelope is taken as
-the input itself, and `task` works in place of `input`; only the envelope
+For clients you cannot change, a body that is not an envelope, JSON or
+UTF-8 text, is taken as the input itself (other bytes are a 400
+`SchemaError`), and `task` works in place of `input`; only the envelope
 carries a context. The [Service API](api/service-api.md) reference has the
 exact shapes.
 
