@@ -1366,25 +1366,66 @@ def test_a_namedtuple_that_iterates_short_fails_rather_than_pads():
 
 
 class Meddler(dict):
-    """Copying it adds a key to the dict that holds it."""
+    """Copying it grows the dict, set, or list that holds it."""
 
-    def __init__(self, holder: Dict[str, Any], **items: Any) -> None:
-        super().__init__(**items)
+    def __init__(self, holder: Any) -> None:
+        super().__init__(x=1)
         self.holder = holder
 
+    def __hash__(self) -> int:  # so that a set can hold it
+        return id(self)
+
     def __copy__(self):
-        self.holder["late"] = 0  # the holder is still being read
-        return Meddler(self.holder, **self)
+        holder = self.holder  # still being read
+        if isinstance(holder, dict):
+            holder["late"] = 0
+        elif isinstance(holder, set):
+            holder.add("late")
+        else:
+            holder.append("late")
+        return Meddler(holder)
 
 
-def test_a_container_changed_during_the_copy_is_not_ignored():
+@pytest.mark.parametrize(
+    "kind, error, match",
+    [
+        (dict, RuntimeError, "changed size during iteration"),
+        (set, RuntimeError, "changed size during iteration"),
+        # A list is read by index, as ever: grown, it overruns its copy.
+        (list, IndexError, "out of range"),
+    ],
+)
+def test_a_container_changed_during_the_copy_is_not_ignored(kind, error, match):
     from lllm.runtimes.native import AgentSpec
 
-    holder: Dict[str, Any] = {}
-    holder["a"] = Meddler(holder, x=1)
-    holder["b"] = 2
-    with pytest.raises(RuntimeError, match="changed size during iteration"):
+    holder = kind()
+    meddler = Meddler(holder)
+    if kind is dict:
+        holder["m"] = meddler
+    elif kind is set:
+        holder.add(meddler)
+    else:
+        holder.append(meddler)
+    with pytest.raises(error, match=match):
         AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"h": holder}})
+
+
+def test_copying_a_wide_list_takes_about_its_own_size_in_memory():
+    import tracemalloc
+
+    from lllm.runtimes.native import AgentSpec
+
+    AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"w": [1]}})
+    settings = {"w": list(range(200_000))}  # its copy takes 1.6 MB
+    tracemalloc.start()
+    try:
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+
+    # Listing the children up front, an entry each, peaked at 36 MiB.
+    assert peak < 4 * 2**20
 
 
 class Stopwords(set):
@@ -1394,15 +1435,30 @@ class Stopwords(set):
         super().__init__(words or {"a", "an", "the"})
 
 
-def test_an_empty_set_whose_copy_seeds_defaults_comes_back_empty():
+class QuietStopwords(Stopwords):
+    """Says it is empty, defaults or not."""
+
+    def __bool__(self) -> bool:
+        return False
+
+
+class TouchyStopwords(Stopwords):
+    """Cannot be asked whether it is empty."""
+
+    def __bool__(self) -> bool:
+        raise TypeError("ambiguous")
+
+
+@pytest.mark.parametrize("kind", [Stopwords, QuietStopwords, TouchyStopwords])
+def test_an_empty_set_whose_copy_seeds_defaults_comes_back_empty(kind):
     from lllm.runtimes.native import AgentSpec, Runtime
 
-    empty = Stopwords()
+    empty = kind()
     empty.clear()  # the user's set is empty
     spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": empty}})
     copied = spec.build(Runtime(), object()).extra_settings["s"]
 
-    assert type(copied) is Stopwords and copied == set()
+    assert type(copied) is kind and copied == set()
 
 
 class CopiesFail(dict):
@@ -1650,6 +1706,53 @@ def test_a_container_whose_items_cannot_be_listed_fails_alike_at_any_depth(depth
         value = {"inside": value}  # a writable parent, not shared instead
     with pytest.raises(RuntimeError, match="cannot list its items"):
         AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"v": value}})
+
+
+class Streamed(dict):
+    """Lists its items from a generator that holds a resource until it is
+    closed; its copies refuse the key "refused"."""
+
+    def __init__(self, log: List[str], **items: Any) -> None:
+        super().__init__(**items)
+        self.log = log
+
+    def __copy__(self):
+        return Streamed(self.log, **self)
+
+    def __setitem__(self, key, value):
+        if key == "refused":
+            raise TypeError("refused")
+        super().__setitem__(key, value)
+
+    def items(self):
+        try:
+            yield from dict.items(self)
+        finally:
+            self.log.append("released")
+
+
+@pytest.mark.parametrize(
+    "items",
+    [
+        lambda: {"a": Short(1, 2)},  # a child fails to rebuild
+        lambda: {"a": Unlistable(a=1)},  # a child's items cannot be listed
+        lambda: {"a": _nested(600, lambda v: [v])},  # a child is too deep
+        lambda: {"a": 1, "refused": 2},  # the copy refuses a child
+    ],
+    ids=["rebuild", "listing", "depth", "storing"],
+)
+def test_a_failed_copy_closes_open_iterators_before_the_caller_sees_it(items):
+    from lllm.runtimes.native import AgentSpec
+
+    log: List[str] = []
+    streamed = Streamed(log, **items())
+    try:
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": {"s": streamed}})
+    except (TypeError, RuntimeError, ValueError):
+        log.append("caught")
+
+    # As a recursive copy's unwinding does, not once the error is dropped.
+    assert log == ["released", "caught"]
 
 
 def test_values_built_on_access_each_get_their_own_copy(tmp_path):

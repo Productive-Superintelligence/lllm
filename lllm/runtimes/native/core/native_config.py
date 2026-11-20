@@ -617,24 +617,34 @@ def _settings_copy(value: Any, memo: Dict[int, Any], room: int) -> Any:
     children, a tuple rebuilt after them. A dict or set changed while it
     is read raises, as iterating one does. ``room`` is how many container
     levels may still be entered; a container met with none left raises
-    ``_TooDeep``. An error from a child propagates at any depth.
+    ``_TooDeep``. An error from a child propagates at any depth, releasing
+    the open iterators on its way out.
     """
     frames: List[_Frame] = []
-    copied = _visit(value, memo, room, frames)
-    while frames:
-        frame = frames[-1]
-        child = next(frame.children, _END)
-        if child is _END:  # all its children are copied
-            frames.pop()
-            copied = frame.finish(memo)
-            if frames:
-                frames[-1].put(copied)
-            continue
-        if frame.keyed:  # a dict's or list's child comes with its key
-            frame.key, child = child
-        copied = _visit(child, memo, frame.room, frames)
-        if copied is not _OPENED:
-            frame.put(copied)
+    try:
+        copied = _visit(value, memo, room, frames)
+        while frames:
+            frame = frames[-1]
+            child = next(frame.children, _END)
+            if child is _END:  # all its children are copied
+                frames.pop()
+                copied = frame.finish(memo)
+                if frames:
+                    frames[-1].put(copied)
+                continue
+            if frame.keyed:  # a dict's or list's child comes with its key
+                frame.key, child = child
+            copied = _visit(child, memo, frame.room, frames)
+            if copied is not _OPENED:
+                frame.put(copied)
+    except BaseException:
+        # Release the open iterators now, innermost first, as a recursive
+        # copy's unwinding does: a frame still held in the traceback (by
+        # ``frame``, or a method's ``self``) would keep its iterator, and a
+        # generator's resource, until the caller drops the error.
+        while frames:
+            frames.pop().children = None
+        raise
     return copied
 
 
@@ -701,8 +711,9 @@ class _Frame:
             return self.result
         if isinstance(self.value, set):
             # Only an empty copy of an empty set is left alone, as it may
-            # be read-only; one that seeded defaults is emptied.
-            if self.items or self.result:
+            # be read-only; one that seeded defaults is emptied. Its size
+            # is read as a set's, whatever its own __bool__ or __len__ say.
+            if self.items or set.__len__(self.result):
                 self.result.clear()
                 self.result.update(self.items)
             return self.result
