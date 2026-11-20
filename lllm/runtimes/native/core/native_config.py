@@ -7,6 +7,7 @@ inheritance stay in :mod:`lllm.core.config`.
 
 from __future__ import annotations
 
+import copy
 import datetime as dt
 import logging
 from dataclasses import dataclass, field
@@ -592,7 +593,7 @@ class AgentSpec:
         max_exception_retry: 3
         max_interrupt_steps: 5
         max_llm_recall: 0
-        extra_settings: {}
+        extra_settings: {}    # for your own code, as agent.extra_settings
         tools:
           - shared_pkg.tactics:code_review
           - shared_pkg.tools:search
@@ -654,7 +655,9 @@ class AgentSpec:
         max_interrupt_steps = raw.pop("max_interrupt_steps", 5)
         max_llm_recall = raw.pop("max_llm_recall", 0)
         max_rate_limit_retries = raw.pop("max_rate_limit_retries", 8)
-        extra_settings = raw.pop("extra_settings", {})
+        extra_settings = raw.pop("extra_settings", None) or {}
+        if not isinstance(extra_settings, dict):
+            raise TypeError(f"Agent '{name}': 'extra_settings' must be a mapping")
 
         # -- proxy config (already deep-merged with global by the caller) --
         proxy_raw = raw.pop("proxy", None)
@@ -877,6 +880,8 @@ class AgentSpec:
             max_rate_limit_retries=self.max_rate_limit_retries,
             context_manager=context_manager,
             inference_hints=self.inference_hints,
+            # Each agent gets its own copy: fresh agents share one spec.
+            extra_settings=copy.deepcopy(self.extra_settings),
         )
 
 

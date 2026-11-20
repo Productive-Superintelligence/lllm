@@ -47,6 +47,8 @@ class Agent:
         max_exception_retry: Max retries for agent parsing/validation exceptions.
         max_interrupt_steps: Max consecutive tool call interrupts.
         max_llm_recall: Max retries for LLM API errors.
+        extra_settings: Free-form settings for your own code, from the
+            agent config's ``extra_settings``.
     """
 
     name: str  # the role of the agent, or a name of the agent
@@ -71,6 +73,9 @@ class Agent:
     # Serving hints (session identity, priority, KV-cache intent) sent with
     # every model call; None = no hints. See ``core.hints``.
     inference_hints: Optional[InferenceHints] = None
+    # Free-form settings for your own code (config ``extra_settings``);
+    # LLLM does not read them.
+    extra_settings: Dict[str, Any] = field(default_factory=dict)
 
     # Dialog management
     _dialogs: Dict[str, Dialog] = field(default_factory=dict, repr=False)

@@ -383,3 +383,43 @@ def test_overview_shows_an_image_as_type_size_and_caption():
         "[2. user (user)]: <image/gif, 66 B>",
         "[3. user (user)]: What is the trend?",
     ]
+
+
+# -- 8: ``extra_settings`` from the config reach the agent -------------------
+
+
+class Styled(Tactic):
+    name = "fix_styled"
+    agent_group = ["writer"]
+
+    def call(self, key: str) -> Any:
+        settings = self.agents["writer"].extra_settings
+        settings["calls"] = settings.get("calls", 0) + 1  # per call
+        return settings[key]
+
+
+def test_extra_settings_reach_the_agent():
+    styled = Styled(
+        {
+            "global": {
+                "model_name": "gpt-4o-mini",
+                "extra_settings": {"style": "terse", "audience": "developers"},
+            },
+            "agent_configs": [
+                {
+                    "name": "writer",
+                    "system_prompt": "You write.",
+                    "extra_settings": {"style": "formal"},
+                }
+            ],
+        }
+    )
+
+    assert styled.agents["writer"].extra_settings == {
+        "style": "formal",
+        "audience": "developers",
+    }
+    assert styled("style") == "formal"
+    assert styled("calls") == 1  # every call's agent gets its own copy
+    assert styled("calls") == 1
+    assert Tactic.quick(model="gpt-4o-mini").extra_settings == {}

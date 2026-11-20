@@ -76,6 +76,7 @@ construction, which is a quick way to check what a config produces.
 | `skills` | | Agent skills: local names, `SKILL.md` URLs, or `"*"` ([Agents](agents.md#tools-and-skills)) |
 | `context_manager` | | Keeps the dialog inside the context window ([Dialogs](dialogs.md)) |
 | `inference_hints` | | Session and priority hints ([Inference hints](inference-hints.md)) |
+| `extra_settings` | `{}` | Your own settings, which your code reads as `agent.extra_settings`; LLLM ignores them |
 
 Every agent needs `model_name` and one of `system_prompt` or
 `system_prompt_path`, from its own entry or from `global`. Both kinds of
