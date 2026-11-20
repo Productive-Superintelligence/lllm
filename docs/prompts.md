@@ -11,7 +11,7 @@ parse is sent back with the error until it does.
 | `path` | A unique name, such as `support/classify`; prompts are registered and loaded by path |
 | `prompt` | The template; `{name}` placeholders are its inputs |
 | `parser` | Turns the reply into `parsed`; raising `ParseError` triggers a repair |
-| `format` | A Pydantic model (or JSON schema) the reply must match |
+| `format` | A Pydantic model the reply must match; a `dict` JSON schema only asks for a JSON object |
 | `function_list` | [Tools](tools.md) offered while this prompt drives the turn |
 | `handler` | The messages sent after a parse error or a tool result |
 | `agent_tools` | Whether the agent's own tools stay on offer (default `True`) |
@@ -134,9 +134,10 @@ print(invoice)
 1. Inside a tactic you rarely do this by hand: declare `output_model =
    Invoice` and the tactic validates its result. See [Typed I/O](typed-io.md).
 
-A `dict` JSON schema works as `format` too: the reply must be a JSON
-object, but its fields are not checked. For replies that are not JSON, use
-a parser.
+A `dict` JSON schema works as `format` too, loosely: the provider is asked
+for a JSON object (the schema itself is not sent), and the reply must be
+one, but its fields are not checked. For replies that are not JSON, use a
+parser.
 
 ## Parsers
 
