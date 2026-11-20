@@ -1505,27 +1505,52 @@ def test_read_routes_answer_cross_site_requests(path):
     assert _local_client().get(path, headers=headers).status_code == 200
 
 
-@pytest.mark.parametrize(
-    "make_app",
-    [
-        lambda: create_tactic_app(Echo(), allow_cross_site_requests=True),
-        lambda: create_service_app([Echo()], allow_cross_site_requests=True),
-    ],
-    ids=["create_tactic_app", "create_service_app"],
-)
-def test_allow_cross_site_requests_turns_the_check_off(make_app):
-    client = _local_client(make_app())
+OPT_OUT_APPS = {
+    "create_tactic_app": lambda: create_tactic_app(
+        Echo(), allow_cross_site_requests=True
+    ),
+    "create_service_app": lambda: create_service_app(
+        [Echo()], allow_cross_site_requests=True
+    ),
+}
+
+# Every handler that checks cross-site requests, by app: each checks on its
+# own, so each must honor the opt-out.
+GUARDED_ROUTES = [
+    ("create_tactic_app", "/run"),
+    ("create_tactic_app", "/stream"),
+    ("create_tactic_app", "/tactics/echo/run"),
+    ("create_tactic_app", "/tactics/echo/stream"),
+    ("create_tactic_app", "/echo/shout"),
+    ("create_tactic_app", "/echo/status"),
+    ("create_service_app", "/tactics/echo/run"),
+    ("create_service_app", "/tactics/echo/stream"),
+    ("create_service_app", "/echo/shout"),
+    ("create_service_app", "/echo/status"),
+]
+
+
+@pytest.mark.parametrize(("app_factory", "path"), GUARDED_ROUTES)
+def test_allow_cross_site_requests_turns_off_every_check(app_factory, path):
+    client = _local_client(OPT_OUT_APPS[app_factory]())
     signal = {"origin": EVIL, "sec-fetch-site": "cross-site"}
 
-    text = client.post(
-        "/tactics/echo/run",
-        content="hi",
-        headers={**signal, "content-type": "text/plain"},
+    if path == "/echo/status":  # the custom GET endpoint
+        response = client.get(f"{path}?q=1", headers=signal)
+        assert response.status_code == 200
+        assert response.json() == {"query": {"q": "1"}}
+        return
+    response = client.post(
+        path, content="hi", headers={**signal, "content-type": "text/plain"}
     )
-    status = client.get("/echo/status?q=1", headers=signal)
 
-    assert text.json()["output"] == "hi"
-    assert status.json() == {"query": {"q": "1"}}
+    assert response.status_code == 200
+    if path.endswith("/stream"):
+        assert '"data": "hi"' in response.text
+    elif path == "/echo/shout":
+        assert response.json() == "HI"
+    else:
+        assert response.json()["output"] == "hi"
 
 
 def test_allow_cross_site_requests_must_be_a_boolean():
