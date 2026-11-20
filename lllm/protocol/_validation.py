@@ -9,19 +9,98 @@ from typing import Any
 
 
 def copy_boundary_value(value: Any) -> Any:
-    """Return an owned copy of values crossing public LLLM boundaries."""
+    """Return an owned copy of values crossing public LLLM boundaries.
 
+    A mapping becomes a dict, and a list, tuple, set, or frozenset stays
+    one, with its items copied the same way; anything else is deep-copied.
+    """
+
+    return _copy_nested(value, None)
+
+
+# Containers copied item by item, each into this plain type; a subclass of
+# one becomes the plain type.
+_CONTAINER_KINDS = {dict: dict, list: list, tuple: tuple, set: set, frozenset: frozenset}
+# Values deepcopy returns as they are.
+_ATOMIC = frozenset({str, int, float, bool, type(None), bytes})
+
+
+def _container_kind(value: Any) -> Any:
+    kind = _CONTAINER_KINDS.get(type(value))
+    if kind is not None:
+        return kind
     if isinstance(value, Mapping):
-        return {key: copy_boundary_value(item) for key, item in value.items()}
-    if isinstance(value, list):
-        return [copy_boundary_value(item) for item in value]
-    if isinstance(value, tuple):
-        return tuple(copy_boundary_value(item) for item in value)
-    if isinstance(value, set):
-        return {copy_boundary_value(item) for item in value}
-    if isinstance(value, frozenset):
-        return frozenset(copy_boundary_value(item) for item in value)
-    return deepcopy(value)
+        return dict
+    for kind in (list, tuple, set, frozenset):
+        if isinstance(value, kind):
+            return kind
+    return None
+
+
+def _copy_nested(value: Any, label: str | None) -> Any:
+    """Copy containers into plain dicts, lists, tuples, sets, and frozensets.
+
+    Without a ``label`` this is ``copy_boundary_value``; with one, mapping
+    keys must be strings, and a ``TypeError`` names the label of the mapping
+    with the bad key (``label.key`` for one nested under ``key``). Shared
+    items are copied separately, and anything that is not a container is
+    deep-copied. The value is walked with an explicit stack rather than
+    recursion, so a deeply nested value cannot overflow a small thread
+    stack; a value that contains itself raises ``RecursionError``, as the
+    recursive copy did.
+    """
+
+    kind = _container_kind(value)
+    if kind is None:
+        return deepcopy(value)
+    # A frame: the container, its kind, an iterator over its children, the
+    # copies so far, its label, and the key of the child being copied.
+    stack = [[value, kind, _children(value, kind), [], label, None]]
+    copying = {id(value)}  # the containers on the stack
+    while True:
+        frame = stack[-1]
+        source, kind, children, copies, frame_label, _ = frame
+        for entry in children:
+            if kind is dict:
+                key, child = entry
+                if frame_label is not None and not isinstance(key, str):
+                    raise TypeError(f"{frame_label} keys must be strings.")
+            else:
+                key, child = None, entry
+            if type(child) in _ATOMIC:
+                copied = child
+            else:
+                child_kind = _container_kind(child)
+                if child_kind is None:
+                    copied = deepcopy(child)
+                elif not child:  # nothing in it to walk
+                    copied = child_kind()
+                elif id(child) in copying:
+                    raise RecursionError("cannot copy a value that contains itself")
+                else:
+                    frame[5] = key
+                    if kind is dict and frame_label is not None:
+                        child_label: str | None = f"{frame_label}.{key}"
+                    else:
+                        child_label = frame_label
+                    copying.add(id(child))
+                    stack.append(
+                        [child, child_kind, _children(child, child_kind), [], child_label, None]
+                    )
+                    break
+            copies.append((key, copied) if kind is dict else copied)
+        else:
+            stack.pop()
+            copying.discard(id(source))
+            copied = kind(copies)
+            if not stack:
+                return copied
+            parent = stack[-1]
+            parent[3].append((parent[5], copied) if parent[1] is dict else copied)
+
+
+def _children(value: Any, kind: Any) -> Any:
+    return iter(value.items()) if kind is dict else iter(value)
 
 
 def public_boundary_value(value: Any) -> Any:
@@ -149,12 +228,7 @@ def _copy_string_keyed_mapping(
     label: str,
     value: Mapping[Any, Any],
 ) -> dict[str, Any]:
-    copied: dict[str, Any] = {}
-    for key, item in value.items():
-        if not isinstance(key, str):
-            raise TypeError(f"{label} keys must be strings.")
-        copied[key] = _copy_string_keyed_value(f"{label}.{key}", item)
-    return copied
+    return _copy_nested(value, label)
 
 
 def _copy_string_keyed_mapping_sequence(
@@ -170,17 +244,7 @@ def _copy_string_keyed_mapping_sequence(
 
 
 def _copy_string_keyed_value(label: str, value: Any) -> Any:
-    if isinstance(value, Mapping):
-        return _copy_string_keyed_mapping(label, value)
-    if isinstance(value, list):
-        return [_copy_string_keyed_value(label, item) for item in value]
-    if isinstance(value, tuple):
-        return tuple(_copy_string_keyed_value(label, item) for item in value)
-    if isinstance(value, set):
-        return {_copy_string_keyed_value(label, item) for item in value}
-    if isinstance(value, frozenset):
-        return frozenset(_copy_string_keyed_value(label, item) for item in value)
-    return deepcopy(value)
+    return _copy_nested(value, label)
 
 
 def optional_metadata_mapping_value(label: str, value: Any) -> dict[str, Any]:
@@ -203,26 +267,11 @@ def metadata_field_value(label: str, value: Any) -> dict[str, Any]:
 
 
 def _copy_metadata_mapping(label: str, value: Mapping[Any, Any]) -> dict[str, Any]:
-    copied: dict[str, Any] = {}
-    for key, item in value.items():
-        if not isinstance(key, str):
-            raise TypeError(f"{label} keys must be strings.")
-        copied[key] = _copy_metadata_value(f"{label}.{key}", item)
-    return copied
+    return _copy_nested(value, label)
 
 
 def _copy_metadata_value(label: str, value: Any) -> Any:
-    if isinstance(value, Mapping):
-        return _copy_metadata_mapping(label, value)
-    if isinstance(value, list):
-        return [_copy_metadata_value(label, item) for item in value]
-    if isinstance(value, tuple):
-        return tuple(_copy_metadata_value(label, item) for item in value)
-    if isinstance(value, set):
-        return {_copy_metadata_value(label, item) for item in value}
-    if isinstance(value, frozenset):
-        return frozenset(_copy_metadata_value(label, item) for item in value)
-    return deepcopy(value)
+    return _copy_nested(value, label)
 
 
 def text_value(value: Any, label: str) -> str:

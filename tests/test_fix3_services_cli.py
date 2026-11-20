@@ -1876,6 +1876,139 @@ def test_the_envelope_is_validated_off_the_event_loop(path, monkeypatch):
     assert where == ["worker thread"]
 
 
+# Round 8, 1: the boundary copies walk values with a stack, not recursion,
+# so validating a deep envelope in a worker thread cannot overflow a small
+# thread stack (on CPython 3.10 each Python call also uses C stack).
+
+
+def _nested_list(depth: int) -> list:
+    value: list = []
+    for _ in range(depth):
+        value = [value]
+    return value
+
+
+def test_the_boundary_copies_keep_their_semantics():
+    from collections import OrderedDict, namedtuple
+
+    from lllm.protocol._validation import (
+        _copy_metadata_value,
+        _copy_string_keyed_value,
+        copy_boundary_value,
+    )
+
+    Pair = namedtuple("Pair", "a b")
+    shared = [1]
+    leaf = object()
+    value = OrderedDict(
+        a=[shared, shared], b=(1, Pair(2, 3)), c={4}, d=frozenset({5}), e=leaf
+    )
+
+    copied = copy_boundary_value(value)
+
+    assert copied == {"a": [[1], [1]], "b": (1, (2, 3)), "c": {4}, "d": frozenset({5}), "e": copied["e"]}
+    assert type(copied) is dict and type(copied["b"][1]) is tuple
+    assert copied["a"][0] is not shared and copied["a"][0] is not copied["a"][1]
+    assert copied["e"] is not leaf  # deep-copied
+    for copy in (_copy_string_keyed_value, _copy_metadata_value):
+        assert copy("context", {"a": [{"b": 1}]}) == {"a": [{"b": 1}]}
+        with pytest.raises(TypeError, match=r"^context\.a keys must be strings\.$"):
+            copy("context", {"a": [{1: "x"}]})
+    cycle: list = []
+    cycle.append(cycle)
+    with pytest.raises(RecursionError):
+        copy_boundary_value(cycle)
+
+
+def test_the_boundary_copies_do_not_recurse():
+    from lllm.protocol._validation import _copy_string_keyed_value, copy_boundary_value
+
+    deep = _nested_list(50_000)
+
+    copied = copy_boundary_value(deep)
+    keyed = _copy_string_keyed_value("context", {"a": deep})
+
+    for value in (copied, keyed["a"]):
+        node, original = value, deep
+        for _ in range(50_000):
+            assert node is not original and len(node) == 1
+            node, original = node[0], original[0]
+        assert node == [] and node is not original
+
+
+SMALL_STACK_ENVELOPE_SCRIPT = """
+import sys
+import threading
+
+threading.stack_size(1 << 20)  # 1 MiB thread stacks, as python:alpine builds use
+# Python 3.12 runs Python calls without C stack; a low limit stands in for the
+# frames per level that 3.10 and 3.11 spend, so a recursive copy fails here too.
+sys.setrecursionlimit(400)
+
+from fastapi.testclient import TestClient
+
+from lllm.protocol import Tactic
+from lllm.protocol._validation import copy_boundary_value
+from lllm.services import create_tactic_app
+
+received = []
+
+
+class Keep(Tactic):
+    name = "keep"
+
+    def _run(self, value, **kwargs):
+        received.append(value)
+        return "kept"
+
+
+depth = 499  # with the envelope, 500 levels
+body = '{"input": ' + "[" * depth + "]" * depth + ', "context": {"metadata": {"a": ' + "[" * 400 + "]" * 400 + "}}}"
+client = TestClient(create_tactic_app(Keep()), raise_server_exceptions=False)
+response = client.post("/run", content=body, headers={"content-type": "application/json"})
+print("status", response.status_code, response.json().get("output"), flush=True)
+
+expected = []
+for _ in range(depth - 1):
+    expected = [expected]
+print("equal", received[0] == expected, flush=True)
+
+results = []
+
+
+def copy_in_thread():
+    copied = copy_boundary_value(received[0])
+    node, original = copied, received[0]
+    independent = True
+    while node:
+        independent = independent and node is not original
+        node, original = node[0], original[0]
+    results.append(copied == received[0] and independent)
+
+
+thread = threading.Thread(target=copy_in_thread)
+thread.start()
+thread.join()
+print("copy", results, flush=True)
+"""
+
+
+def test_a_deep_envelope_is_validated_on_a_small_thread_stack(tmp_path):
+    import lllm
+
+    script = tmp_path / "envelope.py"
+    script.write_text(SMALL_STACK_ENVELOPE_SCRIPT, encoding="utf-8")
+    root = str(Path(lllm.__file__).resolve().parents[1])
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join([root, os.environ.get("PYTHONPATH", "")])}
+
+    result = subprocess.run(
+        [sys.executable, str(script)], capture_output=True, text=True, env=env, timeout=120
+    )
+
+    assert result.returncode == 0, (result.returncode, result.stderr[-1500:])
+    assert result.stdout.split("\n")[:3] == ["status 200 kept", "equal True", "copy [True]"]
+
+
 DEEP_BODY_SCRIPT = """
 import threading
 
