@@ -76,7 +76,9 @@ def _copy_nested(value: Any, label: str | None) -> Any:
                 child_kind = _container_kind(child)
                 if child_kind is None:
                     copied = deepcopy(child)
-                elif not child:  # nothing in it to walk
+                elif type(child) in _CONTAINER_KINDS and not child:
+                    # An empty built-in container. Anything else is walked,
+                    # so its own __bool__ or __len__ is never called.
                     copied = child_kind()
                 elif id(child) in copying:
                     raise RecursionError("cannot copy a value that contains itself")

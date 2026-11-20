@@ -1982,6 +1982,46 @@ def test_a_labeled_copy_builds_no_labels_until_it_refuses_a_key():
         assert str(caught.value) == expected
 
 
+# Round 9, 3: the copies ask only a built-in container whether it is empty;
+# a subclass or other mapping is walked, as the recursive copy walked it.
+
+
+def test_the_boundary_copies_do_not_ask_a_container_if_it_is_empty():
+    from collections.abc import Mapping
+
+    from lllm.protocol._validation import (
+        _copy_metadata_value,
+        _copy_string_keyed_value,
+        copy_boundary_value,
+    )
+
+    class Falsy(list):
+        def __bool__(self):
+            return False
+
+    class Lengthless(dict):
+        def __len__(self):
+            return 0
+
+    class Unsized(Mapping):
+        def __getitem__(self, key):
+            return {"a": 1}[key]
+
+        def __iter__(self):
+            return iter(["a"])
+
+        def __len__(self):
+            raise RuntimeError("no length")
+
+    value = {"falsy": Falsy([1, 2]), "lengthless": Lengthless(b=2), "unsized": Unsized()}
+    expected = {"falsy": [1, 2], "lengthless": {"b": 2}, "unsized": {"a": 1}}
+
+    assert copy_boundary_value(value) == expected
+    assert copy_boundary_value([(value,)]) == [(expected,)]
+    for copy in (_copy_metadata_value, _copy_string_keyed_value):
+        assert copy("metadata", value) == expected
+
+
 SMALL_STACK_ENVELOPE_SCRIPT = """
 import sys
 import threading
