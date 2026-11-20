@@ -305,9 +305,14 @@ print(len(agent.current_dialog.messages))
 Without `max_tokens`, the budget is the model's context window from
 LiteLLM's model list (128,000 tokens for `gpt-4o-mini`). For a model
 LiteLLM does not know, such as one on your own server, set `max_tokens`:
-without it nothing is trimmed, and a warning says so. A message that only
-partly fits keeps its end, after an `[...earlier content truncated...]`
-marker; an image that does not fit is dropped whole.
+without it nothing is trimmed, and a warning says so.
+
+Messages are counted the way they are sent, so an image counts as an image
+(about a hundred tokens for a photo), not as the length of its data. The
+newest message is always sent whole, with a warning if it alone is over
+the budget. An older message that only partly fits keeps its end, after an
+`[...earlier content truncated...]` marker; an image that does not fit is
+dropped whole, with a warning.
 
 In a tactic, set a context manager per agent, or for every agent under
 `global`:

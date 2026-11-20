@@ -64,6 +64,17 @@ def _image_media_type(image_base64: str) -> Optional[str]:
         return None
 
 
+def _image_parts(message: "Message") -> List[Dict[str, Any]]:
+    """An image message as chat content parts: its caption, then the image."""
+    parts: List[Dict[str, Any]] = []
+    if "caption" in message.metadata:
+        parts.append({"type": "text", "text": message.metadata["caption"]})
+    media_type = _image_media_type(message.content) or "image/jpeg"
+    url = f"data:{media_type};base64,{message.content}"
+    parts.append({"type": "image_url", "image_url": {"url": url}})
+    return parts
+
+
 def _image_placeholder(message: "Message") -> str:
     """``<image/png, 2.0 KB> caption``: an image message without its data."""
     content = message.content if isinstance(message.content, str) else ""
@@ -955,14 +966,20 @@ class DefaultContextManager(ContextManager):
 
     **Truncation strategy**
 
+    Messages are counted as they are sent: an image as its caption and an
+    ``image_url`` part (about a hundred tokens for a photo), not as its data.
+
     1. The first message (system / developer prompt) is always preserved.
-    2. Messages are retained from the **tail** (most recent) inward until the
-       token budget is exhausted.
-    3. The *border* message — the oldest message that partially fits — keeps
+    2. The newest message is always sent whole, with a warning if it alone
+       exceeds the budget.
+    3. Older messages are retained from the **tail** (most recent) inward
+       until the token budget is exhausted.
+    4. The *border* message — the oldest message that partially fits — keeps
        its end, the part closest to the kept messages, after a
        ``[...earlier content truncated...]`` marker. Images and other
-       non-text messages are never cut, only dropped.
-    4. A ``SAFETY_BUFFER`` (default 5 000 tokens) is subtracted from the
+       non-text messages are never cut: an image that does not fit is
+       dropped, with a warning.
+    5. A ``SAFETY_BUFFER`` (default 5 000 tokens) is subtracted from the
        budget so the invoker never lands right at the edge.
 
     **Quickstart**::
@@ -1026,16 +1043,42 @@ class DefaultContextManager(ContextManager):
         return _context_window(self.model_name)
 
     def _to_raw(self, m: Message) -> dict:
-        """Convert a Message to the dict format litellm token_counter expects."""
-        return {
-            "role": m.role.value,
-            "content": m.content if isinstance(m.content, str) else str(m.content),
-        }
+        """A message as litellm's token_counter should see it: as it is sent.
+
+        An image is its caption and an ``image_url`` part, as the invoker
+        sends it, so it counts by its size (about a hundred tokens for a
+        photo), not as its base64 text.
+        """
+        if m.modality == Modalities.IMAGE and isinstance(m.content, str):
+            content: Any = _image_parts(m)
+        elif isinstance(m.content, str):
+            content = m.content
+        else:
+            content = str(m.content)
+        return {"role": m.role.value, "content": content}
 
     def _count(self, raw_msgs: list) -> int:
         from litellm import token_counter
 
         return token_counter(model=self.model_name, messages=raw_msgs)
+
+    @staticmethod
+    def _cut(message: Message, budget: int, tokens: int) -> Optional[Message]:
+        """The end of a text message that only partly fits, after a marker.
+
+        None when the budget left is too small, or for an image, whose data
+        cannot be cut.
+        """
+        if budget <= 50 or message.modality != Modalities.TEXT:
+            return None
+        if not isinstance(message.content, str):
+            return None
+        content = message.content
+        # Approximate character count via token ratio (0.85 headroom)
+        keep = max(1, int(len(content) * budget / tokens * 0.85))
+        border = copy.deepcopy(message)
+        border.content = "[...earlier content truncated...]\n" + content[-keep:]
+        return border
 
     # ------------------------------------------------------------------
     # Core truncation
@@ -1064,29 +1107,46 @@ class DefaultContextManager(ContextManager):
         head_tokens = self._count([raw_all[0]])
         budget = limit - head_tokens
 
-        # Walk from the tail inward; collect messages that fit within budget
+        # Walk from the tail inward; collect messages that fit within budget.
+        # The newest message is always sent whole.
         kept: List[Message] = []
-        for orig, raw in zip(reversed(messages[1:]), reversed(raw_all[1:])):
+        kept_ids = set()
+        for position, (orig, raw) in enumerate(
+            zip(reversed(messages[1:]), reversed(raw_all[1:]))
+        ):
             t = self._count([raw])
-            if t <= budget:
-                kept.insert(0, orig)
-                budget -= t
-            else:
-                # Fill whatever budget remains with the end of this border
-                # message, the part next to the kept ones. Text only: cutting
-                # an image's data would corrupt it.
-                is_text = orig.modality == Modalities.TEXT
-                if budget > 50 and is_text and isinstance(orig.content, str):
-                    content = orig.content
-                    # Approximate character count via token ratio (0.85 headroom)
-                    ratio = budget / t
-                    keep = max(1, int(len(content) * ratio * 0.85))
-                    border = copy.deepcopy(orig)
-                    border.content = (
-                        "[...earlier content truncated...]\n" + content[-keep:]
+            if t <= budget or position == 0:
+                if t > budget:
+                    logger.warning(
+                        "DefaultContextManager: the newest message of dialog %s "
+                        "needs %d tokens, more than the %d left; it is sent whole.",
+                        dialog.dialog_id,
+                        t,
+                        budget,
                     )
-                    kept.insert(0, border)
-                break
+                kept.insert(0, orig)
+                kept_ids.add(id(orig))
+                budget -= t
+                continue
+            border = self._cut(orig, budget, t)
+            if border is not None:
+                kept.insert(0, border)
+                kept_ids.add(id(orig))
+            break
+
+        dropped_images = sum(
+            1
+            for m in messages[1:]
+            if id(m) not in kept_ids and m.modality == Modalities.IMAGE
+        )
+        if dropped_images:
+            logger.warning(
+                "DefaultContextManager dropped %d image(s) from dialog %s to "
+                "fit its %d-token budget.",
+                dropped_images,
+                dialog.dialog_id,
+                limit,
+            )
 
         new_messages = [copy.deepcopy(messages[0])] + kept
 

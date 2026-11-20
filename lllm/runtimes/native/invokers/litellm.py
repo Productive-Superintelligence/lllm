@@ -14,7 +14,7 @@ from litellm import (
 )
 
 from ..core.const import APITypes, InvokeResult, Invokers, Modalities, Roles
-from ..core.dialog import Dialog, Message, TokenLogprob, _image_media_type
+from ..core.dialog import Dialog, Message, TokenLogprob, _image_parts
 from ..core.prompt import FunctionCall, Prompt
 from .base import BaseInvoker, BaseStreamHandler
 
@@ -141,24 +141,10 @@ class LiteLLMInvoker(BaseInvoker):
                 continue
 
             if message.modality == Modalities.IMAGE:
-                content_parts = []
-                if "caption" in message.metadata:
-                    content_parts.append(
-                        {"type": "text", "text": message.metadata["caption"]}
-                    )
-                media_type = _image_media_type(message.content) or "image/jpeg"
-                content_parts.append(
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:{media_type};base64,{message.content}"
-                        },
-                    }
-                )
                 messages.append(
                     {
                         "role": message.role.msg_value,
-                        "content": content_parts,
+                        "content": _image_parts(message),
                         "name": message.sanitized_name,
                     }
                 )

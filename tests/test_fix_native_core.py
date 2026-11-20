@@ -14,6 +14,7 @@ from lllm.runtimes.native import (  # noqa: E402
     DefaultContextManager,
     Dialog,
     InvokeCost,
+    Modalities,
     Role,
 )
 from lllm.testing import ScriptedModel, ToolCall  # noqa: E402
@@ -68,16 +69,18 @@ def test_respond_keeps_working_copies_out_of_the_dialog_tree():
 
 def test_context_manager_copies_stay_out_of_the_dialog_tree():
     agent = Tactic.quick(system_prompt="You take notes.", model="gpt-4o-mini")
-    agent.context_manager = DefaultContextManager("gpt-4o-mini", max_tokens=5_030)
+    agent.context_manager = Exact("gpt-4o-mini", max_tokens=40)
     agent.open("notes")
     with ScriptedModel(["Noted."]) as model:
         for day in ("Monday", "Tuesday", "Wednesday", "Thursday"):
             agent.receive(f"Note: on {day} we shipped a small fix.")
             agent.respond()
 
-    assert len(model.requests[-1].messages) < 2 * 4 + 1  # it did trim
-    assert agent.current_dialog.children == []
-    assert len(agent.current_dialog.messages) == 9
+    dialog = agent.current_dialog
+    assert len(dialog.messages) == 9
+    # The last call answered the first 8 messages; trimming sent fewer.
+    assert len(model.requests[-1].messages) < len(dialog.messages) - 1
+    assert dialog.children == []
 
 
 def test_saved_dialogs_grow_linearly_with_turns():
@@ -188,12 +191,19 @@ def test_max_tokens_is_the_window_when_no_output_limit_is_given():
 
 
 MARKER = "[...earlier content truncated...]\n"
+CM_LOGGER = "lllm.runtimes.native.core.dialog"
+
+
+class Exact(DefaultContextManager):
+    """No safety buffer: ``max_tokens`` is exactly the budget."""
+
+    SAFETY_BUFFER = 0
 
 
 def test_partly_kept_message_keeps_its_end_after_the_marker():
     long = "BEGIN " + " ".join(f"w{i}" for i in range(400)) + " END"
     dialog = _dialog(long, "Short question?")
-    trimmed = DefaultContextManager("gpt-4o-mini", max_tokens=5_200)(dialog)
+    trimmed = Exact("gpt-4o-mini", max_tokens=200)(dialog)
 
     border, last = trimmed.messages[1:]
     assert last.content == "Short question?"
@@ -204,19 +214,51 @@ def test_partly_kept_message_keeps_its_end_after_the_marker():
     assert dialog.messages[1].content == long  # the dialog is never changed
 
 
-def test_images_are_dropped_not_cut():
-    import base64
+def _photo(size: int) -> str:
+    """Base64 data that put_image() takes for a PNG of ``size`` bytes."""
+    import random
 
-    png = b"\x89PNG\r\n\x1a\n" + bytes(range(256)) * 8
+    data = b"\x89PNG\r\n\x1a\n" + random.Random(size).randbytes(size)
+    return base64.b64encode(data).decode()
+
+
+def test_images_count_as_images_not_as_their_data():
     dialog = _dialog()
-    dialog.put_image(base64.b64encode(png).decode(), caption="A chart")
-    dialog.put_text("What does it show?")
-    trimmed = DefaultContextManager("gpt-4o-mini", max_tokens=5_200)(dialog)
+    dialog.put_image(_photo(360_000), caption="A photo")  # 480,000 characters
+    dialog.put_text("What is in it?")
 
-    assert [m.content for m in trimmed.messages] == [
-        "You help.",
-        "What does it show?",
+    assert DefaultContextManager("gpt-4o-mini")(dialog) is dialog
+    manager = DefaultContextManager("gpt-4o-mini")
+    assert manager._count([manager._to_raw(dialog.messages[1])]) < 200
+
+
+def test_the_newest_message_is_sent_whole_even_over_budget(caplog):
+    long = "word " * 500
+    dialog = _dialog("An older note.", long)
+    with caplog.at_level("WARNING", logger=CM_LOGGER):
+        trimmed = Exact("gpt-4o-mini", max_tokens=60)(dialog)
+    assert [m.content for m in trimmed.messages] == ["You help.", long]
+    assert "newest" in caplog.text
+
+    dialog = _dialog("An older note.")
+    dialog.put_image(_photo(1_000), caption="A photo")
+    trimmed = Exact("gpt-4o-mini", max_tokens=40)(dialog)
+    assert [m.modality for m in trimmed.messages] == [
+        Modalities.TEXT,
+        Modalities.IMAGE,
     ]
+    assert trimmed.messages[1].content == dialog.messages[2].content
+
+
+def test_a_dropped_image_is_dropped_whole_and_logged(caplog):
+    dialog = _dialog()
+    dialog.put_image(_photo(1_000), caption="Q3 revenue")
+    dialog.put_text("word " * 50)
+    with caplog.at_level("WARNING", logger=CM_LOGGER):
+        trimmed = Exact("gpt-4o-mini", max_tokens=80)(dialog)
+
+    assert [m.modality for m in trimmed.messages] == [Modalities.TEXT] * 2
+    assert "dropped 1 image" in caplog.text
 
 
 # -- 4: a Pydantic config keeps its aliased ``global`` section ---------------
