@@ -200,9 +200,10 @@ print(github.call("repos/{owner}/{repo}/issues", odd))  # (5)!
 
 1. The key goes in a query parameter named `api_key_name`, or in a header
    when the name starts with `*`.
-2. Responses are cached on disk by default (under `~/.lllm/.cache`, or
-   `$TMP_DIR/.cache`), keyed by URL and parameters, with no expiry. Turn the
-   cache off for data that changes.
+2. GET responses are cached on disk by default (under `~/.lllm/.cache`, or
+   `$TMP_DIR/.cache`), keyed by URL and parameters, with no expiry.
+   `use_cache=False` turns the cache off, both reads and writes, for data
+   that changes. POST responses are never cached.
 3. The endpoint method is the place for defaults, renames, and checks.
 4. `_call_api(url, params, endpoint_info, headers)` sends the request.
    Override it for APIs that answer in plain text or need an SDK, or, as

@@ -202,8 +202,13 @@ def load_api_cache(cache_name: str, func_key: str, params: dict):
     return load_cache_by_key(cache_name, cache_key)
 
 
-# assume it return a dict, for api calls most of the time
 def cache_call(cache_name: str):
+    """Cache decoded JSON responses on disk, keyed by URL and params.
+
+    ``use_cache=False`` neither reads nor writes the cache. Plain responses
+    (``json_response=False``) are never cached. Entries do not expire.
+    """
+
     def decorator(func):
         @ft.wraps(func)
         def wrapper(
@@ -213,12 +218,14 @@ def cache_call(cache_name: str):
             use_cache: bool = True,
             json_response: bool = True,
         ):
-            cached_response = load_api_cache(cache_name, func_key, params)
-            if cached_response is not None and use_cache:
-                return cached_response
+            cached = use_cache and json_response
+            if cached:
+                cached_response = load_api_cache(cache_name, func_key, params)
+                if cached_response is not None:
+                    return cached_response
             response = func(func_key, params, headers, use_cache, json_response)
-            # always save the response, but read from cache if cache is True
-            cache_response(cache_name, func_key, params, response)
+            if cached:
+                cache_response(cache_name, func_key, params, response)
             return response
 
         return wrapper
@@ -255,7 +262,6 @@ def call_api(
         raise ValueError(response.text)
 
 
-@cache_call("API_CALL_POST")
 def call_api_post(
     url: str,
     json: dict,
@@ -263,6 +269,9 @@ def call_api_post(
     use_cache: bool = True,
     json_response: bool = True,
 ):
+    """POST *json* to *url*. POST responses are never cached; ``use_cache``
+    is accepted for symmetry with :func:`call_api` and ignored."""
+
     import requests
 
     response = requests.post(url, json=json, headers=headers)
