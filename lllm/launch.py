@@ -10,9 +10,11 @@ from typing import Any
 
 from .credentials import ApiKeyRequirement, collect_manifest_api_key_requirements
 from .hub import import_entrypoint, load_manifest
+from .hub.entrypoints import is_asgi_app as _is_asgi_app
+from .hub.ports import DEFAULT_PORT, resource_metadata, serve_port
 from .protocol import Tactic
 from .runtimes import coerce_tactic
-from .runtimes.python import _is_factory
+from .runtimes.python import _factory_result_tactic, _is_factory
 from .services import create_tactic_app
 
 _LAUNCHABLE_SECTIONS = ("services", "tactics", "channels", "runs")
@@ -29,7 +31,7 @@ class LaunchApp:
     app: Any
     label: str
     kind: str
-    port: int = 8000
+    port: int = DEFAULT_PORT
 
 
 def load_launch_app(
@@ -45,7 +47,7 @@ def load_launch_app(
     """
 
     target_text = _target_text(target)
-    path = Path(target_text).expanduser()
+    path = _target_path(target_text)
     if path.exists() or path.name == "lllm.toml":
         return _load_package_app(path, resource=resource, store=store)
     if ":" in target_text:
@@ -69,7 +71,7 @@ def load_launch_api_key_requirements(
     """
 
     target_text = _target_text(target)
-    path = Path(target_text).expanduser()
+    path = _target_path(target_text)
     if path.exists() or path.name == "lllm.toml":
         manifest = load_manifest(path)
         if not (resource or manifest.package.primary or _first_resource(manifest)):
@@ -112,25 +114,29 @@ def _load_package_app(
     if section == "services":
         service = manifest.services.get(name)
         if service is None:
-            raise LaunchError(f"service not found in package: {name}")
+            raise _not_declared("service", name, manifest.services)
         app = _service_app(manifest, name, service, base_dir)
         return LaunchApp(app=app, label=label, kind="service", port=port)
 
     if section == "tactics":
         tactic = manifest.tactics.get(name)
         if tactic is None:
-            raise LaunchError(f"tactic not found in package: {name}")
+            raise _not_declared("tactic", name, manifest.tactics)
         app = _tactic_app(tactic.entry, base_dir=base_dir, name=name)
         return LaunchApp(app=app, label=label, kind="tactic", port=port)
 
     if section == "channels":
+        # The app serves the package's whole store, but only a declared
+        # channel names it.
+        if name not in manifest.channels:
+            raise _not_declared("channel", name, manifest.channels)
         app = _channel_app(manifest, store=store)
         return LaunchApp(app=app, label=label, kind="channel", port=port)
 
     if section == "runs":
         run = manifest.runs.get(name)
         if run is None:
-            raise LaunchError(f"run not found in package: {name}")
+            raise _not_declared("run", name, manifest.runs)
         if len(run.services) == 1:
             return _load_package_app(
                 path,
@@ -140,6 +146,15 @@ def _load_package_app(
         raise LaunchError(
             "run resources with multiple services need an explicit --resource services.NAME"
         )
+
+
+def _not_declared(kind: str, name: str, declared: Mapping[str, Any]) -> LaunchError:
+    detail = (
+        f"declared {kind}s: {', '.join(declared)}"
+        if declared
+        else f"the package declares no {kind}s"
+    )
+    return LaunchError(f"{kind} not found in package: {name}; {detail}")
 
 
 def _package_resource(manifest: Any, resource: str | None) -> tuple[str, str]:
@@ -189,8 +204,53 @@ def _service_app(manifest: Any, name: str, service: Any, base_dir: Path) -> Any:
 
 def _tactic_app(entry: str, *, base_dir: Path, name: str) -> Any:
     value = import_entrypoint(entry, base_dir=base_dir, keep_loaded=True)
-    tactic = _coerce_tactic(value, name=name)
-    return create_tactic_app(tactic)
+    try:
+        target = _entrypoint_target(value, name=name, apps=False)
+    except TypeError as exc:
+        raise LaunchError(
+            f"tactic {name} entry {entry} did not resolve to a tactic: {exc}"
+        ) from exc
+    if _is_asgi_app(target):
+        raise LaunchError(
+            f"tactic {name} entry {entry} is or returns a FastAPI or Starlette "
+            "app, not a tactic; serve an app from a [services.NAME] entry"
+        )
+    return create_tactic_app(target)
+
+
+#: What a factory named by a tactic entry may return.
+TACTIC_FACTORY_RESULTS = "a tactic or Tactic subclass, an object with run(), or a callable"
+#: What a factory named by a ``module:attribute`` target may return.
+FACTORY_RESULTS = (
+    "a tactic or Tactic subclass, an object with run(), a callable, "
+    "or a FastAPI or Starlette app"
+)
+
+
+def _entrypoint_target(value: Any, *, name: str | None = None, apps: bool = True) -> Any:
+    """A FastAPI or Starlette app, or the app a factory returns, as it is;
+    otherwise the tactic :func:`coerce_tactic` makes of ``value``.
+
+    A factory is called once. One that returns none of the accepted values
+    raises ``TypeError``, whose message lists them: :data:`FACTORY_RESULTS`,
+    or :data:`TACTIC_FACTORY_RESULTS` when ``apps`` is false because the
+    caller does not serve apps.
+    """
+
+    if _is_asgi_app(value):
+        return value
+    if (isinstance(value, type) and issubclass(value, Tactic)) or not _is_factory(value):
+        return coerce_tactic(value, name=name)
+    produced = value()
+    if _is_asgi_app(produced):
+        return produced
+    tactic = _factory_result_tactic(produced, name)
+    if tactic is None:
+        accepted = FACTORY_RESULTS if apps else TACTIC_FACTORY_RESULTS
+        raise TypeError(
+            f"the factory returned {type(produced).__name__}; it must return {accepted}"
+        )
+    return tactic
 
 
 def _channel_app(manifest: Any, *, store: str | Path | None) -> Any:
@@ -297,10 +357,6 @@ def _has_run_method(value: Any) -> bool:
     return value is not None and callable(getattr(value, "run", None))
 
 
-def _is_asgi_app(value: Any) -> bool:
-    return callable(value) and hasattr(value, "routes") and hasattr(value, "router")
-
-
 def _can_call_without_args(value: Any) -> bool:
     try:
         signature = inspect.signature(value)
@@ -317,29 +373,33 @@ def _can_call_without_args(value: Any) -> bool:
 
 
 def _resource_port(manifest: Any, section: str, name: str) -> int:
+    """The resource's port, by the rule the hub's config template uses too."""
+
     resource = getattr(manifest, section, {}).get(name)
-    metadata = getattr(resource, "metadata", {}) if resource is not None else {}
-    port = metadata.get("port") if isinstance(metadata, dict) else None
-    if isinstance(port, int) and not isinstance(port, bool) and 1 <= port <= 65535:
-        return port
-    if section == "services":
-        return 8000
-    if section == "tactics":
-        for service in manifest.services.values():
-            if service.tactic == name:
-                service_port = _metadata_port(service.metadata)
-                if service_port is not None:
-                    return service_port
-    return 8000
+    serving = (
+        [
+            resource_metadata(service)
+            for service in manifest.services.values()
+            if service.tactic == name or name in service.tactics
+        ]
+        if section == "tactics"
+        else []
+    )
+    return serve_port(resource_metadata(resource), serving)
 
 
-def _metadata_port(metadata: Any) -> int | None:
-    if not isinstance(metadata, dict):
-        return None
-    port = metadata.get("port")
-    if isinstance(port, int) and not isinstance(port, bool) and 1 <= port <= 65535:
-        return port
-    return None
+def _target_path(target: str) -> Path:
+    """The target as a path with ``~`` expanded.
+
+    A ``~`` that names no home folder, as in ``~typo/pkg``, or in ``./~pkg``,
+    which pathlib reads as ``~pkg``, is a ``LaunchError`` rather than the
+    RuntimeError pathlib raises.
+    """
+
+    try:
+        return Path(target).expanduser()
+    except RuntimeError as exc:
+        raise LaunchError(f"cannot expand {target}: {exc}") from exc
 
 
 def _target_text(target: str | Path) -> str:

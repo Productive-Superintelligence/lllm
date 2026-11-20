@@ -17,14 +17,13 @@ import ipaddress
 import json
 import os
 import sys
+import tempfile
 from importlib.metadata import entry_points
-from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
 from .create import create_project
 from .hub import tactic_resource
 from .protocol import Tactic
-from .runtimes import coerce_tactic
 from .services import create_tactic_app
 
 LOG_LEVELS = {"critical", "debug", "error", "info", "trace", "warning"}
@@ -125,12 +124,18 @@ def main(argv: list[str] | None = None) -> int:
         "--credentials",
         choices=("auto", "keyring", "env"),
         default="auto",
-        help="Store entered keys in the OS keyring or a local env file",
+        help=(
+            "Where keys are stored: auto (the default) picks a usable OS keyring "
+            "when there is one, and the env file otherwise"
+        ),
     )
     setup_cmd.add_argument(
         "--env-file",
         default=".env.local",
-        help="Local env file used when --credentials env is selected",
+        help=(
+            "Env file to read API keys from; keys are stored here with "
+            "--credentials env, or with auto when no usable keyring is available"
+        ),
     )
     setup_cmd.add_argument(
         "--set",
@@ -147,15 +152,15 @@ def main(argv: list[str] | None = None) -> int:
 
     inspect_cmd = subcommands.add_parser(
         "inspect",
-        help="Show tactic metadata, or what serve would launch for a package",
+        help="Show tactic metadata, or what serve would launch for an app or package",
     )
     inspect_cmd.add_argument("target", help="module:attribute entrypoint or package path")
     inspect_cmd.add_argument("--json", action="store_true", help="Emit JSON")
-    _add_package_options(inspect_cmd)
+    _add_package_options(inspect_cmd, serving=False)
 
     serve_cmd = subcommands.add_parser(
         "serve",
-        help="Serve a tactic entrypoint or one package resource over FastAPI",
+        help="Serve a tactic or app entrypoint, or one package resource",
     )
     serve_cmd.add_argument("target", help="module:attribute entrypoint or package path")
     serve_cmd.add_argument("--host", default="127.0.0.1")
@@ -165,12 +170,17 @@ def main(argv: list[str] | None = None) -> int:
         help=f"Port (default: the resource's declared port, else {DEFAULT_SERVE_PORT})",
     )
     serve_cmd.add_argument("--log-level", default="info")
-    _add_package_options(serve_cmd)
+    _add_package_options(serve_cmd, serving=True)
     serve_cmd.add_argument(
         "--credentials",
         choices=("auto", "keyring", "env"),
         default="auto",
-        help="Where interactive setup should store missing keys",
+        help=(
+            "Where interactive setup stores the keys you type: auto (the default) "
+            "picks the OS keyring when a usable one is available and the env file "
+            "otherwise; --no-keyring makes it the env file, and refuses "
+            "--credentials keyring"
+        ),
     )
     serve_cmd.add_argument(
         "--skip-key-check",
@@ -229,10 +239,12 @@ def main(argv: list[str] | None = None) -> int:
         return _setup_command(parser, args)
 
     if args.command == "inspect":
-        if _is_package_target(args.target):
+        if _is_package_target(parser, args.target):
             return _inspect_package(parser, args)
-        tactic = _load_cli_tactic(parser, args.target)
-        resource = tactic_resource(tactic)
+        target = _load_cli_entrypoint(parser, args.target)
+        if not isinstance(target, Tactic):
+            return _inspect_app(args, target)
+        resource = tactic_resource(target)
         if args.json:
             print(json.dumps(resource, indent=2, sort_keys=True))
         else:
@@ -249,13 +261,15 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             parser.error(str(exc))
 
-        if _is_package_target(args.target):
+        if _is_package_target(parser, args.target):
             if not args.skip_key_check:
                 _ensure_launch_keys(parser, args)
             launched = _load_launch_app(parser, args)
             app, port = launched.app, port or launched.port
         else:
-            app = create_tactic_app(_load_cli_tactic(parser, args.target))
+            app = _load_cli_entrypoint(parser, args.target)
+            if isinstance(app, Tactic):
+                app = create_tactic_app(app)
             port = port or DEFAULT_SERVE_PORT
 
         import uvicorn
@@ -343,24 +357,68 @@ def _import_from_working_directory() -> None:
         sys.path.insert(0, cwd)
 
 
-def _add_package_options(command: argparse.ArgumentParser) -> None:
+def _add_package_options(
+    command: argparse.ArgumentParser,
+    *,
+    serving: bool,
+) -> None:
+    """The package options of ``inspect`` and ``serve``.
+
+    Only serve opens a channel store or stores the keys it asks for, so
+    inspect hides ``--store`` (it still accepts it) and its key options
+    only read.
+    """
+
     command.add_argument("--resource", help="Package resource, e.g. services.api")
-    command.add_argument("--store", help="Channel store root for channel resources")
+    command.add_argument(
+        "--store",
+        help="Channel store root for channel resources" if serving else argparse.SUPPRESS,
+    )
     command.add_argument(
         "--env-file",
         default=".env.local",
-        help="Local env file to read for required API keys",
+        help=(
+            "Env file to read API keys from; typed keys are stored here with "
+            "--credentials env, with --no-keyring, or with auto when no usable "
+            "keyring is available"
+            if serving
+            else "Env file to read API keys from"
+        ),
     )
     command.add_argument(
         "--no-keyring",
         action="store_true",
-        help="Do not read API keys from the OS keyring",
+        help=(
+            "Neither read API keys from the OS keyring nor store typed keys there; "
+            "they go to --env-file"
+            if serving
+            else "Do not read API keys from the OS keyring"
+        ),
     )
 
 
-def _is_package_target(target: str) -> bool:
-    path = Path(target).expanduser()
-    return path.exists() or path.name == "lllm.toml"
+def _is_package_target(parser: argparse.ArgumentParser, target: str) -> bool:
+    from .launch import LaunchError, _target_path
+
+    try:
+        path = _target_path(target)
+    except LaunchError as exc:
+        parser.error(str(exc))
+        raise
+    if path.name == "lllm.toml":
+        return True
+    try:
+        os.stat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    except OSError as exc:  # e.g. EACCES, or a name that is too long
+        if _has_entrypoint_form(target):
+            # Not a path, so a working folder that cannot be searched
+            # does not stop it.
+            return False
+        parser.error(f"cannot read {target}: {exc.strerror or exc}")
+        raise
+    return True
 
 
 def _inspect_package(parser: argparse.ArgumentParser, args: Any) -> int:
@@ -371,12 +429,16 @@ def _inspect_package(parser: argparse.ArgumentParser, args: Any) -> int:
         env_file=args.env_file,
         use_keyring=not args.no_keyring,
     )
-    launched = _load_launch_app(parser, args)
+    # Building a channel app opens its store, which creates the store folder
+    # and the declared channels; inspecting builds it over a throwaway store.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as store:
+        launched = _load_launch_app(parser, args, store=store)
+        routes = _route_paths(launched.app)
     payload = {
         "label": launched.label,
         "kind": launched.kind,
         "port": launched.port,
-        "routes": _route_paths(launched.app),
+        "routes": routes,
         "api_keys": resolution.public_payload(),
     }
     if args.json:
@@ -391,6 +453,24 @@ def _inspect_package(parser: argparse.ArgumentParser, args: Any) -> int:
             description = status.requirement.description
             detail = f" - {description}" if description else ""
             print(f"  {status.requirement.name}: {marker}{detail}")
+    for route in payload["routes"]:
+        print(route)
+    return 0
+
+
+def _inspect_app(args: Any, app: Any) -> int:
+    payload = {
+        "label": args.target,
+        "kind": "app",
+        "app": type(app).__name__,
+        "port": DEFAULT_SERVE_PORT,
+        "routes": _route_paths(app),
+    }
+    if args.json:
+        print(json.dumps(payload, indent=2, sort_keys=True))
+        return 0
+    print(f"{payload['label']} ({payload['app']} app)")
+    print(f"port: {payload['port']}")
     for route in payload["routes"]:
         print(route)
     return 0
@@ -466,6 +546,8 @@ def _setup_command(parser: argparse.ArgumentParser, args: Any) -> int:
 
 
 def _ensure_launch_keys(parser: argparse.ArgumentParser, args: Any) -> None:
+    """Check a package's API keys before serving it, asking for missing ones."""
+
     from .credentials import (
         CredentialError,
         configure_missing_api_keys,
@@ -473,6 +555,11 @@ def _ensure_launch_keys(parser: argparse.ArgumentParser, args: Any) -> None:
         resolve_api_keys,
     )
 
+    if args.no_keyring and args.credentials == "keyring":
+        parser.error(
+            "--no-keyring does not read the OS keyring, so --credentials keyring "
+            "would store keys it cannot see; use --credentials env"
+        )
     requirements, resolution = _resolve_requirements(
         parser,
         args.target,
@@ -486,7 +573,9 @@ def _ensure_launch_keys(parser: argparse.ArgumentParser, args: Any) -> None:
         try:
             backend = configure_missing_api_keys(
                 resolution.missing,
-                credentials=args.credentials,
+                # The check below reads the env file but, with --no-keyring,
+                # not the keyring, so keys typed here go to the env file.
+                credentials="env" if args.no_keyring else args.credentials,
                 env_file=args.env_file,
             )
             print(f"Configured {len(resolution.missing)} API key(s) via {backend}.")
@@ -529,11 +618,20 @@ def _resolve_requirements(
     return requirements, resolution
 
 
-def _load_launch_app(parser: argparse.ArgumentParser, args: Any) -> Any:
+def _load_launch_app(
+    parser: argparse.ArgumentParser,
+    args: Any,
+    *,
+    store: str | None = None,
+) -> Any:
     from .launch import LaunchError, load_launch_app
 
     try:
-        return load_launch_app(args.target, resource=args.resource, store=args.store)
+        return load_launch_app(
+            args.target,
+            resource=args.resource,
+            store=args.store if store is None else store,
+        )
     except (ImportError, LaunchError, OSError, ValueError, AttributeError, TypeError) as exc:
         parser.error(str(exc))
         raise
@@ -554,40 +652,67 @@ def load_tactic_entrypoint(entrypoint: str) -> Tactic[Any, Any]:
     """Load a tactic from ``module:attribute``.
 
     Factories are called with no arguments. Plain callables are wrapped as
-    ``CallableTactic`` unless they already return a ``Tactic``.
+    ``CallableTactic`` unless they already return a ``Tactic``. A FastAPI or
+    Starlette app, or a factory that returns one, raises ``TypeError``.
     """
+
+    target = _load_entrypoint(entrypoint)
+    if not isinstance(target, Tactic):
+        raise TypeError(
+            f"Entrypoint {entrypoint} resolves to a FastAPI or Starlette app, not a tactic"
+        )
+    return target
+
+
+def _load_entrypoint(entrypoint: str) -> Any:
+    """Load ``module:attribute`` as a FastAPI or Starlette app, or a tactic.
+
+    An app, or a factory that returns one, is returned as it is; anything
+    else becomes a tactic as :func:`coerce_tactic` makes one. A factory is
+    called once.
+    """
+
+    from .launch import _entrypoint_target
 
     if (
         not isinstance(entrypoint, str)
         or not entrypoint
         or entrypoint != entrypoint.strip()
+        or not _has_entrypoint_form(entrypoint)
     ):
         raise ValueError("Entrypoint must have the form 'module:attribute'.")
-    module_name, sep, attr_path = entrypoint.partition(":")
-    if (
-        not sep
-        or not _entrypoint_segments(module_name)
-        or not _entrypoint_segments(attr_path)
-    ):
-        raise ValueError("Entrypoint must have the form 'module:attribute'.")
-    module = importlib.import_module(module_name)
+    module_name, _, attr_path = entrypoint.partition(":")
+    try:
+        module = importlib.import_module(module_name)
+    except RecursionError as exc:
+        # importlib imports each parent package first, recursively, so a
+        # name with hundreds of dotted parts runs out of stack.
+        raise ImportError(f"cannot import {module_name}: nested too deeply") from exc
     value: Any = module
     for part in attr_path.split("."):
         value = getattr(value, part)
     try:
-        return coerce_tactic(value)
+        return _entrypoint_target(value)
     except TypeError as exc:
         raise TypeError(
-            f"Entrypoint did not resolve to a tactic or callable: {entrypoint}"
+            f"Entrypoint {entrypoint} did not resolve to a tactic, callable, or "
+            f"app: {exc}"
         ) from exc
 
 
-def _load_cli_tactic(parser: argparse.ArgumentParser, entrypoint: str) -> Tactic[Any, Any]:
+def _load_cli_entrypoint(parser: argparse.ArgumentParser, entrypoint: str) -> Any:
     try:
-        return load_tactic_entrypoint(entrypoint)
+        return _load_entrypoint(entrypoint)
     except (AttributeError, ImportError, TypeError, ValueError) as exc:
         parser.error(str(exc))
         raise
+
+
+def _has_entrypoint_form(value: str) -> bool:
+    """Whether ``value`` is ``module:attribute``, as dotted names."""
+
+    module_name, sep, attr_path = value.partition(":")
+    return bool(sep) and _entrypoint_segments(module_name) and _entrypoint_segments(attr_path)
 
 
 def _entrypoint_segments(value: str) -> bool:

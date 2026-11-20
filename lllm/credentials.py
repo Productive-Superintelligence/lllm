@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import errno
 import getpass
 import json
 import os
 import re
+import stat
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Iterable, Literal
@@ -183,6 +185,7 @@ def store_api_keys(
         return "none"
     backend = choose_credential_backend(credentials)
     if backend == "keyring":
+        _require_usable_keyring()
         for name, value in clean_values.items():
             keyring_set(name, value)
         return "keyring"
@@ -199,10 +202,19 @@ def configure_missing_api_keys(
     input_func: Callable[[str], str] = input,
     secret_func: Callable[[str], str] = getpass.getpass,
 ) -> str:
-    """Prompt for missing keys and persist them through the selected backend."""
+    """Prompt for missing keys and persist them through the selected backend.
+
+    The backend is chosen, and an env file checked to be writable, before
+    any key is asked for, so a key is never typed only to be lost.
+    """
 
     provided_values = _validated_secret_values(provided or {})
     requirements = dedupe_requirements(requirements)
+    credentials = choose_credential_backend(credentials)
+    if credentials == "keyring":
+        _require_usable_keyring()
+    else:
+        check_env_file_writable(env_file)
     values: dict[str, str] = {}
     for requirement in requirements:
         if requirement.name in provided_values:
@@ -219,16 +231,47 @@ def configure_missing_api_keys(
     return store_api_keys(values, credentials=credentials, env_file=env_file)
 
 
+def _env_file_path(path: str | Path) -> Path:
+    """The env file's path with ``~`` expanded.
+
+    A ``~`` that names no home folder, as in ``~typo/keys.env``, or in
+    ``./~keys.env``, which pathlib reads as ``~keys.env``, is a
+    ``CredentialError`` rather than the RuntimeError pathlib raises.
+    """
+
+    try:
+        return Path(path).expanduser()
+    except RuntimeError as exc:
+        raise CredentialError(f"cannot expand env file {path}: {exc}") from exc
+
+
 def read_env_file(path: str | Path | None) -> dict[str, str]:
+    """The keys in the env file, or none when it does not exist.
+
+    Any symlink (a dangling or looping one included) or other file that is
+    not regular, any error but a missing file, and a file that is not UTF-8
+    text are a ``CredentialError``, so keys are never asked for and then
+    written through a link.
+    """
+
     if path is None:
         return {}
-    env_path = Path(path).expanduser()
-    if not env_path.exists():
-        return {}
-    if env_path.is_symlink() or not env_path.is_file():
-        raise CredentialError("env file must be a regular file")
+    env_path = _env_file_path(path)
+    try:
+        info = _lstat_or_none(env_path)
+        if info is None:
+            return {}
+        if not stat.S_ISREG(info.st_mode):
+            raise CredentialError("env file must be a regular file")
+        text = _read_env_text(env_path)
+    except CredentialError:
+        raise
+    except OSError as exc:
+        raise CredentialError(
+            f"cannot read env file {env_path}: {exc.strerror or exc}"
+        ) from exc
     values: dict[str, str] = {}
-    for raw_line in env_path.read_text(encoding="utf-8").splitlines():
+    for raw_line in text.splitlines():
         parsed = _parse_env_line(raw_line)
         if parsed is not None:
             key, value = parsed
@@ -236,16 +279,110 @@ def read_env_file(path: str | Path | None) -> dict[str, str]:
     return values
 
 
+def check_env_file_writable(path: str | Path) -> None:
+    """Raise ``CredentialError`` unless keys can be written to the env file.
+
+    Checked before keys are asked for, so they are never typed only to be
+    lost: an existing file must be a writable regular file, and otherwise
+    its folder must exist, or be creatable, and be writable.
+    """
+
+    env_path = _env_file_path(path)
+    try:
+        _check_env_file_writable(env_path)
+    except CredentialError:
+        raise
+    except OSError as exc:  # e.g. EACCES, or a name that is too long
+        raise CredentialError(
+            f"cannot write env file {env_path}: {exc.strerror or exc}"
+        ) from exc
+
+
+def _check_env_file_writable(env_path: Path) -> None:
+    info = _lstat_or_none(env_path)
+    if info is not None:
+        if not stat.S_ISREG(info.st_mode):
+            raise CredentialError("env file must be a regular file")
+        if not os.access(env_path, os.W_OK):
+            raise CredentialError(f"cannot write env file {env_path}: permission denied")
+        return
+    # The nearest folder that exists, to create the missing ones in.
+    folder = env_path.parent
+    while (folder_info := _stat_or_none(folder)) is None and folder != folder.parent:
+        link = _lstat_or_none(folder)
+        if link is not None and stat.S_ISLNK(link.st_mode):  # dangling or looping
+            raise CredentialError(
+                f"cannot write env file {env_path}: {folder} is not a folder"
+            )
+        folder = folder.parent
+    if folder_info is None or not stat.S_ISDIR(folder_info.st_mode):
+        raise CredentialError(f"cannot write env file {env_path}: {folder} is not a folder")
+    if not os.access(folder, os.W_OK | os.X_OK):
+        raise CredentialError(f"cannot write env file {env_path}: {folder} is not writable")
+
+
 def write_env_file(path: str | Path, values: dict[str, str]) -> None:
-    env_path = Path(path).expanduser()
-    if env_path.exists() and (env_path.is_symlink() or not env_path.is_file()):
-        raise CredentialError("env file must be a regular file")
+    """Write ``values`` into the env file, keeping its other lines.
+
+    The file is opened without following a symlink and checked to be a
+    regular file once open. A new env file is created readable only by its
+    owner, and one the caller owns is made so; a shared file the caller can
+    write but does not own keeps its owner and permissions. Any failure,
+    the first checks included, is a ``CredentialError`` naming the file and
+    the reason.
+    """
+
+    env_path = _env_file_path(path)
+    try:
+        info = _lstat_or_none(env_path)
+        if info is not None and not stat.S_ISREG(info.st_mode):
+            raise CredentialError("env file must be a regular file")
+        _write_env_file(env_path, values, exists=info is not None)
+    except CredentialError:
+        raise
+    except OSError as exc:
+        raise CredentialError(
+            f"cannot write env file {env_path}: {exc.strerror or exc}"
+        ) from exc
+
+
+def _lstat_or_none(path: Path) -> os.stat_result | None:
+    """``os.lstat(path)``, or None when nothing is there.
+
+    Only a missing path (or a parent that is not a folder) counts as
+    nothing; any other error is raised. pathlib's exists() and is_symlink()
+    hide such errors on Python 3.14.
+    """
+
+    try:
+        return os.lstat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+
+
+def _stat_or_none(path: Path) -> os.stat_result | None:
+    """``os.stat(path)``, or None when nothing is there or a link is broken."""
+
+    try:
+        return os.stat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return None
+    except OSError as exc:
+        if exc.errno == errno.ELOOP:  # a looping link: the caller checks it
+            return None
+        raise
+
+
+def _read_env_text(env_path: Path) -> str:
+    try:
+        return env_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise CredentialError(f"env file {env_path} is not UTF-8 text") from exc
+
+
+def _write_env_file(env_path: Path, values: dict[str, str], *, exists: bool) -> None:
     env_path.parent.mkdir(parents=True, exist_ok=True)
-    existing_lines = (
-        env_path.read_text(encoding="utf-8").splitlines()
-        if env_path.exists()
-        else []
-    )
+    existing_lines = _read_env_text(env_path).splitlines() if exists else []
     pending = dict(_validated_secret_values(values))
     rendered: list[str] = []
     for line in existing_lines:
@@ -262,25 +399,74 @@ def write_env_file(path: str | Path, values: dict[str, str]) -> None:
         rendered.append("")
     for key, value in sorted(pending.items()):
         rendered.append(f"{key}={_quote_env_value(value)}")
-    fd = os.open(str(env_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-    with os.fdopen(fd, "w", encoding="utf-8") as handle:
-        handle.write("\n".join(rendered).rstrip() + "\n")
+    content = "\n".join(rendered).rstrip() + "\n"
+    # O_NOFOLLOW: a symlink put in place after the check above is refused
+    # rather than written through. No O_TRUNC: nothing is emptied until the
+    # checks below pass, and the file is rewritten in place, so a shared
+    # file keeps its owner.
+    flags = os.O_WRONLY | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0)
     try:
-        env_path.chmod(0o600)
-    except OSError:
-        pass
+        fd = os.open(str(env_path), flags, 0o600)
+    except OSError as exc:
+        if exc.errno in _SYMLINK_ERRNOS:
+            raise CredentialError("env file must be a regular file") from exc
+        raise
+    with os.fdopen(fd, "w", encoding="utf-8") as handle:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode):
+            raise CredentialError("env file must be a regular file")
+        fchmod = getattr(os, "fchmod", None)
+        geteuid = getattr(os, "geteuid", None)
+        # Only a file the caller owns is made private: root, or a process
+        # with CAP_FOWNER, could change a shared file it does not own.
+        if fchmod is not None and (geteuid is None or info.st_uid == geteuid()):
+            try:
+                fchmod(fd, 0o600)  # the open file, never a link's target
+            except OSError:
+                pass  # e.g. a FAT or CIFS mount, as 0.4.0 allowed
+        os.ftruncate(fd, 0)
+        handle.write(content)
+
+
+# What open() with O_NOFOLLOW reports for a symlink: ELOOP, or EMLINK on BSD.
+_SYMLINK_ERRNOS = frozenset({errno.ELOOP, getattr(errno, "EMLINK", errno.ELOOP)})
 
 
 def keyring_available() -> bool:
+    """Whether a usable OS keyring is available.
+
+    The keyring package alone is not enough: on headless hosts, in CI, and
+    in containers its backend is ``keyring.backends.fail.Keyring``, or one
+    with a priority of 0 or less (such as a chainer with nothing to chain),
+    and none of them can store a key.
+    """
+
     try:
-        import keyring  # noqa: F401
+        import keyring
+        from keyring.backends import fail
+
+        backend = keyring.get_keyring()
+        if isinstance(backend, fail.Keyring):
+            return False
+        return float(backend.priority) > 0
     except Exception:
         return False
-    return True
+
+
+def _require_usable_keyring() -> None:
+    if not keyring_available():
+        raise CredentialError(
+            "no usable OS keyring is available; use --credentials env to write "
+            "a local env file"
+        )
 
 
 def keyring_get(name: str) -> str | None:
+    """A key from the OS keyring, or None, also when no usable keyring exists."""
+
     _validate_env_name(name)
+    if not keyring_available():
+        return None
     try:
         import keyring
 
@@ -307,6 +493,12 @@ def keyring_set(name: str, value: str) -> None:
 
 
 def choose_credential_backend(credentials: CredentialBackend) -> Literal["keyring", "env"]:
+    """Where keys are stored: ``auto`` is the keyring only when a usable one
+    is available, and ``keyring`` and ``env`` are themselves.
+
+    A pure mapping, as in 0.4.0: storing refuses an unusable keyring.
+    """
+
     if credentials == "keyring":
         return "keyring"
     if credentials == "env":

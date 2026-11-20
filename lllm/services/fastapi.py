@@ -9,6 +9,7 @@ import re
 import threading
 from collections.abc import AsyncIterator, Mapping, Sequence
 from typing import Any
+from urllib.parse import urlsplit
 
 from pydantic import (
     BaseModel,
@@ -19,7 +20,15 @@ from pydantic import (
     model_validator,
 )
 
-from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
+from ..protocol import (
+    CallContext,
+    LLLMError,
+    OutputSchemaError,
+    SchemaError,
+    Tactic,
+    TacticEvent,
+    TacticUnsupportedError,
+)
 from ..protocol._validation import (
     copy_boundary_value,
     mapping_field_value,
@@ -40,6 +49,21 @@ logger = logging.getLogger(__name__)
 
 _JSON_SCHEMA_DEFS_REF = "#/$defs/"
 _OPENAPI_SCHEMAS_REF = "#/components/schemas/"
+
+
+class CrossSiteRequestError(LLLMError):
+    """Raised when a browser sends a tactic route a request from another site
+    that browsers send without asking first.
+
+    A web page can make a visitor's browser send a form, plain text, or a
+    body without a content type, and a plain ``GET``, to any address, a local
+    service included, with no CORS preflight. Services refuse such a
+    cross-site ``POST`` that is not JSON, and a cross-site ``GET`` or ``HEAD``
+    to a custom endpoint, with status 403. ``Sec-Fetch-Site`` decides whether
+    a request is cross-site when present (``cross-site`` and ``same-site``
+    are), and otherwise its ``Origin``: ``null``, an origin that is not
+    ``http`` or ``https``, or another host and port than ``Host``.
+    """
 
 
 class RunRequest(BaseModel):
@@ -122,14 +146,19 @@ def create_tactic_app(
     *,
     title: str | None = None,
     description: str | None = None,
+    allow_cross_site_requests: bool = False,
 ):
-    """Create a FastAPI app for one tactic."""
+    """Create a FastAPI app for one tactic.
+
+    ``allow_cross_site_requests`` is as for :func:`create_service_app`.
+    """
 
     return create_service_app(
         {tactic.tactic_name: tactic},
         title=title or tactic.info().name,
         description=description or tactic.info().description,
         expose_single_tactic_routes=True,
+        allow_cross_site_requests=allow_cross_site_requests,
     )
 
 
@@ -139,12 +168,25 @@ def create_service_app(
     title: str = "LLLM Tactic Service",
     description: str = "",
     expose_single_tactic_routes: bool = False,
+    allow_cross_site_requests: bool = False,
 ):
-    """Create a FastAPI app exposing one or more tactics."""
+    """Create a FastAPI app exposing one or more tactics.
+
+    The routes that run a tactic refuse the requests a browser sends from
+    another site without asking first: a ``POST`` that is not JSON, and a
+    ``GET`` or ``HEAD`` to a custom endpoint (see
+    :class:`CrossSiteRequestError`). An app that serves browsers on other
+    origins, with its own CORS settings, passes
+    ``allow_cross_site_requests=True``.
+    """
 
     expose_single_tactic_routes_value = _bool_value(
         "expose_single_tactic_routes",
         expose_single_tactic_routes,
+    )
+    check_cross_site = not _bool_value(
+        "allow_cross_site_requests",
+        allow_cross_site_requests,
     )
     try:
         from fastapi import FastAPI, HTTPException, Request
@@ -177,25 +219,25 @@ def create_service_app(
         tactic = _get_tactic(name, tactic_map)
         context = _error_context(tactic, "run")
         try:
+            if check_cross_site:
+                _refuse_cross_site_request(request)
             input_value, context = await _input_and_context_from_request(
                 request,
                 tactic=tactic,
                 endpoint="run",
             )
             output = await tactic.arun(input_value, context=context)
+            return _run_response(output, tactic=tactic, context=context)
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint="run", context=context) from exc
-        return RunResponse(
-            output=jsonable_encoder(output),
-            request_id=context.request_id,
-            tactic=tactic.tactic_name,
-        )
 
     @app.post("/tactics/{name}/stream")
     async def stream_tactic(name: str, request: Request):
         tactic = _get_tactic(name, tactic_map)
         context = _error_context(tactic, "stream")
         try:
+            if check_cross_site:
+                _refuse_cross_site_request(request)
             input_value, context = await _input_and_context_from_request(
                 request,
                 tactic=tactic,
@@ -229,24 +271,24 @@ def create_service_app(
         async def single_run(request: Request) -> RunResponse:
             context = _error_context(only, "run")
             try:
+                if check_cross_site:
+                    _refuse_cross_site_request(request)
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=only,
                     endpoint="run",
                 )
                 output = await only.arun(input_value, context=context)
+                return _run_response(output, tactic=only, context=context)
             except Exception as exc:
                 raise _http_error(exc, tactic=only, endpoint="run", context=context) from exc
-            return RunResponse(
-                output=jsonable_encoder(output),
-                request_id=context.request_id,
-                tactic=only.tactic_name,
-            )
 
         @app.post("/stream")
         async def single_stream(request: Request):
             context = _error_context(only, "stream")
             try:
+                if check_cross_site:
+                    _refuse_cross_site_request(request)
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=only,
@@ -287,6 +329,7 @@ def create_service_app(
             tactic,
             reserved_routes=reserved_routes,
             seen_custom_routes=seen_custom_routes,
+            check_cross_site=check_cross_site,
         )
 
     return app
@@ -298,6 +341,7 @@ def _mount_custom_endpoints(
     *,
     reserved_routes: set[tuple[str, str]],
     seen_custom_routes: dict[tuple[str, str], str],
+    check_cross_site: bool = True,
 ) -> None:
     try:
         from fastapi.responses import StreamingResponse
@@ -322,6 +366,7 @@ def _mount_custom_endpoints(
             method=method,
             jsonable_encoder=jsonable_encoder,
             streaming_response=StreamingResponse,
+            check_cross_site=check_cross_site,
         )
         route.__name__ = _route_name(f"{tactic.tactic_name}_{spec.name}")
         route.__doc__ = spec.description
@@ -403,12 +448,16 @@ def _make_custom_route(
     method: Any,
     jsonable_encoder: Any,
     streaming_response: Any,
+    check_cross_site: bool = True,
 ):
     from fastapi import Request
+    from fastapi.responses import JSONResponse
 
     async def route(request: Request):
         context = _error_context(tactic, spec.name)
         try:
+            if check_cross_site:
+                _refuse_cross_site_request(request)
             if endpoint_requires_body(spec) or await request.body():
                 input_value, context = await _input_and_context_from_request(
                     request,
@@ -433,7 +482,9 @@ def _make_custom_route(
             result = _invoke_custom(method, input_value, context=context)
             if inspect.isawaitable(result):
                 result = await result
-            return jsonable_encoder(result)
+            # Rendered here, so a result that cannot be encoded is this
+            # route's error rather than a bare 500.
+            return JSONResponse(jsonable_encoder(result))
         except Exception as exc:
             raise _http_error(exc, tactic=tactic, endpoint=spec.name, context=context) from exc
 
@@ -493,16 +544,18 @@ def _get_tactic(name: str, tactics: Mapping[str, Tactic[Any, Any]]) -> Tactic[An
     except KeyError as exc:
         from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=ErrorDetail(
-                    type="TacticNotFound",
-                    message=f"Tactic not found: {name}",
-                    tactic=name,
-                )
-            ).model_dump(mode="json"),
-        ) from exc
+        raise HTTPException(status_code=404, detail=_tactic_not_found(name)) from exc
+
+
+def _tactic_not_found(name: str) -> dict[str, Any]:
+    """The 404 detail for a tactic the app does not serve, as AAAX gives it."""
+
+    message = _encodable_text(f"Tactic not found: {name}")
+    try:
+        error = ErrorDetail(type="TacticNotFound", message=message, tactic=name)
+    except ValueError:  # a name the envelope cannot carry, such as one with ";"
+        error = ErrorDetail(type="TacticNotFound", message=message)
+    return ErrorResponse(error=error).model_dump(mode="json")
 
 
 def _public_tactic_info(tactic: Tactic[Any, Any], jsonable_encoder: Any) -> dict[str, Any]:
@@ -653,52 +706,247 @@ def _openapi_ref(ref: str, names: Mapping[str, str]) -> str:
     return _OPENAPI_SCHEMAS_REF + names.get(name, name)
 
 
+def _refuse_cross_site_request(request: Any) -> None:
+    """Raise ``CrossSiteRequestError`` for a request a browser may send from
+    another site without asking first.
+
+    That is a cross-site ``POST`` whose content type is not JSON, or a
+    cross-site ``GET`` or ``HEAD``, which only custom endpoints check.
+    Browsers preflight ``PUT``, ``PATCH``, and ``DELETE`` across origins, so
+    the app's CORS settings decide those, and they are never refused here.
+    """
+
+    method = request.method.upper()
+    if method == "POST":
+        if _is_json_media_type(request.headers.get("content-type")):
+            return
+        message = (
+            "Refused a cross-site browser POST that is not JSON: any website "
+            "can make a browser send forms and text here. Send JSON "
+            "(Content-Type: application/json)."
+        )
+    elif method in {"GET", "HEAD"}:
+        message = (
+            f"Refused a cross-site browser {method} to a custom endpoint: any "
+            "website can make a browser send one. Call it from the app's own "
+            "origin, or create the app with allow_cross_site_requests=True."
+        )
+    else:
+        return
+    if _is_cross_site(request.headers):
+        raise CrossSiteRequestError(message)
+
+
+def _is_cross_site(headers: Any) -> bool:
+    """Whether a request comes from a page on another site.
+
+    ``Sec-Fetch-Site`` decides when present, since pages cannot set it and
+    it survives proxies that rewrite ``Host``: ``cross-site`` and
+    ``same-site`` are cross-site, ``same-origin`` and ``none`` are not.
+    Without it, an ``Origin`` decides: ``null``, an origin that is not
+    ``http`` or ``https``, or another host and port than ``Host``.
+    """
+
+    fetch_site = headers.get("sec-fetch-site")
+    if fetch_site is not None:
+        return fetch_site.strip().lower() not in {"same-origin", "none"}
+    return _is_cross_origin(headers.get("origin"), headers.get("host"))
+
+
+def _is_json_media_type(content_type: str | None) -> bool:
+    media_type = _media_type(content_type)
+    return media_type == "application/json" or media_type.endswith("+json")
+
+
+def _media_type(content_type: str | None) -> str:
+    return (content_type or "").split(";", 1)[0].strip().lower()
+
+
+def _is_cross_origin(origin: str | None, host: str | None) -> bool:
+    if origin is None:
+        return False
+    try:
+        source = urlsplit(origin)
+        target = urlsplit(f"//{host}") if host else None
+        if (
+            source.scheme not in {"http", "https"}
+            or not source.hostname
+            or target is None
+            or not target.hostname
+        ):
+            return True  # Origin "null", or nothing to compare it with
+        # A missing port is the default port of the scheme the page used,
+        # which a proxy that terminates TLS hides from the app.
+        default = 443 if source.scheme == "https" else 80
+        return (source.hostname, source.port or default) != (
+            target.hostname,
+            target.port or default,
+        )
+    except ValueError:  # a malformed host or port
+        return True
+
+
 async def _input_and_context_from_request(
     request: Any,
     *,
     tactic: Tactic[Any, Any],
     endpoint: str,
 ) -> tuple[Any, CallContext]:
-    try:
-        body = await request.json()
-    except Exception:
-        raw = await request.body()
-        body = _body_from_raw(raw, request.headers.get("content-type", ""))
+    from starlette.concurrency import run_in_threadpool
 
-    value = body
+    # In a worker thread: decoding, depth-checking, parsing, and validating
+    # a big body take a while (an envelope deep-copies its input, and the
+    # call context its metadata), and the event loop serves other requests
+    # meanwhile.
+    return await run_in_threadpool(
+        _request_input_and_context,
+        await request.body(),
+        request.headers.get("content-type"),
+        tactic,
+        endpoint,
+    )
+
+
+def _request_input_and_context(
+    raw: bytes,
+    content_type: str | None,
+    tactic: Tactic[Any, Any],
+    endpoint: str,
+) -> tuple[Any, CallContext]:
+    """The input a request body holds, and the call context it gives."""
+
+    body = _body_value(raw, content_type)
     context_data: Mapping[str, Any] | None = None
     if isinstance(body, Mapping) and _is_protocol_envelope(body):
         try:
             request_model = RunRequest.model_validate(body)
         except Exception as exc:
             raise SchemaError(f"Invalid request envelope: {exc}") from exc
-        value = request_model.value
-        context_data = request_model.context
-
-    context = call_context_from_data(
-        context_data,
-        tactic=tactic,
-        endpoint=endpoint,
-    )
-    return value, context
+        body, context_data = request_model.value, request_model.context
+    return body, call_context_from_data(context_data, tactic=tactic, endpoint=endpoint)
 
 
-def _body_from_raw(raw: bytes, content_type: str) -> Any:
+def _body_value(raw: bytes, content_type: str | None) -> Any:
+    """What a request body holds, before any envelope in it is read.
+
+    The body is decoded strictly as UTF-8 and is then the JSON it parses as,
+    or else the text; an empty body is None. A body that is not UTF-8 is a
+    ``SchemaError`` unless it is ``application/octet-stream``, which the
+    tactic gets as bytes. A lone surrogate written as a JSON escape
+    (``\\ud800``) is also a ``SchemaError``, and so is a body whose first
+    value is an array or object nested more than 500 levels deep (brackets
+    in strings aside), which is refused before it is parsed.
+
+    Routes run this, with the validation of an envelope and the building of
+    the call context, in a worker thread, not on the event loop. The
+    tactic's input-schema validation and the trace's copy of the context
+    metadata run on the event loop and take time in proportion to their
+    size, so cap request size at your proxy for a public service.
+    """
+
     if not raw:
         return None
-    normalized = content_type.split(";", 1)[0].strip().lower()
-    if normalized.startswith("text/") or normalized in {
-        "application/x-ndjson",
-        "application/octet-stream",
-    }:
-        try:
-            return raw.decode("utf-8")
-        except UnicodeDecodeError:
-            return raw
     try:
-        return raw.decode("utf-8")
-    except UnicodeDecodeError:
-        return raw
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        if _media_type(content_type) == "application/octet-stream":
+            return raw
+        raise SchemaError(
+            "Request body must be JSON or UTF-8 text; send binary data as "
+            "application/octet-stream."
+        ) from exc
+    if _nested_too_deep(text):
+        raise _too_deep_error()
+    try:
+        value = json.loads(text.removeprefix("\ufeff"))
+    except RecursionError as exc:
+        raise _too_deep_error() from exc
+    except ValueError:
+        return text
+    if "\\u" in text and _has_lone_surrogate(value):
+        raise SchemaError(
+            "Request body holds a lone surrogate, which is not valid Unicode."
+        )
+    return value
+
+
+# How deep a body's first value, if it is an array or object, may nest
+# (brackets in strings aside), as in AAAX. A body whose first value is
+# nested deeper is refused before it is parsed: code that walks such a
+# value recursively, as a native tactic's repr() of its task does in a
+# worker thread, can overflow a small thread stack and crash the process.
+_MAX_JSON_DEPTH = 500
+_JSON_STRUCTURE = re.compile(r'[\[\]{}"\\]')
+# A body json.loads would recurse into: an array or object first, after an
+# optional byte order mark and JSON whitespace.
+_JSON_CONTAINER_FIRST = re.compile(r"\ufeff?[ \t\n\r]*[\[{]")
+
+
+def _nested_too_deep(text: str) -> bool:
+    """Whether json.loads would recurse into ``text`` more than ``_MAX_JSON_DEPTH`` deep.
+
+    json.loads recurses only into a first value that is an array or an
+    object, and refuses anything after that value, so the scan starts at
+    that value's first bracket and ends where it closes. The brackets
+    outside strings are counted one at a time, so the scan never recurses,
+    and a body that is not valid JSON is judged the same way.
+    """
+
+    first = _JSON_CONTAINER_FIRST.match(text)
+    if first is None or text.count("[") + text.count("{") <= _MAX_JSON_DEPTH:
+        return False
+    depth = 0
+    in_string = False
+    escaped_at = -1  # the position of a character a backslash escapes
+    for match in _JSON_STRUCTURE.finditer(text, first.end() - 1):
+        position, char = match.start(), match.group()
+        if position == escaped_at:
+            continue
+        if in_string:
+            if char == "\\":
+                escaped_at = position + 1
+            elif char == '"':
+                in_string = False
+        elif char == '"':
+            in_string = True
+        elif char in "[{":
+            depth += 1
+            if depth > _MAX_JSON_DEPTH:
+                return True
+        elif char in "]}":
+            depth -= 1
+            if depth == 0:
+                return False  # the first value closed
+    return False
+
+
+def _too_deep_error() -> SchemaError:
+    return SchemaError(f"Request body is nested more than {_MAX_JSON_DEPTH} levels deep.")
+
+
+_LONE_SURROGATE = re.compile(f"[{chr(0xD800)}-{chr(0xDFFF)}]")
+
+
+def _has_lone_surrogate(value: Any) -> bool:
+    """Whether a parsed JSON value holds a lone surrogate in a key or string.
+
+    ``json.loads`` joins escaped pairs into one character, so any surrogate
+    left is unpaired. The value is walked with a stack rather than
+    recursion, so a deeply nested body cannot exhaust the call stack.
+    """
+
+    stack = [value]
+    while stack:
+        item = stack.pop()
+        if isinstance(item, str):
+            if _LONE_SURROGATE.search(item):
+                return True
+        elif isinstance(item, dict):
+            stack.extend(item)
+            stack.extend(item.values())
+        elif isinstance(item, list):
+            stack.extend(item)
+    return False
 
 
 def _query_input(query_params: Any) -> dict[str, Any] | None:
@@ -774,6 +1022,30 @@ _context_from_data = call_context_from_data  # the name before it was public
 
 def _error_context(tactic: Tactic[Any, Any], endpoint: str) -> CallContext:
     return CallContext(tactic_ref=tactic.package_ref, endpoint=endpoint)
+
+
+def _run_response(
+    output: Any,
+    *,
+    tactic: Tactic[Any, Any],
+    context: CallContext,
+) -> Any:
+    """The ``RunResponse`` of a call, rendered as JSON right away.
+
+    Rendering inside the route's error handling turns a result that cannot
+    be encoded (bytes that are not UTF-8, a lone surrogate) into an error
+    envelope instead of a bare 500.
+    """
+
+    from fastapi.encoders import jsonable_encoder
+    from fastapi.responses import JSONResponse
+
+    response = RunResponse(
+        output=jsonable_encoder(output),
+        request_id=context.request_id,
+        tactic=tactic.tactic_name,
+    )
+    return JSONResponse(response.model_dump(mode="json"))
 
 
 async def _event_chunks(
@@ -902,7 +1174,7 @@ def _http_error(
         detail=ErrorResponse(
             error=ErrorDetail(
                 type=type(exc).__name__,
-                message=str(exc),
+                message=_encodable_text(str(exc)),
                 tactic=tactic.tactic_name,
                 endpoint=endpoint,
                 request_id=context.request_id,
@@ -911,12 +1183,26 @@ def _http_error(
     )
 
 
+def _encodable_text(text: str) -> str:
+    """``text`` with any lone surrogate written as an escape, so that an
+    error envelope always encodes as UTF-8."""
+
+    return text.encode("utf-8", "backslashreplace").decode("utf-8")
+
+
 def status_code_for_error(exc: Exception) -> int:
     """The HTTP status a tactic service answers with when a call raises ``exc``.
 
-    ``SchemaError`` and ``TacticUnsupportedError`` are 400; anything else is 500.
+    ``SchemaError`` and ``TacticUnsupportedError`` are 400, except
+    ``OutputSchemaError``: a result that fails the tactic's output schema is
+    a bug in the tactic, so it is 500, like anything else the tactic raises.
+    ``CrossSiteRequestError`` is 403.
     """
 
+    if isinstance(exc, CrossSiteRequestError):
+        return 403
+    if isinstance(exc, OutputSchemaError):
+        return 500
     if isinstance(exc, (SchemaError, TacticUnsupportedError)):
         return 400
     return 500

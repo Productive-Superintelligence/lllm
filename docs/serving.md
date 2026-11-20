@@ -98,7 +98,8 @@ path such as `triage.py:triage` does not import.
 | Attribute | `lllm serve` |
 | --- | --- |
 | A tactic, or a `Tactic` subclass | Serves it; a class is built with no arguments |
-| A function with no parameters | Calls it once at startup and serves the tactic it returns |
+| A FastAPI or Starlette app | Serves the app as it is |
+| A function with no parameters | Calls it once at startup and serves the tactic or app it returns |
 | Any other function, or an object with `run` | Calls it once per request; its annotations become the schemas |
 
 A factory is how you serve a tactic that needs setup, such as loading a
@@ -109,11 +110,13 @@ package and building the tactic from its config, which is what
 `lllm inspect triage:triage` prints the contract without starting
 anything; `--json` adds the schemas and custom endpoints.
 
-A `module:attribute` target must be a tactic, not an app. To serve your
-own app, or to pick the server and its settings yourself, put
-`app = create_tactic_app(triage)` in a module and run it with any ASGI
-server, such as `uvicorn app:app`. The app's title and description come
-from the tactic unless you pass `title=` and `description=`.
+An app target is how you serve your own app, such as
+`app = create_tactic_app(triage)` with middleware or routes you added:
+`lllm serve app:app` runs it unchanged, and `lllm inspect app:app` lists
+its routes. To pick the server and its settings yourself, run the app
+with any ASGI server, such as `uvicorn app:app`. The app's title and
+description come from the tactic unless you pass `title=` and
+`description=`.
 
 ## Endpoints and envelopes
 
@@ -183,15 +186,21 @@ print(sorted(error))
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | The input, the output, the envelope, or the context does not validate |
+| 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is not UTF-8 (and not `application/octet-stream`), holds an escaped lone surrogate, or has a first value nested more than 500 levels deep |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
+| 403 | `CrossSiteRequestError` | A cross-site browser `POST` that is not JSON, or a cross-site `GET` to a custom endpoint ([Requests from browsers](#requests-from-browsers)) |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
+| 500 | `OutputSchemaError` | The tactic's result does not match its output schema, a bug in the tactic rather than the request |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
 
-For clients you cannot change, a body that is not an envelope is taken as
-the input itself, and `task` works in place of `input`; only the envelope
-carries a context. The [Service API](api/service-api.md) reference has the
-exact shapes.
+For clients you cannot change, a body that is not an envelope, JSON or
+UTF-8 text, is taken as the input itself, and `task` works in place of
+`input`; only the envelope carries a context. A body that is not UTF-8 is
+a 400 `SchemaError` unless it is `application/octet-stream`, which the
+tactic gets as bytes. A lone surrogate written as a JSON escape (`\ud800`)
+is also a 400, and so is a body whose first value is an array or object
+nested more than 500 levels deep (brackets in strings aside). The
+[Service API](api/service-api.md) reference has the exact shapes.
 
 ## Streaming
 
@@ -286,16 +295,18 @@ when the app is built.
 
 `create_tactic_app` returns a plain FastAPI app, so you secure it the
 FastAPI way: middleware, dependencies, or a gateway in front of it. This
-middleware requires a bearer token on every route except `/health`:
+middleware requires a bearer token on every route except `/health`, and a
+`RemoteTactic` caller sends one:
 
 ```python title="auth.py"
+import asyncio
 import secrets
 
+import httpx
 from fastapi import Request
 from fastapi.responses import JSONResponse
-from fastapi.testclient import TestClient
 
-from lllm import Tactic, create_tactic_app
+from lllm import RemoteTactic, RemoteTacticError, Tactic, create_tactic_app
 
 
 class Triage(Tactic):
@@ -320,18 +331,39 @@ async def require_token(request: Request, call_next):
     return await call_next(request)
 
 
-client = TestClient(app)
-print(client.post("/run", json={"input": "Outage"}).status_code)
-#> 401
-headers = {"authorization": f"Bearer {TOKEN}"}
-response = client.post("/run", json={"input": "Outage"}, headers=headers)
-print(response.json()["output"])
-#> oncall
+async def main():
+    url = "http://triage.internal:8000"
+    transport = httpx.ASGITransport(app=app)  # (1)!
+    try:
+        await RemoteTactic(url, async_transport=transport).arun("Outage")
+    except RemoteTacticError as error:
+        print(error.status_code, error.message)  # (2)!
+        #> 401 Invalid token.
+    triage = RemoteTactic(
+        url,
+        headers={"authorization": f"Bearer {TOKEN}"},  # (3)!
+        async_transport=transport,
+    )
+    print(await triage.arun("Outage"))
+    #> oncall
+
+
+asyncio.run(main())
 ```
 
-A `RemoteTactic` caller sends the header per call: extra keyword arguments
-to `run()`, `arun()`, and the stream methods go to httpx, as in
-`remote.run(text, headers=headers)`.
+1. Only for this example: the transport sends requests to the app in this
+   process, as in
+   [Calling a served tactic from Python](#calling-a-served-tactic-from-python).
+2. A body that is not the service's error envelope, such as FastAPI's
+   `{"detail": "Invalid token."}`, gives its `detail` text as the message.
+3. `headers=` go with every request the tactic sends: `run()`, `arun()`,
+   the stream methods, and `fetch_info()`. `auth=` takes any httpx
+   authentication the same way, such as `("user", "password")` for basic
+   auth.
+
+Keyword arguments to one call still go to httpx, so
+`triage.run(text, headers={"x-request-id": "r-1"})` adds a header to that
+request only. `lllm serve auth:app` serves the secured app as it is.
 
 In a package, build the secured app in a service entry and make the
 service the package's `primary` (or pass `--resource services.api`), so
@@ -348,6 +380,75 @@ primary = "services.api"
 entry = "service:create_app"   # returns the app with its middleware
 tactic = "triage"
 ```
+
+## Requests from browsers
+
+A service on `127.0.0.1` can still be reached from the web: any page a
+person opens can make their browser send it requests. Browsers send some
+requests to another site without asking the server first (no CORS
+preflight), so a served app refuses these with 403 `CrossSiteRequestError`
+when they are cross-site:
+
+- a `POST` to `/run`, `/stream`, their `/tactics/{name}/` forms, or a
+  custom endpoint, unless it is JSON: its `Content-Type` is
+  `application/json` or a `+json` type;
+- a `GET` or `HEAD` to a custom endpoint, which runs the tactic too.
+
+A request is cross-site by its `Sec-Fetch-Site` header when it has one:
+`cross-site` and `same-site` are cross-site, `same-origin` and `none` are
+not. Browsers set this header and pages cannot, so behind a proxy that
+rewrites `Host`, same-origin requests keep working. Without the header, a
+request is cross-site when its `Origin` is `null`, is not an `http` or
+`https` origin, or names another host and port than the `Host` header (a
+missing port is the default for the Origin's scheme).
+
+`PUT`, `PATCH`, and `DELETE` are never refused: browsers always preflight
+them across origins, so your app's CORS settings decide, as they do for
+cross-site JSON. The read routes (`/info`, `/health`, `/docs`,
+`/openapi.json`, `/tactics`, and `/tactics/{name}/info`) answer anyone, and
+clients that are not browsers send neither header. An app that must serve
+browsers on other origins, under its own CORS settings, turns the check off
+with `create_tactic_app(tactic, allow_cross_site_requests=True)`;
+`create_service_app` takes the same keyword.
+
+The check does not stop DNS rebinding, where a site makes its own domain
+resolve to `127.0.0.1` so that its requests look same-origin. A local
+service also needs a host allowlist, or a token as in
+[Authentication](#authentication):
+
+```python title="local.py"
+from fastapi.testclient import TestClient
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+from lllm import Tactic, create_tactic_app
+
+
+class Triage(Tactic):
+    name = "triage"
+
+    def call(self, text: str) -> str:
+        return "oncall" if "outage" in text.lower() else "support"
+
+
+app = create_tactic_app(Triage())
+app.add_middleware(
+    TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"]
+)
+
+client = TestClient(app, base_url="http://127.0.0.1:8000")
+page = {"origin": "https://evil.example", "content-type": "text/plain"}
+print(client.post("/run", content="Outage", headers=page).status_code)
+#> 403
+body = {"input": "Outage"}
+rebound = {"host": "evil.example:8000"}  # (1)!
+print(client.post("/run", json=body, headers=rebound).status_code)
+#> 400
+print(client.post("/run", json=body).json()["output"])
+#> oncall
+```
+
+1. A rebound page's requests carry its own name in `Host`, which the
+   allowlist refuses before the tactic runs.
 
 ## Several tactics in one app
 
@@ -416,8 +517,73 @@ the service base or one tactic of a multi-tactic app
 after the URL's last path segment, or else its host and port. Pass
 `input_type` and `output_type` to validate before sending and to get typed
 results back; without them, JSON is returned as is. The `timeout` is 30
-seconds by default. `RemoteTacticError` carries `status_code`,
-`error_type`, `message`, `tactic`, `endpoint`, `request_id`, and `detail`.
+seconds by default, and `headers=` and `auth=` go with every request
+([Authentication](#authentication)). `RemoteTacticError` carries
+`status_code`, `error_type`, `message`, `tactic`, `endpoint`, `request_id`,
+and `detail`.
+
+A `RemoteTactic` built from a URL alone knows nothing else about the
+service: its `info()` has no description or schemas, so a
+[tool](tools.md#tactics-as-tools) made from it takes one string `task` and
+is described only as `Run <name>.`. `RemoteTactic.from_service()` reads
+`/info` once and adopts the service's own contract:
+
+```python title="contract.py"
+import asyncio
+
+import httpx
+from pydantic import BaseModel
+
+from lllm import RemoteTactic, Tactic, create_tactic_app
+from lllm.runtimes.native import tactic_as_function
+
+
+class Ticket(BaseModel):
+    text: str
+    priority: int = 3
+
+
+class Triage(Tactic):
+    """Route a support ticket to a queue."""
+
+    name = "triage"
+    input_model = Ticket
+
+    def call(self, ticket: Ticket) -> str:
+        return "oncall" if "outage" in ticket.text.lower() else "support"
+
+
+app = create_tactic_app(Triage())  # running on another machine
+
+
+async def main():
+    triage = await RemoteTactic.afrom_service(  # (1)!
+        "http://triage.internal:8000",
+        async_transport=httpx.ASGITransport(app=app),
+    )
+    print(triage.tactic_name, "|", triage.info().description)
+    #> triage | Route a support ticket to a queue.
+    tool = tactic_as_function(triage, parameter_mode="kwargs")
+    print(tool.name, sorted(tool.properties), tool.required)
+    #> triage ['priority', 'text'] ['text']
+    print(await triage.arun({"text": "Total outage"}))
+    #> oncall
+
+
+asyncio.run(main())
+```
+
+1. `afrom_service()` is the async form of `from_service()`. Both take the
+   constructor's options and use them for the `/info` request too.
+
+The contract arrives as the constructor's `contract=` option, which also
+takes a `TacticInfo` you already have. With one, the tactic takes the
+service's name unless you pass `name=`, and `info()` reports the service's
+description, schemas, and examples wherever the tactic has none of its own,
+so `input_type` and `output_type` still win. Its capabilities follow the
+service's: `stream` and `events` come together when the service streams at
+all, since the stream methods and `aevents()` all read `/stream`, and
+neither comes when it does not.
 
 Because it is a tactic, a `RemoteTactic` works wherever a tactic does:
 inside another tactic's `call()`, as a [tool](tools.md#tactics-as-tools),
@@ -455,14 +621,24 @@ lllm serve ./triage     # serve tactics.triage on port 8100
 ```
 
 - `--resource section.name` serves another resource, such as
-  `services.api`. Without `primary` or `--resource`, the first service,
-  tactic, channel, or run is served; only those kinds can be. A run must
-  list exactly one service, and channels need [SSSN](https://sssn.one/).
-- The port is `--port`, else the resource's `metadata.port` (a tactic
-  without one takes the port of a service that serves it), else 8000.
+  `services.api`, and must name one the manifest declares. Without
+  `primary` or `--resource`, the first service, tactic, channel, or run is
+  served; only those kinds can be. A run must list exactly one service.
+  Channels need [SSSN](https://sssn.one/): a channel resource serves the
+  package's whole channel store, in `<package>/.lllm/network` unless
+  `--store` says otherwise. `lllm inspect` shows a channel resource
+  without creating its store.
+- `lllm inspect` imports the package's entries and calls its factories, as
+  `lllm serve` does, so inspect and serve only packages you trust.
+- The port is `--port`, else the resource's `metadata.port` or a `port`
+  written in its table (a tactic without one takes the port of the first
+  service that serves it, through `tactic` or `tactics`, and declares one),
+  else 8000. The hub's config template binds refs to the same ports.
 - Before starting, `lllm serve` checks the API keys the package declares
   ([API keys](packages.md#api-keys)). In a terminal it asks for missing
   ones; otherwise it stops and lists them. `--skip-key-check` skips this.
+  With `--no-keyring` it neither reads the OS keyring nor stores keys
+  there: the keys it asks for go to the env file.
 - A served package keeps its folder on `sys.path` and its modules loaded,
   so its code can import its own modules. Packages served in one process
   share `sys.modules`, so give their top-level modules distinct names.

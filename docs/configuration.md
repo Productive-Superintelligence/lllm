@@ -386,5 +386,6 @@ the environment:
 `LLLM_CONFIG` lets one project run with another manifest, for example
 `LLLM_CONFIG=deploy/lllm.prod.toml python main.py`. A package can also
 declare the keys it needs: `lllm setup` asks for the missing ones and
-stores them in the OS keyring (with the `secure` extra) or in `.env.local`,
-and `lllm serve` reads them from there. See [Packages](packages.md).
+stores them in a usable OS keyring when there is one, and in `.env.local`
+otherwise, and `lllm serve` reads them from there. See
+[Packages](packages.md#api-keys).

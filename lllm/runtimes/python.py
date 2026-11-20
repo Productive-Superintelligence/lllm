@@ -174,20 +174,29 @@ def coerce_tactic(value: Any, *, name: str | None = None) -> Tactic[Any, Any]:
     if isinstance(value, Tactic):
         return value
     if _is_factory(value):
-        produced = value()
-        if isinstance(produced, type) and issubclass(produced, Tactic):
-            return _instantiate(produced, name)
-        if isinstance(produced, Tactic):
+        produced = _factory_result_tactic(value(), name)
+        if produced is not None:
             return produced
-        if callable(getattr(produced, "run", None)):
-            return as_tactic(produced.run, **kwargs)
-        if callable(produced):
-            return as_tactic(produced, **kwargs)
     if callable(getattr(value, "run", None)):
         return as_tactic(value.run, **kwargs)
     if callable(value):
         return as_tactic(value, **kwargs)
     raise TypeError(f"Value does not resolve to a tactic or callable: {value!r}")
+
+
+def _factory_result_tactic(produced: Any, name: str | None) -> Tactic[Any, Any] | None:
+    """The tactic a factory's return value makes, or None if it makes none."""
+
+    kwargs: dict[str, Any] = {} if name is None else {"name": name}
+    if isinstance(produced, type) and issubclass(produced, Tactic):
+        return _instantiate(produced, name)
+    if isinstance(produced, Tactic):
+        return produced
+    if callable(getattr(produced, "run", None)):
+        return as_tactic(produced.run, **kwargs)
+    if callable(produced):
+        return as_tactic(produced, **kwargs)
+    return None
 
 
 def _instantiate(cls: type[Tactic[Any, Any]], name: str | None) -> Tactic[Any, Any]:

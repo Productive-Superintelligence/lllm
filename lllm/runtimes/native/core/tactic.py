@@ -671,12 +671,14 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         name: str | None = None,
         description: str | None = None,
         parameter_mode: str = "task",
+        asynchronous: bool = False,
     ):
         """Expose this tactic as a typed Python callable.
 
         Pydantic AI and other agent runtimes can consume ordinary Python
-        callables as tools. The implementation is imported lazily so the core
-        tactic protocol stays small and adapter-owned.
+        callables as tools. ``asynchronous=True`` makes an ``async def``
+        tool that awaits ``arun()``. The implementation is imported lazily so
+        the core tactic protocol stays small and adapter-owned.
         """
 
         from lllm.runtimes.pydantic_ai import tactic_as_tool
@@ -686,6 +688,7 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
             name=name,
             description=description,
             parameter_mode=parameter_mode,
+            asynchronous=asynchronous,
         )
 
     # -- Core execution ---------------------------------------------------

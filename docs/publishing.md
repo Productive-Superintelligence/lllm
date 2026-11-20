@@ -115,6 +115,7 @@ a `code`, a `message`, and the `resource` concerned. The main codes:
 | --- | --- | --- |
 | `manifest_load_failed` | error | `lllm.toml` does not parse or does not fit the format |
 | `entrypoint_import_failed` | error | An `entry` cannot be imported |
+| `tactic_entry_is_app` | error | A tactic's `entry` names a FastAPI or Starlette app, which belongs in a service |
 | `primary_missing` | error | `primary` names a resource that is not declared |
 | `schema_ref_missing` | error | A tactic's `input` or `output` names no declared schema |
 | `service_tactic_missing` | error | A service's `tactic` is not declared |
@@ -184,8 +185,9 @@ runtime = "python"
 that will use the package: how to set it up and serve it, every ref with
 its entry, and the config template. `lllm hub config-template acme/triage`
 prints only the template, a starting `.lllm/config.toml` that binds each
-tactic and service ref to a URL on `127.0.0.1`; edit the URLs to match
-where you serve them
+tactic and service ref to a URL on `127.0.0.1`, at the port `lllm serve`
+uses for it ([Serving a package](serving.md#serving-a-package)); edit the
+URLs to match where you serve them
 ([Local configuration](packages.md#local-configuration)). In Python, they
 are `hub.card(id)`, `hub.agent_card(id)`, and `hub.config_template(id)`,
 each with an optional `version=`.

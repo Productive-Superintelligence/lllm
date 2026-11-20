@@ -29,7 +29,7 @@ from ._validation import (
     token_value,
 )
 from .context import CallContext
-from .errors import TacticUnsupportedError
+from .errors import OutputSchemaError, SchemaError, TacticUnsupportedError
 from .events import TacticEvent
 from .refs import optional_service_ref_value, optional_tactic_ref_value
 from .schema import SchemaRef, export_json_schema, type_name, validate_with_schema
@@ -221,7 +221,15 @@ class Tactic(Generic[InputT, OutputT]):
         return validate_with_schema(value, self.input_type)
 
     def validate_output(self, value: Any) -> Any:
-        return validate_with_schema(value, self.output_type)
+        """Validate a result; a mismatch raises ``OutputSchemaError``."""
+
+        try:
+            return validate_with_schema(value, self.output_type)
+        except SchemaError as exc:
+            # Pydantic's error stays the cause, as for an input SchemaError.
+            raise OutputSchemaError(
+                f"The output of tactic {self.tactic_name!r} failed validation: {exc}"
+            ) from exc.__cause__
 
     def run(
         self,

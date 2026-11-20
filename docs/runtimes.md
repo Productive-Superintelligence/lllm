@@ -319,8 +319,10 @@ from raw data should use `astream()` or `aevents()`, as services do.
 
 ## How entrypoints become tactics
 
-`lllm serve module:attribute` accepts more than a tactic. It passes the
-value to `coerce_tactic()` (from `lllm.runtimes`), which accepts, in order:
+`lllm serve module:attribute` accepts more than a tactic. It serves a
+FastAPI or Starlette app, or one a factory returns, as it is, and turns
+anything else into a tactic with `coerce_tactic()` (from `lllm.runtimes`),
+which accepts, in order:
 
 1. a `Tactic` subclass, which it instantiates, or a `Tactic` instance;
 2. a factory, which it calls once at load: a class that can be constructed
@@ -352,6 +354,12 @@ print(coerce_tactic(make_greeter).info().name)
 `greet` can be called without arguments too, but it is not annotated to
 return a tactic, so it is a handler: it answers each input instead of being
 called once at load.
+
+A factory must return one of these or an app; anything else stops
+`lllm serve` with an error that says what it returned. A package's
+`[tactics.NAME]` entries load the same way, except that an app is an error
+there too: serve an app from a `[services.NAME]` entry
+([Packages](packages.md#the-manifest)).
 
 ## Choosing a runtime
 

@@ -3105,24 +3105,25 @@ def test_lifecycle_covers_tactic_channel_and_combined_packages(tmp_path):
     assert "[services.analyzer]" in config
     assert "[services.monitor]" in config
     assert "[stores.default]" in config
+    # Neither service declares a port, so `lllm serve` runs each on 8000.
     assert resolver.resolve("lllm://demo/combo/tactics/analyze").url == (
         "http://127.0.0.1:8000/tactics/analyze"
     )
     assert resolver.resolve("lllm://demo/combo/tactics/monitor").url == (
-        "http://127.0.0.1:8001/tactics/monitor"
+        "http://127.0.0.1:8000/tactics/monitor"
     )
     assert resolver.resolve("lllm://demo/combo/services/analyzer").url == (
         "http://127.0.0.1:8000"
     )
     assert resolver.resolve("lllm://demo/combo/services/monitor").url == (
-        "http://127.0.0.1:8001"
+        "http://127.0.0.1:8000"
     )
     assert resolver.resolve("lllm://demo/combo/channels/events").store == ".lllm/network"
     assert (
         resolver.resolve("lllm://demo/combo/snapshots/latest_analysis").store == ".lllm/network"
     )
     assert resolver.service("analyzer") == {"port": 8000}
-    assert resolver.service("monitor") == {"port": 8001}
+    assert resolver.service("monitor") == {"port": 8000}
     assert resolver.store("default") == {"path": ".lllm/network"}
 
 

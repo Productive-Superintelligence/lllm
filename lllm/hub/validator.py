@@ -10,10 +10,10 @@ from .endpoints import (
     resource_extra as _resource_extra,
     validate_endpoint_metadata as _validate_endpoint_metadata,
 )
-from .entrypoints import import_entrypoint
+from .entrypoints import import_entrypoint, is_asgi_app
 from .files import has_symlink_component, is_relative_to
 from .files import validate_declared_file as _validate_declared_file
-from .manifest import load_manifest, require_path_value
+from .manifest import expanded_path, load_manifest
 from .models import PackageManifest, ValidationIssue, ValidationReport
 from .refs import parse_resource_ref
 
@@ -101,7 +101,7 @@ def _looks_like_duplicate_toml_name(message: str) -> bool:
 
 
 def _unresolved_manifest_path(path: str | Path) -> Path:
-    value = Path(require_path_value(path, "manifest path")).expanduser()
+    value = expanded_path(path, "manifest path")
     if value.is_dir():
         value = value / "lllm.toml"
     return value
@@ -356,7 +356,7 @@ def _validate_tactics(manifest: PackageManifest) -> list[ValidationIssue]:
         if _invalid_segment(name):
             continue
         ref = manifest.ref("tactic", name)
-        issues.extend(_validate_import(tactic.entry, manifest, ref))
+        issues.extend(_validate_import(tactic.entry, manifest, ref, tactic=True))
         for schema_ref in (tactic.input, tactic.output):
             if schema_ref:
                 issues.extend(_validate_schema_ref(schema_ref, manifest, ref))
@@ -805,15 +805,30 @@ def _validate_import(
     entry: str,
     manifest: PackageManifest,
     resource: str,
+    *,
+    tactic: bool = False,
 ) -> list[ValidationIssue]:
     try:
-        import_entrypoint(entry, base_dir=manifest.base_dir)
+        value = import_entrypoint(entry, base_dir=manifest.base_dir)
     except Exception as exc:
         return [
             ValidationIssue(
                 level="error",
                 code="entrypoint_import_failed",
                 message=str(exc),
+                resource=resource,
+            )
+        ]
+    if tactic and is_asgi_app(value):
+        # lllm serve refuses it; a factory is not called to find out.
+        return [
+            ValidationIssue(
+                level="error",
+                code="tactic_entry_is_app",
+                message=(
+                    f"Tactic entry {entry} is a FastAPI or Starlette app; serve an "
+                    "app from a [services.NAME] entry."
+                ),
                 resource=resource,
             )
         ]

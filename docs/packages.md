@@ -134,10 +134,14 @@ such as `[tactics.NAME]`, gets a [ref](#refs) and accepts
 | `[card]` | `summary`, `tags`, `safety`, `latency`, `suggested_commands` |
 
 An `entry` is `module:attribute`, imported from the package folder. A
-tactic entry is loaded like a target of `lllm serve module:attribute`
-([Serving](serving.md#serve-from-the-command-line)): a class or a function
-without parameters is called once, and any other function answers each
-input. `lllm hub validate` checks all of this before you share the package
+tactic entry is loaded like a tactic target of `lllm serve
+module:attribute` ([Serving](serving.md#serve-from-the-command-line)): a
+class or a function without parameters is called once, and any other
+function answers each input. An app belongs in a `[services.NAME]` entry;
+a tactic entry that names one stops `lllm serve` with an error. Before you
+share the package, `lllm hub validate` checks that each entry imports and
+that a tactic entry does not name an app; it does not call factories, so
+`lllm serve` is the check for what a factory returns
 ([The hub](publishing.md#validate-a-package)).
 
 ## How resources are named
@@ -359,7 +363,7 @@ print(load_prompt("glossary:assistant/system").path)
 
 | Function | Does |
 | --- | --- |
-| `install_package(zip, *, alias=None, scope="user", load=True)` | Installs and loads a package; `alias` renames it, and an installed name raises `FileExistsError` |
+| `install_package(zip, *, alias=None, scope="user", load=True)` | Installs and loads a package; `alias` renames it (lowercase letters, numbers, `-`, and `_`, as in `team_glossary`), and an installed name raises `FileExistsError` |
 | `export_package(name, path, *, bundle_deps=False)` | Zips a loaded package; `bundle_deps=True` adds its dependencies |
 | `list_packages(scope=None)` | Name, version, scope, and path of each package |
 | `remove_package(name, *, scope=None)` | Deletes an installed package |
@@ -386,9 +390,14 @@ lllm setup --show-conventions      # common provider key names
 
 A key counts as available when it is in the environment, in the env file
 (`--env-file`, default `.env.local` in the current folder), or in the OS
-keyring. `lllm setup` stores missing keys in the keyring when the `secure`
-extra is installed and in the env file otherwise (`--credentials keyring`
-or `env` decides), and writes the file readable only by you.
+keyring. `lllm setup` and `lllm serve` store the keys you type in the OS
+keyring when a usable one is available and in the env file otherwise. The
+`secure` extra installs the keyring package, but headless hosts, CI, and
+containers often have no usable keyring behind it. `--credentials keyring`
+or `env` decides instead; `keyring` without a usable keyring stops before
+asking for anything. A new env file is created readable only by you, and
+one you own is made so; a shared file you can write but do not own keeps
+its owner and permissions.
 `--set NAME=value` stores a key without asking; without a terminal, a
 missing key is an error. `lllm inspect ./support` shows each key as
 `ready` or `missing`, never its value. Only the `lllm` command reads the

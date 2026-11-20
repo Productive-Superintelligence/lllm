@@ -3,6 +3,7 @@
 from .context import CallContext
 from .errors import (
     LLLMError,
+    OutputSchemaError,
     ProtocolError,
     SchemaError,
     TacticError,
@@ -21,6 +22,7 @@ __all__ = [
     "CallResult",
     "CallTrace",
     "LLLMError",
+    "OutputSchemaError",
     "ProtocolError",
     "SchemaError",
     "SchemaRef",

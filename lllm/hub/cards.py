@@ -17,6 +17,7 @@ from .endpoints import (
     valid_endpoint_path,
 )
 from .models import PackageRecord
+from .ports import serve_port
 
 
 def render_agent_card(record: PackageRecord) -> str:
@@ -54,6 +55,8 @@ def render_agent_card(record: PackageRecord) -> str:
             for command in card.suggested_commands:
                 lines.append(f"- `{command}`")
             lines.append("")
+    if lines[-1] != "":  # after the card's tags, safety, or latency
+        lines.append("")
     lines.extend(["## Resources", ""])
     if not record.resources:
         lines.append("No resources declared.")
@@ -126,7 +129,7 @@ def render_config_template(record: PackageRecord) -> str:
         lines.append("")
     resources = tuple(record.resources)
     service_ports = _service_ports(resources)
-    tactic_ports = _tactic_ports(resources, service_ports)
+    tactic_ports = _tactic_ports(resources)
     service_settings = _service_settings_lines(service_ports)
     if service_settings:
         lines.extend(service_settings)
@@ -146,7 +149,7 @@ def render_config_template(record: PackageRecord) -> str:
             lines.extend(_ref_metadata_lines(resource.ref, resource.metadata))
             lines.append("")
         if resource.kind == "tactic":
-            tactic_port = tactic_ports.get(resource.name, 8000)
+            tactic_port = tactic_ports[resource.name]
             lines.extend(
                 [
                     f"[refs.{_toml_key(resource.ref)}]",
@@ -184,48 +187,38 @@ def _store_settings_lines(resources: tuple[Any, ...]) -> list[str]:
 
 
 def _service_ports(resources: tuple[Any, ...]) -> dict[str, int]:
-    ports: dict[str, int] = {}
-    used: set[int] = set()
-    next_port = 8000
-    for resource in resources:
-        if resource.kind != "service":
-            continue
-        port = _preferred_service_port(resource)
-        if port is None or port in used:
-            while next_port in used:
-                next_port += 1
-            port = next_port
-        ports[resource.name] = port
-        used.add(port)
-        next_port += 1
-    return ports
+    """Each service's port, as ``lllm serve`` picks it."""
+
+    return {
+        resource.name: serve_port(resource.metadata)
+        for resource in resources
+        if resource.kind == "service"
+    }
 
 
-def _preferred_service_port(resource: Any) -> int | None:
-    port = resource.metadata.get("port")
-    if isinstance(port, bool) or not isinstance(port, int):
-        return None
-    if not (1 <= port <= 65535):
-        return None
-    return port
+def _tactic_ports(resources: tuple[Any, ...]) -> dict[str, int]:
+    """Each tactic's port, as ``lllm serve`` picks it: its own, else a service's."""
+
+    services = [resource for resource in resources if resource.kind == "service"]
+    return {
+        resource.name: serve_port(
+            resource.metadata,
+            [
+                service.metadata
+                for service in services
+                if _serves_tactic(service.metadata, resource.name)
+            ],
+        )
+        for resource in resources
+        if resource.kind == "tactic"
+    }
 
 
-def _tactic_ports(
-    resources: tuple[Any, ...], service_ports: dict[str, int]
-) -> dict[str, int]:
-    ports: dict[str, int] = {}
-    for resource in resources:
-        if resource.kind != "service":
-            continue
-        tactic = resource.metadata.get("tactic")
-        if isinstance(tactic, str) and tactic:
-            ports.setdefault(tactic, service_ports[resource.name])
-        tactics = resource.metadata.get("tactics")
-        if isinstance(tactics, list):
-            for tactic_name in tactics:
-                if isinstance(tactic_name, str) and tactic_name:
-                    ports.setdefault(tactic_name, service_ports[resource.name])
-    return ports
+def _serves_tactic(metadata: dict[str, Any], tactic: str) -> bool:
+    tactics = metadata.get("tactics")
+    return metadata.get("tactic") == tactic or (
+        isinstance(tactics, (list, tuple)) and tactic in tactics
+    )
 
 
 def _card_metadata_lines(record: PackageRecord) -> list[str]:

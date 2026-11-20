@@ -29,9 +29,19 @@ envelope:
 | `task` | any JSON | Accepted in place of `input` |
 | `context` | object or `null` | Request metadata, read into a `CallContext` |
 
-A body is an envelope when it is a JSON object with `input` or `task` and
-no keys besides `input`, `task`, and `context`. Any other body, JSON or
-text, is the input itself.
+A body is decoded strictly as UTF-8 and is an envelope when it is a JSON
+object with `input` or `task` and no keys besides `input`, `task`, and
+`context`. Any other body, JSON or UTF-8 text, is the input itself. A body
+that is not UTF-8 is a 400 `SchemaError` unless it is
+`application/octet-stream`, which the tactic gets as bytes. A lone
+surrogate written as a JSON escape (`\ud800`) is also a 400, and so is a
+body whose first value is an array or object nested more than 500 levels
+deep (brackets in strings aside), which is refused before it is parsed.
+Every body, and the envelope and call context it may hold, is decoded,
+depth-checked, parsed and validated in a worker thread, not on the event
+loop. The tactic's input-schema validation and the trace's copy of the
+context metadata run on the event loop and take time in proportion to
+their size, so cap request size at your proxy for a public service.
 
 | `context` key | Meaning |
 | --- | --- |
@@ -108,12 +118,42 @@ Error envelopes are stable across protocol and runtime failures.
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | Invalid input or output, or a malformed envelope or context |
+| 400 | `SchemaError` | Invalid input; a body that is not UTF-8 (other than `application/octet-stream`), holds an escaped lone surrogate, or has a first value nested more than 500 levels deep; or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
+| 403 | `CrossSiteRequestError` | A cross-site `POST` to a tactic route that is not JSON, or a cross-site `GET` or `HEAD` to a custom endpoint ([below](#cross-site-requests)) |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |
+| 500 | `OutputSchemaError` | The tactic's result does not match its output schema; `message` starts with `The output of tactic '<name>' failed validation:` |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
 
 `status_code_for_error(exc)` gives the status for an exception, and
 `RemoteTactic` raises `RemoteTacticError` with these fields
 ([Serving](../serving.md#calling-a-served-tactic-from-python)). The
 [AAAX](https://aaax.one/) strategy routes report errors in the same envelope.
+
+## Cross-site requests
+
+The routes that run a tactic refuse, with 403 `CrossSiteRequestError`, the
+cross-site requests a browser sends without a CORS preflight:
+
+- a `POST` to `/run`, `/stream`, `/tactics/{name}/run`,
+  `/tactics/{name}/stream`, or a custom endpoint whose `Content-Type` is not
+  JSON, that is, not `application/json` or a `+json` type;
+- a `GET` or `HEAD` to a custom endpoint.
+
+`PUT`, `PATCH`, and `DELETE` are never refused, since browsers preflight
+them, and neither is any request to `/info`, `/health`, `/docs`,
+`/openapi.json`, `/tactics`, or `/tactics/{name}/info`.
+
+A request with a `Sec-Fetch-Site` header is cross-site when the header is
+`cross-site` or `same-site`, and not when it is `same-origin` or `none`;
+pages cannot set it, so behind a proxy that rewrites `Host`, same-origin
+browser requests still pass. A request without it is cross-site when its
+`Origin` is `null` or not an `http` or `https` origin, or when the
+Origin's host and port (the port defaulting from its scheme) differ from
+the `Host` header. A request with neither header, as clients that are not
+browsers send, is not cross-site. `allow_cross_site_requests=True` on
+`create_tactic_app` or `create_service_app` turns the check off.
+
+The check does not stop DNS rebinding. A local service also needs a host
+allowlist, such as Starlette's `TrustedHostMiddleware` with `localhost` and
+`127.0.0.1`, or a token ([Serving](../serving.md#requests-from-browsers)).

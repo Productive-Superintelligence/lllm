@@ -8,7 +8,7 @@ lllm create   NAME [--template T]  new project
 lllm init     [PATH]               write lllm.toml
 lllm setup    [TARGET]             store the API keys a package declares
 lllm inspect  TARGET               tactic metadata, or what serve launches
-lllm serve    TARGET               serve a tactic or a package resource
+lllm serve    TARGET               serve a tactic, app, or package resource
 lllm hub      ...                  validate, publish, read, index packages
 lllm network  ...                  SSSN channel stores (pip install sssn)
 lllm shell    ...                  AAAX strategies (pip install aaax)
@@ -60,20 +60,24 @@ lllm setup --show-conventions             # common provider key names
 
 Reads `[requirements.api_keys]`, plus the `required_api_keys` metadata of the
 resource `lllm serve` would launch (or the one named with `--resource`), and
-stores missing keys in the OS keyring (`secure` extra) or a local env file. A
-package with nothing to launch, such as a library, is set up from its
-`[requirements.api_keys]` alone. `--credentials auto` uses the keyring when
-available.
+stores missing keys in a usable OS keyring when there is one, and in the env
+file (`--env-file`, default `.env.local`) otherwise; `--credentials keyring`
+or `env` decides instead. A package with nothing to launch, such as a
+library, is set up from its `[requirements.api_keys]` alone.
 
 ## `lllm inspect`
 
 ```bash
 lllm inspect tactics:Shout --json  # name, schemas, capabilities, endpoints
+lllm inspect app:app               # an app's port and routes
 lllm inspect ./briefs              # resource, port, routes, key status
 ```
 
-Package options: `--resource section.name`, `--store DIR` (channel
-resources), `--env-file`, `--no-keyring`.
+Package options: `--resource section.name`, `--env-file`, `--no-keyring`.
+For a channel resource, `lllm inspect` lists the routes of an app built
+over a throwaway store, so it creates no store, and `--store` has no
+effect. Like `lllm serve`, it imports the package's entries and calls its
+factories, so inspect only packages you trust.
 
 ## `lllm serve`
 
@@ -90,13 +94,15 @@ lllm serve ./briefs --resource services.api
 | `--log-level` | `info` | Uvicorn log level |
 | `--resource` | `[package] primary` | Resource to launch |
 | `--store` | `<package>/.lllm/network` | Store root for channel resources (needs sssn) |
-| `--credentials`, `--env-file`, `--no-keyring` | | Key lookup and interactive setup |
+| `--credentials`, `--env-file`, `--no-keyring` | | Key lookup and interactive setup. Typed keys go to the OS keyring when a usable one is available (`--credentials auto`) and to `--env-file` otherwise; with `--no-keyring` they go to the env file, and `--credentials keyring` is refused when a package's keys are checked |
 | `--skip-key-check` | off | Start without checking declared keys |
 
 An entrypoint names a tactic class or instance, a factory, an object with a
-`run` method, or a handler function. A resource that cannot be launched, or a
-service entry that fails to import or build, stops with an error that names
-the cause. See [Serving](../serving.md).
+`run` method, a handler function, or a FastAPI or Starlette app (or a factory
+that returns one), which is served as it is. A resource the manifest does
+not declare or that cannot be launched, or a service entry that fails to
+import or build, stops with an error that names the cause. See
+[Serving](../serving.md).
 
 ## `lllm hub`
 

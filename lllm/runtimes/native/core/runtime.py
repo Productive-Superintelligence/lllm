@@ -588,7 +588,9 @@ def install_package(
         its ``lllm.toml``.  The folder is renamed and the ``name`` field in
         ``lllm.toml`` is updated so the namespace prefix changes too.  Use
         this when the package's original name collides with something already
-        installed.
+        installed.  An alias uses lowercase letters, numbers, hyphens, and
+        underscores (as the names ``lllm create`` writes do), and starts and
+        ends with a letter or number.
     scope:
         ``"user"`` (default) — installs to ``~/.lllm/packages/``, available
         across all projects for the current user.
@@ -700,11 +702,14 @@ def install_package(
 
         final_name = alias if alias else original_name
 
-        # Validate alias format (same rules as package names)
-        if alias and not re.match(r"^[a-z0-9][a-z0-9\-]*[a-z0-9]$|^[a-z0-9]$", alias):
+        # Validate alias format: lowercase letters, numbers, hyphens, and the
+        # underscores of the names `lllm create` writes, starting and ending
+        # with a letter or number.
+        if alias and not re.fullmatch(r"[a-z0-9](?:[a-z0-9_-]*[a-z0-9])?", alias):
             raise ValueError(
                 f"alias '{alias}' is not a valid package name. "
-                "Use lowercase letters, numbers, and hyphens only."
+                "Use lowercase letters, numbers, hyphens, and underscores, "
+                "starting and ending with a letter or number."
             )
 
         # Check for collision

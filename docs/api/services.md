@@ -59,3 +59,7 @@ Serving tactics over HTTP and calling them back. Import from `lllm.services`. Gu
 ::: lllm.services.fastapi.status_code_for_error
     options:
       heading_level: 3
+
+::: lllm.services.fastapi.CrossSiteRequestError
+    options:
+      heading_level: 3
