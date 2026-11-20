@@ -1944,9 +1944,12 @@ import sys
 import threading
 
 threading.stack_size(1 << 20)  # 1 MiB thread stacks, as python:alpine builds use
-# Python 3.12 runs Python calls without C stack; a low limit stands in for the
-# frames per level that 3.10 and 3.11 spend, so a recursive copy fails here too.
-sys.setrecursionlimit(400)
+# Python 3.12 runs Python calls without C stack, so a low limit stands in for
+# the frames per level a recursive copy spends. On 3.10 and 3.11 the limit
+# also caps json.loads and list comparison, and the real 1 MiB stack and the
+# default limit already break a recursive copy.
+if sys.version_info >= (3, 12):
+    sys.setrecursionlimit(400)
 
 from fastapi.testclient import TestClient
 
@@ -2008,7 +2011,7 @@ def test_a_deep_envelope_is_validated_on_a_small_thread_stack(tmp_path):
         [sys.executable, str(script)], capture_output=True, text=True, env=env, timeout=120
     )
 
-    assert result.returncode == 0, (result.returncode, result.stderr[-1500:])
+    assert result.returncode == 0, (result.stdout, result.stderr[-1500:])
     assert result.stdout.split("\n")[:3] == ["status 200 kept", "equal True", "copy [True]"]
 
 
