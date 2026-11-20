@@ -304,8 +304,10 @@ print(len(agent.current_dialog.messages))
 
 Without `max_tokens`, the budget is the model's context window from
 LiteLLM's model list (128,000 tokens for `gpt-4o-mini`). For a model
-LiteLLM does not know, such as one on your own server, set `max_tokens`:
-without it nothing is trimmed, and a warning says so.
+LiteLLM does not know, such as one on your own server, set `max_tokens`,
+or register the model with `litellm.register_model`, giving its
+`max_input_tokens`: without either, nothing is trimmed, and a warning says
+so.
 
 Messages are counted the way they are sent, so an image counts as an image
 (about a hundred tokens for a photo), not as the length of its data. The

@@ -150,7 +150,7 @@ def test_an_unknown_window_is_not_trimmed_and_warned_about_once(caplog):
     model = "openai/fix-native-core-unknown-model"
     _forget_window(model)
     manager = DefaultContextManager(model)
-    dialog = _dialog("Hello.", "What is 2 + 2?")
+    dialog = _dialog("word " * 10_000, "What now?")  # over any default window
 
     with caplog.at_level("WARNING", logger="lllm.runtimes.native.core.dialog"):
         assert manager.max_tokens is None
@@ -177,24 +177,66 @@ def _register(model: str, **limits: int) -> None:
     )
 
 
-def test_max_tokens_is_the_window_when_no_output_limit_is_given():
+def test_registered_models_give_their_window_as_max_input_tokens():
     import litellm
 
-    only_max, with_output = "fixcore/only-max-tokens", "fixcore/with-output"
-    for model in (only_max, with_output):
+    only_max, with_input = "fixcore/only-max-tokens", "fixcore/with-input"
+    for model in (only_max, with_input):
         _forget_window(model)
     try:
-        # Unknown at first; found once registered (None is not remembered).
-        assert DefaultContextManager(only_max).max_tokens is None
+        # max_tokens alone may be an output limit, so it is not a window.
         _register(only_max, max_tokens=8192)
-        assert DefaultContextManager(only_max).max_tokens == 8192
-        # With an output limit beside it, max_tokens is that output limit.
-        _register(with_output, max_tokens=4096, max_output_tokens=4096)
-        assert DefaultContextManager(with_output).max_tokens is None
+        assert DefaultContextManager(only_max).max_tokens is None
+        # Unknown at first; found once registered (None is not remembered).
+        assert DefaultContextManager(with_input).max_tokens is None
+        _register(with_input, max_input_tokens=32_000, max_tokens=4096)
+        assert DefaultContextManager(with_input).max_tokens == 32_000
     finally:
-        for model in (only_max, with_output):
+        for model in (only_max, with_input):
             litellm.model_cost.pop(model, None)
             _forget_window(model)
+
+
+def _fake_litellm(monkeypatch, provider: str, info: Dict[str, Any]) -> list:
+    """Make LiteLLM know one model of ``provider`` by its unprefixed name."""
+    import litellm
+
+    lookups = []
+
+    def get_llm_provider(model, *args, **kwargs):
+        return model.split("/", 1)[1], provider, None, None
+
+    def get_model_info(model, custom_llm_provider=None, **kwargs):
+        lookups.append((model, custom_llm_provider))
+        if model.startswith("huggingface/"):  # the hub URL 404s on the prefix
+            raise Exception(f"{model} not found")
+        return dict(info, litellm_provider=provider)
+
+    monkeypatch.setattr(litellm, "get_llm_provider", get_llm_provider)
+    monkeypatch.setattr(litellm, "get_model_info", get_model_info)
+    return lookups
+
+
+def test_a_hugging_face_window_is_looked_up_without_the_prefix(monkeypatch):
+    model = "huggingface/fixcore-org/fixcore-model"
+    _forget_window(model)
+    # LiteLLM gives the hub's max_position_embeddings as max_tokens.
+    lookups = _fake_litellm(monkeypatch, "huggingface", {"max_tokens": 32_768})
+    try:
+        assert DefaultContextManager(model).max_tokens == 32_768
+    finally:
+        _forget_window(model)
+    assert lookups[0] == ("fixcore-org/fixcore-model", "huggingface")
+
+
+def test_max_tokens_alone_is_an_output_limit_for_other_providers(monkeypatch):
+    model = "gradient_ai/fixcore-model"
+    _forget_window(model)
+    _fake_litellm(monkeypatch, "gradient_ai", {"max_tokens": 4_096})
+    try:
+        assert DefaultContextManager(model).max_tokens is None
+    finally:
+        _forget_window(model)
 
 
 # -- 3: a message that partly fits keeps the part the marker says ----------
