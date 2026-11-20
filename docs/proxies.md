@@ -239,8 +239,8 @@ agent_configs:
 | `activate_proxies` | `[]` | Proxies to load, by key (`fx`) or package ref; empty loads every registered proxy |
 | `exec_env` | `interpreter` | `interpreter` adds `run_python`; any other value (`jupyter`, `null`) adds only `query_api_doc`, and your tactic runs the code ([Sandbox](sandbox.md)) |
 | `timeout` | `60.0` | Seconds per `run_python` call |
-| `max_output_chars` | `5000` | `run_python` output is cut here; `0` turns this off |
-| `truncation_indicator` | `... (truncated)` | Appended to cut output |
+| `max_output_chars` | `5000` | Longer `run_python` output loses its middle; `0` turns this off |
+| `truncation_indicator` | `... (truncated)` | Marks where output was cut |
 | `cutoff_date` | `null` | ISO date given to each proxy, for proxies that limit data by date |
 | `deploy_mode` | `false` | Given to each proxy; LLLM itself does not read it |
 | `prompt_template` | `null` | Replaces the instructions added to the system prompt |
@@ -280,20 +280,26 @@ print(python.run("print(len(squares))"))  # (1)!
 100
 """
 print(python.run("print(squares)"))  # (2)!
-#> [0, 1, 4, 9, 16, 25, 36, 49, 64, 81, 100... (truncated)
+"""
+[0, 1, 4, 9, 16, 25,... (truncated), 9409, 9604, 9801]
+"""
 ```
 
 1. Variables persist between calls, and only what the code prints comes
-   back; the last expression is not echoed.
-2. Output keeps its first `max_output_chars` characters. The instructions
-   in the system prompt tell the agent to print summaries, most important
-   part first.
+   back; the last expression is not echoed. Each call captures only its
+   own output, so agents can run code at the same time, as under `bcall`,
+   and your program's own prints are never captured.
+2. Longer output loses its middle: the first and the last 20 characters
+   (half of `max_output_chars` each) are kept, so the end of a traceback,
+   where the exception is, survives. The instructions in the system prompt
+   tell the agent to print only what it needs.
 
 An exception comes back as its traceback, so the agent can fix the code and
 try again with its variables intact. A call that runs past `timeout` returns
 `Error: Code execution timed out after 60s...` to the model, but the code is
-not stopped: it keeps running in a background thread, and what it changes
-stays in the namespace. `reset()` clears every variable except `CALL_API`.
+not stopped: it keeps running in a background thread, what it changes stays
+in the namespace, and what it prints is discarded. `reset()` clears every
+variable except `CALL_API`.
 
 !!! warning "Not a security boundary"
     The interpreter runs `exec()` inside your process, with your files,
