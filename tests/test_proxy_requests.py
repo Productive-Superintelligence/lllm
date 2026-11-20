@@ -325,7 +325,7 @@ class OwnCallProxy(BaseProxy):
 
 @pytest.mark.parametrize(
     ("proxy_cls", "lone_value_error"),
-    [(PlainProxy, (TypeError, "as a dict")), (OwnCallProxy, (AttributeError, "No endpoint 'anything'"))],
+    [(PlainProxy, (TypeError, "as a dict")), (OwnCallProxy, (TypeError, "as a dict"))],
 )
 def test_keyword_params_reach_proxies_with_their_own_call(proxy_cls, lone_value_error):
     proxies = ProxyManager(runtime=Runtime())
@@ -427,6 +427,23 @@ def test_a_lone_value_error_names_the_type_the_caller_passed(http):
 
     with pytest.raises(TypeError, match=r"\(start, end\), not list_iterator\."):
         proxy.call("history", iter(["2024"]))
+
+
+class Ambiguous:
+    """Like a numpy array of two items: iterable, with no truth value."""
+
+    def __iter__(self):
+        return iter([1, 2])
+
+    def __bool__(self):
+        raise ValueError("the truth value is ambiguous")
+
+
+def test_a_lone_value_without_a_truth_value_gets_the_usual_error(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with pytest.raises(TypeError, match=r"\(start, end\), not Ambiguous\."):
+        proxy.call("history", Ambiguous())
 
 
 def test_none_and_empty_containers_mean_no_params(http):

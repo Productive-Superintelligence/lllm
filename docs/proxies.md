@@ -321,10 +321,10 @@ A call that runs past `timeout` returns
 not stopped: it keeps running in a background thread, and what it changes
 stays in the namespace. What it and its threads print goes nowhere until
 that code ends; then its threads print like a returned call's. A stream set
-after the timeout, by your program or by the timed-out code, is kept: the
-timed-out code and its threads print into it until another call starts,
-and the next call saves it as your program's. `reset()` clears every
-variable except `CALL_API`.
+after the timeout while no other call runs, by your program or by the
+timed-out code, is kept: the timed-out code and its threads print into it
+until another call starts, and the next call saves it as your program's.
+`reset()` clears every variable except `CALL_API`.
 
 !!! warning "Not a security boundary"
     The interpreter runs `exec()` inside your process, with your files,

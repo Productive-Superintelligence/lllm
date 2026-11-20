@@ -1,9 +1,12 @@
 """run_python: each call captures its own output, and long output keeps both ends."""
 
+import codecs
 import contextlib
 import copy
 import io
+import logging
 import os
+import signal
 import subprocess
 import sys
 import threading
@@ -255,7 +258,7 @@ def greet(name):
     """
     print(f"Hello, {name}!")
 
-runner = doctest.DocTestRunner()
+runner = doctest.DocTestRunner(verbose=False)
 for test in doctest.DocTestFinder().find(greet, "greet", globs={"greet": greet}):
     runner.run(test)
 print(runner.summarize(verbose=False))
@@ -496,79 +499,149 @@ def test_calls_capture_while_timed_out_code_runs_after_the_program_sets_its_stdo
         assert sys.stdout is program_stream
 
 
-class Tee:
-    def __init__(self, *streams):
-        self.streams = streams
+class ForwardingTee:
+    """A tee whose isatty and fileno ask its first stream."""
+
+    def __init__(self, stream, copy):
+        self.stream, self.copy = stream, copy
 
     def write(self, text):
-        for stream in self.streams:
-            stream.write(text)
+        self.stream.write(text)
+        self.copy.write(text)
         return len(text)
 
     def flush(self):
-        for stream in self.streams:
-            stream.flush()
+        self.stream.flush()
+        self.copy.flush()
+
+    def isatty(self):
+        return self.stream.isatty()
+
+    def fileno(self):
+        return self.stream.fileno()
 
 
-def test_a_tee_of_sys_stdout_made_while_timed_out_code_runs_does_not_recurse(capsys):
-    with stuck(BLOCK) as call:
-        copied = io.StringIO()
-        sys.stdout = Tee(sys.stdout, copied)  # sys.stdout is the router here
-        assert interpreter().run("print('captured')") == "captured\n"
-        print("from the program")
-        call.finish()
-        print("after the calls")
-
-    assert copied.getvalue() == "from the program\nafter the calls\n"
-    assert capsys.readouterr().out == "from the program\nafter the calls\n"
+def make_tee(stream):
+    copy = io.StringIO()
+    return ForwardingTee(stream, copy), copy, str
 
 
-class RichStyleFileProxy(io.TextIOBase):
-    """Like rich's FileProxy: complete lines go through a console that
-    writes to ``sys.stdout``'s proxied file, looked up at print time."""
-
-    def __init__(self, file):
-        self._file = file
-        self._pending = ""
-
-    @property
-    def rich_proxied_file(self):
-        return self._file
-
-    def __getattr__(self, name):
-        return getattr(self._file, name)
-
-    def write(self, text):
-        self._pending += text
-        if "\n" in self._pending:
-            lines, self._pending = self._pending, ""
-            console_file = getattr(sys.stdout, "rich_proxied_file", sys.stdout)
-            console_file.write(lines)
-            console_file.flush()
-        return len(text)
-
-
-def rich_file_proxy(file):
+def make_rich(stream):  # what rich's Progress and Live install
     pytest.importorskip("rich")
     from rich.console import Console
     from rich.file_proxy import FileProxy
 
-    return FileProxy(Console(), file)
+    return FileProxy(Console(), stream), None, str
 
 
-@pytest.mark.parametrize("make_proxy", [RichStyleFileProxy, rich_file_proxy], ids=["rich-style", "rich"])
-def test_a_file_proxy_of_sys_stdout_made_while_timed_out_code_runs_does_not_recurse(
-    capsys, make_proxy
-):
-    with stuck(BLOCK) as call:
-        sys.stdout = make_proxy(sys.stdout)  # like rich's Progress or Live
-        assert interpreter().run("print('captured')") == "captured\n"
-        print("from the program")
-        call.finish()
-        print("after the calls")
+def make_codecs(stream):  # a text-to-text codecs writer
+    return codecs.getwriter("rot_13")(stream), None, lambda text: codecs.encode(text, "rot_13")
 
-    out = capsys.readouterr().out
-    assert "from the program" in out and "after the calls" in out
+
+WRAPPERS = {"tee": make_tee, "rich": make_rich, "codecs": make_codecs}
+
+
+def operate(operation, label, program):
+    """Do ``operation`` on sys.stdout from the program; check what it reaches."""
+
+    if operation == "print":
+        print(label)
+    elif operation == "flush":
+        print(label, end="")
+        sys.stdout.flush()
+    elif operation == "isatty":
+        assert sys.stdout.isatty() is False
+    else:
+        assert sys.stdout.fileno() == program.fileno()  # P's, not sys.__stdout__'s
+
+
+@pytest.mark.parametrize("operation", ["print", "flush", "isatty", "fileno"])
+@pytest.mark.parametrize("order", ["code running", "code ended"])
+@pytest.mark.parametrize("wrapper", sorted(WRAPPERS))
+def test_a_wrapper_of_sys_stdout_made_while_timed_out_code_runs(tmp_path, wrapper, order, operation):
+    stdout = sys.stdout
+    labels = ("during the call", "after the calls")
+    started, finish = threading.Event(), threading.Event()
+    results = {}
+    with open(tmp_path / "program.txt", "w+", encoding="utf-8") as program:
+        sys.stdout = program  # P, the program's real stream
+        try:
+            with stuck(BLOCK) as call:
+                wrapped, copy, encode = WRAPPERS[wrapper](sys.stdout)  # wraps the router
+                sys.stdout = wrapped
+                if order == "code ended":
+                    call.finish()  # the wrapper is kept as the program's stream
+                following = interpreter()
+                following.namespace.update(started=started, finish=finish)
+                code = "print('captured')\nstarted.set()\nfinish.wait(5)\n"
+                thread = run_in_thread(following, code, results, "out")
+                assert started.wait(5)
+                operate(operation, labels[0], program)
+                finish.set()
+                thread.join(10)
+                call.finish()
+                assert sys.stdout is wrapped
+                operate(operation, labels[1], program)
+                sys.stdout.flush()
+        finally:
+            sys.stdout = stdout
+        program.seek(0)
+        written = program.read()
+
+    assert results["out"] == "captured\n"
+    if operation in ("print", "flush"):
+        for label in labels:
+            assert written.count(encode(label)) == 1, written
+            if copy is not None:
+                assert copy.getvalue().count(label) == 1, copy.getvalue()
+    else:
+        assert written == "" and (copy is None or copy.getvalue() == "")
+
+
+def test_a_handler_holding_sys_stdout_from_a_call_writes_to_the_program_after_it():
+    stdout = sys.stdout
+    program, own = io.StringIO(), io.StringIO()
+    sys.stdout = program
+    try:
+        with stuck(BLOCK) as call:
+            sys.stdout = own  # the program's own stream, set after the timeout
+            started, finish = threading.Event(), threading.Event()
+            following = interpreter()
+            following.namespace.update(started=started, finish=finish)
+            results = {}
+            thread = run_in_thread(following, "started.set()\nfinish.wait(5)\n", results, "out")
+            assert started.wait(5)
+            handler = logging.StreamHandler(sys.stdout)  # holds the router
+            finish.set()
+            thread.join(10)
+            call.finish()
+            assert sys.stdout is own
+            handler.emit(logging.makeLogRecord({"msg": "held"}))
+    finally:
+        sys.stdout = stdout
+
+    assert own.getvalue() == "held\n"
+    assert program.getvalue() == ""
+
+
+def test_a_program_that_silenced_its_stdout_stays_silent_while_a_call_runs(monkeypatch):
+    real_stdout = io.StringIO()
+    monkeypatch.setattr(sys, "__stdout__", real_stdout)
+    monkeypatch.setattr(sys, "stdout", None)
+    started, finish = threading.Event(), threading.Event()
+    interp = interpreter()
+    interp.namespace.update(started=started, finish=finish)
+    results = {}
+
+    thread = run_in_thread(interp, "print('captured')\nstarted.set()\nfinish.wait(5)\n", results, "out")
+    assert started.wait(5)
+    print("silenced")  # through the router, to the program's None stream
+    finish.set()
+    thread.join(10)
+
+    assert results["out"] == "captured\n"
+    assert real_stdout.getvalue() == ""
+    assert sys.stdout is None
 
 
 def test_an_interrupted_run_gives_up_its_call(monkeypatch):
@@ -609,8 +682,14 @@ def test_an_interrupt_landing_as_run_returns_releases_the_call():
         "time.sleep(0.05)\n"
     )
 
-    with pytest.raises(KeyboardInterrupt):
-        interp.run(code)
+    # interrupt_main needs Python's SIGINT handler, which a shell running
+    # the tests in the background (with &) replaces with SIG_IGN.
+    previous = signal.signal(signal.SIGINT, signal.default_int_handler)
+    try:
+        with pytest.raises(KeyboardInterrupt):
+            interp.run(code)
+    finally:
+        signal.signal(signal.SIGINT, previous)
     wait_for_calls_to_end()
 
     record = interp.namespace["worker"]._lllm_call

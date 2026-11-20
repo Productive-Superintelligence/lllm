@@ -42,10 +42,13 @@ _lock = threading.Lock()
 _flights: set = set()  # calls whose code is running, timed-out ones included
 _original: Any = None  # the program's stream, saved when it gets the router
 _earlier: Any = None  # the program's stream saved before _original, if any
+_wrappers: List[Any] = []  # program streams seen calling back into the router
+_kept: Any = None  # a stream set after a timeout and kept when that code ended
+_kept_original: Any = None  # _original when _kept was kept
 _router: Optional["_ThreadStdout"] = None  # the one stand-in, made on first use
 _start_raw: Any = None  # threading.Thread.__dict__["start"] before the hook
 _capture = threading.local()  # .call: the call whose code runs on this thread
-_nesting = threading.local()  # .depth: router writes in progress on this thread
+_nesting = threading.local()  # .stack: what router operations on this thread forward to
 
 
 class _CallOutput:
@@ -101,20 +104,29 @@ def _owner() -> Optional[_CallOutput]:
     return call
 
 
+def _known(stream: Any) -> bool:
+    """Whether ``stream`` has been seen calling back into the router, i.e.
+    it wraps the router (a tee, rich's file proxy, a codecs writer...)."""
+
+    return stream is not None and any(stream is wrapper for wrapper in _wrappers)
+
+
 def _program_stream(depth: int) -> Any:
-    """The program's stream for a write that reached the router ``depth``
-    times on this thread. The router reached again from inside the stream it
-    forwarded to (a wrapper of the router, such as a tee or rich's file
-    proxy, saved as the program's stream) means the stream saved before it.
+    """The program's stream for an operation that entered the router
+    ``depth`` times on this thread.
+
+    A first entry goes to ``_original``, the program's stream (nowhere when
+    the program set ``sys.stdout`` to None), unless ``_original`` is a known
+    wrapper of the router installed in ``sys.stdout``: then this is that
+    wrapper's own inner operation, as is any re-entry, which goes to the
+    stream saved before ``_original``, or else to ``sys.__stdout__``.
     """
 
-    if _earlier is not None and getattr(sys, "stdout", None) is not _router:
-        depth += 1  # out of sys.stdout, the router is reached from inside a wrapper
-    streams = (_original, _earlier)
-    stream = streams[depth] if depth < len(streams) else None
-    if stream is None or stream is _router:
-        stream = sys.__stdout__
-    return _NULL if stream is None else stream
+    if depth == 0 and not (_known(_original) and getattr(sys, "stdout", None) is _original):
+        return _NULL if _original is None else _original
+    if _earlier is not None and _earlier is not _router and not _known(_earlier):
+        return _earlier
+    return _NULL if sys.__stdout__ is None else sys.__stdout__
 
 
 def _route(depth: int = 0) -> Any:
@@ -159,37 +171,75 @@ def _install_start_hook() -> None:
         threading.Thread.start = _make_start_hook(threading.Thread.start)
 
 
+def _stack() -> List[Any]:
+    """What the router operations in progress on this thread forward to."""
+
+    try:
+        return _nesting.stack
+    except AttributeError:
+        _nesting.stack = []
+        return _nesting.stack
+
+
+def _entered() -> Any:
+    """The target of an operation entering the router now. A program stream
+    that is in the middle of a router operation on this thread and calls
+    back into the router is marked as a wrapper of it (the evidence)."""
+
+    stack = _stack()
+    if stack:
+        outer = stack[-1]
+        if outer is not None and (outer is _original or outer is _earlier) and not _known(outer):
+            _wrappers.append(outer)
+    return _route(len(stack))
+
+
+def _within(target: Any, function: Callable[[], Any]) -> Any:
+    """Run ``function`` as a router operation forwarding to ``target``."""
+
+    stack = _stack()
+    stack.append(target)
+    try:
+        return function()
+    finally:
+        stack.pop()
+
+
 class _ThreadStdout:
     """``sys.stdout`` while calls' code runs: one router per process.
 
-    Each write goes where :func:`_route` sends the writing thread: into the
-    call it belongs to, nowhere for a timed-out call's threads until its
-    code ends, or to the program's stream. A write that comes back to the
-    router while it forwards one on the same thread (the program's stream
-    wraps the router) goes to the stream saved before the program's current
-    one, or to ``sys.__stdout__``, instead of being routed again. The code's
+    Each operation (a write, a flush, or a method looked up on it) goes
+    where :func:`_route` sends the thread: into the call it belongs to,
+    nowhere for a timed-out call's threads until its code ends, or to the
+    program's stream. A program stream that calls back into the router while
+    serving one of its operations (a tee, rich's file proxy, a codecs
+    writer, saved as the program's stream) is a known wrapper of it: such a
+    call-back goes to the stream saved before it, or to ``sys.__stdout__``,
+    instead of being routed again (see :func:`_program_stream`). The code's
     own redirects replace this router in ``sys.stdout`` and are process-wide
     while they last.
     """
 
-    def _forward(self, use: Callable[[Any], Any]) -> Any:
-        depth = getattr(_nesting, "depth", 0)
-        _nesting.depth = depth + 1
-        try:
-            return use(_route(depth))
-        finally:
-            _nesting.depth = depth
-
     def write(self, text: str) -> int:
-        return self._forward(lambda stream: stream.write(text))
+        target = _entered()
+        return _within(target, lambda: target.write(text))
 
     def flush(self) -> None:
-        self._forward(lambda stream: stream.flush())
+        target = _entered()
+        _within(target, lambda: target.flush())
 
     def __getattr__(self, name: str) -> Any:
         if name.startswith("__"):  # e.g. while copying
             raise AttributeError(name)
-        return self._forward(lambda stream: getattr(stream, name))
+        target = _entered()
+        value = _within(target, lambda: getattr(target, name))
+        if not callable(value):
+            return value
+
+        def method(*args: Any, **kwargs: Any) -> Any:
+            return _within(target, lambda: value(*args, **kwargs))
+
+        return method
 
 
 def _owned() -> bool:
@@ -203,7 +253,7 @@ def _enter(call: _CallOutput) -> None:
     """A call's code starts: install the router unless another running
     call owns ``sys.stdout`` (whatever is there then is left alone)."""
 
-    global _router, _original, _earlier
+    global _router, _original, _earlier, _wrappers, _kept, _kept_original
     with _lock:
         if _router is None:
             _router = _ThreadStdout()
@@ -214,11 +264,14 @@ def _enter(call: _CallOutput) -> None:
             # timed-out code ran: save it. A stream timed-out code set before
             # its timeout is not the program's, so the saved one stays.
             if not any(current is c.stdout_at_timeout for c in _flights):
-                if _flights:
+                if _flights:  # set after a timeout, while that code runs
                     _earlier = _original
-                elif current is not _original:
-                    _earlier = None
+                elif _kept is not None and current is _kept:  # ... and kept since
+                    _earlier = _kept_original
+                elif current is not _original and not _known(current):
+                    _earlier, _wrappers = None, []  # a new stream: forget the old
                 _original = current
+                _kept = _kept_original = None
             sys.stdout = _router
         _flights.add(call)
         if not call.abandoned:  # the timeout can fire before the code starts
@@ -230,6 +283,7 @@ def _exit(call: _CallOutput) -> None:
     """A call's code ends: put back what it replaced, and the program's
     stream after the last call."""
 
+    global _kept, _kept_original
     _capture.call = None
     with _lock:
         call.finished = True
@@ -237,7 +291,10 @@ def _exit(call: _CallOutput) -> None:
         current = getattr(sys, "stdout", None)
         at_timeout, call.stdout_at_timeout = call.stdout_at_timeout, None
         if call.abandoned and current is not at_timeout and current is not _router:
-            return  # set after the timeout, when the program had moved on: keep it
+            # Set after the timeout, when the program had moved on: keep it,
+            # and what it may wrap, for the next call (see _enter).
+            _kept, _kept_original = current, _original
+            return
         if current is not _router and not _owned():
             sys.stdout = current = _router  # the code left it replaced
         if not _flights and current is _router:
@@ -287,10 +344,10 @@ class AgentInterpreter:
       ``timeout`` seconds a ``TimeoutError`` is raised.  The namespace is NOT
       rolled back on timeout — partial side-effects may have occurred.  Until
       the code ends, what it and its threads print is dropped; then its
-      threads print like a returned call's.  A stream set after the timeout,
-      by the program or by the timed-out code, is kept: the timed-out code
-      and its threads print into it until another call starts, and the next
-      call saves it as the program's.
+      threads print like a returned call's.  A stream set after the timeout
+      while no other call runs, by the program or by the timed-out code, is
+      kept: the timed-out code and its threads print into it until another
+      call starts, and the next call saves it as the program's.
 
     Parameters
     ----------

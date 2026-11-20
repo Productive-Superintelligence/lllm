@@ -321,10 +321,11 @@ class BaseProxy:
         params, each value URL-encoded as a single path segment. A missing
         value, ``.`` or ``..`` raises ``ValueError``.
 
-        Params are anything ``dict()`` takes, as in 0.4.0: a mapping, a
-        Pydantic model, an object with ``keys()`` (``sqlite3.Row``,
-        ``pandas.Series``), or ``(name, value)`` pairs; ``None`` and empty
-        containers mean no params. A one-shot iterator is read once first.
+        Params are anything ``dict()`` takes (0.4.0 also needed a truth
+        value): a mapping, a Pydantic model, an object with ``keys()``
+        (``sqlite3.Row``, ``pandas.Series``), or ``(name, value)`` pairs;
+        ``None`` and empty containers mean no params. A one-shot iterator is
+        read once first.
         Any other value, such as a tactic endpoint's text input, is a lone
         value, passed on as it is: the value of the endpoint's only
         parameter, or of its only required one. Where the endpoint takes no
@@ -639,14 +640,14 @@ class ProxyManager:
             else:
 
                 def documented() -> Any:
-                    # Only a lone value needs the endpoint, to be named.
-                    resolve = getattr(proxy, "resolve_endpoint", None)
-                    if resolve is None:  # not a BaseProxy
+                    # Only a lone value needs the endpoint, to be named, and
+                    # only BaseProxy.call serves the endpoints it can list.
+                    if type(proxy).call is not BaseProxy.call:
                         raise TypeError(
                             f"'{endpoint}': pass the params as a dict to add "
                             "keyword params to them."
                         )
-                    return resolve(path)[1].get("params")  # "No endpoint ..." as is
+                    return proxy.resolve_endpoint(path)[1].get("params")  # "No endpoint ..." as is
 
                 params = {**_params_dict(params, path, documented), **kwargs}
         return proxy.call(path, params)
