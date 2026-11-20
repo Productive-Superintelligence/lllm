@@ -1437,8 +1437,9 @@ def test_responses_api_usage_counts_prompt_and_completion_tokens(monkeypatch):
 DEEP_TASKS = """
 import asyncio
 import threading
-from collections import OrderedDict
+from collections import OrderedDict, deque
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any, Dict
 
 threading.stack_size(1 << 20)  # 1 MiB, as on python:alpine
@@ -1482,6 +1483,9 @@ tasks = [
     chain,
     Box(items=deep(9_000)),
     {"notes": Notes(data={"x": deep(9_000)})},
+    # Not walked, named by their type: their repr would recurse in C.
+    deque([deep(9_000)]),
+    SimpleNamespace(items=deep(9_000)),
 ]
 for task in tasks:
     print(asyncio.run(Kind().arun(task)))  # arun works on a worker thread
@@ -1511,28 +1515,46 @@ def test_deeply_nested_tasks_run_on_a_small_thread_stack():
     result = _run_apart(DEEP_TASKS)
 
     assert result.returncode == 0, result.stderr[-2000:]
-    assert result.stdout.split() == ["dict", "Notes", "OrderedDict", "Box", "dict"]
+    assert result.stdout.split() == [
+        "dict",
+        "Notes",
+        "OrderedDict",
+        "Box",
+        "dict",
+        "deque",
+        "SimpleNamespace",
+    ]
 
 
 QUICK_NAMES = """
 import time
 
+from pydantic import BaseModel, ConfigDict
+
 from lllm.runtimes.native.core.tactic import _task_to_string
 
+
+class Loose(BaseModel):
+    model_config = ConfigDict(extra="allow")
+
+
 loop = {}
-loop["a"] = loop["b"] = loop["c"] = loop  # three ways back to itself
-for task in (loop, list(range(1_000_000))):
+model = Loose()
+for n in range(10_000):  # 10,000 ways back to itself
+    loop[f"k{n}"] = loop
+    model.__pydantic_extra__[f"k{n}"] = model
+for task in (loop, model):
     start = time.perf_counter()
     _task_to_string(task)
     print(round(time.perf_counter() - start, 3))
 """
 
 
-def test_cycles_and_huge_lists_name_their_session_quickly():
+def test_self_references_name_their_session_quickly():
     result = _run_apart(QUICK_NAMES, timeout=60)
 
     assert result.returncode == 0, result.stderr[-2000:]
-    assert all(float(seconds) < 1 for seconds in result.stdout.split())
+    assert all(float(seconds) < 0.5 for seconds in result.stdout.split())
 
 
 def test_session_names_hash_equal_tasks_alike_and_others_apart():
@@ -1543,6 +1565,8 @@ def test_session_names_hash_equal_tasks_alike_and_others_apart():
     assert text(task) != text({**task, "lines": [1, 2.5, None, True, b"\x01"]})
     assert text({"a": 1}) != text({"a": "1"})
     assert text("plain text") == "plain text"
+    # At most 10,000 values are read, so a huge list stays cheap.
+    assert text(list(range(10_000)) + [0]) == text(list(range(10_000)) + [1])
 
     names = []
 

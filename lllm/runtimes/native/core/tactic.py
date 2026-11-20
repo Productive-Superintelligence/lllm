@@ -247,19 +247,25 @@ def _task_to_string(task: Any) -> str:
         leaf = _preview_leaf(value)
         if leaf is not None:
             out.append(leaf)
-            continue
-        children = _preview_children(value, _PREVIEW_VALUES - seen + 1)
-        if children is None:
+        elif not _walkable(value):
             out.append(type(value).__qualname__)
         elif depth >= _PREVIEW_DEPTH or id(value) in on_path:
-            out.append("...")
+            out.append("...")  # decided before reading any children
         else:
             on_path.add(id(value))
             out.append(type(value).__qualname__ + "(")
             stack.append(("leave", id(value), depth))
             stack.append(("text", ")", depth))
+            children = _preview_children(value, _PREVIEW_VALUES - seen + 1)
             stack.extend(("value", child, depth + 1) for child in reversed(children))
     return " ".join(out)
+
+
+def _walkable(value: Any) -> bool:
+    """Whether the preview walks into ``value``: a cheap type check."""
+    if isinstance(value, (Mapping, list, tuple, set, frozenset, BaseModel)):
+        return True
+    return is_dataclass(value) and not isinstance(value, type)
 
 
 def _preview_leaf(value: Any) -> Optional[str]:
@@ -279,23 +285,20 @@ def _preview_leaf(value: Any) -> Optional[str]:
     return None
 
 
-def _preview_children(value: Any, limit: int) -> Optional[List[Any]]:
-    """The values to walk inside ``value`` (at most ``limit`` items or
-    pairs), or None for an object that is not walked."""
-    if isinstance(value, Mapping):
-        pairs = itertools.islice(value.items(), limit)
-    elif isinstance(value, (list, tuple, set, frozenset)):
+def _preview_children(value: Any, limit: int) -> List[Any]:
+    """The values to walk inside a walkable ``value``: at most ``limit``
+    items or key-value pairs, read lazily."""
+    if isinstance(value, (list, tuple, set, frozenset)):
         return list(itertools.islice(value, limit))
+    if isinstance(value, Mapping):
+        pairs: Any = value.items()
     elif isinstance(value, BaseModel):
-        fields = [(name, getattr(value, name, None)) for name in type(value).model_fields]
+        fields = ((name, getattr(value, name, None)) for name in type(value).model_fields)
         extra = getattr(value, "__pydantic_extra__", None) or {}
-        pairs = itertools.islice([*fields, *extra.items()], limit)
-    elif is_dataclass(value) and not isinstance(value, type):
-        fields = [(f.name, getattr(value, f.name, None)) for f in dataclass_fields(value)]
-        pairs = itertools.islice(fields, limit)
-    else:
-        return None
-    return [part for pair in pairs for part in pair]
+        pairs = itertools.chain(fields, extra.items())
+    else:  # a dataclass instance
+        pairs = ((f.name, getattr(value, f.name, None)) for f in dataclass_fields(value))
+    return [part for pair in itertools.islice(pairs, limit) for part in pair]
 
 
 def _zero_invoke_cost() -> Any:
@@ -1009,7 +1012,8 @@ class Tactic(_ProtocolTactic[InputT, OutputT]):
         tactic_name = self.tactic_name
         if session_name is None:
             preview = _task_to_string(task).encode("utf-8", "surrogatepass")
-            task_hash = hashlib.md5(preview).hexdigest()[:8]
+            # Not for security: plain md5 raises on FIPS-mode Python.
+            task_hash = hashlib.md5(preview, usedforsecurity=False).hexdigest()[:8]
             timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
             session_name = f"{tactic_name}_{task_hash}_{timestamp}"
         session = TacticCallSession(
