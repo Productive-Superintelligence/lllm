@@ -754,7 +754,6 @@ def test_prompt_parse_does_not_probe_parser_parse_property():
     assert prompt.parse("hello", mode="strict") == {
         "content": "hello",
         "runtime_args": {"mode": "strict"},
-        "raw": "hello",
     }
 
 
@@ -770,7 +769,6 @@ def test_prompt_parse_accepts_classmethod_parse_parser():
         "parser": "ClassMethodParser",
         "content": "hello",
         "mode": "strict",
-        "raw": "hello",
     }
 
 

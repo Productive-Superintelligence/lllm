@@ -27,7 +27,9 @@ def _route_charge(request):
 
 
 @rule(
-    lambda r: r.text.startswith("Error: Invalid triage")
+    lambda r: r.text.startswith(
+        "Error: The reply does not match Triage: team: Input should be"
+    )
     and _said(r, "wrong company name")
 )
 def _triage_repaired(request):

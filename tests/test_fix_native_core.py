@@ -1,14 +1,14 @@
 """Regression tests for native runtime fixes found while rewriting the docs."""
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Literal
 
 import pytest
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
-from lllm import Prompt, Tactic, tool  # noqa: E402
+from lllm import ParseError, Prompt, Tactic, tool  # noqa: E402
 from lllm.runtimes.native import Dialog, Role  # noqa: E402
 from lllm.runtimes.native.core.dialog import DefaultContextManager  # noqa: E402
 from lllm.testing import ScriptedModel, ToolCall  # noqa: E402
@@ -206,3 +206,129 @@ def test_pydantic_config_keeps_its_global_section():
     assert (echo.model, echo.max_llm_recall) == ("gpt-4o-mini", 2)
     with ScriptedModel(["hello"]):
         assert tactic("hello") == "hello"
+
+
+# -- 5: ``format=`` validates the reply against the model --------------------
+
+
+class Triage(BaseModel):
+    team: Literal["billing", "bugs", "accounts"]
+    priority: int
+
+
+TRIAGE = Prompt(path="fix/triage", prompt="Route: {ticket}", format=Triage)
+NOT_A_TEAM = "team: Input should be 'billing', 'bugs' or 'accounts'"
+
+
+def test_format_repairs_replies_whose_fields_do_not_fit():
+    agent = Tactic.quick(system_prompt="You route tickets.", model="gpt-4o-mini")
+    agent.open("triage")
+    agent.receive_prompt(TRIAGE, {"ticket": "Wrong company name on my invoice."})
+    replies = ['{"team": "invoicing", "priority": 3}', '{"team": "billing", "priority": 3}']
+    with ScriptedModel(replies) as model:
+        session = agent.respond(return_session=True)
+
+    assert session.exception_retries_count == 1
+    (error,) = session.invoke_traces[0][0].execution_errors
+    assert isinstance(error, ParseError)
+    assert str(error) == f"The reply does not match Triage: {NOT_A_TEAM}"
+    assert model.requests[1].text == (
+        f"Error: The reply does not match Triage: {NOT_A_TEAM}. Please fix."
+    )
+    assert session.delivery.parsed == {"team": "billing", "priority": 3}
+
+
+def test_format_lists_every_problem_with_its_location():
+    with pytest.raises(ParseError) as info:
+        TRIAGE.parse('{"team": "sales"}')
+    assert str(info.value) == (
+        f"The reply does not match Triage: {NOT_A_TEAM}; priority: Field required"
+    )
+
+    with pytest.raises(ParseError, match=r"Triage: Input should be an object$"):
+        TRIAGE.parse("[1, 2]")
+    with pytest.raises(json.JSONDecodeError):  # invalid JSON, as before
+        TRIAGE.parse("billing")
+
+
+def test_format_with_a_json_schema_needs_a_json_object():
+    ask = Prompt(path="fix/schema", prompt="Answer.", format={"type": "object"})
+
+    assert ask.parse('{"answer": 42}') == {"answer": 42}
+    with pytest.raises(ParseError, match="JSON object"):
+        ask.parse("[42]")
+
+
+# -- 6: ``parsed`` holds exactly what ``format=`` or the parser produced ----
+
+
+class Ticket(BaseModel):
+    team: str
+    urgent: bool = False
+    is_global: bool = Field(default=False, alias="global")
+
+
+def test_format_results_hold_exactly_the_model_fields():
+    ask = Prompt(path="fix/ticket", prompt="Route: {ticket}", format=Ticket)
+    parsed = ask.parse('{"team": "bugs", "global": true, "confidence": 0.9}')
+
+    assert parsed == {"team": "bugs", "urgent": False, "global": True}
+    assert Ticket.model_validate(parsed).is_global is True
+
+
+class StrictTriage(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    team: str
+    priority: int
+
+
+def as_strict_triage(text: str, **kwargs) -> dict:
+    return StrictTriage.model_validate_json(text).model_dump()
+
+
+class StrictRoute(Tactic):
+    name = "fix_strict_route"
+    agent_group = ["router"]
+    output_model = StrictTriage
+
+    def call(self, ticket: str) -> StrictTriage:
+        router = self.agents["router"]
+        router.open("route")
+        router.receive_prompt(self.prompt, {"ticket": ticket})
+        return router.respond().parsed
+
+
+@pytest.mark.parametrize(
+    "contract",
+    [{"format": StrictTriage}, {"parser": as_strict_triage}],
+    ids=["format", "parser"],
+)
+def test_parsed_validates_into_a_model_that_forbids_extra_fields(contract):
+    route = StrictRoute(
+        {
+            "global": {"model_name": "gpt-4o-mini"},
+            "agent_configs": [{"name": "router", "system_prompt": "You route."}],
+        }
+    )
+    route.prompt = Prompt(path="fix/strict", prompt="Route: {ticket}", **contract)
+    with ScriptedModel(['{"team": "billing", "priority": 2}']):
+        result = route("I was charged twice.")
+
+    assert result == StrictTriage(team="billing", priority=2)
+
+
+def test_parser_results_are_used_as_returned():
+    def percent(text: str, **kwargs) -> float:
+        return float(text.rstrip("%"))
+
+    def fields(text: str, **kwargs) -> dict:
+        return {"label": text.strip()}
+
+    assert Prompt(path="fix/percent", prompt="?", parser=percent).parse("37%") == {
+        "value": 37.0
+    }
+    assert Prompt(path="fix/fields", prompt="?", parser=fields).parse(" bug ") == {
+        "label": "bug"
+    }
+    assert Prompt(path="fix/plain", prompt="?").parse("hello") == {}

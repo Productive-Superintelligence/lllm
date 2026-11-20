@@ -97,8 +97,10 @@ any model call. To use another template language, give the prompt a
 
 Give a prompt a Pydantic model as `format`, and the model is asked for JSON
 matching it (OpenAI-style structured output where the provider supports
-it). The reply is decoded into `parsed`, and invalid JSON is repaired like
-any parse error:
+it). The reply is validated against the model, and `parsed` holds the
+model's fields. A reply that is not valid JSON or does not fit the model
+(a missing field, a wrong type, a failed validator) is repaired like any
+parse error:
 
 ```python title="structured.py"
 from pydantic import BaseModel
@@ -130,14 +132,16 @@ print(invoice)
 1. Inside a tactic you rarely do this by hand: declare `output_model =
    Invoice` and the tactic validates its result. See [Typed I/O](typed-io.md).
 
-A `dict` JSON schema works as `format` too. For replies that are not JSON,
-use a parser.
+A `dict` JSON schema works as `format` too: the reply must be a JSON
+object, but its fields are not checked. For replies that are not JSON, use
+a parser.
 
 ## Parsers
 
 A parser is any object with a `parse(text, **kwargs)` method, or a plain
 function. Whatever it returns becomes `parsed` (non-dict values are wrapped as
-`{"value": ...}`), and whatever it raises is sent back to the model.
+`{"value": ...}`; the reply text stays in `content`), and whatever it raises
+is sent back to the model.
 
 `DefaultTagParser` extracts tagged sections, which is often more robust than
 JSON for long reasoning:
@@ -192,7 +196,7 @@ ESTIMATE = Prompt(
     parser=percentage,
 )
 print(ESTIMATE.parse("37%"))
-#> {'value': 37.0, 'raw': '37%'}
+#> {'value': 37.0}
 ```
 
 Arguments passed to `agent.respond(parser_args={...})` reach the parser as

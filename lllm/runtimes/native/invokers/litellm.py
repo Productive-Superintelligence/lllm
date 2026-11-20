@@ -358,8 +358,8 @@ class LiteLLMInvoker(BaseInvoker):
                     errors.append(exc)
                     parsed = {"raw": content}
             else:
-                try:
-                    parsed = json.loads(content)
+                try:  # decodes, and validates against a Pydantic format
+                    parsed = prompt.parse(content, **parser_args)
                 except Exception as exc:
                     errors.append(exc)
                     parsed = {"raw": content}
