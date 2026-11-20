@@ -1087,7 +1087,9 @@ def test_inspect_help_hides_store_but_inspect_still_accepts_it(
     assert not (tmp_path / "s").exists()
 
 
-# Review 6: a web page cannot make a visitor's browser run a served tactic.
+# Review 6, final rule: a web page cannot make a visitor's browser run a
+# served tactic. A cross-site POST that is not JSON, or a cross-site GET to
+# a custom endpoint, is refused; PUT, PATCH, and DELETE are left to CORS.
 
 EVIL = "https://evil.example"
 
@@ -1109,6 +1111,18 @@ class Echo(ProtocolTactic):
     def status(self, value):
         return {"query": value}
 
+    @endpoint.put("/echo/item")
+    def put_item(self, value):
+        return {"put": value}
+
+    @endpoint.patch("/echo/item")
+    def patch_item(self, value):
+        return {"patched": value}
+
+    @endpoint.delete("/echo/item")
+    def delete_item(self, value):
+        return {"deleted": value}
+
 
 def _local_client(app=None) -> TestClient:
     return TestClient(app or create_tactic_app(Echo()), base_url="http://127.0.0.1:8000")
@@ -1121,80 +1135,152 @@ def _assert_refused(response, endpoint_name: str) -> None:
     assert error["tactic"] == "echo"
     assert error["endpoint"] == endpoint_name
     assert error["request_id"]
-    assert "JSON" in error["message"]
 
 
-@pytest.mark.parametrize(
-    "body",
-    [
-        {"content": "hi", "headers": {"content-type": "text/plain"}},
-        {"data": {"input": "hi"}},  # application/x-www-form-urlencoded
-        {"files": {"input": ("hi.txt", b"hi")}},  # multipart/form-data
-        {"content": b"hi"},  # no content type
-    ],
-    ids=["text", "form", "multipart", "no-content-type"],
-)
-@pytest.mark.parametrize(
-    "browser",
-    [
-        {"origin": EVIL},
-        {"origin": "http://127.0.0.1:3000"},  # another port on this host
-        {"origin": "null"},  # a sandboxed page or a file
-        {"sec-fetch-site": "cross-site"},  # no Origin, as for a no-cors GET
-    ],
-    ids=["other-site", "other-port", "null", "sec-fetch-site"],
-)
-def test_a_cross_site_browser_request_that_is_not_json_is_refused(body, browser):
-    client = _local_client()
-    headers = {**body.pop("headers", {}), **browser}
+# Bodies a browser posts to another site without a preflight, and the
+# content type each one must really be sent with.
+SIMPLE_BODIES = {
+    "text": ({"content": "hi", "headers": {"content-type": "text/plain"}}, "text/plain"),
+    "form": ({"data": {"input": "hi"}}, "application/x-www-form-urlencoded"),
+    "multipart": ({"files": {"input": ("hi.txt", b"hi")}}, "multipart/form-data"),
+    "no-content-type": ({"content": b"hi"}, None),
+}
 
-    response = client.post("/run", headers=headers, **body)
+# Ways a request is cross-site. Sec-Fetch-Site decides alone when present.
+CROSS_SITE = {
+    "sec-cross-site": {"sec-fetch-site": "cross-site", "origin": EVIL},
+    "sec-same-site": {"sec-fetch-site": "same-site", "origin": "http://127.0.0.1:8000"},
+    "sec-only": {"sec-fetch-site": "cross-site"},  # no Origin, as on a no-cors GET
+    "other-site": {"origin": EVIL},
+    "other-port": {"origin": "http://127.0.0.1:3000"},
+    "null": {"origin": "null"},  # a sandboxed page or a file
+    "not-web": {"origin": "chrome-extension://abcdef"},
+}
+
+
+def _post_simple(client, path, body, signal):
+    kwargs, content_type = SIMPLE_BODIES[body]
+    headers = {**kwargs.get("headers", {}), **CROSS_SITE[signal]}
+    sent = {key: value for key, value in kwargs.items() if key != "headers"}
+    response = client.post(path, headers=headers, **sent)
+    # The case really sent the body it is named after.
+    actual = response.request.headers.get("content-type")
+    if content_type is None:
+        assert actual is None
+    else:
+        assert actual.split(";")[0] == content_type
+    return response
+
+
+@pytest.mark.parametrize("body", list(SIMPLE_BODIES))
+@pytest.mark.parametrize("signal", list(CROSS_SITE))
+def test_a_cross_site_post_that_is_not_json_is_refused(body, signal):
+    response = _post_simple(_local_client(), "/run", body, signal)
 
     _assert_refused(response, "run")
+    assert "JSON" in response.json()["detail"]["error"]["message"]
 
 
 @pytest.mark.parametrize(
     "path",
     ["/run", "/stream", "/tactics/echo/run", "/tactics/echo/stream", "/echo/shout"],
 )
-def test_every_tactic_route_refuses_cross_site_text(path):
-    client = _local_client()
+def test_every_tactic_post_route_refuses_cross_site_text(path):
+    response = _post_simple(_local_client(), path, "text", "other-site")
 
-    response = client.post(
-        path, content="hi", headers={"content-type": "text/plain", "origin": EVIL}
+    _assert_refused(response, path.rsplit("/", 1)[-1])
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [{"sec-fetch-site": "cross-site"}, {"sec-fetch-site": "same-site"}, {"origin": EVIL}],
+    ids=["sec-cross-site", "sec-same-site", "origin"],
+)
+def test_a_cross_site_get_to_a_custom_endpoint_is_refused(headers):
+    response = _local_client().get("/echo/status?q=1", headers=headers)
+
+    _assert_refused(response, "status")
+    assert "custom endpoint" in response.json()["detail"]["error"]["message"]
+
+
+@pytest.mark.parametrize(
+    "headers",
+    [{}, {"sec-fetch-site": "same-origin"}, {"sec-fetch-site": "none"}],
+    ids=["not-a-browser", "same-origin", "typed-url"],
+)
+def test_a_get_to_a_custom_endpoint_from_this_origin_runs(headers):
+    response = _local_client().get("/echo/status?q=1", headers=headers)
+
+    assert response.json() == {"query": {"q": "1"}}
+
+
+def test_cors_approved_cross_origin_put_patch_and_delete_are_allowed():
+    from starlette.middleware.cors import CORSMiddleware
+
+    app = create_tactic_app(Echo())
+    app.add_middleware(
+        CORSMiddleware, allow_origins=[EVIL], allow_methods=["*"], allow_headers=["*"]
+    )
+    client = _local_client(app)
+    preflight = client.options(
+        "/echo/item",
+        headers={"origin": EVIL, "access-control-request-method": "DELETE"},
+    )
+    assert preflight.status_code == 200
+    assert preflight.headers["access-control-allow-origin"] == EVIL
+
+    headers = {"origin": EVIL, "sec-fetch-site": "cross-site", "content-type": "text/plain"}
+    put = client.put("/echo/item", content="hi", headers=headers)
+    patch = client.patch("/echo/item", content="hi", headers=headers)
+    delete = client.request("DELETE", "/echo/item", content="hi", headers=headers)
+
+    assert put.json() == {"put": "hi"}
+    assert patch.json() == {"patched": "hi"}
+    assert delete.json() == {"deleted": "hi"}
+
+
+def test_a_same_origin_request_behind_a_host_rewriting_proxy_is_allowed():
+    client = TestClient(create_tactic_app(Echo()))
+    headers = {
+        "content-type": "text/plain",
+        "origin": "https://api.example.com",
+        "host": "app.internal:8000",  # rewritten by the proxy
+    }
+
+    by_origin = client.post("/run", content="hi", headers=headers)
+    by_fetch_site = client.post(
+        "/run", content="hi", headers={**headers, "sec-fetch-site": "same-origin"}
     )
 
-    endpoint_name = path.rsplit("/", 1)[-1]
-    _assert_refused(response, endpoint_name)
-
-
-def test_a_custom_get_endpoint_refuses_a_cross_site_browser_request():
-    client = _local_client()
-
-    refused = client.get("/echo/status?q=1", headers={"sec-fetch-site": "cross-site"})
-    allowed = client.get("/echo/status?q=1", headers={"sec-fetch-site": "same-origin"})
-
-    _assert_refused(refused, "status")
-    assert allowed.json() == {"query": {"q": "1"}}
+    assert by_origin.status_code == 403  # without the header, Origin decides
+    assert by_fetch_site.json()["output"] == "hi"
 
 
 @pytest.mark.parametrize(
     "headers",
     [
-        {"content-type": "application/json", "origin": EVIL},  # preflighted
+        {"content-type": "application/json", "origin": EVIL, "sec-fetch-site": "cross-site"},
         {"content-type": "application/vnd.api+json", "origin": EVIL},
         {"content-type": "application/json; charset=utf-8", "sec-fetch-site": "cross-site"},
-        {"content-type": "text/plain"},  # not a browser: no Origin
-        {"content-type": "text/plain", "origin": "http://127.0.0.1:8000"},  # same origin
-        {"content-type": "text/plain", "sec-fetch-site": "same-origin"},
+        {"content-type": "text/plain"},  # not a browser
+        {"content-type": "text/plain", "origin": "http://127.0.0.1:8000"},
+        {"content-type": "text/plain", "sec-fetch-site": "same-origin", "origin": EVIL},
+        {"content-type": "text/plain", "sec-fetch-site": "none"},
     ],
-    ids=["json", "plus-json", "json-charset", "no-origin", "same-origin", "sec-same-origin"],
+    ids=[
+        "json",
+        "plus-json",
+        "json-charset",
+        "not-a-browser",
+        "same-origin",
+        "sec-fetch-site-decides",
+        "sec-none",
+    ],
 )
-def test_json_non_browser_and_same_origin_requests_still_run(headers):
-    client = _local_client()
+def test_json_non_browser_and_same_origin_posts_still_run(headers):
     content = '"hi"' if "json" in headers["content-type"] else "hi"
 
-    response = client.post("/run", content=content, headers=headers)
+    response = _local_client().post("/run", content=content, headers=headers)
 
     assert response.status_code == 200
     assert response.json()["output"] == "hi"
@@ -1222,12 +1308,43 @@ def test_the_same_origin_spelled_differently_is_not_cross_site(origin, host):
     assert response.status_code == 200
 
 
-def test_read_only_routes_answer_cross_site_requests():
-    client = _local_client()
+@pytest.mark.parametrize(
+    "path", ["/info", "/health", "/docs", "/openapi.json", "/tactics", "/tactics/echo/info"]
+)
+def test_read_routes_answer_cross_site_requests(path):
     headers = {"origin": EVIL, "sec-fetch-site": "cross-site"}
 
-    assert client.get("/info", headers=headers).status_code == 200
-    assert client.get("/health", headers=headers).status_code == 200
+    assert _local_client().get(path, headers=headers).status_code == 200
+
+
+@pytest.mark.parametrize(
+    "make_app",
+    [
+        lambda: create_tactic_app(Echo(), allow_cross_site_requests=True),
+        lambda: create_service_app([Echo()], allow_cross_site_requests=True),
+    ],
+    ids=["create_tactic_app", "create_service_app"],
+)
+def test_allow_cross_site_requests_turns_the_check_off(make_app):
+    client = _local_client(make_app())
+    signal = {"origin": EVIL, "sec-fetch-site": "cross-site"}
+
+    text = client.post(
+        "/tactics/echo/run",
+        content="hi",
+        headers={**signal, "content-type": "text/plain"},
+    )
+    status = client.get("/echo/status?q=1", headers=signal)
+
+    assert text.json()["output"] == "hi"
+    assert status.json() == {"query": {"q": "1"}}
+
+
+def test_allow_cross_site_requests_must_be_a_boolean():
+    with pytest.raises(TypeError, match="allow_cross_site_requests"):
+        create_tactic_app(Echo(), allow_cross_site_requests="yes")
+    with pytest.raises(TypeError, match="allow_cross_site_requests"):
+        create_service_app([Echo()], allow_cross_site_requests=1)
 
 
 # Review 7: a body that is neither JSON nor UTF-8 text is a 400, not a

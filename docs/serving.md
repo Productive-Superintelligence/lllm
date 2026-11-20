@@ -188,7 +188,7 @@ print(sorted(error))
 | --- | --- | --- |
 | 400 | `SchemaError` | The input, the envelope, or the context does not validate, or the body is neither JSON nor UTF-8 text |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
-| 403 | `CrossSiteRequestError` | A browser sent a cross-site request that is not JSON ([Authentication](#authentication)) |
+| 403 | `CrossSiteRequestError` | A cross-site browser `POST` that is not JSON, or a cross-site `GET` to a custom endpoint ([Requests from browsers](#requests-from-browsers)) |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
 | 500 | `OutputSchemaError` | The tactic's result does not match its output schema, a bug in the tactic rather than the request |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
@@ -362,17 +362,6 @@ Keyword arguments to one call still go to httpx, so
 `triage.run(text, headers={"x-request-id": "r-1"})` adds a header to that
 request only. `lllm serve auth:app` serves the secured app as it is.
 
-Browsers add a risk of their own, even on `127.0.0.1`: any web page can
-make its visitor's browser send a form, plain text, or a body without a
-content type to any address, without asking the server first. So the
-routes that run a tactic (`/run`, `/stream`, their `/tactics/{name}/`
-forms, and custom endpoints) refuse a cross-site request that is not JSON
-with 403 `CrossSiteRequestError`. A request is cross-site when its
-`Origin` names another host and port than its `Host`, or when its
-`Sec-Fetch-Site` is `cross-site`. Browsers ask before sending JSON to
-another site (a CORS preflight), so cross-site JSON is up to your app's
-CORS settings, and clients that are not browsers send no `Origin`.
-
 In a package, build the secured app in a service entry and make the
 service the package's `primary` (or pass `--resource services.api`), so
 `lllm serve` launches the app rather than the bare tactic. If the entry
@@ -388,6 +377,75 @@ primary = "services.api"
 entry = "service:create_app"   # returns the app with its middleware
 tactic = "triage"
 ```
+
+## Requests from browsers
+
+A service on `127.0.0.1` can still be reached from the web: any page a
+person opens can make their browser send it requests. Browsers send some
+requests to another site without asking the server first (no CORS
+preflight), so a served app refuses these with 403 `CrossSiteRequestError`
+when they are cross-site:
+
+- a `POST` to `/run`, `/stream`, their `/tactics/{name}/` forms, or a
+  custom endpoint, unless it is JSON: its `Content-Type` is
+  `application/json` or a `+json` type;
+- a `GET` or `HEAD` to a custom endpoint, which runs the tactic too.
+
+A request is cross-site by its `Sec-Fetch-Site` header when it has one:
+`cross-site` and `same-site` are cross-site, `same-origin` and `none` are
+not. Browsers set this header and pages cannot, so behind a proxy that
+rewrites `Host`, same-origin requests keep working. Without the header, a
+request is cross-site when its `Origin` is `null`, is not an `http` or
+`https` origin, or names another host and port than the `Host` header (a
+missing port is the default for the Origin's scheme).
+
+`PUT`, `PATCH`, and `DELETE` are never refused: browsers always preflight
+them across origins, so your app's CORS settings decide, as they do for
+cross-site JSON. The read routes (`/info`, `/health`, `/docs`,
+`/openapi.json`, `/tactics`, and `/tactics/{name}/info`) answer anyone, and
+clients that are not browsers send neither header. An app that must serve
+browsers on other origins, under its own CORS settings, turns the check off
+with `create_tactic_app(tactic, allow_cross_site_requests=True)`;
+`create_service_app` takes the same keyword.
+
+The check does not stop DNS rebinding, where a site makes its own domain
+resolve to `127.0.0.1` so that its requests look same-origin. A local
+service also needs a host allowlist, or a token as in
+[Authentication](#authentication):
+
+```python title="local.py"
+from fastapi.testclient import TestClient
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+
+from lllm import Tactic, create_tactic_app
+
+
+class Triage(Tactic):
+    name = "triage"
+
+    def call(self, text: str) -> str:
+        return "oncall" if "outage" in text.lower() else "support"
+
+
+app = create_tactic_app(Triage())
+app.add_middleware(
+    TrustedHostMiddleware, allowed_hosts=["localhost", "127.0.0.1"]
+)
+
+client = TestClient(app, base_url="http://127.0.0.1:8000")
+page = {"origin": "https://evil.example", "content-type": "text/plain"}
+print(client.post("/run", content="Outage", headers=page).status_code)
+#> 403
+body = {"input": "Outage"}
+rebound = {"host": "evil.example:8000"}  # (1)!
+print(client.post("/run", json=body, headers=rebound).status_code)
+#> 400
+print(client.post("/run", json=body).json()["output"])
+#> oncall
+```
+
+1. A rebound page's requests carry its own name in `Host`, which the
+   allowlist refuses before the tactic runs.
 
 ## Several tactics in one app
 

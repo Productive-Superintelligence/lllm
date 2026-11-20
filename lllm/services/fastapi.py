@@ -52,14 +52,17 @@ _OPENAPI_SCHEMAS_REF = "#/components/schemas/"
 
 
 class CrossSiteRequestError(LLLMError):
-    """Raised when a browser sends a tactic route a cross-site request that is not JSON.
+    """Raised when a browser sends a tactic route a request from another site
+    that browsers send without asking first.
 
-    A web page can make a visitor's browser send a form, text, or a body
-    without a content type to any address, a local service included, without
-    asking the server first. Such a request names another site in its
-    ``Origin`` header or in ``Sec-Fetch-Site``, and services refuse it with
-    status 403. Browsers ask before sending JSON to another site (a CORS
-    preflight), so the app's own CORS settings decide those requests.
+    A web page can make a visitor's browser send a form, plain text, or a
+    body without a content type, and a plain ``GET``, to any address, a local
+    service included, with no CORS preflight. Services refuse such a
+    cross-site ``POST`` that is not JSON, and a cross-site ``GET`` or ``HEAD``
+    to a custom endpoint, with status 403. ``Sec-Fetch-Site`` decides whether
+    a request is cross-site when present (``cross-site`` and ``same-site``
+    are), and otherwise its ``Origin``: ``null``, an origin that is not
+    ``http`` or ``https``, or another host and port than ``Host``.
     """
 
 
@@ -143,14 +146,19 @@ def create_tactic_app(
     *,
     title: str | None = None,
     description: str | None = None,
+    allow_cross_site_requests: bool = False,
 ):
-    """Create a FastAPI app for one tactic."""
+    """Create a FastAPI app for one tactic.
+
+    ``allow_cross_site_requests`` is as for :func:`create_service_app`.
+    """
 
     return create_service_app(
         {tactic.tactic_name: tactic},
         title=title or tactic.info().name,
         description=description or tactic.info().description,
         expose_single_tactic_routes=True,
+        allow_cross_site_requests=allow_cross_site_requests,
     )
 
 
@@ -160,12 +168,25 @@ def create_service_app(
     title: str = "LLLM Tactic Service",
     description: str = "",
     expose_single_tactic_routes: bool = False,
+    allow_cross_site_requests: bool = False,
 ):
-    """Create a FastAPI app exposing one or more tactics."""
+    """Create a FastAPI app exposing one or more tactics.
+
+    The routes that run a tactic refuse the requests a browser sends from
+    another site without asking first: a ``POST`` that is not JSON, and a
+    ``GET`` or ``HEAD`` to a custom endpoint (see
+    :class:`CrossSiteRequestError`). An app that serves browsers on other
+    origins, with its own CORS settings, passes
+    ``allow_cross_site_requests=True``.
+    """
 
     expose_single_tactic_routes_value = _bool_value(
         "expose_single_tactic_routes",
         expose_single_tactic_routes,
+    )
+    check_cross_site = not _bool_value(
+        "allow_cross_site_requests",
+        allow_cross_site_requests,
     )
     try:
         from fastapi import FastAPI, HTTPException, Request
@@ -198,7 +219,8 @@ def create_service_app(
         tactic = _get_tactic(name, tactic_map)
         context = _error_context(tactic, "run")
         try:
-            _refuse_cross_site_request(request)
+            if check_cross_site:
+                _refuse_cross_site_request(request)
             input_value, context = await _input_and_context_from_request(
                 request,
                 tactic=tactic,
@@ -218,7 +240,8 @@ def create_service_app(
         tactic = _get_tactic(name, tactic_map)
         context = _error_context(tactic, "stream")
         try:
-            _refuse_cross_site_request(request)
+            if check_cross_site:
+                _refuse_cross_site_request(request)
             input_value, context = await _input_and_context_from_request(
                 request,
                 tactic=tactic,
@@ -252,7 +275,8 @@ def create_service_app(
         async def single_run(request: Request) -> RunResponse:
             context = _error_context(only, "run")
             try:
-                _refuse_cross_site_request(request)
+                if check_cross_site:
+                    _refuse_cross_site_request(request)
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=only,
@@ -271,7 +295,8 @@ def create_service_app(
         async def single_stream(request: Request):
             context = _error_context(only, "stream")
             try:
-                _refuse_cross_site_request(request)
+                if check_cross_site:
+                    _refuse_cross_site_request(request)
                 input_value, context = await _input_and_context_from_request(
                     request,
                     tactic=only,
@@ -312,6 +337,7 @@ def create_service_app(
             tactic,
             reserved_routes=reserved_routes,
             seen_custom_routes=seen_custom_routes,
+            check_cross_site=check_cross_site,
         )
 
     return app
@@ -323,6 +349,7 @@ def _mount_custom_endpoints(
     *,
     reserved_routes: set[tuple[str, str]],
     seen_custom_routes: dict[tuple[str, str], str],
+    check_cross_site: bool = True,
 ) -> None:
     try:
         from fastapi.responses import StreamingResponse
@@ -347,6 +374,7 @@ def _mount_custom_endpoints(
             method=method,
             jsonable_encoder=jsonable_encoder,
             streaming_response=StreamingResponse,
+            check_cross_site=check_cross_site,
         )
         route.__name__ = _route_name(f"{tactic.tactic_name}_{spec.name}")
         route.__doc__ = spec.description
@@ -428,13 +456,15 @@ def _make_custom_route(
     method: Any,
     jsonable_encoder: Any,
     streaming_response: Any,
+    check_cross_site: bool = True,
 ):
     from fastapi import Request
 
     async def route(request: Request):
         context = _error_context(tactic, spec.name)
         try:
-            _refuse_cross_site_request(request)
+            if check_cross_site:
+                _refuse_cross_site_request(request)
             if endpoint_requires_body(spec) or await request.body():
                 input_value, context = await _input_and_context_from_request(
                     request,
@@ -680,31 +710,59 @@ def _openapi_ref(ref: str, names: Mapping[str, str]) -> str:
 
 
 def _refuse_cross_site_request(request: Any) -> None:
-    """Raise ``CrossSiteRequestError`` for a cross-site browser request that
-    is not JSON.
+    """Raise ``CrossSiteRequestError`` for a request a browser may send from
+    another site without asking first.
 
-    The request is cross-site when its ``Origin`` names another host and
-    port than its ``Host`` header, or when ``Sec-Fetch-Site`` says so (a
-    browser sends that header where it leaves out ``Origin``, such as on a
-    no-cors GET). Clients that are not browsers send neither.
+    That is a cross-site ``POST`` whose content type is not JSON, or a
+    cross-site ``GET`` or ``HEAD``, which only custom endpoints check.
+    Browsers preflight ``PUT``, ``PATCH``, and ``DELETE`` across origins, so
+    the app's CORS settings decide those, and they are never refused here.
     """
 
-    headers = request.headers
-    if _is_json_media_type(headers.get("content-type")):
-        return
-    if headers.get("sec-fetch-site") == "cross-site" or _is_cross_origin(
-        headers.get("origin"), headers.get("host")
-    ):
-        raise CrossSiteRequestError(
-            "Refused a cross-site browser request that is not JSON: any website "
-            "can make a browser send forms and text here. Send the request as "
-            "JSON (Content-Type: application/json)."
+    method = request.method.upper()
+    if method == "POST":
+        if _is_json_media_type(request.headers.get("content-type")):
+            return
+        message = (
+            "Refused a cross-site browser POST that is not JSON: any website "
+            "can make a browser send forms and text here. Send JSON "
+            "(Content-Type: application/json)."
         )
+    elif method in {"GET", "HEAD"}:
+        message = (
+            f"Refused a cross-site browser {method} to a custom endpoint: any "
+            "website can make a browser send one. Call it from the app's own "
+            "origin, or create the app with allow_cross_site_requests=True."
+        )
+    else:
+        return
+    if _is_cross_site(request.headers):
+        raise CrossSiteRequestError(message)
+
+
+def _is_cross_site(headers: Any) -> bool:
+    """Whether a request comes from a page on another site.
+
+    ``Sec-Fetch-Site`` decides when present, since pages cannot set it and
+    it survives proxies that rewrite ``Host``: ``cross-site`` and
+    ``same-site`` are cross-site, ``same-origin`` and ``none`` are not.
+    Without it, an ``Origin`` decides: ``null``, an origin that is not
+    ``http`` or ``https``, or another host and port than ``Host``.
+    """
+
+    fetch_site = headers.get("sec-fetch-site")
+    if fetch_site is not None:
+        return fetch_site.strip().lower() not in {"same-origin", "none"}
+    return _is_cross_origin(headers.get("origin"), headers.get("host"))
 
 
 def _is_json_media_type(content_type: str | None) -> bool:
-    media_type = (content_type or "").split(";", 1)[0].strip().lower()
+    media_type = _media_type(content_type)
     return media_type == "application/json" or media_type.endswith("+json")
+
+
+def _media_type(content_type: str | None) -> str:
+    return (content_type or "").split(";", 1)[0].strip().lower()
 
 
 def _is_cross_origin(origin: str | None, host: str | None) -> bool:
