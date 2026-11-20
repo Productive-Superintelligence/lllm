@@ -288,21 +288,31 @@ print(python.run("print(squares)"))  # (2)!
 ```
 
 1. Variables persist between calls, and only what the code prints comes
-   back; the last expression is not echoed. A call captures what its code
-   prints, also from threads it starts and from the endpoint methods
-   `CALL_API` runs, but nothing from your program's other threads, so
-   agents can run code at the same time, as under `bcall`.
+   back; the last expression is not echoed. Agents can run code at the
+   same time, as under `bcall`: each call captures what its code prints,
+   including the endpoint methods `CALL_API` runs and the threads the code
+   starts. A thread kept from an earlier call, such as a pool worker in a
+   variable, prints into the agent's newest running call; outside calls,
+   threads print to your program.
 2. Longer output loses its middle: the first and the last 20 characters
    (half of `max_output_chars` each) are kept, so the end of a traceback,
    where the exception is, survives. The instructions in the system prompt
    tell the agent to print only what it needs.
 
 An exception comes back as its traceback, so the agent can fix the code and
-try again with its variables intact. A call that runs past `timeout` returns
+try again with its variables intact. The code's own redirects
+(`redirect_stdout`, assigning `sys.stdout`, doctest) work, but `sys.stdout`
+is one per process: while a redirect lasts, other running calls and your
+program print into it too. When the last call ends, your program's
+`sys.stdout` is put back.
+
+A call that runs past `timeout` returns
 `Error: Code execution timed out after 60s...` to the model, but the code is
 not stopped: it keeps running in a background thread, what it changes stays
-in the namespace, and what it or the threads it started print is
-discarded. `reset()` clears every variable except `CALL_API`.
+in the namespace, and what it and its threads print is dropped. Once that
+code ends, its threads print to your program, and `sys.stdout` is put back
+unless your program has set its own since the timeout. `reset()` clears
+every variable except `CALL_API`.
 
 !!! warning "Not a security boundary"
     The interpreter runs `exec()` inside your process, with your files,

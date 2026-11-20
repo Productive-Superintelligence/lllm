@@ -1,13 +1,16 @@
 """run_python: each call captures its own output, and long output keeps both ends."""
 
 import copy
+import io
 import sys
 import threading
+import time
 
 import pytest
 
 from lllm.runtimes.native import Runtime
 from lllm.runtimes.native.proxies import AgentInterpreter, ProxyManager
+from lllm.runtimes.native.proxies import interpreter as interpreter_module
 
 
 def interpreter(**kwargs):
@@ -18,6 +21,17 @@ def run_in_thread(interp, code, results, key):
     thread = threading.Thread(target=lambda: results.__setitem__(key, interp.run(code)))
     thread.start()
     return thread
+
+
+def wait_for_calls_to_end(timeout=10):
+    """Wait until no call's code is running, timed-out code included."""
+
+    deadline = time.monotonic() + timeout
+    while getattr(interpreter_module, "_flights", None) or getattr(
+        interpreter_module, "_active_captures", 0
+    ):
+        assert time.monotonic() < deadline, "a call's code is still running"
+        time.sleep(0.01)
 
 
 def test_concurrent_runs_capture_only_their_own_output():
@@ -82,6 +96,7 @@ def test_a_timed_out_run_does_not_swallow_later_prints(capsys):
 
     assert capsys.readouterr().out == "after the timeout\n"
     assert interp.run("print('next')") == "next\n"
+    wait_for_calls_to_end()
 
 
 def test_output_written_to_sys_stdout_or_from_worker_threads_is_captured():
@@ -141,8 +156,42 @@ def test_a_timed_out_calls_threads_do_not_print_into_the_next_call(capsys):
     second = "next_running.set()\nlate_done.wait(5)\nprint('next')\n"
     assert interp.run(second) == "next\n"
     release.set()
+    wait_for_calls_to_end()
 
     assert "late" not in capsys.readouterr().out
+
+
+def test_a_timed_out_calls_threads_print_to_the_program_once_its_code_ends(capsys):
+    release, may_print, printed = (threading.Event() for _ in range(3))
+    interp = interpreter(timeout=0.2)
+    interp.namespace.update(release=release, may_print=may_print, printed=printed)
+    code = (
+        "import threading\n"
+        "def late():\n"
+        "    may_print.wait(5)\n"
+        "    print('from the late thread')\n"
+        "    printed.set()\n"
+        "threading.Thread(target=late).start()\n"
+        "release.wait(5)\n"
+    )
+
+    with pytest.raises(TimeoutError):
+        interp.run(code)
+    release.set()
+    wait_for_calls_to_end()
+    started, finish = threading.Event(), threading.Event()
+    other = interpreter()
+    other.namespace.update(started=started, finish=finish)
+    results = {}
+    thread = run_in_thread(other, "started.set()\nfinish.wait(5)\n", results, "out")
+    started.wait(5)
+    may_print.set()  # while another call is in flight
+    printed.wait(5)
+    finish.set()
+    thread.join(10)
+
+    assert results["out"] == ""
+    assert capsys.readouterr().out == "from the late thread\n"
 
 
 def test_a_thread_left_running_writes_to_the_program_after_its_call(capsys):
@@ -257,6 +306,194 @@ def test_copies_of_sys_stdout_keep_routing_by_thread(capsys):
 
     assert results["out"] == "copied in the call\n"
     assert capsys.readouterr().out == "copied in the program\n"
+
+
+def test_a_timed_out_call_that_replaced_sys_stdout_puts_it_back_when_its_code_ends(capsys):
+    stdout = sys.stdout
+    release = threading.Event()
+    interp = interpreter(timeout=0.2)
+    interp.namespace["release"] = release
+
+    with pytest.raises(TimeoutError):
+        interp.run("import io, sys\nsys.stdout = io.StringIO()\nrelease.wait(5)\n")
+    release.set()
+    wait_for_calls_to_end()
+
+    assert sys.stdout is stdout
+    print("visible")
+    assert capsys.readouterr().out == "visible\n"
+
+
+def test_a_stream_the_program_sets_after_a_timeout_is_kept():
+    stdout = sys.stdout
+    release = threading.Event()
+    interp = interpreter(timeout=0.2)
+    interp.namespace["release"] = release
+
+    with pytest.raises(TimeoutError):
+        interp.run("release.wait(5)\n")
+    program_stream = io.StringIO()
+    sys.stdout = program_stream  # the program has moved on and sets its own
+    try:
+        release.set()
+        wait_for_calls_to_end()
+        assert sys.stdout is program_stream
+    finally:
+        sys.stdout = stdout
+
+
+def test_calls_capture_while_timed_out_code_runs_after_the_program_sets_its_stdout():
+    stdout = sys.stdout
+    release = threading.Event()
+    stuck = interpreter(timeout=0.2)
+    stuck.namespace["release"] = release
+
+    with pytest.raises(TimeoutError):
+        stuck.run("release.wait(10)\n")
+    program_stream = io.StringIO()
+    sys.stdout = program_stream  # e.g. a test runner between two tests
+    try:
+        assert interpreter().run("print('captured')") == "captured\n"
+        print("from the program")
+        assert program_stream.getvalue() == "from the program\n"
+        release.set()
+        wait_for_calls_to_end()
+        assert sys.stdout is program_stream
+    finally:
+        sys.stdout = stdout
+
+
+REDIRECTS = {
+    "assigned": "import io, sys\nsys.stdout = io.StringIO()\nredirected.set()\nfirst_may_end.wait(5)\n",
+    "with": (
+        "import contextlib, io\n"
+        "with contextlib.redirect_stdout(io.StringIO()):\n"
+        "    redirected.set()\n"
+        "    first_may_end.wait(5)\n"
+    ),
+}
+
+
+@pytest.mark.parametrize("redirect", sorted(REDIRECTS))
+@pytest.mark.parametrize("redirecting_call_ends_first", [True, False])
+def test_overlapping_calls_where_one_redirects_leave_the_program_its_stdout(
+    redirect, redirecting_call_ends_first
+):
+    stdout = sys.stdout
+    redirected, first_may_end, second_may_end = (threading.Event() for _ in range(3))
+    first, second = interpreter(), interpreter()
+    for interp in (first, second):
+        interp.namespace.update(
+            redirected=redirected, first_may_end=first_may_end, second_may_end=second_may_end
+        )
+    results = {}
+
+    one = run_in_thread(first, REDIRECTS[redirect], results, "first")
+    two = run_in_thread(second, "redirected.wait(5)\nsecond_may_end.wait(5)\n", results, "second")
+    redirected.wait(5)
+    endings = [(first_may_end, one), (second_may_end, two)]
+    if not redirecting_call_ends_first:
+        endings.reverse()
+    for may_end, thread in endings:
+        may_end.set()
+        thread.join(10)
+
+    assert set(results) == {"first", "second"}
+    assert sys.stdout is stdout
+
+
+def test_a_pool_kept_from_an_earlier_call_prints_into_the_running_call():
+    interp = interpreter()
+    interp.run(
+        "from concurrent.futures import ThreadPoolExecutor\n"
+        "pool = ThreadPoolExecutor(max_workers=1)\n"
+        "pool.submit(int).result()\n"  # the worker starts during this call
+    )
+    code = (
+        "import sys\n"
+        "pool.submit(print, 'printed').result()\n"
+        "pool.submit(sys.stdout.write, 'written\\n').result()\n"
+        "pool.shutdown()\n"
+    )
+
+    assert interp.run(code) == "printed\nwritten\n"
+
+
+def test_a_thread_start_wrapper_installed_during_a_call_does_not_recurse():
+    interp = interpreter()
+    interp.run("")  # the Thread.start hook is in place from the first call on
+    saved = threading.Thread.start
+    traced = []
+    interp.namespace["traced"] = traced
+    named = ("after the call", "in the next call")
+    try:
+        interp.run(  # what Sentry or OpenTelemetry do
+            "import threading\n"
+            "inner = threading.Thread.start\n"
+            "def traced_start(self):\n"
+            "    traced.append(self.name)\n"
+            "    return inner(self)\n"
+            "threading.Thread.start = traced_start\n"
+        )
+        after = threading.Thread(target=lambda: None, name=named[0])
+        after.start()
+        after.join()
+        code = (
+            "import threading\n"
+            f"worker = threading.Thread(target=print, args=('captured',), name={named[1]!r})\n"
+            "worker.start()\n"
+            "worker.join()\n"
+        )
+        assert interp.run(code) == "captured\n"
+        assert [name for name in traced if name in named] == list(named)
+    finally:
+        threading.Thread.start = saved
+
+
+def test_threads_are_captured_again_after_the_original_start_is_put_back():
+    interp = interpreter()
+    interp.run("")
+    hook = threading.Thread.start
+    threading.Thread.start = interpreter_module._original_start  # e.g. a test's cleanup
+    try:
+        code = "import threading\nt = threading.Thread(target=print, args=('w',))\nt.start()\nt.join()\n"
+        assert interp.run(code) == "w\n"
+    finally:
+        threading.Thread.start = hook
+
+
+def test_threads_kept_after_a_call_do_not_keep_its_output():
+    interp = interpreter(timeout=0.3)
+    code = (
+        "import threading\n"
+        "worker = threading.Thread(target=print, args=('x' * 100_000,))\n"
+        "worker.start()\n"
+        "worker.join()\n"
+    )
+    assert len(interp.run(code)) == 5000 + len("... (truncated)")
+    record = interp.namespace["worker"]._lllm_call
+    assert record.returned and record.buffer is None
+
+    release = threading.Event()
+    interp.namespace["release"] = release
+    with pytest.raises(TimeoutError):
+        interp.run("worker = threading.Thread(target=release.wait)\nworker.start()\nrelease.wait(5)\n")
+    record = interp.namespace["worker"]._lllm_call
+    assert record.abandoned and record.buffer is None
+    release.set()
+    wait_for_calls_to_end()
+
+
+def test_thread_start_behaves_after_all_calls_end(capsys):
+    interpreter().run("import threading\nthreading.Thread(target=int).start()\n")
+    wait_for_calls_to_end()
+
+    worker = threading.Thread(target=print, args=("from the program",))
+    worker.start()
+    worker.join()
+
+    assert getattr(worker, "_lllm_call", None) is None
+    assert capsys.readouterr().out == "from the program\n"
 
 
 def test_long_output_keeps_the_end_of_a_traceback():
