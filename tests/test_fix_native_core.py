@@ -6,7 +6,16 @@ from decimal import Decimal
 from typing import Any, Dict, List, Literal, Optional
 
 import pytest
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field, computed_field
+from pydantic import (
+    AliasChoices,
+    AliasPath,
+    BaseModel,
+    ConfigDict,
+    Field,
+    RootModel,
+    computed_field,
+    model_validator,
+)
 
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
@@ -576,22 +585,62 @@ def test_parsed_is_the_reply_json_and_validates_back_into_the_model():
     )
 
 
-def test_parsed_keeps_the_declared_keys_or_all_when_extra_is_allowed():
+def _parse(model: Any, reply: str) -> Dict[str, Any]:
+    return Prompt(path="fix/format", prompt="Answer.", format=model).parse(reply)
+
+
+def test_parsed_is_the_whole_reply_object_without_defaults():
     class Plain(BaseModel):
         team: str
         urgent: bool = False
         is_global: bool = Field(default=False, alias="global")
 
-    class Loose(Plain):
-        model_config = ConfigDict(extra="allow")
-
     reply = '{"team": "bugs", "global": true, "confidence": 0.9}'
-    plain = Prompt(path="fix/plain", prompt="?", format=Plain).parse(reply)
-    loose = Prompt(path="fix/loose", prompt="?", format=Loose).parse(reply)
+    parsed = _parse(Plain, reply)
 
-    assert plain == {"team": "bugs", "global": True}  # no defaults added
-    assert Plain.model_validate(plain).is_global is True
-    assert loose == {"team": "bugs", "global": True, "confidence": 0.9}
+    assert parsed == json.loads(reply)  # unfiltered; no defaults added
+    assert Plain.model_validate(parsed) == Plain(team="bugs", **{"global": True})
+
+
+class Envelope(BaseModel):
+    team: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def unwrap(cls, data: Any) -> Any:
+        return data.get("data", data) if isinstance(data, dict) else data
+
+
+class Renamed(BaseModel):
+    team: str
+
+    @model_validator(mode="wrap")
+    @classmethod
+    def rename(cls, data: Any, handler: Any) -> Any:
+        if isinstance(data, dict) and "group" in data:
+            data = {"team": data["group"]}
+        return handler(data)
+
+
+class Located(BaseModel):
+    name: str = Field(validation_alias=AliasPath("data", "name"))
+
+
+@pytest.mark.parametrize(
+    ("model", "reply"),
+    [
+        (RootModel[Dict[str, int]], '{"alice": 3, "bob": 5}'),
+        (Envelope, '{"data": {"team": "bugs"}}'),
+        (Renamed, '{"group": "bugs"}'),
+        (Located, '{"data": {"name": "Ada"}}'),
+    ],
+    ids=["root_model", "before_validator", "wrap_validator", "alias_path"],
+)
+def test_parsed_validates_back_however_the_model_reads_it(model, reply):
+    parsed = _parse(model, reply)
+
+    assert parsed == json.loads(reply)
+    assert model.model_validate(parsed) == model.model_validate_json(reply)
 
 
 class StrictTriage(BaseModel):

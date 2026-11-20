@@ -942,13 +942,14 @@ class Prompt(BaseModel):
         """Turn a reply into ``parsed``, by ``format`` or else by ``parser``.
 
         With ``format`` the reply must be a JSON object, and the result is
-        that object; the parser is not called. A Pydantic model also
-        validates it and keeps only the keys it reads (field names and
-        aliases, or all keys if it allows extra fields), so the result
-        validates back into the model. A parser's result is used as
-        returned, a non-dict wrapped as ``{"value": ...}``. Without either
-        the result is empty; the reply text is always the message's
-        ``content``.
+        that object, unchanged; the parser is not called. A Pydantic model
+        also validates it, so ``Model.model_validate(parsed)`` gives the
+        model back (for a strict model, which rejects JSON forms such as
+        date strings in Python mode, use
+        ``Model.model_validate_json(json.dumps(parsed))``). A parser's
+        result is used as returned, a non-dict wrapped as
+        ``{"value": ...}``. Without either the result is empty; the reply
+        text is always the message's ``content``.
 
         A reply that does not fit raises (``ParseError`` here, or whatever
         the parser raises), and the agent loop asks the model to repair it.
@@ -1262,9 +1263,11 @@ def register_prompt(prompt: Prompt, overwrite: bool = True) -> None:
 def _parse_format(spec: Any, content: str) -> Dict[str, Any]:
     """Decode a reply to a ``format=`` prompt, validating it against a model.
 
-    The result is the reply's JSON object, so it validates back into the
-    model. For a model, only the keys it reads are kept (field names and
-    aliases), or all of them when the model allows extra fields.
+    The result is the reply's JSON object, unchanged: the model validated
+    it, so ``Model.model_validate(parsed)`` gives the same model, through
+    aliases, validators, and root models alike. A strict model
+    (``strict=True``) rejects JSON forms such as date strings in Python
+    mode; validate those with ``Model.model_validate_json(json.dumps(parsed))``.
     """
 
     try:
@@ -1272,31 +1275,14 @@ def _parse_format(spec: Any, content: str) -> Dict[str, Any]:
     except (TypeError, json.JSONDecodeError) as exc:
         # The decoder's message is the repair hint.
         raise ParseError(str(exc)) from exc
-    is_model = isinstance(spec, type) and issubclass(spec, BaseModel)
-    if is_model:
+    if isinstance(spec, type) and issubclass(spec, BaseModel):
         try:
             spec.model_validate_json(content)
         except ValidationError as exc:
             raise ParseError(_validation_problems(exc)) from exc
     if not isinstance(data, dict):
         raise ParseError("The reply must be a JSON object")
-    if is_model and spec.model_config.get("extra") != "allow":
-        keys = _input_keys(spec)
-        data = {key: value for key, value in data.items() if key in keys}
     return data
-
-
-def _input_keys(model: type) -> set:
-    """The top-level JSON keys a model reads: field names and their aliases."""
-
-    keys = set()
-    for name, field in model.model_fields.items():
-        keys.update({name, field.alias})
-        validation = field.validation_alias
-        for choice in getattr(validation, "choices", [validation]):
-            path = getattr(choice, "path", [choice])  # an AliasPath's first key
-            keys.add(path[0] if path else None)
-    return {key for key in keys if isinstance(key, str)}
 
 
 def _validation_problems(exc: ValidationError) -> str:

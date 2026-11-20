@@ -247,13 +247,14 @@ JSON, use a [parser](prompts.md#parsers), which raises `ParseError` to ask
 for a repair. A prompt uses `format=` or a parser, not both: when
 `format=` is set, the parser is not called.
 
-`parsed` is the reply's JSON object with only the keys the model reads
-(its field names and aliases, or every key if it allows extra fields), so
-it validates back into the model: in a tactic with `output_model = Triage`,
-return it as is, even if the model forbids extra fields. The same goes for
-steps inside `call()`:
+`parsed` is the reply's JSON object as it came, which the model accepted,
+so in a tactic with `output_model = Triage`, return it as is. The same
+goes for steps inside `call()`:
 `Plan.model_validate(planner.respond().parsed)` turns a planner's reply into
-an object the rest of the program can use ([Tactics](tactics.md)).
+an object the rest of the program can use ([Tactics](tactics.md)). A
+strict model (`ConfigDict(strict=True)`) rejects JSON forms such as a date
+string in Python mode, so read `parsed` with
+`Triage.model_validate_json(json.dumps(parsed))` and return the result.
 
 ## JSON schemas
 

@@ -98,11 +98,9 @@ any model call. To use another template language, give the prompt a
 Give a prompt a Pydantic model as `format`, and the model is asked for JSON
 matching it (OpenAI-style structured output where the provider supports
 it). The reply is validated against the model, and `parsed` is the reply's
-JSON object with only the keys the model reads (its field names and
-aliases, or every key if it allows extra fields), so it validates back
-into the model. A reply that is not valid JSON or does not fit the model
-(a missing field, a wrong type, a failed validator) is repaired like any
-parse error:
+JSON object as it came, which the model accepted. A reply that is not
+valid JSON or does not fit the model (a missing field, a wrong type, a
+failed validator) is repaired like any parse error:
 
 ```python title="structured.py"
 from pydantic import BaseModel
@@ -133,6 +131,10 @@ print(invoice)
 
 1. Inside a tactic you rarely do this by hand: declare `output_model =
    Invoice` and the tactic validates its result. See [Typed I/O](typed-io.md).
+
+Since `parsed` is JSON data, a strict model (`ConfigDict(strict=True)`),
+which rejects a date string or a list for a tuple in Python mode, reads it
+with `Invoice.model_validate_json(json.dumps(parsed))`.
 
 A `dict` JSON schema works as `format` too, loosely: the provider is asked
 for a JSON object (the schema itself is not sent), and the reply must be
