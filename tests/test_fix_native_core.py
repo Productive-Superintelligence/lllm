@@ -319,15 +319,29 @@ def _text_tokens(manager: DefaultContextManager, text: str) -> int:
 IMAGE_TOKENS = DefaultContextManager.IMAGE_TOKENS
 
 
-def _image(width: int, height: int, fmt: str = "PNG", mode: str = "RGB") -> bytes:
+def _image(
+    width: int, height: int, fmt: str = "PNG", mode: str = "RGB", **save: Any
+) -> bytes:
     pytest.importorskip("PIL")
     import io
 
     from PIL import Image
 
     data = io.BytesIO()
-    Image.new(mode, (width, height)).save(data, format=fmt)
+    Image.new(mode, (width, height)).save(data, format=fmt, **save)
     return data.getvalue()
+
+
+def test_a_large_photo_has_its_shortest_side_scaled_to_768():
+    late = _image(1920, 1080, fmt="JPEG", comment=b"x" * 60_000)
+    assert late.find(b"\xff\xc0") > 49_152  # its size is past the first read
+    manager = DefaultContextManager("gpt-4o-mini")
+
+    for data in (_image(1920, 1080), late):
+        dialog = _dialog()
+        dialog.put_image(base64.b64encode(data).decode())
+        # 1920x1080 scales to 1365x768: 3 x 2 tiles, 85 + 170 * 6.
+        assert _tokens(manager, dialog.messages[1]) == _text_tokens(manager, "") + 1105
 
 
 def test_images_are_sized_from_their_header_with_openai_high_detail():
@@ -374,8 +388,11 @@ def _with_parts(*parts: Dict[str, Any]) -> Any:
 def test_other_parts_count_as_image_tokens_without_network(part, monkeypatch):
     import socket
 
+    attempts = []  # recorded: a raised error alone could be swallowed
+
     def no_network(*args, **kwargs):
-        raise AssertionError("counting reached the network")
+        attempts.append(args)
+        raise OSError("counting reached the network")
 
     monkeypatch.setattr(socket, "getaddrinfo", no_network)
     monkeypatch.setattr(socket.socket, "connect", no_network)
@@ -383,6 +400,7 @@ def test_other_parts_count_as_image_tokens_without_network(part, monkeypatch):
 
     tokens = _tokens(manager, _with_parts(part))
     assert tokens == _text_tokens(manager, "Look at this.") + IMAGE_TOKENS
+    assert attempts == []
 
 
 def _unsizable_image(caption: str) -> Any:
