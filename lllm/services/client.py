@@ -26,6 +26,9 @@ from ..protocol._validation import (
 )
 
 
+_STREAMING = frozenset({"stream", "events"})
+
+
 class RemoteTacticError(TacticServiceError):
     """Raised when a remote tactic service returns a structured error."""
 
@@ -69,8 +72,11 @@ class RemoteTactic(Tactic[Any, Any]):
     ``contract`` is the ``TacticInfo`` the service advertises on ``/info``;
     :meth:`from_service` fetches it. With one, the tactic takes the
     service's name unless ``name`` is given, and ``info()`` reports the
-    service's description, schemas, examples, and capabilities wherever the
-    tactic has none of its own (``input_type`` and ``output_type`` win).
+    service's description, schemas, and examples wherever the tactic has
+    none of its own (``input_type`` and ``output_type`` win). Its
+    capabilities follow the service's: ``run`` and ``arun``, plus ``stream``
+    and ``events`` together when the service advertises either, since the
+    stream methods and ``aevents()`` all read ``/stream``.
     """
 
     runtime_kind = "http"
@@ -146,7 +152,12 @@ class RemoteTactic(Tactic[Any, Any]):
         supported = super().capabilities()
         if self.contract is None:
             return supported
-        return supported & set(self.contract.capabilities)
+        advertised = set(self.contract.capabilities)
+        if advertised & _STREAMING:
+            # The stream methods and aevents() all read the same /stream
+            # events, so a service that streams at all gives both.
+            advertised |= _STREAMING
+        return supported & advertised
 
     def _client(self, httpx: Any) -> Any:
         return httpx.Client(

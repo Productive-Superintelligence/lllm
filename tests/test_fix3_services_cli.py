@@ -472,6 +472,84 @@ def test_afrom_service_adopts_the_contract_of_a_running_service():
     assert remote.info().input_schema["required"] == ["text"]
 
 
+class StreamOnly(ProtocolTactic):
+    """Stream the steps of a triage; the last step fails."""
+
+    name = "steps"
+
+    def _run(self, text, **kwargs):
+        return "unused"
+
+    def stream(self, text, **kwargs):
+        yield "reading"
+        raise RuntimeError("upstream broke")
+
+
+class EventsOnly(ProtocolTactic):
+    name = "events"
+
+    def _run(self, text, **kwargs):
+        return "unused"
+
+    async def aevents(self, text, **kwargs):
+        from lllm import TacticEvent
+
+        yield TacticEvent(kind="step", data="reading")
+
+
+@pytest.mark.parametrize("upstream", [StreamOnly, EventsOnly])
+def test_an_adopted_streaming_contract_keeps_stream_and_events(upstream):
+    tactic = upstream()
+    assert tactic.capabilities() & {"stream", "events"} != {"stream", "events"}
+
+    app = create_tactic_app(tactic)
+    remote = asyncio.run(
+        RemoteTactic.afrom_service(
+            "http://svc:8000", async_transport=httpx.ASGITransport(app=app)
+        )
+    )
+
+    assert remote.supports("stream") and remote.supports("events")
+    assert remote.info().capabilities == ("arun", "events", "run", "stream")
+
+
+def test_a_proxied_adopted_streaming_tactic_keeps_an_error_events_kind():
+    from lllm import proxy_tactic
+
+    remote = asyncio.run(
+        RemoteTactic.afrom_service(
+            "http://svc:8000",
+            async_transport=httpx.ASGITransport(app=create_tactic_app(StreamOnly())),
+        )
+    )
+    proxied = proxy_tactic(remote)
+
+    events = asyncio.run(_collect(proxied.aevents("Outage")))
+
+    assert [event.kind for event in events] == ["message", "error"]
+    assert events[-1].data == {"message": "upstream broke"}
+    served = TestClient(create_tactic_app(proxied))
+    with served.stream("POST", "/stream", json={"input": "Outage"}) as response:
+        kinds = [
+            json.loads(line.removeprefix("data: "))["kind"]
+            for line in response.iter_lines()
+            if line.startswith("data: ")
+        ]
+    assert kinds == ["message", "error"]
+
+
+def test_a_contract_supplies_examples_when_the_tactic_has_none():
+    example = {"input": {"text": "Outage"}, "output": "oncall"}
+    contract = Triage().info().model_copy(update={"examples": [example]})
+
+    remote = RemoteTactic("http://triage.internal:8000", contract=contract)
+
+    assert remote.info().examples == [example]
+    remote.info().examples[0]["output"] = "changed"
+    assert remote.info().examples == [example]
+    assert contract.examples == [example]
+
+
 def test_a_given_contract_is_adopted_where_the_tactic_has_nothing_of_its_own():
     contract = Triage().info()
     remote = RemoteTactic(

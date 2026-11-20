@@ -505,8 +505,11 @@ asyncio.run(main())
 The contract arrives as the constructor's `contract=` option, which also
 takes a `TacticInfo` you already have. With one, the tactic takes the
 service's name unless you pass `name=`, and `info()` reports the service's
-description, schemas, examples, and capabilities wherever the tactic has
-none of its own, so `input_type` and `output_type` still win.
+description, schemas, and examples wherever the tactic has none of its own,
+so `input_type` and `output_type` still win. Its capabilities follow the
+service's: `stream` and `events` come together when the service streams at
+all, since the stream methods and `aevents()` all read `/stream`, and
+neither comes when it does not.
 
 Because it is a tactic, a `RemoteTactic` works wherever a tactic does:
 inside another tactic's `call()`, as a [tool](tools.md#tactics-as-tools),
