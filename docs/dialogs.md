@@ -299,10 +299,12 @@ print(len(agent.current_dialog.messages))
 2. The model saw the system prompt and the six most recent messages; the
    dialog still holds all 13.
 
-Set `max_tokens` yourself. Without it, the budget comes from
-`litellm.get_max_tokens()`, which for many models is the output limit
-(16,384 for `gpt-4o-mini`), not the context window. A message that only
-partly fits may be cut short instead of dropped.
+Without `max_tokens`, the budget is the model's context window from
+LiteLLM's model list (128,000 tokens for `gpt-4o-mini`). For a model
+LiteLLM does not know, such as one on your own server, set `max_tokens`:
+without it nothing is trimmed, and a warning says so. A message that only
+partly fits keeps its end, after an `[...earlier content truncated...]`
+marker; an image that does not fit is dropped whole.
 
 In a tactic, set a context manager per agent, or for every agent under
 `global`:

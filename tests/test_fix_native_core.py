@@ -100,3 +100,69 @@ def test_working_copy_names_its_dialog_as_parent():
     assert copy.depth == 1
     assert [m.content for m in copy.messages] == ["You help."]
     assert dialog.children == []
+
+
+# -- 2: the context manager's budget is the context window -----------------
+
+
+def _dialog(*texts: str) -> Dialog:
+    dialog = Dialog(owner="agent")
+    dialog.put_text("You help.", name="system", role=Role.SYSTEM)
+    for text in texts:
+        dialog.put_text(text)
+    return dialog
+
+
+def test_default_context_manager_budget_is_the_context_window():
+    assert DefaultContextManager("gpt-4o-mini").max_tokens == 128_000
+    assert DefaultContextManager("gpt-4o-mini", max_tokens=9_000).max_tokens == 9_000
+
+    # About 15,000 tokens: more than gpt-4o-mini's output limit (16,384)
+    # leaves after the safety buffer, far less than its 128,000 window.
+    dialog = _dialog("word " * 15_000, "What now?")
+    assert DefaultContextManager("gpt-4o-mini")(dialog) is dialog
+
+
+def test_default_context_manager_does_not_trim_for_an_unknown_window(caplog):
+    manager = DefaultContextManager("openai/fix-native-core-unknown-model")
+    dialog = _dialog("Hello.", "What is 2 + 2?")
+
+    with caplog.at_level("WARNING"):
+        assert manager.max_tokens is None
+        assert manager(dialog) is dialog
+    assert "set max_tokens" in caplog.text.lower()
+
+
+# -- 3: a message that partly fits keeps the part the marker says ----------
+
+
+MARKER = "[...earlier content truncated...]\n"
+
+
+def test_partly_kept_message_keeps_its_end_after_the_marker():
+    long = "BEGIN " + " ".join(f"w{i}" for i in range(400)) + " END"
+    dialog = _dialog(long, "Short question?")
+    trimmed = DefaultContextManager("gpt-4o-mini", max_tokens=5_200)(dialog)
+
+    border, last = trimmed.messages[1:]
+    assert last.content == "Short question?"
+    assert border.content.startswith(MARKER)
+    assert border.content.endswith(" END")
+    assert "BEGIN" not in border.content
+    assert long.endswith(border.content.removeprefix(MARKER))
+    assert dialog.messages[1].content == long  # the dialog is never changed
+
+
+def test_images_are_dropped_not_cut():
+    import base64
+
+    png = b"\x89PNG\r\n\x1a\n" + bytes(range(256)) * 8
+    dialog = _dialog()
+    dialog.put_image(base64.b64encode(png).decode(), caption="A chart")
+    dialog.put_text("What does it show?")
+    trimmed = DefaultContextManager("gpt-4o-mini", max_tokens=5_200)(dialog)
+
+    assert [m.content for m in trimmed.messages] == [
+        "You help.",
+        "What does it show?",
+    ]

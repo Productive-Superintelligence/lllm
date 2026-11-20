@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import copy
 import datetime as dt
+import functools
 import io
 import logging
 import re
@@ -790,6 +791,30 @@ class Dialog:
 # ---------------------------------------------------------------------------
 
 
+@functools.lru_cache(maxsize=None)
+def _context_window(model_name: str) -> Optional[int]:
+    """The model's context window from LiteLLM's model info, or None.
+
+    That is ``max_input_tokens``; LiteLLM's ``max_tokens`` is usually the
+    output limit, so it is not used. Looked up (and warned about) once per
+    model.
+    """
+    try:
+        from litellm import get_model_info
+
+        window = get_model_info(model_name).get("max_input_tokens")
+    except Exception:
+        window = None
+    if not window:
+        logger.warning(
+            "DefaultContextManager: LiteLLM does not know the context window "
+            "of %r, so its calls are not trimmed. Set max_tokens to trim them.",
+            model_name,
+        )
+        return None
+    return int(window)
+
+
 class ContextManager(ABC):
     """
     Pre-processing hook applied to a Dialog before it is sent to the LLM.
@@ -872,24 +897,28 @@ class DefaultContextManager(ContextManager):
 
     Uses ``litellm.token_counter`` for accurate, model-specific token counting
     and drops or truncates the oldest non-system messages when the dialog
-    exceeds the model's context window.
+    exceeds the token budget: ``max_tokens``, or else the model's context
+    window from LiteLLM's model info (``max_input_tokens``). For a model
+    LiteLLM does not know, such as one on your own server, set
+    ``max_tokens``; without it nothing is trimmed (and a warning is logged).
 
     **Truncation strategy**
 
     1. The first message (system / developer prompt) is always preserved.
     2. Messages are retained from the **tail** (most recent) inward until the
        token budget is exhausted.
-    3. The *border* message — the oldest message that partially fits — is
-       character-truncated with a ``[...earlier content truncated...]`` prefix.
+    3. The *border* message — the oldest message that partially fits — keeps
+       its end, the part closest to the kept messages, after a
+       ``[...earlier content truncated...]`` marker. Images and other
+       non-text messages are never cut, only dropped.
     4. A ``SAFETY_BUFFER`` (default 5 000 tokens) is subtracted from the
-       model's context limit so the invoker never lands right at the edge.
+       budget so the invoker never lands right at the edge.
 
     **Quickstart**::
 
-        from .dialog import DefaultContextManager
-        from .agent import Agent
+        from lllm.runtimes.native import DefaultContextManager
 
-        cm = DefaultContextManager("gpt-4o")          # auto-detects window size
+        cm = DefaultContextManager("gpt-4o")          # the model's window
         cm = DefaultContextManager("gpt-4o", max_tokens=32000)  # manual cap
 
         agent = Agent(..., context_manager=cm)
@@ -923,8 +952,9 @@ class DefaultContextManager(ContextManager):
         """
         Args:
             model_name: litellm-compatible model name (e.g. "gpt-4o").
-            max_tokens:  Hard override for the context window size.  When
-                         omitted the limit is looked up from litellm.
+            max_tokens:  Token budget for what is sent, including the
+                         ``SAFETY_BUFFER``.  When omitted, the model's
+                         context window is looked up in LiteLLM.
         """
         self.model_name = model_name
         self._max_tokens = max_tokens
@@ -934,16 +964,15 @@ class DefaultContextManager(ContextManager):
     # ------------------------------------------------------------------
 
     @property
-    def max_tokens(self) -> int:
+    def max_tokens(self) -> Optional[int]:
+        """``max_tokens`` if given, else the model's context window.
+
+        None when LiteLLM does not know the model's window; then nothing
+        is trimmed.
+        """
         if self._max_tokens is not None:
             return self._max_tokens
-        try:
-            from litellm import get_max_tokens
-
-            val = get_max_tokens(self.model_name)
-            return int(val) if val else 4096
-        except Exception:
-            return 4096
+        return _context_window(self.model_name)
 
     def _to_raw(self, m: Message) -> dict:
         """Convert a Message to the dict format litellm token_counter expects."""
@@ -966,7 +995,10 @@ class DefaultContextManager(ContextManager):
         if not messages:
             return dialog
 
-        limit = self.max_tokens - self.SAFETY_BUFFER
+        max_tokens = self.max_tokens
+        if max_tokens is None:  # unknown window: nothing to trim against
+            return dialog
+        limit = max_tokens - self.SAFETY_BUFFER
         raw_all = [self._to_raw(m) for m in messages]
 
         if self._count(raw_all) <= limit:
@@ -989,17 +1021,18 @@ class DefaultContextManager(ContextManager):
                 kept.insert(0, orig)
                 budget -= t
             else:
-                # Truncate this border message to fill whatever budget remains
-                if budget > 50:
-                    content = raw["content"]
+                # Fill whatever budget remains with the end of this border
+                # message, the part next to the kept ones. Text only: cutting
+                # an image's data would corrupt it.
+                is_text = orig.modality == Modalities.TEXT
+                if budget > 50 and is_text and isinstance(orig.content, str):
+                    content = orig.content
                     # Approximate character count via token ratio (0.85 headroom)
                     ratio = budget / t
-                    truncated_content = content[
-                        : max(1, int(len(content) * ratio * 0.85))
-                    ]
+                    keep = max(1, int(len(content) * ratio * 0.85))
                     border = copy.deepcopy(orig)
                     border.content = (
-                        "[...earlier content truncated...]\n" + truncated_content
+                        "[...earlier content truncated...]\n" + content[-keep:]
                     )
                     kept.insert(0, border)
                 break
