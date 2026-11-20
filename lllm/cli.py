@@ -240,7 +240,7 @@ def main(argv: list[str] | None = None) -> int:
         return _setup_command(parser, args)
 
     if args.command == "inspect":
-        if _is_package_target(args.target):
+        if _is_package_target(parser, args.target):
             return _inspect_package(parser, args)
         target = _load_cli_entrypoint(parser, args.target)
         if not isinstance(target, Tactic):
@@ -262,7 +262,7 @@ def main(argv: list[str] | None = None) -> int:
         except ValueError as exc:
             parser.error(str(exc))
 
-        if _is_package_target(args.target):
+        if _is_package_target(parser, args.target):
             if not args.skip_key_check:
                 _ensure_launch_keys(parser, args)
             launched = _load_launch_app(parser, args)
@@ -398,8 +398,14 @@ def _add_package_options(
     )
 
 
-def _is_package_target(target: str) -> bool:
-    path = Path(target).expanduser()
+def _is_package_target(parser: argparse.ArgumentParser, target: str) -> bool:
+    from .launch import LaunchError, _target_path
+
+    try:
+        path = _target_path(target)
+    except LaunchError as exc:
+        parser.error(str(exc))
+        raise
     return path.exists() or path.name == "lllm.toml"
 
 

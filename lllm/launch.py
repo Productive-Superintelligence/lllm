@@ -47,7 +47,7 @@ def load_launch_app(
     """
 
     target_text = _target_text(target)
-    path = Path(target_text).expanduser()
+    path = _target_path(target_text)
     if path.exists() or path.name == "lllm.toml":
         return _load_package_app(path, resource=resource, store=store)
     if ":" in target_text:
@@ -71,7 +71,7 @@ def load_launch_api_key_requirements(
     """
 
     target_text = _target_text(target)
-    path = Path(target_text).expanduser()
+    path = _target_path(target_text)
     if path.exists() or path.name == "lllm.toml":
         manifest = load_manifest(path)
         if not (resource or manifest.package.primary or _first_resource(manifest)):
@@ -386,6 +386,20 @@ def _resource_port(manifest: Any, section: str, name: str) -> int:
         else []
     )
     return serve_port(resource_metadata(resource), serving)
+
+
+def _target_path(target: str) -> Path:
+    """The target as a path with ``~`` expanded.
+
+    A ``~`` that names no home folder, as in ``~typo/pkg``, or in ``./~pkg``,
+    which pathlib reads as ``~pkg``, is a ``LaunchError`` rather than the
+    RuntimeError pathlib raises.
+    """
+
+    try:
+        return Path(target).expanduser()
+    except RuntimeError as exc:
+        raise LaunchError(f"cannot expand {target}: {exc}") from exc
 
 
 def _target_text(target: str | Path) -> str:

@@ -2306,6 +2306,22 @@ def test_an_env_file_path_that_cannot_be_expanded_is_a_clean_error(
     assert "Traceback" not in err and served == []
 
 
+@pytest.mark.parametrize("target", ["~fix3-no-such-user/pkg", "./~pkg"])
+@pytest.mark.parametrize("command", ["serve", "inspect", "setup"])
+def test_a_target_that_cannot_be_expanded_is_a_clean_error(
+    served, tmp_path, monkeypatch, capsys, command, target
+):
+    monkeypatch.chdir(tmp_path)
+
+    with pytest.raises(SystemExit) as caught:
+        main([command, target])
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert f"cannot expand {target}: Could not determine home directory" in err
+    assert "Traceback" not in err and served == []
+
+
 class _FailingOs:
     """``os`` for lllm.credentials, with chosen functions replaced."""
 
