@@ -19,7 +19,6 @@ import os
 import sys
 import tempfile
 from importlib.metadata import entry_points
-from pathlib import Path
 from typing import Any, Callable, NamedTuple
 
 from .create import create_project
