@@ -126,14 +126,62 @@ def test_default_context_manager_budget_is_the_context_window():
     assert DefaultContextManager("gpt-4o-mini")(dialog) is dialog
 
 
-def test_default_context_manager_does_not_trim_for_an_unknown_window(caplog):
-    manager = DefaultContextManager("openai/fix-native-core-unknown-model")
+def _forget_window(model: str) -> None:
+    from lllm.runtimes.native.core import dialog as dialog_module
+
+    dialog_module._CONTEXT_WINDOWS.pop(model, None)
+    dialog_module._UNKNOWN_WINDOWS.discard(model)
+
+
+def test_an_unknown_window_is_not_trimmed_and_warned_about_once(caplog):
+    model = "openai/fix-native-core-unknown-model"
+    _forget_window(model)
+    manager = DefaultContextManager(model)
     dialog = _dialog("Hello.", "What is 2 + 2?")
 
-    with caplog.at_level("WARNING"):
+    with caplog.at_level("WARNING", logger="lllm.runtimes.native.core.dialog"):
         assert manager.max_tokens is None
         assert manager(dialog) is dialog
-    assert "set max_tokens" in caplog.text.lower()
+        assert DefaultContextManager(model).max_tokens is None
+    warnings = [r for r in caplog.records if "context window" in r.getMessage()]
+    assert len(warnings) == 1
+    assert "set max_tokens" in warnings[0].getMessage().lower()
+
+
+def _register(model: str, **limits: int) -> None:
+    import litellm
+
+    litellm.register_model(
+        {
+            model: {
+                "litellm_provider": "openai",
+                "mode": "chat",
+                "input_cost_per_token": 0.0,
+                "output_cost_per_token": 0.0,
+                **limits,
+            }
+        }
+    )
+
+
+def test_max_tokens_is_the_window_when_no_output_limit_is_given():
+    import litellm
+
+    only_max, with_output = "fixcore/only-max-tokens", "fixcore/with-output"
+    for model in (only_max, with_output):
+        _forget_window(model)
+    try:
+        # Unknown at first; found once registered (None is not remembered).
+        assert DefaultContextManager(only_max).max_tokens is None
+        _register(only_max, max_tokens=8192)
+        assert DefaultContextManager(only_max).max_tokens == 8192
+        # With an output limit beside it, max_tokens is that output limit.
+        _register(with_output, max_tokens=4096, max_output_tokens=4096)
+        assert DefaultContextManager(with_output).max_tokens is None
+    finally:
+        for model in (only_max, with_output):
+            litellm.model_cost.pop(model, None)
+            _forget_window(model)
 
 
 # -- 3: a message that partly fits keeps the part the marker says ----------

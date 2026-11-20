@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import copy
 import datetime as dt
-import functools
 import io
 import logging
 import re
@@ -826,28 +825,44 @@ class Dialog:
 # ---------------------------------------------------------------------------
 
 
-@functools.lru_cache(maxsize=None)
+#: Context windows found, by model; unknown ones are looked up again.
+_CONTEXT_WINDOWS: Dict[str, int] = {}
+#: Models whose unknown window was warned about.
+_UNKNOWN_WINDOWS: set = set()
+
+
 def _context_window(model_name: str) -> Optional[int]:
     """The model's context window from LiteLLM's model info, or None.
 
-    That is ``max_input_tokens``; LiteLLM's ``max_tokens`` is usually the
-    output limit, so it is not used. Looked up (and warned about) once per
-    model.
+    That is ``max_input_tokens``. Without it, ``max_tokens`` is the window
+    when no ``max_output_tokens`` is given (Hugging Face models, models
+    registered with only ``max_tokens``); beside an output limit it is that
+    limit. A window found is remembered. An unknown one is warned about
+    once and looked up again next time, so a model registered later is
+    found.
     """
+    if model_name in _CONTEXT_WINDOWS:
+        return _CONTEXT_WINDOWS[model_name]
     try:
         from litellm import get_model_info
 
-        window = get_model_info(model_name).get("max_input_tokens")
+        info = get_model_info(model_name)
     except Exception:
-        window = None
-    if not window:
+        info = {}
+    window = info.get("max_input_tokens")
+    if not window and not info.get("max_output_tokens"):
+        window = info.get("max_tokens")
+    if window:
+        _CONTEXT_WINDOWS[model_name] = int(window)
+        return int(window)
+    if model_name not in _UNKNOWN_WINDOWS:
+        _UNKNOWN_WINDOWS.add(model_name)
         logger.warning(
             "DefaultContextManager: LiteLLM does not know the context window "
             "of %r, so its calls are not trimmed. Set max_tokens to trim them.",
             model_name,
         )
-        return None
-    return int(window)
+    return None
 
 
 class ContextManager(ABC):
@@ -933,9 +948,10 @@ class DefaultContextManager(ContextManager):
     Uses ``litellm.token_counter`` for accurate, model-specific token counting
     and drops or truncates the oldest non-system messages when the dialog
     exceeds the token budget: ``max_tokens``, or else the model's context
-    window from LiteLLM's model info (``max_input_tokens``). For a model
-    LiteLLM does not know, such as one on your own server, set
-    ``max_tokens``; without it nothing is trimmed (and a warning is logged).
+    window from LiteLLM's model info (``max_input_tokens``, or ``max_tokens``
+    when no output limit is given). For a model LiteLLM does not know, such
+    as one on your own server, set ``max_tokens``; without it nothing is
+    trimmed (and a warning is logged).
 
     **Truncation strategy**
 
