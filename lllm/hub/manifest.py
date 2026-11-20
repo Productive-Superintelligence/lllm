@@ -21,6 +21,20 @@ def require_path_value(value: Any, label: str = "path") -> str:
     return text
 
 
+def expanded_path(value: Any, label: str = "path") -> Path:
+    """``value`` as a path with ``~`` expanded.
+
+    A ``~`` that names no home folder, as in ``~typo/pkg``, is a
+    ``ValueError`` rather than the RuntimeError pathlib raises.
+    """
+
+    text = require_path_value(value, label)
+    try:
+        return Path(text).expanduser()
+    except RuntimeError as exc:
+        raise ValueError(f"cannot expand {text}: {exc}") from exc
+
+
 def manifest_path(path: str | Path) -> Path:
     return _candidate_manifest_path(path).resolve()
 
@@ -37,7 +51,7 @@ def load_manifest(path: str | Path) -> PackageManifest:
 
 
 def _candidate_manifest_path(path: str | Path) -> Path:
-    value = Path(require_path_value(path, "manifest path")).expanduser()
+    value = expanded_path(path, "manifest path")
     if value.is_dir():
         value = value / "lllm.toml"
     return value
@@ -52,7 +66,7 @@ def init_package(
     force: bool = False,
 ) -> Path:
     force_value = _bool_value("force", force)
-    root = Path(require_path_value(path, "package path")).expanduser()
+    root = expanded_path(path, "package path")
     package_name = root.resolve().name if name is None else name
     package = PackageInfo(org=org, name=package_name, kind=kind)
     target = root / "lllm.toml"

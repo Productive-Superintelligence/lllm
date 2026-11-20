@@ -2458,6 +2458,59 @@ def test_a_target_that_cannot_be_expanded_is_a_clean_error(
     assert "Traceback" not in err and served == []
 
 
+def test_the_launch_api_refuses_a_target_it_cannot_expand():
+    from lllm.launch import LaunchError, load_launch_api_key_requirements, load_launch_app
+
+    for call in (load_launch_app, load_launch_api_key_requirements):
+        with pytest.raises(LaunchError, match="cannot expand ~fix3-no-such-user/pkg: "):
+            call("~fix3-no-such-user/pkg")
+
+
+@pytest.mark.parametrize(
+    ("args", "path"),
+    [
+        (["init", "~fix3-no-such-user/pkg"], "~fix3-no-such-user/pkg"),
+        (["hub", "--hub", "~fix3-no-such-user/hub", "list"], "~fix3-no-such-user/hub"),
+    ],
+    ids=["init", "hub-root"],
+)
+def test_init_and_the_hub_refuse_a_path_they_cannot_expand(capsys, args, path):
+    with pytest.raises(SystemExit) as caught:
+        main(args)
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert f"cannot expand {path}: Could not determine home directory" in err
+    assert "Traceback" not in err
+
+
+@pytest.mark.parametrize("command", ["serve", "inspect"])
+@pytest.mark.parametrize("kind", ["unreadable", "too-long"])
+def test_a_target_that_cannot_be_read_is_a_clean_error(
+    served, tmp_path, capsys, command, kind
+):
+    if kind == "unreadable":
+        if hasattr(os, "geteuid") and os.geteuid() == 0:
+            pytest.skip("root reads anywhere")
+        locked = tmp_path / "locked"
+        locked.mkdir()
+        target, reason = str(locked / "pkg"), "Permission denied"
+        locked.chmod(0o000)
+    else:
+        target, reason = str(tmp_path / ("x" * 300)), "File name too long"
+    try:
+        with pytest.raises(SystemExit) as caught:
+            main([command, target])
+    finally:
+        if kind == "unreadable":
+            locked.chmod(0o700)
+
+    assert caught.value.code == 2
+    err = capsys.readouterr().err
+    assert f"cannot read {target}: {reason}" in err
+    assert "Traceback" not in err and served == []
+
+
 class _FailingOs:
     """``os`` for lllm.credentials, with chosen functions replaced."""
 

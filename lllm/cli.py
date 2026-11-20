@@ -405,7 +405,16 @@ def _is_package_target(parser: argparse.ArgumentParser, target: str) -> bool:
     except LaunchError as exc:
         parser.error(str(exc))
         raise
-    return path.exists() or path.name == "lllm.toml"
+    if path.name == "lllm.toml":
+        return True
+    try:
+        os.stat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return False
+    except OSError as exc:  # e.g. EACCES, or a name that is too long
+        parser.error(f"cannot read {target}: {exc.strerror or exc}")
+        raise
+    return True
 
 
 def _inspect_package(parser: argparse.ArgumentParser, args: Any) -> int:

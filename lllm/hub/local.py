@@ -13,7 +13,7 @@ from ..protocol._validation import (
 )
 from .cards import render_agent_card, render_config_template, render_package_card
 from .files import has_symlink_component, invalid_portable_file_path, is_relative_to
-from .manifest import load_manifest, manifest_path, require_path_value
+from .manifest import expanded_path, load_manifest, manifest_path
 from .models import HubResource, PackageManifest, PackageRecord, ValidationReport
 from .ports import resource_metadata
 from .validator import validate_package
@@ -70,7 +70,7 @@ class LocalHub:
     """A deterministic local package hub."""
 
     def __init__(self, root: str | Path = ".lllm/hub") -> None:
-        self.root = Path(require_path_value(root, "hub root")).expanduser().resolve()
+        self.root = expanded_path(root, "hub root").resolve()
         self.packages_dir = self.root / "packages"
         self.index_dir = self.root / "index"
         self.index_path = self.index_dir / "packages.json"
@@ -125,9 +125,7 @@ class LocalHub:
         *,
         version: str | None = None,
     ) -> Path:
-        destination_root = Path(
-            require_path_value(destination, "download destination")
-        ).expanduser()
+        destination_root = expanded_path(destination, "download destination")
         record = self.get(identifier, version=version)
         target = destination_root / record.name
         target_resolved = target.resolve(strict=False)

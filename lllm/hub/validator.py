@@ -13,7 +13,7 @@ from .endpoints import (
 from .entrypoints import import_entrypoint, is_asgi_app
 from .files import has_symlink_component, is_relative_to
 from .files import validate_declared_file as _validate_declared_file
-from .manifest import load_manifest, require_path_value
+from .manifest import expanded_path, load_manifest
 from .models import PackageManifest, ValidationIssue, ValidationReport
 from .refs import parse_resource_ref
 
@@ -101,7 +101,7 @@ def _looks_like_duplicate_toml_name(message: str) -> bool:
 
 
 def _unresolved_manifest_path(path: str | Path) -> Path:
-    value = Path(require_path_value(path, "manifest path")).expanduser()
+    value = expanded_path(path, "manifest path")
     if value.is_dir():
         value = value / "lllm.toml"
     return value
