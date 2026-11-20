@@ -309,12 +309,15 @@ or register the model with `litellm.register_model`, giving its
 `max_input_tokens`: without either, nothing is trimmed, and a warning says
 so.
 
-Messages are counted the way they are sent, tool calls included. An image
-counts at high detail, by its size (765 tokens for a 1024×768 photo with
-OpenAI's counting), not by the length of its data, and as 1,500 tokens
-(`IMAGE_TOKENS`) when its size cannot be read. The newest message is
-always sent whole, with a warning if it alone is over the budget, and a
-tool call is kept or dropped together with its results.
+Messages are counted the way they are sent, tool calls included, and
+counting never fetches anything. An image counts by its size, read from
+its header with Pillow, at OpenAI's high-detail rate: 765 tokens for a
+1024×768 photo, however long its data. Everything else that is not text
+counts as 1,500 tokens (`IMAGE_TOKENS`): an image whose size cannot be
+read (HEIC, data that does not decode, or any image without Pillow), an
+image URL, or audio. The newest message is always sent whole, with a
+warning if it alone is over the budget, and a tool call is kept or
+dropped together with its results.
 An older message that only partly fits keeps its end, after an
 `[...earlier content truncated...]` marker; an image that does not fit is
 dropped whole, with a warning.

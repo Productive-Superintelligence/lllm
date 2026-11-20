@@ -275,46 +275,113 @@ def _photo(size: int) -> str:
 
 
 def _tokens(manager: DefaultContextManager, message: Any) -> int:
-    return manager._tokens(message, manager._to_raw(message))
+    return manager._tokens(manager._to_raw(message))
 
 
-def test_images_count_at_high_detail_not_as_their_data():
+def _text_tokens(manager: DefaultContextManager, text: str) -> int:
+    return manager._count([{"role": "user", "content": text, "name": "user"}])
+
+
+IMAGE_TOKENS = DefaultContextManager.IMAGE_TOKENS
+
+
+def _image(width: int, height: int, fmt: str = "PNG", mode: str = "RGB") -> bytes:
     pytest.importorskip("PIL")
     import io
 
     from PIL import Image
 
-    photo = io.BytesIO()
-    Image.new("RGB", (1024, 768), "white").save(photo, format="PNG")
+    data = io.BytesIO()
+    Image.new(mode, (width, height)).save(data, format=fmt)
+    return data.getvalue()
+
+
+def test_images_are_sized_from_their_header_with_openai_high_detail():
     dialog = _dialog()
-    dialog.put_image(_photo(360_000), caption="A photo")  # 480,000 characters
-    dialog.put_image(base64.b64encode(photo.getvalue()).decode())
+    dialog.put_image(base64.b64encode(_image(1024, 768)).decode(), caption="A")
+    dialog.put_image(_photo(360_000))  # a PNG signature, then noise
     dialog.put_text("What is in them?")
     manager = DefaultContextManager("gpt-4o-mini")
+    photo, noise = dialog.messages[1:3]
 
+    assert _tokens(manager, photo) == _text_tokens(manager, "A") + 765
+    assert _tokens(manager, noise) == _text_tokens(manager, "") + IMAGE_TOKENS
     assert manager(dialog) is dialog
-    for message in dialog.messages[1:3]:  # OpenAI: 765 tokens at 1024x768
-        assert 765 <= _tokens(manager, message) < 1_200
 
 
-def test_an_image_litellm_cannot_size_counts_as_image_tokens():
+def test_a_bmp_from_a_path_is_sized_too(tmp_path):
+    path = tmp_path / "wide.bmp"
+    path.write_bytes(_image(3000, 1000, fmt="BMP", mode="1"))
+    dialog = _dialog()
+    dialog.put_image(path)
+    manager = DefaultContextManager("gpt-4o-mini")
+
+    # 3000x1000 fits in 2048x683: 4 x 2 tiles of 512 px, 85 + 170 * 8.
+    assert _tokens(manager, dialog.messages[1]) == _text_tokens(manager, "") + 1445
+
+
+def _with_parts(*parts: Dict[str, Any]) -> Any:
     from lllm.runtimes.native import Message
 
-    dialog = _dialog("What is in it?")
-    dialog.append(
-        Message(
-            role=Role.USER,
-            name="user",
-            content="!!not base64!!",
-            modality=Modalities.IMAGE,
-            metadata={"caption": "A photo"},
-        )
-    )
-    manager = DefaultContextManager("gpt-4o-mini")
-    tokens = _tokens(manager, dialog.messages[-1])
+    content = [{"type": "text", "text": "Look at this."}, *parts]
+    return Message(role=Role.USER, name="user", content=content)
 
-    assert manager.IMAGE_TOKENS <= tokens < manager.IMAGE_TOKENS + 50
+
+@pytest.mark.parametrize(
+    "part",
+    [
+        {"type": "image_url", "image_url": {"url": "https://example.com/a.png"}},
+        {"type": "image_url", "image_url": "https://example.com/a.png"},
+        {"type": "input_audio", "input_audio": {"data": "UklGRg==", "format": "wav"}},
+        {"type": "file", "file": {"file_id": "file-1"}},
+    ],
+    ids=["http_url", "string_url", "input_audio", "unknown"],
+)
+def test_other_parts_count_as_image_tokens_without_network(part, monkeypatch):
+    import socket
+
+    def no_network(*args, **kwargs):
+        raise AssertionError("counting reached the network")
+
+    monkeypatch.setattr(socket, "getaddrinfo", no_network)
+    monkeypatch.setattr(socket.socket, "connect", no_network)
+    manager = DefaultContextManager("gpt-4o-mini")
+
+    tokens = _tokens(manager, _with_parts(part))
+    assert tokens == _text_tokens(manager, "Look at this.") + IMAGE_TOKENS
+
+
+def _unsizable_image(caption: str) -> Any:
+    from lllm.runtimes.native import Message
+
+    return Message(
+        role=Role.USER,
+        name="user",
+        content="!!not base64!!",
+        modality=Modalities.IMAGE,
+        metadata={"caption": caption},
+    )
+
+
+def test_an_unsizable_image_counts_as_image_tokens():
+    dialog = _dialog("What is in it?")
+    dialog.append(_unsizable_image("A photo"))
+    manager = DefaultContextManager("gpt-4o-mini")
+
+    tokens = _tokens(manager, dialog.messages[-1])
+    assert tokens == _text_tokens(manager, "A photo") + IMAGE_TOKENS
     assert manager(dialog) is dialog  # counting the dialog does not fail
+
+
+def test_trimming_drops_an_unsizable_image_whole(caplog):
+    dialog = _dialog()
+    dialog.append(_unsizable_image("Q3 revenue"))
+    dialog.put_text("What does it show?")
+    with caplog.at_level("WARNING", logger=CM_LOGGER):
+        trimmed = Exact("gpt-4o-mini", max_tokens=300)(dialog)
+
+    assert [m.modality for m in trimmed.messages] == [Modalities.TEXT] * 2
+    assert "dropped 1 image" in caplog.text
 
 
 def test_tool_call_arguments_are_counted():
@@ -346,11 +413,15 @@ def test_the_newest_message_is_sent_whole_even_over_budget(caplog):
 
 def test_a_dropped_image_is_dropped_whole_and_logged(caplog):
     dialog = _dialog()
-    dialog.put_image(_photo(1_000), caption="Q3 revenue")
+    dialog.put_image(base64.b64encode(_image(1024, 768)).decode(), caption="Q3")
     dialog.put_text("word " * 50)
-    # Over 50 tokens are left at the image, enough to cut a text message.
+    manager = Exact("gpt-4o-mini", max_tokens=300)
+    head, image, newest = (_tokens(manager, m) for m in dialog.messages)
+    # Enough is left at the image to cut a text message (over 50 tokens),
+    # but not to keep the image, so only the guard keeps it from being cut.
+    assert 50 < 300 - head - newest < image
     with caplog.at_level("WARNING", logger=CM_LOGGER):
-        trimmed = Exact("gpt-4o-mini", max_tokens=130)(dialog)
+        trimmed = manager(dialog)
 
     assert [m.modality for m in trimmed.messages] == [Modalities.TEXT] * 2
     assert "dropped 1 image" in caplog.text

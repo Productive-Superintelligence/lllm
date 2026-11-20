@@ -6,12 +6,13 @@ import datetime as dt
 import io
 import json
 import logging
+import math
 import re
 import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, ClassVar, Dict, List, Optional, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field, StrictStr, field_validator
 
@@ -74,6 +75,65 @@ def _image_parts(message: "Message") -> List[Dict[str, Any]]:
     url = f"data:{media_type};base64,{message.content}"
     parts.append({"type": "image_url", "image_url": {"url": url}})
     return parts
+
+
+#: Base64 characters tried first for an image's header (about 48 KB of data,
+#: past any usual header); the whole image only if that fails.
+_IMAGE_HEAD = 65_536
+
+
+def _image_size(image_base64: str) -> Optional[Tuple[int, int]]:
+    """An image's width and height, read from its header with Pillow.
+
+    None without Pillow, or when the header cannot be read (HEIC, data
+    that does not decode).
+    """
+    try:
+        from PIL import Image
+    except ImportError:
+        return None
+    head = "".join(image_base64[:_IMAGE_HEAD].split())
+    attempts = [head[: len(head) // 4 * 4]]
+    if len(image_base64) > _IMAGE_HEAD:
+        attempts.append(image_base64)
+    for data in attempts:
+        try:
+            with Image.open(io.BytesIO(base64.b64decode(data))) as image:
+                return image.size
+        except Exception:
+            continue
+    return None
+
+
+def _high_detail_tokens(width: int, height: int) -> int:
+    """OpenAI's token cost of an image at high detail.
+
+    Fit within 2048x2048, scale the shortest side down to 768, then 170
+    tokens per 512-pixel tile plus 85: 765 for a 1024x768 photo.
+    """
+    if width < 1 or height < 1:
+        return 85
+    if max(width, height) > 2048:
+        scale = 2048 / max(width, height)
+        width, height = round(width * scale), round(height * scale)
+    if min(width, height) > 768:
+        scale = 768 / min(width, height)
+        width, height = round(width * scale), round(height * scale)
+    return 85 + 170 * math.ceil(width / 512) * math.ceil(height / 512)
+
+
+def _text_and_parts(raw: Dict[str, Any]) -> Tuple[Dict[str, Any], List[Any]]:
+    """A chat message with only its text, and its other content parts."""
+    content = raw.get("content")
+    if not isinstance(content, list):
+        return raw, []
+    texts, parts = [], []
+    for part in content:
+        if isinstance(part, dict) and part.get("type") == "text":
+            texts.append(str(part.get("text") or ""))
+        else:
+            parts.append(part)
+    return {**raw, "content": "\n".join(texts)}, parts
 
 
 #: Sender names the chat format leaves out of a message's ``name``.
@@ -1074,9 +1134,14 @@ class DefaultContextManager(ContextManager):
 
     **Truncation strategy**
 
-    Messages are counted as they are sent, tool calls included. An image is
-    counted at high detail, sized from its data by LiteLLM (765 tokens for a
-    1024x768 photo), or as ``IMAGE_TOKENS`` when its size cannot be read.
+    Messages are counted as they are sent. LiteLLM counts the text, tool
+    calls included; LLLM sizes every other content part, without any
+    network. An image in a data URL is sized from its header (Pillow) with
+    OpenAI's high-detail formula: 765 tokens for a 1024x768 photo. Any other
+    part (an image whose header cannot be read, such as HEIC or data that
+    does not decode, any image without Pillow, an image URL, audio) counts
+    as ``IMAGE_TOKENS``. A message LiteLLM cannot count counts as its plain
+    text plus ``IMAGE_TOKENS`` per non-text part, so counting never fails.
 
     1. The first message (system / developer prompt) is always preserved.
     2. The newest message is always sent whole, with a warning if it alone
@@ -1130,8 +1195,11 @@ class DefaultContextManager(ContextManager):
     #: Tokens kept free for the reply. This default (5000) shrinks to half of
     #: a small budget; a value you set is used as is.
     SAFETY_BUFFER: int = _DefaultSafetyBuffer(5000)
-    #: Tokens counted for an image whose size cannot be read. A photo at
-    #: high detail costs 765 to 1,105 tokens on OpenAI, about 1,600 on Claude.
+    #: Tokens counted for a content part LLLM does not size, with nothing
+    #: fetched: an image whose header cannot be read (HEIC, data that does
+    #: not decode, or no Pillow), an image URL, audio, any other non-text
+    #: part. A photo at high detail costs 765 to 1,105 tokens on OpenAI,
+    #: about 1,600 on Claude.
     IMAGE_TOKENS: int = 1500
 
     def __init__(self, model_name: str, max_tokens: Optional[int] = None):
@@ -1161,24 +1229,11 @@ class DefaultContextManager(ContextManager):
         return _context_window(self.model_name)
 
     def _to_raw(self, m: Message) -> dict:
-        """A message for litellm's token_counter: as the invoker sends it.
-
-        Tool calls are included, and an image is counted at high detail,
-        sized from its data (OpenAI: 765 tokens for a 1024x768 photo), not
-        as its base64 text.
-        """
+        """A message as the invoker sends it (``_chat_message``), to count."""
         try:
-            raw = _chat_message(m)
+            return _chat_message(m)
         except ValueError:  # e.g. a tool result without its tool_call_id
             return {"role": m.role.value, "content": str(m.content)}
-        if isinstance(raw["content"], list):
-            raw["content"] = [
-                {**part, "image_url": {**part["image_url"], "detail": "high"}}
-                if part.get("type") == "image_url"
-                else part
-                for part in raw["content"]
-            ]
-        return raw
 
     def _count(self, raw_msgs: list) -> int:
         from litellm import token_counter
@@ -1196,16 +1251,37 @@ class DefaultContextManager(ContextManager):
             return min(int(self.SAFETY_BUFFER), max_tokens // 2)
         return self.SAFETY_BUFFER
 
-    def _tokens(self, message: Message, raw: dict) -> int:
-        """One message's tokens; an image LiteLLM cannot size (its data does
-        not decode) counts as ``IMAGE_TOKENS`` beside its caption."""
+    def _tokens(self, raw: dict) -> int:
+        """One message's tokens, as it is sent. Counting never fails a call.
+
+        LiteLLM counts the text (with any tool calls); every other content
+        part is sized here, without any network (``_part_tokens``). If
+        LiteLLM cannot count the message, its plain text is counted instead,
+        plus ``IMAGE_TOKENS`` for each part that is not text.
+        """
+        text, parts = _text_and_parts(raw)
         try:
-            return self._count([raw])
+            return self._count([text]) + sum(map(self._part_tokens, parts))
         except Exception:
-            if message.modality != Modalities.IMAGE:
-                raise
-            caption = {"role": raw["role"], "content": message.metadata.get("caption") or ""}
-            return self._count([caption]) + self.IMAGE_TOKENS
+            content = str(text.get("content") or "")
+            try:
+                tokens = self._count([{"role": "user", "content": content}])
+            except Exception:
+                tokens = len(content) // 3 + 4  # a rough count
+            return tokens + self.IMAGE_TOKENS * len(parts)
+
+    def _part_tokens(self, part: Any) -> int:
+        """A content part that is not text: an image in a data URL is sized
+        from its header with OpenAI's high-detail formula; any other part
+        counts as ``IMAGE_TOKENS``, with nothing fetched."""
+        is_image = isinstance(part, dict) and part.get("type") == "image_url"
+        image = part.get("image_url") if is_image else None
+        url = image.get("url") if isinstance(image, dict) else None
+        if isinstance(url, str) and url.startswith("data:") and "," in url:
+            size = _image_size(url.split(",", 1)[1])
+            if size is not None:
+                return _high_detail_tokens(*size)
+        return self.IMAGE_TOKENS
 
     @staticmethod
     def _cut(message: Message, budget: int, tokens: int) -> Optional[Message]:
@@ -1238,12 +1314,9 @@ class DefaultContextManager(ContextManager):
         if max_tokens is None:  # unknown window: nothing to trim against
             return dialog
         limit = max_tokens - self._safety_buffer(max_tokens)
-        raw_all = [self._to_raw(m) for m in messages]
-        try:
-            total = self._count(raw_all)
-        except Exception:  # an image LiteLLM cannot size
-            total = sum(self._tokens(m, raw) for m, raw in zip(messages, raw_all))
-        if total <= limit:
+        # Each message counted once, images sized once; never raises.
+        counts = [self._tokens(self._to_raw(m)) for m in messages]
+        if sum(counts) <= limit:
             return dialog
 
         logger.debug(
@@ -1252,15 +1325,14 @@ class DefaultContextManager(ContextManager):
         )
 
         # Always keep the first (system) message
-        head_tokens = self._tokens(messages[0], raw_all[0])
-        budget = limit - head_tokens
+        budget = limit - counts[0]
 
         # Walk from the tail inward; collect messages that fit within budget.
         # A tool call goes with its results, and the newest is sent whole.
         kept: List[Message] = []
         kept_indexes = set()
         for position, unit in enumerate(_trim_units(messages)):
-            t = sum(self._tokens(messages[index], raw_all[index]) for index in unit)
+            t = sum(counts[index] for index in unit)
             if t <= budget or position == 0:
                 if t > budget:
                     logger.warning(
