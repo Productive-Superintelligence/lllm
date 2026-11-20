@@ -19,7 +19,14 @@ from pydantic import (
     model_validator,
 )
 
-from ..protocol import CallContext, SchemaError, Tactic, TacticEvent, TacticUnsupportedError
+from ..protocol import (
+    CallContext,
+    OutputSchemaError,
+    SchemaError,
+    Tactic,
+    TacticEvent,
+    TacticUnsupportedError,
+)
 from ..protocol._validation import (
     copy_boundary_value,
     mapping_field_value,
@@ -914,9 +921,13 @@ def _http_error(
 def status_code_for_error(exc: Exception) -> int:
     """The HTTP status a tactic service answers with when a call raises ``exc``.
 
-    ``SchemaError`` and ``TacticUnsupportedError`` are 400; anything else is 500.
+    ``SchemaError`` and ``TacticUnsupportedError`` are 400, except
+    ``OutputSchemaError``: a result that fails the tactic's output schema is
+    a bug in the tactic, so it is 500, like anything else the tactic raises.
     """
 
+    if isinstance(exc, OutputSchemaError):
+        return 500
     if isinstance(exc, (SchemaError, TacticUnsupportedError)):
         return 400
     return 500

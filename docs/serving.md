@@ -186,9 +186,10 @@ print(sorted(error))
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | The input, the output, the envelope, or the context does not validate |
+| 400 | `SchemaError` | The input, the envelope, or the context does not validate |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 404 | `TacticNotFound` | An unknown name in `/tactics/{name}/...` |
+| 500 | `OutputSchemaError` | The tactic's result does not match its output schema, a bug in the tactic rather than the request |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
 
 For clients you cannot change, a body that is not an envelope is taken as

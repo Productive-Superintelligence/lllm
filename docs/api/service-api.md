@@ -108,9 +108,10 @@ Error envelopes are stable across protocol and runtime failures.
 
 | Status | `error.type` | When |
 | --- | --- | --- |
-| 400 | `SchemaError` | Invalid input or output, or a malformed envelope or context |
+| 400 | `SchemaError` | Invalid input, or a malformed envelope or context |
 | 400 | `TacticUnsupportedError` | `/stream` on a tactic that does not stream |
 | 404 | `TacticNotFound` | An unknown name on a `/tactics/{name}/...` route |
+| 500 | `OutputSchemaError` | The tactic's result does not match its output schema; `message` starts with `The output of tactic '<name>' failed validation:` |
 | 500 | The exception's class name | Anything else the tactic raises; `message` is `str(exc)` |
 
 `status_code_for_error(exc)` gives the status for an exception, and

@@ -78,6 +78,10 @@ The runtime-neutral boundary every tactic shares, whatever runtime it uses. Impo
     options:
       heading_level: 3
 
+::: lllm.protocol.errors.OutputSchemaError
+    options:
+      heading_level: 3
+
 ::: lllm.protocol.errors.ProtocolError
     options:
       heading_level: 3

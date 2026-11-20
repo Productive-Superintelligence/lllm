@@ -178,10 +178,13 @@ for ticket in bad:
    names a team that does not exist.
 
 Both failures raise `SchemaError` (from `lllm`), with a message like
-`Value does not match schema Ticket: ...`. Its `__cause__` is Pydantic's
-`ValidationError`, whose `errors()` list each problem with its location. The
-call's [session](tactics.md#sessions) records the failure, and a
-[service](serving.md) answers it with status 400.
+`Value does not match schema Ticket: ...`. A bad result raises its subclass
+`OutputSchemaError`, and the message starts with
+`The output of tactic 'keyword_route' failed validation:`. The `__cause__`
+is Pydantic's `ValidationError`, whose `errors()` list each problem with its
+location. The call's [session](tactics.md#sessions) records the failure. A
+[service](serving.md) answers bad input with status 400 and a bad result
+with 500, because a bad result is a bug in the tactic, not in the request.
 
 ## When the model's reply does not fit
 
@@ -305,8 +308,8 @@ The rest of LLLM reads these schemas:
 
 - **Services.** `lllm serve` validates each request's `input` against the
   input type, publishes both schemas at `GET /info` and in the OpenAPI docs,
-  and answers a request that does not validate with status 400
-  ([Serving](serving.md)).
+  and answers a request that does not validate with status 400 and a result
+  that does not validate with 500 ([Serving](serving.md)).
 - **Tools.** When a tactic becomes a tool, its input schema becomes the
   tool's parameters and its docstring the tool's description
   ([Tactics as tools](tools.md#tactics-as-tools)).

@@ -15,6 +15,14 @@ class SchemaError(ProtocolError):
     """Raised when a schema cannot validate or describe data."""
 
 
+class OutputSchemaError(SchemaError):
+    """Raised when a tactic's result does not match its output schema.
+
+    The result comes from the tactic, not from the caller, so services answer
+    this error with status 500 instead of the 400 of other schema errors.
+    """
+
+
 class TacticError(ProtocolError):
     """Raised when a tactic boundary fails."""
 
