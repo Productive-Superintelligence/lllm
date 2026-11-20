@@ -334,7 +334,10 @@ def _image(
 
 def test_a_large_photo_has_its_shortest_side_scaled_to_768():
     late = _image(1920, 1080, fmt="JPEG", comment=b"x" * 60_000)
-    assert late.find(b"\xff\xc0") > 49_152  # its size is past the first read
+    from lllm.runtimes.native.core.dialog import _IMAGE_HEAD
+
+    # Its size marker lies past the first read, _IMAGE_HEAD base64 characters.
+    assert late.find(b"\xff\xc0") > _IMAGE_HEAD * 3 // 4
     manager = DefaultContextManager("gpt-4o-mini")
 
     for data in (_image(1920, 1080), late):
@@ -445,15 +448,46 @@ def test_tool_call_arguments_are_counted():
     assert _tokens(manager, dialog.messages[2]) > 400  # the content is short
 
 
+class Counting(Exact):
+    """Records how many messages each count gets; may refuse batches."""
+
+    def __init__(self, *args: Any, refuse_batches: bool = False, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.counted: List[int] = []
+        self.refuse_batches = refuse_batches
+
+    def _count(self, raw_msgs: list) -> int:
+        self.counted.append(len(raw_msgs))
+        if self.refuse_batches and len(raw_msgs) > 1:
+            raise ValueError("cannot count a batch")
+        return super()._count(raw_msgs)
+
+
+def _per_message_sum(dialog: Dialog) -> int:
+    manager = DefaultContextManager("gpt-4o-mini")
+    return sum(manager._tokens(manager._to_raw(m)) for m in dialog.messages)
+
+
 def test_a_dialog_that_fits_by_one_count_is_not_trimmed():
     dialog = _dialog(*(f"ok {n}" for n in range(60)))
-    manager = DefaultContextManager("gpt-4o-mini")
-    raws = [manager._to_raw(m) for m in dialog.messages]
-    batch = manager._count(raws)  # one call, as the request is sent
+    raws = [DefaultContextManager("gpt-4o-mini")._to_raw(m) for m in dialog.messages]
+    batch = DefaultContextManager("gpt-4o-mini")._count(raws)
     # Each count adds 3 reply-priming tokens, so the per-message sum is more.
-    assert sum(manager._tokens(raw) for raw in raws) > batch
+    assert _per_message_sum(dialog) > batch
 
-    assert Exact("gpt-4o-mini", max_tokens=batch)(dialog) is dialog
+    manager = Counting("gpt-4o-mini", max_tokens=batch)
+    assert manager(dialog) is dialog
+    assert manager.counted == [len(dialog.messages)]  # one call, all of it
+
+
+def test_when_a_batch_cannot_be_counted_the_per_message_sum_decides():
+    dialog = _dialog(*(f"ok {n}" for n in range(20)))
+    total = _per_message_sum(dialog)
+
+    fits = Counting("gpt-4o-mini", max_tokens=total, refuse_batches=True)
+    assert fits(dialog) is dialog
+    over = Counting("gpt-4o-mini", max_tokens=total - 1, refuse_batches=True)
+    assert over(dialog) is not dialog  # trimmed, and nothing raised
 
 
 def test_the_newest_message_is_sent_whole_even_over_budget(caplog):
