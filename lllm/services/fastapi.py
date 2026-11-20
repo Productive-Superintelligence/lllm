@@ -544,16 +544,18 @@ def _get_tactic(name: str, tactics: Mapping[str, Tactic[Any, Any]]) -> Tactic[An
     except KeyError as exc:
         from fastapi import HTTPException
 
-        raise HTTPException(
-            status_code=404,
-            detail=ErrorResponse(
-                error=ErrorDetail(
-                    type="TacticNotFound",
-                    message=_encodable_text(f"Tactic not found: {name}"),
-                    tactic=_encodable_text(name),
-                )
-            ).model_dump(mode="json"),
-        ) from exc
+        raise HTTPException(status_code=404, detail=_tactic_not_found(name)) from exc
+
+
+def _tactic_not_found(name: str) -> dict[str, Any]:
+    """The 404 detail for a tactic the app does not serve, as AAAX gives it."""
+
+    message = _encodable_text(f"Tactic not found: {name}")
+    try:
+        error = ErrorDetail(type="TacticNotFound", message=message, tactic=name)
+    except ValueError:  # a name the envelope cannot carry, such as one with ";"
+        error = ErrorDetail(type="TacticNotFound", message=message)
+    return ErrorResponse(error=error).model_dump(mode="json")
 
 
 def _public_tactic_info(tactic: Tactic[Any, Any], jsonable_encoder: Any) -> dict[str, Any]:

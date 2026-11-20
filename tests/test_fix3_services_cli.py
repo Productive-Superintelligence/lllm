@@ -1656,6 +1656,36 @@ def test_an_error_message_with_a_lone_surrogate_keeps_the_json_envelope():
     assert error["request_id"] == "r-9"
 
 
+# Round 5, 4: an unknown tactic name the error envelope cannot carry as
+# its tactic still gets the 404 envelope, as in AAAX.
+
+
+@pytest.mark.parametrize("name", ["a;b", "a:b", "a%b", "a\\b", " "])
+@pytest.mark.parametrize(
+    ("method", "route"), [("POST", "run"), ("POST", "stream"), ("GET", "info")]
+)
+def test_an_unknown_tactic_name_of_any_shape_is_a_404_envelope(name, method, route):
+    from urllib.parse import quote
+
+    client = TestClient(create_tactic_app(Echo()), raise_server_exceptions=False)
+
+    response = client.request(method, f"/tactics/{quote(name, safe='')}/{route}", json={"input": "x"})
+
+    assert response.status_code == 404
+    error = response.json()["detail"]["error"]
+    assert error["type"] == "TacticNotFound"
+    assert error["message"] == f"Tactic not found: {name}"
+    assert error["tactic"] is None
+
+
+def test_an_unknown_tactic_name_the_envelope_can_carry_keeps_it():
+    client = TestClient(create_tactic_app(Echo()))
+
+    error = client.post("/tactics/nope/run", json={"input": "x"}).json()["detail"]["error"]
+
+    assert (error["type"], error["tactic"]) == ("TacticNotFound", "nope")
+
+
 # Round 5, 1: a body nested more than 500 arrays and objects deep is a 400,
 # as in AAAX, before it is parsed. A deep value could otherwise crash the
 # server when code walks it recursively on a small thread stack.
