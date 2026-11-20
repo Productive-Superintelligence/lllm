@@ -792,3 +792,129 @@ entry = "main:create_tactic"
     for index in headings:
         assert lines[index - 1] == "", lines[index - 1 : index + 1]
     assert "## Resources" in lines
+
+
+# 8: serving an undeclared channel is an error, and inspecting a channel
+# package creates no store.
+
+CHANNELS_MANIFEST = """
+[package]
+org = "demo"
+name = "events"
+kind = "channel"
+primary = "channels.events"
+
+[channels.events]
+form = "log"
+description = "Input events."
+
+[channels.alerts]
+form = "log"
+"""
+
+
+@pytest.fixture
+def channel_package(tmp_path):
+    package = tmp_path / "events"
+    _write(package / "lllm.toml", CHANNELS_MANIFEST)
+    return package
+
+
+@pytest.fixture
+def fake_sssn(monkeypatch):
+    """Stand in for sssn: opening a package store creates its folder."""
+
+    import types
+
+    from fastapi import FastAPI
+
+    opened = []
+
+    def open_package_store(manifest, *, store=None):
+        root = Path(store) if store is not None else manifest.base_dir / ".lllm" / "network"
+        root.mkdir(parents=True, exist_ok=True)  # as sssn's LocalStore does
+        opened.append(root)
+        return {"root": root, "channels": sorted(manifest.channels)}
+
+    def create_app(store):
+        app = FastAPI()
+
+        @app.get("/channels")
+        def channels():
+            return store["channels"]
+
+        return app
+
+    package = types.ModuleType("sssn")
+    package.__path__ = []
+    resources = types.ModuleType("sssn.resources")
+    resources.open_package_store = open_package_store
+    server = types.ModuleType("sssn.server")
+    server.create_app = create_app
+    for name, module in {
+        "sssn": package,
+        "sssn.resources": resources,
+        "sssn.server": server,
+    }.items():
+        monkeypatch.setitem(sys.modules, name, module)
+    return opened
+
+
+def test_launching_an_undeclared_channel_is_an_error(channel_package, uninstalled):
+    from lllm.launch import LaunchError, load_launch_app
+
+    uninstalled("sssn")  # the name is checked before sssn is needed
+
+    with pytest.raises(LaunchError) as caught:
+        load_launch_app(channel_package, resource="channels.nope")
+
+    assert str(caught.value) == (
+        "channel not found in package: nope; declared channels: events, alerts"
+    )
+
+
+def test_serve_rejects_an_undeclared_channel(channel_package, fake_sssn, served, capsys):
+    with pytest.raises(SystemExit) as caught:
+        main(["serve", str(channel_package), "--resource", "channels.nope"])
+
+    assert caught.value.code == 2
+    assert "channel not found in package: nope" in capsys.readouterr().err
+    assert served == [] and fake_sssn == []
+    assert not (channel_package / ".lllm").exists()
+
+
+def test_serve_still_launches_a_declared_channel(channel_package, fake_sssn, served):
+    assert main(["serve", str(channel_package), "--resource", "channels.alerts"]) == 0
+
+    [(app, _options)] = served
+    assert fake_sssn == [channel_package / ".lllm" / "network"]
+    assert TestClient(app).get("/channels").json() == ["alerts", "events"]
+
+
+@pytest.mark.parametrize("store", [None, "elsewhere"])
+def test_inspecting_a_channel_package_creates_nothing(
+    channel_package, fake_sssn, tmp_path, capsys, store
+):
+    args = ["inspect", str(channel_package)]
+    if store is not None:
+        args += ["--store", str(tmp_path / store)]
+
+    assert main(args) == 0
+
+    out = capsys.readouterr().out
+    assert "demo/events:channels.events (channel)" in out
+    assert "GET /channels" in out
+    assert not (channel_package / ".lllm").exists()
+    assert not (tmp_path / "elsewhere").exists()
+    assert fake_sssn and not any(root.exists() for root in fake_sssn)
+
+
+def test_inspecting_a_channel_package_creates_nothing_with_real_sssn(
+    channel_package, capsys
+):
+    pytest.importorskip("sssn", reason="needs the sssn package")
+
+    assert main(["inspect", str(channel_package)]) == 0
+
+    assert "POST /channels" in capsys.readouterr().out
+    assert not (channel_package / ".lllm").exists()

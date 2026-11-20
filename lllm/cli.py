@@ -17,6 +17,7 @@ import ipaddress
 import json
 import os
 import sys
+import tempfile
 from importlib.metadata import entry_points
 from pathlib import Path
 from typing import Any, Callable, NamedTuple
@@ -375,12 +376,16 @@ def _inspect_package(parser: argparse.ArgumentParser, args: Any) -> int:
         env_file=args.env_file,
         use_keyring=not args.no_keyring,
     )
-    launched = _load_launch_app(parser, args)
+    # Building a channel app opens its store, which creates the store folder
+    # and the declared channels; inspecting builds it over a throwaway store.
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as store:
+        launched = _load_launch_app(parser, args, store=store)
+        routes = _route_paths(launched.app)
     payload = {
         "label": launched.label,
         "kind": launched.kind,
         "port": launched.port,
-        "routes": _route_paths(launched.app),
+        "routes": routes,
         "api_keys": resolution.public_payload(),
     }
     if args.json:
@@ -551,11 +556,20 @@ def _resolve_requirements(
     return requirements, resolution
 
 
-def _load_launch_app(parser: argparse.ArgumentParser, args: Any) -> Any:
+def _load_launch_app(
+    parser: argparse.ArgumentParser,
+    args: Any,
+    *,
+    store: str | None = None,
+) -> Any:
     from .launch import LaunchError, load_launch_app
 
     try:
-        return load_launch_app(args.target, resource=args.resource, store=args.store)
+        return load_launch_app(
+            args.target,
+            resource=args.resource,
+            store=args.store if store is None else store,
+        )
     except (ImportError, LaunchError, OSError, ValueError, AttributeError, TypeError) as exc:
         parser.error(str(exc))
         raise

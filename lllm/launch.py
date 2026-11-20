@@ -113,25 +113,29 @@ def _load_package_app(
     if section == "services":
         service = manifest.services.get(name)
         if service is None:
-            raise LaunchError(f"service not found in package: {name}")
+            raise _not_declared("service", name, manifest.services)
         app = _service_app(manifest, name, service, base_dir)
         return LaunchApp(app=app, label=label, kind="service", port=port)
 
     if section == "tactics":
         tactic = manifest.tactics.get(name)
         if tactic is None:
-            raise LaunchError(f"tactic not found in package: {name}")
+            raise _not_declared("tactic", name, manifest.tactics)
         app = _tactic_app(tactic.entry, base_dir=base_dir, name=name)
         return LaunchApp(app=app, label=label, kind="tactic", port=port)
 
     if section == "channels":
+        # The app serves the package's whole store, but only a declared
+        # channel names it.
+        if name not in manifest.channels:
+            raise _not_declared("channel", name, manifest.channels)
         app = _channel_app(manifest, store=store)
         return LaunchApp(app=app, label=label, kind="channel", port=port)
 
     if section == "runs":
         run = manifest.runs.get(name)
         if run is None:
-            raise LaunchError(f"run not found in package: {name}")
+            raise _not_declared("run", name, manifest.runs)
         if len(run.services) == 1:
             return _load_package_app(
                 path,
@@ -141,6 +145,15 @@ def _load_package_app(
         raise LaunchError(
             "run resources with multiple services need an explicit --resource services.NAME"
         )
+
+
+def _not_declared(kind: str, name: str, declared: Mapping[str, Any]) -> LaunchError:
+    detail = (
+        f"declared {kind}s: {', '.join(declared)}"
+        if declared
+        else f"the package declares no {kind}s"
+    )
+    return LaunchError(f"{kind} not found in package: {name}; {detail}")
 
 
 def _package_resource(manifest: Any, resource: str | None) -> tuple[str, str]:

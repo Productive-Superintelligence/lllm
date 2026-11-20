@@ -542,9 +542,12 @@ lllm serve ./triage     # serve tactics.triage on port 8100
 ```
 
 - `--resource section.name` serves another resource, such as
-  `services.api`. Without `primary` or `--resource`, the first service,
-  tactic, channel, or run is served; only those kinds can be. A run must
-  list exactly one service, and channels need [SSSN](https://sssn.one/).
+  `services.api`, and must name one the manifest declares. Without
+  `primary` or `--resource`, the first service, tactic, channel, or run is
+  served; only those kinds can be. A run must list exactly one service.
+  Channels need [SSSN](https://sssn.one/): a channel resource serves the
+  package's whole channel store, in `<package>/.lllm/network` unless
+  `--store` says otherwise. `lllm inspect` creates no store.
 - The port is `--port`, else the resource's `metadata.port` (a tactic
   without one takes the port of the first service that serves it, through
   `tactic` or `tactics`, and declares one), else 8000. The hub's config
