@@ -1810,18 +1810,11 @@ def test_bodies_the_scan_accepts_pass():
         assert response.json()["output"] == "ok", body[:30]
 
 
-@pytest.mark.parametrize(
-    "big",
-    [
-        "[" + "[]" * 5_000_000 + "]",  # 10 MB, scanned to the end
-        # 10 MB in an envelope, as RemoteTactic sends, which is also
-        # validated and deep-copied.
-        '{"input": [' + "[]," * 3_333_333 + "[]]}",
-    ],
-    ids=["bare", "envelope"],
-)
-def test_a_big_body_is_read_off_the_event_loop(big):
+def test_a_big_body_is_read_off_the_event_loop():
+    # An envelope is validated off the loop too, which only the
+    # thread-recording test below can see.
     app = create_tactic_app(Ok())
+    big = "[" + "[]" * 5_000_000 + "]"  # 10 MB, scanned to the end
 
     async def scenario():
         transport = httpx.ASGITransport(app=app)
@@ -1851,29 +1844,39 @@ def test_a_big_body_is_read_off_the_event_loop(big):
 
 
 @pytest.mark.parametrize("path", ["/run", "/tactics/ok/run"])
-def test_the_envelope_is_validated_off_the_event_loop(path, monkeypatch):
-    # Validating an envelope deep-copies its input, about 2 s for 10 MB, so
-    # it runs in the worker thread with the parse. A timing test cannot see
-    # it: the parse before it lets a concurrent request through.
+def test_the_envelope_and_context_are_built_off_the_event_loop(path, monkeypatch):
+    # Validating an envelope deep-copies its input, about 2 s for 10 MB, and
+    # building the CallContext copies its metadata, about 1 s per MB, so both
+    # run in the worker thread with the parse. A timing test cannot see
+    # them: the parse before them lets a concurrent request through.
     import lllm.services.fastapi as service
 
-    where: list[str] = []
+    where: list[tuple[str, str]] = []
+
+    def recording(name, function):
+        def record(*args, **kwargs):
+            try:
+                asyncio.get_running_loop()
+                where.append((name, "event loop"))
+            except RuntimeError:
+                where.append((name, "worker thread"))
+            return function(*args, **kwargs)
+
+        return record
+
     validate = service.RunRequest.model_validate
+    monkeypatch.setattr(service.RunRequest, "model_validate", recording("envelope", validate))
+    monkeypatch.setattr(
+        service,
+        "call_context_from_data",
+        recording("context", service.call_context_from_data),
+    )
+    body = {"input": [[], []], "context": {"metadata": {"note": "x"}}}
 
-    def recording(*args, **kwargs):
-        try:
-            asyncio.get_running_loop()
-            where.append("event loop")
-        except RuntimeError:
-            where.append("worker thread")
-        return validate(*args, **kwargs)
-
-    monkeypatch.setattr(service.RunRequest, "model_validate", recording)
-
-    response = TestClient(create_tactic_app(Ok())).post(path, json={"input": [[], []]})
+    response = TestClient(create_tactic_app(Ok())).post(path, json=body)
 
     assert response.json()["output"] == "ok"
-    assert where == ["worker thread"]
+    assert where == [("envelope", "worker thread"), ("context", "worker thread")]
 
 
 # Round 8, 1: the boundary copies walk values with a stack, not recursion,
