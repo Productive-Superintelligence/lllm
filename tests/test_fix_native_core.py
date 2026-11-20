@@ -742,6 +742,35 @@ def test_extra_settings_reach_the_agent():
     assert Tactic.quick(model="gpt-4o-mini").extra_settings == {}
 
 
+WRITER = {"model_name": "gpt-4o-mini", "system_prompt": "You write."}
+
+
+@pytest.mark.parametrize("value", [[], "", 0, False, ["style"]])
+def test_extra_settings_must_be_a_mapping(value):
+    from lllm.runtimes.native import AgentSpec
+
+    with pytest.raises(TypeError, match="'extra_settings' must be a mapping"):
+        AgentSpec.from_config("writer", {**WRITER, "extra_settings": value})
+
+
+def test_extra_settings_take_any_mapping_and_values_deepcopy_cannot_copy():
+    import threading
+    from types import MappingProxyType
+
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    lock = threading.Lock()
+    settings = MappingProxyType({"lock": lock, "style": "terse"})
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    first, second = (spec.build(Runtime(), object()) for _ in range(2))
+
+    assert first.extra_settings == {"lock": lock, "style": "terse"}
+    assert first.extra_settings["lock"] is lock  # shared, not copied
+    assert first.extra_settings is not second.extra_settings
+    unset = AgentSpec.from_config("writer", {**WRITER, "extra_settings": None})
+    assert unset.extra_settings == {}
+
+
 # -- 9: context managers and stream handlers are exported -------------------
 
 

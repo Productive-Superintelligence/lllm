@@ -10,6 +10,7 @@ from __future__ import annotations
 import copy
 import datetime as dt
 import logging
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
@@ -543,6 +544,16 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
+def _own_copy(settings: Dict[str, Any]) -> Dict[str, Any]:
+    """Settings for one agent: fresh agents share one spec, so each gets a
+    deep copy, or a shallow one when a value (a lock, a client, a
+    connection) cannot be copied."""
+    try:
+        return copy.deepcopy(settings)
+    except Exception:
+        return dict(settings)
+
+
 def _copy_prompt_with_update(prompt, update: Dict[str, Any]):
     copied = prompt.model_copy(update=update)
     for attr in ("_qualified_key", "_resource_namespace"):
@@ -655,9 +666,15 @@ class AgentSpec:
         max_interrupt_steps = raw.pop("max_interrupt_steps", 5)
         max_llm_recall = raw.pop("max_llm_recall", 0)
         max_rate_limit_retries = raw.pop("max_rate_limit_retries", 8)
-        extra_settings = raw.pop("extra_settings", None) or {}
-        if not isinstance(extra_settings, dict):
-            raise TypeError(f"Agent '{name}': 'extra_settings' must be a mapping")
+        extra_settings = raw.pop("extra_settings", None)
+        if extra_settings is None:
+            extra_settings = {}
+        elif not isinstance(extra_settings, Mapping):
+            raise TypeError(
+                f"Agent '{name}': 'extra_settings' must be a mapping, "
+                f"got {type(extra_settings).__name__}"
+            )
+        extra_settings = dict(extra_settings)
 
         # -- proxy config (already deep-merged with global by the caller) --
         proxy_raw = raw.pop("proxy", None)
@@ -880,8 +897,7 @@ class AgentSpec:
             max_rate_limit_retries=self.max_rate_limit_retries,
             context_manager=context_manager,
             inference_hints=self.inference_hints,
-            # Each agent gets its own copy: fresh agents share one spec.
-            extra_settings=copy.deepcopy(self.extra_settings),
+            extra_settings=_own_copy(self.extra_settings),
         )
 
 
