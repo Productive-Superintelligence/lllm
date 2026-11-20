@@ -435,9 +435,9 @@ class Agent:
             else {}
         )
         for i in range(_max_steps):
-            working_dialog = (
-                dialog.fork()
-            )  # make a copy of the dialog, truncate all exception handling dialogs
+            # Repairs go to a working copy, which is not one of the dialog's
+            # children: only the accepted reply reaches the dialog.
+            working_dialog = dialog._copy()
             if self.context_manager is not None:
                 working_dialog = self.context_manager(working_dialog)
             while True:  # ensure the response is no exception

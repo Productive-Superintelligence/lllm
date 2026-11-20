@@ -648,6 +648,20 @@ class Dialog:
         Returns:
             The new child Dialog.
         """
+        child = self._copy(last_n, first_k)
+        # List the child among this dialog's children (node ids and live refs).
+        self.tree_node.add_child(child.tree_node)
+        self._children_dialogs.append(child)
+        return child
+
+    def _copy(self, last_n: int = 0, first_k: int = 1) -> "Dialog":
+        """A fork that names this dialog as its parent but is not its child.
+
+        The agent loop answers each model call on such a working copy: its
+        repairs and failed replies are dropped with it when the call ends,
+        so ``children``, ``tree_overview()`` and ``to_dict()`` list only
+        the forks made with :meth:`fork`.
+        """
         last_n = _nonnegative_int_value("last_n", last_n)
         first_k = _nonnegative_int_value("first_k", first_k)
         if last_n >= len(self._messages):
@@ -677,14 +691,9 @@ class Dialog:
             owner=self.owner,
             tree_node=child_tree_node,
         )
-
-        # Wire tree_node parent ↔ child (sets parent_id, live refs, children_ids)
-        self.tree_node.add_child(child.tree_node)
-
-        # Wire Dialog-level live refs
+        child_tree_node.parent_id = self.dialog_id
+        child_tree_node._parent = self.tree_node
         child._parent_dialog = self
-        self._children_dialogs.append(child)
-
         return child
 
     # -----------------------------------------------------------------------

@@ -170,12 +170,12 @@ plus a `tree_node` that holds only ids (its own `dialog_id`, its parent's,
 and its children's) and the `split_point`, how many messages it copied.
 `print(dialog.tree_overview())` draws the tree below a dialog.
 
-!!! note "The agent loop forks too"
-    For each model call, `respond()` works on a fork of the dialog. Repair
+!!! note "The agent loop works on a copy"
+    For each model call, `respond()` works on a copy of the dialog. Repair
     messages and replies that failed to parse stay in that working copy, and
     only the accepted reply (with any tool calls and results) is added to
-    your dialog. The working copies stay attached as children, so
-    `children` and `tree_overview()` list them next to your own forks.
+    your dialog. The copy is dropped when the call ends, so `children` and
+    `tree_overview()` list only your own forks.
 
 ## Saving and loading
 
@@ -211,12 +211,11 @@ print(restored.tail.model, restored.dialog_id == original.dialog_id)
 ```
 
 The data holds every message with its usage and metadata, the dialog's
-owner, its tree node, its children (recursively, including the loop's
-working copies), and the prompt that drove the last turn. That prompt's
-tools are saved as schemas without their code, and a Pydantic `format` as
-its import path and JSON schema. Loading never imports code: a `format`
-model is used only if its module is already imported, and its saved schema
-otherwise.
+owner, its tree node, the forks made from it (recursively), and the prompt
+that drove the last turn. That prompt's tools are saved as schemas without
+their code, and a Pydantic `format` as its import path and JSON schema.
+Loading never imports code: a `format` model is used only if its module is
+already imported, and its saved schema otherwise.
 
 Use saved dialogs to review runs, compare branches offline, or build
 datasets. To write a dialog by hand, for a test or a dataset, create a
