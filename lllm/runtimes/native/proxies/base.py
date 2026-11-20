@@ -268,9 +268,14 @@ class BaseProxy:
             wrapped = _stored_wraps(method)
             if wrapped is None:
                 # Reached some other way (a forwarding wrapper over a spy):
-                # a spy's child keeps what it wraps, the real metadata.
-                inner = _stored_wraps(value)
-                return value if inner is None else inner
+                # a spy's child keeps what it wraps, the real metadata, and
+                # over a spy of a spy, that is the inner spy's child.
+                for _ in range(16):
+                    inner = _stored_wraps(value)
+                    if inner is None or not _made_by_mock(value):
+                        break
+                    value = inner
+                return value
             method = wrapped  # a spy's made-up child: read the wrapped object
 
     @classmethod

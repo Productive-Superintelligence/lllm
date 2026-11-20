@@ -3,10 +3,12 @@ responses, unknown proxy names are reported, POST endpoints send query-param
 keys in the query, and tactic endpoints accept any input."""
 
 import importlib
+import importlib.util
 import json
 import logging
 import sqlite3
 import sys
+import unittest.mock
 from array import array
 from collections import deque
 from dataclasses import dataclass
@@ -490,29 +492,29 @@ def test_deleting_a_spys_endpoint_info_hides_the_endpoint():
     assert listed == ["convert", "history"]
 
 
-_OWN_DELETED = object()  # like the standalone mock package's own sentinel
+def other_mock_library():
+    """Another mock library, as the standalone mock package is: a second
+    copy of unittest.mock's code, with its own classes and sentinels."""
+
+    spec = importlib.util.spec_from_file_location("lllm_test_other_mock", unittest.mock.__file__)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
 
 
-class OwnSentinelMock(MagicMock):
-    """Marks deleted attributes with its own sentinel, as the standalone
-    mock package does (not unittest.mock's)."""
-
-    def __delattr__(self, name):
-        if name in vars(self) or name.startswith("_mock_"):
-            return super().__delattr__(name)
-        self._mock_children[name] = _OWN_DELETED
-
-    def __getattr__(self, name):
-        if vars(self).get("_mock_children", {}).get(name) is _OWN_DELETED:
-            raise AttributeError(name)
-        return super().__getattr__(name)
+OTHER_MOCK = other_mock_library()
 
 
 def standalone_mock_class():
     return pytest.importorskip("mock").MagicMock
 
 
-@pytest.mark.parametrize("make_class", [lambda: OwnSentinelMock, standalone_mock_class], ids=["simulated", "mock"])
+OTHER_LIBRARIES = pytest.mark.parametrize(
+    "make_class", [lambda: OTHER_MOCK.MagicMock, standalone_mock_class], ids=["simulated", "mock"]
+)
+
+
+@OTHER_LIBRARIES
 def test_deleting_endpoint_info_on_another_mock_librarys_spy_hides_it(make_class):
     proxy = UncachedRatesProxy(runtime=Runtime())
 
@@ -521,6 +523,19 @@ def test_deleting_endpoint_info_on_another_mock_librarys_spy_hides_it(make_class
         listed = [entry["callable"] for entry in proxy.endpoint_directory()]
 
     assert listed == ["convert", "history"]
+
+
+@OTHER_LIBRARIES
+def test_another_mock_librarys_spy_is_read_through_and_routed(http, make_class):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+
+    with patch.object(proxy, "rates", new=make_class()(wraps=proxy.rates)) as spy:
+        proxy.call("rates", {"base": "USD"})
+
+    spy.assert_called_once()
+    assert http == [
+        ("GET", "https://api.example.test/v1/rates", {"base": "USD", "apikey": "secret"})
+    ]
 
 
 def test_a_property_mock_on_a_spys_type_wins_over_a_deletion(http):
@@ -658,6 +673,29 @@ def test_a_forwarding_wrapper_over_a_spy_gives_the_metadata_the_spy_wraps(http):
 
     spy.assert_called_once()
     assert http[0][1] == "https://api.example.test/v1/rates"
+
+
+def test_a_forwarding_wrapper_over_a_spy_of_a_spy_gives_the_metadata_they_wrap(http):
+    proxy = UncachedRatesProxy(runtime=Runtime())
+    proxy.forwarded = Forwarding(MagicMock(wraps=MagicMock(wraps=proxy.rates)))
+
+    assert "forwarded" in [entry["callable"] for entry in proxy.endpoint_directory()]
+    proxy.call("forwarded", {"base": "USD"})
+
+    assert http[0][1] == "https://api.example.test/v1/rates"
+
+
+def test_a_tactic_endpoint_behind_two_spies_and_a_forwarding_wrapper_runs():
+    proxies = tactic_tools()
+    tools = proxies.proxies["tools"]
+
+    with patch.object(tools, "repeat", wraps=tools.repeat) as fixture_spy:
+        with patch.object(tools, "repeat", wraps=tools.repeat) as test_spy:
+            tools.forwarded = Forwarding(test_spy)
+            assert proxies("tools/forwarded", {"text": "ab", "times": 3}) == "ababab"
+
+    fixture_spy.assert_called_once()
+    test_spy.assert_called_once()
 
 
 def test_a_cycle_of_wrapping_mocks_is_not_an_endpoint():
