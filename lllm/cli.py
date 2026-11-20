@@ -151,7 +151,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     inspect_cmd.add_argument("target", help="module:attribute entrypoint or package path")
     inspect_cmd.add_argument("--json", action="store_true", help="Emit JSON")
-    _add_package_options(inspect_cmd, store=False)
+    _add_package_options(inspect_cmd, serving=False)
 
     serve_cmd = subcommands.add_parser(
         "serve",
@@ -165,12 +165,15 @@ def main(argv: list[str] | None = None) -> int:
         help=f"Port (default: the resource's declared port, else {DEFAULT_SERVE_PORT})",
     )
     serve_cmd.add_argument("--log-level", default="info")
-    _add_package_options(serve_cmd)
+    _add_package_options(serve_cmd, serving=True)
     serve_cmd.add_argument(
         "--credentials",
         choices=("auto", "keyring", "env"),
         default="auto",
-        help="Where interactive setup should store missing keys",
+        help=(
+            "Where interactive setup should store missing keys "
+            "(--no-keyring overrides auto: they go to --env-file)"
+        ),
     )
     serve_cmd.add_argument(
         "--skip-key-check",
@@ -250,11 +253,6 @@ def main(argv: list[str] | None = None) -> int:
             log_level = _serve_log_level(args.log_level)
         except ValueError as exc:
             parser.error(str(exc))
-        if args.no_keyring and args.credentials == "keyring":
-            parser.error(
-                "--no-keyring does not read the OS keyring, so --credentials keyring "
-                "would store keys it cannot see; use --credentials env"
-            )
 
         if _is_package_target(args.target):
             if not args.skip_key_check:
@@ -355,23 +353,38 @@ def _import_from_working_directory() -> None:
 def _add_package_options(
     command: argparse.ArgumentParser,
     *,
-    store: bool = True,
+    serving: bool,
 ) -> None:
+    """The package options of ``inspect`` and ``serve``.
+
+    Only serve opens a channel store or stores the keys it asks for, so
+    inspect hides ``--store`` (it still accepts it) and its key options
+    only read.
+    """
+
     command.add_argument("--resource", help="Package resource, e.g. services.api")
-    # inspect accepts --store but ignores it: it never opens a channel store.
     command.add_argument(
         "--store",
-        help="Channel store root for channel resources" if store else argparse.SUPPRESS,
+        help="Channel store root for channel resources" if serving else argparse.SUPPRESS,
     )
     command.add_argument(
         "--env-file",
         default=".env.local",
-        help="Local env file to read for required API keys",
+        help=(
+            "Env file to read API keys from and store typed keys in"
+            if serving
+            else "Env file to read API keys from"
+        ),
     )
     command.add_argument(
         "--no-keyring",
         action="store_true",
-        help="Do not read API keys from the OS keyring",
+        help=(
+            "Neither read API keys from the OS keyring nor store typed keys there; "
+            "they go to --env-file"
+            if serving
+            else "Do not read API keys from the OS keyring"
+        ),
     )
 
 
@@ -505,6 +518,8 @@ def _setup_command(parser: argparse.ArgumentParser, args: Any) -> int:
 
 
 def _ensure_launch_keys(parser: argparse.ArgumentParser, args: Any) -> None:
+    """Check a package's API keys before serving it, asking for missing ones."""
+
     from .credentials import (
         CredentialError,
         configure_missing_api_keys,
@@ -512,6 +527,11 @@ def _ensure_launch_keys(parser: argparse.ArgumentParser, args: Any) -> None:
         resolve_api_keys,
     )
 
+    if args.no_keyring and args.credentials == "keyring":
+        parser.error(
+            "--no-keyring does not read the OS keyring, so --credentials keyring "
+            "would store keys it cannot see; use --credentials env"
+        )
     requirements, resolution = _resolve_requirements(
         parser,
         args.target,
