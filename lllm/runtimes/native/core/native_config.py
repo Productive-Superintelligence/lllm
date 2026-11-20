@@ -544,43 +544,57 @@ _KNOWN_AGENT_KEYS = frozenset(
 )
 
 
-def _settings_copy(value: Any, memo: Optional[Dict[int, Any]] = None) -> Any:
+def _copy_settings(settings: Mapping) -> Dict[str, Any]:
+    """``extra_settings`` as a dict of its own, through ``_settings_copy``.
+
+    The top-level mapping goes through the same memo, so a value that
+    refers back to it closes on the copy.
+    """
+    copied: Dict[str, Any] = {}
+    memo: Dict[int, Any] = {id(settings): copied}
+    for key, item in settings.items():
+        copied[key] = _settings_copy(item, memo)
+    return copied
+
+
+def _settings_copy(value: Any, memo: Dict[int, Any]) -> Any:
     """Copy containers, share everything else.
 
-    Dicts, lists, tuples, and sets are copied recursively, subclasses
-    included (a Counter, a defaultdict with its factory, a namedtuple), so
-    each agent can change its own. As in ``deepcopy``, a container met
-    twice is copied once, so shared parts stay shared and cycles end.
-    Strings, numbers, booleans, and None need no copy. Any other object (a
-    lock, a client, a connection), and a container that cannot be copied,
-    is shared as is, without trying to deep-copy it.
+    Dicts, lists, and sets are copied recursively, subclasses included (a
+    Counter, a defaultdict with its factory), and so are plain tuples and
+    namedtuples, so each agent can change its own. As in ``deepcopy``, a
+    container met twice is copied once, so shared parts stay shared and
+    cycles end. Strings, numbers, booleans, and None need no copy. Any
+    other object (a lock, a client, a connection, a ``struct_time``) and a
+    container that cannot be copied are shared as is, never deep-copied.
     """
-    if memo is None:
-        memo = {}
     if id(value) in memo:
         return memo[id(value)]
-    if not isinstance(value, (dict, list, tuple, set)):
-        return value
-    try:
-        if isinstance(value, tuple):
-            memo[id(value)] = value  # until rebuilt: a cycle back here shares it
-            items = [_settings_copy(item, memo) for item in value]
-            make = getattr(value, "_make", None)  # a namedtuple
-            result = make(items) if make else type(value)(items)
-        else:
+    if isinstance(value, tuple):
+        make = getattr(value, "_make", None)  # a namedtuple
+        if type(value) is not tuple and make is None:
+            return value  # e.g. a struct_time, whose hidden fields a rebuild loses
+        items = [_settings_copy(item, memo) for item in value]
+        if id(value) in memo:  # a cycle through the items copied it already
+            return memo[id(value)]
+        result = make(items) if make else tuple(items)
+    elif isinstance(value, (dict, list, set)):
+        try:
             result = copy.copy(value)  # keeps the type, and a defaultdict's factory
-            memo[id(value)] = result  # before recursing, so cycles end
-            if isinstance(value, dict):
-                for key, item in value.items():
-                    result[key] = _settings_copy(item, memo)
-            elif isinstance(value, list):
-                for index, item in enumerate(value):
-                    result[index] = _settings_copy(item, memo)
-            else:
-                result.clear()
-                result.update(_settings_copy(item, memo) for item in value)
-    except Exception:
-        result = value
+        except Exception:
+            return value
+        memo[id(value)] = result  # before recursing, so cycles end
+        if isinstance(value, dict):
+            for key, item in value.items():
+                result[key] = _settings_copy(item, memo)
+        elif isinstance(value, list):
+            for index, item in enumerate(value):
+                result[index] = _settings_copy(item, memo)
+        else:
+            result.clear()
+            result.update(_settings_copy(item, memo) for item in value)
+    else:
+        return value
     memo[id(value)] = result
     return result
 
@@ -705,7 +719,7 @@ class AgentSpec:
                 f"Agent '{name}': 'extra_settings' must be a mapping, "
                 f"got {type(extra_settings).__name__}"
             )
-        extra_settings = _settings_copy(dict(extra_settings))
+        extra_settings = _copy_settings(extra_settings)
 
         # -- proxy config (already deep-merged with global by the caller) --
         proxy_raw = raw.pop("proxy", None)
@@ -929,7 +943,7 @@ class AgentSpec:
             context_manager=context_manager,
             inference_hints=self.inference_hints,
             # Fresh agents share one spec: each gets its own plain data.
-            extra_settings=_settings_copy(self.extra_settings),
+            extra_settings=_copy_settings(self.extra_settings),
         )
 
 

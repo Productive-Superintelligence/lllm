@@ -1165,6 +1165,31 @@ def test_extra_settings_copies_keep_cycles_sharing_and_container_types():
     assert point.x is not settings["point"].x
 
 
+def test_extra_settings_cycles_through_tuples_and_at_the_top_close_on_the_copy():
+    import time
+
+    from lllm.runtimes.native import AgentSpec, Runtime
+
+    history: list = []
+    entry = ("start", history)
+    history.append(entry)  # a cycle through a tuple
+    when = time.gmtime(0)  # a struct_time: hidden fields, not rebuilt
+    settings: Dict[str, Any] = {"history": history, "entry": entry, "when": when}
+    settings["self"] = settings  # a cycle at the top
+    spec = AgentSpec.from_config("writer", {**WRITER, "extra_settings": settings})
+    copied = spec.build(Runtime(), object()).extra_settings
+
+    assert copied["self"] is copied
+    copied_history = copied["history"]
+    assert copied_history is not history
+    assert copied_history[0] is copied["entry"]  # one copy of the tuple
+    assert copied["entry"] == ("start", copied_history)
+    assert copied["entry"][1] is copied_history  # closes on the copy
+    assert copied["when"] is when
+    copied_history.append("more")
+    assert history == [entry]  # the user's list is untouched
+
+
 # -- a failed agent call keeps its record ------------------------------------
 
 
