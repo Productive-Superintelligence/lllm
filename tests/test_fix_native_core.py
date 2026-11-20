@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 pytest.importorskip("litellm", reason="these tests drive the native runtime")
 
 from lllm import ParseError, Prompt, Tactic, tool  # noqa: E402
-from lllm.runtimes.native import Dialog, Role  # noqa: E402
+from lllm.runtimes.native import Dialog, InvokeCost, Role  # noqa: E402
 from lllm.runtimes.native.core.dialog import DefaultContextManager  # noqa: E402
 from lllm.testing import ScriptedModel, ToolCall  # noqa: E402
 
@@ -442,3 +442,31 @@ def test_extension_base_classes_are_exported_from_the_native_runtime():
     for name, value in exported.items():
         assert getattr(native, name) is value
         assert name in native.__all__
+
+
+# -- 10: str(InvokeCost) shows rates per million tokens ----------------------
+
+
+@pytest.mark.parametrize(
+    ("input_rate", "output_rate", "shown"),
+    [
+        (0.15e-6, 0.6e-6, "In: $0.15/1M tok, Out: $0.60/1M tok"),  # gpt-4o-mini
+        (0.0375e-6, 0.15e-6, "In: $0.0375/1M tok, Out: $0.15/1M tok"),
+        (15e-6, 75e-6, "In: $15.00/1M tok, Out: $75.00/1M tok"),
+    ],
+)
+def test_invoke_cost_shows_rates_per_million_tokens(input_rate, output_rate, shown):
+    cost = InvokeCost(
+        prompt_tokens=10,
+        completion_tokens=20,
+        total_tokens=30,
+        input_cost_per_token=input_rate,
+        output_cost_per_token=output_rate,
+    )
+    assert f" | Rates: [{shown}]\n" in str(cost)
+
+
+def test_reply_cost_shows_the_model_rates():
+    with ScriptedModel(["Hi."]):
+        reply = Tactic.quick("Hello", model="gpt-4o-mini")
+    assert "Rates: [In: $0.15/1M tok, Out: $0.60/1M tok]" in str(reply.cost)
