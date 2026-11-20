@@ -261,6 +261,68 @@ def test_a_dropped_image_is_dropped_whole_and_logged(caplog):
     assert "dropped 1 image" in caplog.text
 
 
+def _tool_round(dialog: Dialog, *results: str) -> None:
+    """A tool-call reply and one tool result per call, as respond() adds."""
+    from lllm.runtimes.native import FunctionCall, Message
+
+    calls = [
+        FunctionCall(id=f"call_{i}", name="lookup_order", arguments={"n": i})
+        for i in range(len(results))
+    ]
+    dialog.append(
+        Message(
+            role=Role.TOOL_CALL,
+            name="assistant",
+            content="Tool calls:\n\n0. lookup_order",
+            function_calls=calls,
+        )
+    )
+    for call, result in zip(calls, results):
+        dialog.put_text(
+            result,
+            name=call.name,
+            role=Role.TOOL,
+            metadata={"tool_call_id": call.id},
+        )
+
+
+def _roles(dialog: Dialog) -> list:
+    return [message.role for message in dialog.messages]
+
+
+def test_a_tool_call_is_kept_or_dropped_with_its_results():
+    dialog = _dialog("Where are orders 1 and 2? I need them soon. " * 10)
+    _tool_round(dialog, "Order 1 shipped. " * 20, "Order 2 is packed. " * 20)
+    dialog.put_text("And when do they arrive?")
+    manager = Exact("gpt-4o-mini", max_tokens=10_000)
+    head, _, call, *results, newest = dialog.messages
+    tokens = {id(m): manager._count([manager._to_raw(m)]) for m in dialog.messages}
+
+    # Room for the newest message and both results, but not for their call.
+    budget = sum(tokens[id(m)] for m in (head, newest, *results))
+    budget += tokens[id(call)] // 2
+    trimmed = Exact("gpt-4o-mini", max_tokens=budget)(dialog)
+    assert _roles(trimmed) == [Role.SYSTEM, Role.USER]
+
+    budget += tokens[id(call)]  # now the whole round fits
+    trimmed = Exact("gpt-4o-mini", max_tokens=budget)(dialog)
+    assert _roles(trimmed) == [
+        Role.SYSTEM,
+        Role.TOOL_CALL,
+        Role.TOOL,
+        Role.TOOL,
+        Role.USER,
+    ]
+
+
+def test_a_newest_tool_result_keeps_its_call():
+    dialog = _dialog("Where is order 1?")
+    _tool_round(dialog, "Order 1 shipped on Monday. " * 30)
+    trimmed = Exact("gpt-4o-mini", max_tokens=60)(dialog)
+
+    assert _roles(trimmed) == [Role.SYSTEM, Role.TOOL_CALL, Role.TOOL]
+
+
 # -- 4: a Pydantic config keeps its aliased ``global`` section ---------------
 
 

@@ -876,6 +876,32 @@ def _context_window(model_name: str) -> Optional[int]:
     return None
 
 
+def _trim_units(messages: List[Message]) -> List[List[int]]:
+    """Indexes of ``messages[1:]``, newest first, in the groups trimming keeps
+    or drops whole: a tool call with its results, or a single message.
+
+    A tool result sent without the call it answers is rejected by
+    OpenAI-compatible APIs.
+    """
+    units: List[List[int]] = []
+    results: List[int] = []
+    for index in range(len(messages) - 1, 0, -1):
+        message = messages[index]
+        if message.role == Roles.TOOL:
+            results.insert(0, index)
+            continue
+        if message.role == Roles.TOOL_CALL or message.is_function_call:
+            units.append([index, *results])
+        else:
+            if results:  # results whose call is not in the dialog
+                units.append(results)
+            units.append([index])
+        results = []
+    if results:
+        units.append(results)
+    return units
+
+
 class ContextManager(ABC):
     """
     Pre-processing hook applied to a Dialog before it is sent to the LLM.
@@ -973,7 +999,8 @@ class DefaultContextManager(ContextManager):
     2. The newest message is always sent whole, with a warning if it alone
        exceeds the budget.
     3. Older messages are retained from the **tail** (most recent) inward
-       until the token budget is exhausted.
+       until the token budget is exhausted. A tool call and its results are
+       kept or dropped together: APIs reject a result without its call.
     4. The *border* message — the oldest message that partially fits — keeps
        its end, the part closest to the kept messages, after a
        ``[...earlier content truncated...]`` marker. Images and other
@@ -1108,13 +1135,11 @@ class DefaultContextManager(ContextManager):
         budget = limit - head_tokens
 
         # Walk from the tail inward; collect messages that fit within budget.
-        # The newest message is always sent whole.
+        # A tool call goes with its results, and the newest is sent whole.
         kept: List[Message] = []
-        kept_ids = set()
-        for position, (orig, raw) in enumerate(
-            zip(reversed(messages[1:]), reversed(raw_all[1:]))
-        ):
-            t = self._count([raw])
+        kept_indexes = set()
+        for position, unit in enumerate(_trim_units(messages)):
+            t = sum(self._count([raw_all[index]]) for index in unit)
             if t <= budget or position == 0:
                 if t > budget:
                     logger.warning(
@@ -1124,20 +1149,22 @@ class DefaultContextManager(ContextManager):
                         t,
                         budget,
                     )
-                kept.insert(0, orig)
-                kept_ids.add(id(orig))
+                kept[:0] = [messages[index] for index in unit]
+                kept_indexes.update(unit)
                 budget -= t
                 continue
-            border = self._cut(orig, budget, t)
-            if border is not None:
-                kept.insert(0, border)
-                kept_ids.add(id(orig))
+            if len(unit) == 1:
+                border = self._cut(messages[unit[0]], budget, t)
+                if border is not None:
+                    kept.insert(0, border)
+                    kept_indexes.add(unit[0])
             break
 
         dropped_images = sum(
             1
-            for m in messages[1:]
-            if id(m) not in kept_ids and m.modality == Modalities.IMAGE
+            for index in range(1, len(messages))
+            if index not in kept_indexes
+            and messages[index].modality == Modalities.IMAGE
         )
         if dropped_images:
             logger.warning(
